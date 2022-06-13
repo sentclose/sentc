@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "crypto",
+    "wasm",
+    "flutter"
+]
+
+[profile.release]
+lto = true

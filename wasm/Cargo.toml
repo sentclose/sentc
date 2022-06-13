@@ -1,0 +1,19 @@
+[package]
+name = "sendclose_wasm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# own crypto lib
+sendclose_crypto = {version = "0.1.0", path = "../crypto"}
+
+# must be js feature for wasm
+getrandom = { version = "0.2", features = ["js"] }
+
+# wasm dep
+wasm-bindgen = "0.2.74"

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+	<title>Sendclose wasm test</title>
+</head>
+<body>
+	<script type="module">
+		import init, { aes_test, ed_test } from './pkg/sendclose_wasm.js';
+
+		async function run()
+		{
+			await init();
+
+			console.log("start aes");
+			aes_test();
+
+			console.log("start ed");
+			ed_test();
+		}
+
+		run();
+	</script>
+</body>
+</html>
