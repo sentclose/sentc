@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 # own crypto lib
-sendclose_crypto = {version = "0.1.0", path = "../crypto"}
+sendclose_crypto = {version = "0.1.0", path = "../../crypto" }
