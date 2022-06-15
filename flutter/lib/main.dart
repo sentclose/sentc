@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:sendclose/generated.dart';
 
 const base = "sendclose_flutter";
-final path = Platform.isWindows ? "$base.dll" : "lib$base.so";
+final path = Platform.isWindows ? "../target/debug/$base.dll" : "lib$base.so";
 late final dylib = Platform.isIOS
     ? DynamicLibrary.process()
     : Platform.isMacOS
