@@ -7,7 +7,7 @@ edition = "2021"
 
 [lib]
 name = "sendclose_flutter"
-crate-type = ["cdylib"]
+crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 # own crypto lib
