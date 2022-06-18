@@ -1,0 +1,17 @@
+[package]
+name = "sendclose_flutter"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "sendclose_flutter"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+# own crypto lib
+sendclose_crypto = {version = "0.1.0", path = "../../../crypto" }
+
+# flutter ffi
+flutter_rust_bridge = "1"
