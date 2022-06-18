@@ -7,8 +7,13 @@ use rand_core::OsRng; // requires 'getrandom' feature
 pub fn aes() -> String
 {
 	//aes
+	aes_intern(b"an example very very secret key.")
+}
 
-	let key = Key::from_slice(b"an example very very secret key.");
+fn aes_intern(key: &[u8]) -> String
+{
+	let key = Key::from_slice(key);
+
 	let cipher = Aes256Gcm::new(key);
 
 	let nonce = Nonce::from_slice(b"unique nonce"); // 96-bits; unique per message
@@ -26,7 +31,7 @@ pub fn aes() -> String
 	std::str::from_utf8(&plaintext).unwrap().to_owned()
 }
 
-pub fn ecdh()
+pub fn ecdh() -> String
 {
 	// Alice
 	let alice_secret = EphemeralSecret::random(&mut OsRng);
@@ -48,4 +53,35 @@ pub fn ecdh()
 
 	// Both participants arrive on the same shared secret
 	assert_eq!(alice_shared.raw_secret_bytes(), bob_shared.raw_secret_bytes());
+
+	//get a key for aes
+	let key = alice_shared.extract::<sha2::Sha256>(None);
+
+	let mut okm = [0u8; 32]; //32 bytes for sha256
+
+	key.expand(&vec![], &mut okm).expect("TODO: panic message");
+
+	aes_intern(&okm)
+}
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+
+	#[test]
+	fn test_aes()
+	{
+		let str = aes();
+
+		assert_eq!(str, "plaintext message");
+	}
+
+	#[test]
+	fn test_ecdh()
+	{
+		let str = ecdh();
+
+		assert_eq!(str, "plaintext message");
+	}
 }
