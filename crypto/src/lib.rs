@@ -4,7 +4,7 @@ use p256::ecdh::EphemeralSecret;
 use p256::{EncodedPoint, PublicKey};
 use rand_core::OsRng; // requires 'getrandom' feature
 
-pub fn aes()
+pub fn aes() -> String
 {
 	//aes
 
@@ -22,6 +22,8 @@ pub fn aes()
 		.expect("decryption failure!"); // NOTE: handle this error to avoid panics!
 
 	assert_eq!(&plaintext, b"plaintext message");
+
+	std::str::from_utf8(&plaintext).unwrap().to_owned()
 }
 
 pub fn ecdh()
