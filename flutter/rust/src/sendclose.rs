@@ -5,7 +5,7 @@ pub fn aes_test() -> String
 	aes()
 }
 
-pub fn ed_test()
+pub fn ed_test() -> String
 {
-	ecdh();
+	ecdh()
 }

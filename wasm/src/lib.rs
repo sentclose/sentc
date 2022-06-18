@@ -8,7 +8,7 @@ pub fn aes_test() -> String
 }
 
 #[wasm_bindgen]
-pub fn ed_test()
+pub fn ed_test() -> String
 {
-	ecdh();
+	ecdh()
 }

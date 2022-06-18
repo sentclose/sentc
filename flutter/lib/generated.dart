@@ -16,7 +16,7 @@ abstract class SendcloseFlutter {
 
   FlutterRustBridgeTaskConstMeta get kAesTestConstMeta;
 
-  Future<void> edTest({dynamic hint});
+  Future<String> edTest({dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kEdTestConstMeta;
 }
@@ -42,9 +42,9 @@ class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
         argNames: [],
       );
 
-  Future<void> edTest({dynamic hint}) => executeNormal(FlutterRustBridgeTask(
+  Future<String> edTest({dynamic hint}) => executeNormal(FlutterRustBridgeTask(
         callFfi: (port_) => inner.wire_ed_test(port_),
-        parseSuccessData: _wire2api_unit,
+        parseSuccessData: _wire2api_String,
         constMeta: kEdTestConstMeta,
         argValues: [],
         hint: hint,
@@ -73,10 +73,6 @@ int _wire2api_u8(dynamic raw) {
 
 Uint8List _wire2api_uint_8_list(dynamic raw) {
   return raw as Uint8List;
-}
-
-void _wire2api_unit(dynamic raw) {
-  return;
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
