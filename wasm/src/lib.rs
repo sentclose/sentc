@@ -2,9 +2,9 @@ use sendclose_crypto::{aes, ecdh};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn aes_test()
+pub fn aes_test() -> String
 {
-	aes();
+	aes()
 }
 
 #[wasm_bindgen]

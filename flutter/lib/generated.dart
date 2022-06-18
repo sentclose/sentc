@@ -12,7 +12,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'dart:ffi' as ffi;
 
 abstract class SendcloseFlutter {
-  Future<void> aesTest({dynamic hint});
+  Future<String> aesTest({dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAesTestConstMeta;
 
@@ -28,9 +28,9 @@ class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
 
   SendcloseFlutterImpl.raw(SendcloseFlutterWire inner) : super(inner);
 
-  Future<void> aesTest({dynamic hint}) => executeNormal(FlutterRustBridgeTask(
+  Future<String> aesTest({dynamic hint}) => executeNormal(FlutterRustBridgeTask(
         callFfi: (port_) => inner.wire_aes_test(port_),
-        parseSuccessData: _wire2api_unit,
+        parseSuccessData: _wire2api_String,
         constMeta: kAesTestConstMeta,
         argValues: [],
         hint: hint,
@@ -63,6 +63,18 @@ class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
 }
 
 // Section: wire2api
+String _wire2api_String(dynamic raw) {
+  return raw as String;
+}
+
+int _wire2api_u8(dynamic raw) {
+  return raw as int;
+}
+
+Uint8List _wire2api_uint_8_list(dynamic raw) {
+  return raw as Uint8List;
+}
+
 void _wire2api_unit(dynamic raw) {
   return;
 }

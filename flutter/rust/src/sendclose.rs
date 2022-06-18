@@ -1,8 +1,8 @@
 use sendclose_crypto::{aes, ecdh};
 
-pub fn aes_test()
+pub fn aes_test() -> String
 {
-	aes();
+	aes()
 }
 
 pub fn ed_test()
