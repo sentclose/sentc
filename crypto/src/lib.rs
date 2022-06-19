@@ -1,67 +1,74 @@
-use aes_gcm::aead::{Aead, NewAead};
-use aes_gcm::{Aes256Gcm, Key, Nonce}; // Or `Aes128Gcm`
-use p256::ecdh::EphemeralSecret;
-use p256::{EncodedPoint, PublicKey};
-use rand_core::OsRng; // requires 'getrandom' feature
+mod alg;
+mod error;
 
 pub fn aes() -> String
 {
 	//aes
-	aes_intern(b"an example very very secret key.")
+	aes_intern()
 }
 
-fn aes_intern(key: &[u8]) -> String
+fn aes_intern() -> String
 {
-	let key = Key::from_slice(key);
+	let test = "plaintext message";
+	let test2 = "plaintext message2";
 
-	let cipher = Aes256Gcm::new(key);
+	let res = alg::sym::aes_gcm::encrypt(test.as_ref());
 
-	let nonce = Nonce::from_slice(b"unique nonce"); // 96-bits; unique per message
+	let (key, encrypted) = match res {
+		Err(e) => return format!("Error for encrypt test 1: {:?}", e),
+		Ok(v) => v,
+	};
 
-	let ciphertext = cipher
-		.encrypt(nonce, b"plaintext message".as_ref())
-		.expect("encryption failure!"); // NOTE: handle this error to avoid panics!
+	let res = alg::sym::aes_gcm::encrypt_with_generated_key(&key, test2.as_ref());
 
-	let plaintext = cipher
-		.decrypt(nonce, ciphertext.as_ref())
-		.expect("decryption failure!"); // NOTE: handle this error to avoid panics!
+	let encrypted2 = match res {
+		Err(e) => return format!("Error for encrypt test 2: {:?}", e),
+		Ok(v) => v,
+	};
 
-	assert_eq!(&plaintext, b"plaintext message");
+	//decrypt
+	let res = alg::sym::aes_gcm::decrypt(&key, &encrypted);
 
-	std::str::from_utf8(&plaintext).unwrap().to_owned()
+	let decrypted = match res {
+		Err(e) => return format!("Error for decrypt test 1: {:?}", e),
+		Ok(v) => v,
+	};
+
+	let res = alg::sym::aes_gcm::decrypt(&key, &encrypted2);
+
+	let decrypted2 = match res {
+		Err(e) => return format!("Error for decrypt test 2: {:?}", e),
+		Ok(v) => v,
+	};
+
+	assert_eq!(&decrypted, b"plaintext message");
+	assert_eq!(&decrypted2, b"plaintext message2");
+
+	let one = std::str::from_utf8(&decrypted).unwrap().to_owned();
+	let two = std::str::from_utf8(&decrypted2).unwrap();
+
+	one + " " + two
 }
 
 pub fn ecdh() -> String
 {
 	// Alice
-	let alice_secret = EphemeralSecret::random(&mut OsRng);
-	let alice_pk_bytes = EncodedPoint::from(alice_secret.public_key());
+	//let (alice_secret, alice_pk) = alg::asym::ecies::generate_static_keypair();
 
 	// Bob
-	let bob_secret = EphemeralSecret::random(&mut OsRng);
-	let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
+	let (bob_secret, bob_pk) = alg::asym::ecies::generate_static_keypair();
 
-	// Alice decodes Bob's serialized public key and computes a shared secret from it
-	let bob_public = PublicKey::from_sec1_bytes(bob_pk_bytes.as_ref()).expect("bob's public key is invalid!"); // In real usage, don't panic, handle this!
+	//Alice create a msg for Bob's public key
+	let alice_msg = "Hello Bob";
+	let alice_encrypted = alg::asym::ecies::encrypt(&bob_pk, alice_msg.as_ref()).unwrap();
 
-	let alice_shared = alice_secret.diffie_hellman(&bob_public);
+	//Bob decrypt it with his own private key
+	let bob_decrypt = alg::asym::ecies::decrypt(&bob_secret, &alice_encrypted).unwrap();
+	let bob_msg = std::str::from_utf8(&bob_decrypt).unwrap();
 
-	// Bob deocdes Alice's serialized public key and computes the same shared secret
-	let alice_public = PublicKey::from_sec1_bytes(alice_pk_bytes.as_ref()).expect("alice's public key is invalid!"); // In real usage, don't panic, handle this!
+	assert_eq!(bob_msg, alice_msg);
 
-	let bob_shared = bob_secret.diffie_hellman(&alice_public);
-
-	// Both participants arrive on the same shared secret
-	assert_eq!(alice_shared.raw_secret_bytes(), bob_shared.raw_secret_bytes());
-
-	//get a key for aes
-	let key = alice_shared.extract::<sha2::Sha256>(None);
-
-	let mut okm = [0u8; 32]; //32 bytes for sha256
-
-	key.expand(&vec![], &mut okm).expect("TODO: panic message");
-
-	aes_intern(&okm)
+	alice_msg.to_string() + " " + bob_msg
 }
 
 #[cfg(test)]
@@ -74,7 +81,7 @@ mod test
 	{
 		let str = aes();
 
-		assert_eq!(str, "plaintext message");
+		assert_eq!(str, "plaintext message plaintext message2");
 	}
 
 	#[test]
@@ -82,6 +89,6 @@ mod test
 	{
 		let str = ecdh();
 
-		assert_eq!(str, "plaintext message");
+		assert_eq!(str, "Hello Bob Hello Bob");
 	}
 }
