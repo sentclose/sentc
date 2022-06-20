@@ -221,6 +221,7 @@ mod test
 		let out = derived_keys_from_password(b"abc", &master_key).unwrap();
 
 		assert_eq!(out.alg, "ARGON-2-SHA256".to_string());
+		assert_eq!(out.master_key_info.alg, "AES-GCM-256".to_string());
 	}
 
 	#[test]
