@@ -84,6 +84,27 @@ pub fn argon() -> String
 	base64::encode(encrypted_master_key)
 }
 
+pub fn argon_pw_encrypt() -> String
+{
+	let test = "plaintext message";
+
+	//encrypt a value with a password, in prod this might be the key of the content
+	let (aes_key_for_encrypt, salt) = alg::pw_hash::argon2::password_to_encrypt(b"my fancy password").unwrap();
+
+	let encrypted = alg::sym::aes_gcm::encrypt_with_generated_key(&aes_key_for_encrypt, test.as_ref()).unwrap();
+
+	//decrypt a value with password
+	let aes_key_for_decrypt = alg::pw_hash::argon2::password_to_decrypt(b"my fancy password", &salt).unwrap();
+
+	let decrypted = alg::sym::aes_gcm::decrypt(&aes_key_for_decrypt, &encrypted).unwrap();
+
+	let str = std::str::from_utf8(&decrypted).unwrap();
+
+	assert_eq!(str, test);
+
+	str.to_owned()
+}
+
 #[cfg(test)]
 mod test
 {
@@ -111,5 +132,13 @@ mod test
 		let str = argon();
 
 		assert_ne!(str.len(), 0);
+	}
+
+	#[test]
+	fn test_pw_encrypt()
+	{
+		let str = argon_pw_encrypt();
+
+		assert_eq!(str, "plaintext message");
 	}
 }

@@ -29,6 +29,16 @@ pub(crate) fn derived_keys_from_password(password: &[u8], master_key: &[u8]) -> 
 // 	derived_keys(password, salt_bytes)
 // }
 
+pub(crate) fn password_to_encrypt(password: &[u8]) -> Result<([u8; 32], [u8; 16]), Error>
+{
+	derived_single_key(password, &mut OsRng)
+}
+
+pub(crate) fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Error>
+{
+	get_derived_single_key(password, salt)
+}
+
 //__________________________________________________________________________________________________
 //internally function
 
@@ -137,4 +147,32 @@ fn generate_random_value<R: CryptoRng + RngCore>(rng: &mut R) -> [u8; RECOMMENDE
 	rng.fill_bytes(&mut bytes);
 
 	bytes
+}
+
+fn derived_single_key<R: CryptoRng + RngCore>(password: &[u8], rng: &mut R) -> Result<([u8; 32], [u8; RECOMMENDED_LENGTH]), Error>
+{
+	//just generate a normal salt not for auth like register
+	let salt = generate_random_value(rng);
+
+	let derived_key = get_derived_single_key(password, &salt)?;
+
+	//return the key for encrypt / decrypt derived from pw, and the random value for the decrypt
+	//for decrypt use the @get_derived_single_key function again but with this salt and this pw
+	Ok((derived_key, salt))
+}
+
+fn get_derived_single_key(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Error>
+{
+	//aes 256 key
+	let params = Params::new(Params::DEFAULT_M_COST, Params::DEFAULT_T_COST, Params::DEFAULT_P_COST, Some(32)).map_err(|_| Error::PwHashFailed)?;
+
+	let argon2 = Argon2::new(Algorithm::default(), Version::default(), params);
+
+	let mut derived_key = [0u8; 32];
+
+	argon2
+		.hash_password_into(password, &salt, &mut derived_key)
+		.map_err(|_| Error::PwHashFailed)?;
+
+	Ok(derived_key)
 }
