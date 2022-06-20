@@ -8,4 +8,9 @@ pub enum Error
 	EncryptionFailed,
 	EncryptionFailedRng,
 	DecryptionFailed,
+
+	PwHashFailed,
+	PwSplitFailedLeft,
+	PwSplitFailedRight,
+	HashAuthKeyFailed,
 }

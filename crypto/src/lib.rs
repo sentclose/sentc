@@ -1,6 +1,8 @@
 mod alg;
 mod error;
 
+pub use self::alg::pw_hash::{DeriveKeyOutput, MasterKeyInfo};
+
 pub fn aes() -> String
 {
 	//aes
@@ -71,6 +73,17 @@ pub fn ecdh() -> String
 	alice_msg.to_string() + " " + bob_msg
 }
 
+pub fn argon() -> String
+{
+	let master_key = alg::sym::aes_gcm::generate_key().unwrap();
+
+	let out = alg::pw_hash::argon2::derived_keys_from_password(b"abc", &master_key).unwrap();
+
+	let encrypted_master_key = out.master_key_info.encrypted_master_key;
+
+	base64::encode(encrypted_master_key)
+}
+
 #[cfg(test)]
 mod test
 {
@@ -90,5 +103,13 @@ mod test
 		let str = ecdh();
 
 		assert_eq!(str, "Hello Bob Hello Bob");
+	}
+
+	#[test]
+	fn test_register()
+	{
+		let str = argon();
+
+		assert_ne!(str.len(), 0);
 	}
 }
