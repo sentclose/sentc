@@ -13,4 +13,6 @@ pub enum Error
 	PwSplitFailedLeft,
 	PwSplitFailedRight,
 	HashAuthKeyFailed,
+
+	KeyDecryptFailed,
 }

@@ -2,7 +2,7 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sha2::{Digest, Sha256};
 
-use crate::alg::sym::aes_gcm::encrypt_with_generated_key as aes_encrypt;
+use crate::alg::sym::aes_gcm::{decrypt as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey};
 use crate::error::Error;
 use crate::{DeriveKeyOutput, MasterKeyInfo};
 
@@ -16,18 +16,48 @@ const DERIVED_KEY_LENGTH: usize = 64;
 
 const HALF_DERIVED_KEY_LENGTH: usize = DERIVED_KEY_LENGTH / 2;
 
+/**
+# Prepare registration
+
+*/
 pub(crate) fn derived_keys_from_password(password: &[u8], master_key: &[u8]) -> Result<DeriveKeyOutput, Error>
 {
 	derive_key_with_pw_internally(password, master_key, &mut OsRng)
 }
 
-// pub(crate) fn derive_keys_for_auth(
-// 	password: &[u8],
-// 	salt_bytes: &[u8],
-// ) -> Result<([u8; HALF_DERIVED_KEY_LENGTH], [u8; HALF_DERIVED_KEY_LENGTH]), Error>
-// {
-// 	derived_keys(password, salt_bytes)
-// }
+/**
+# Prepare the login
+
+1. Takes the salt from the api (after sending the username)
+2. derived the encryption key (for the master key) and the auth key from the password and the salt
+3. return the encryption key and
+	return the auth key to send it to the server so the server can check the hashed auth key
+*/
+pub(crate) fn derive_keys_for_auth(
+	password: &[u8],
+	salt_bytes: &[u8],
+) -> Result<([u8; HALF_DERIVED_KEY_LENGTH], [u8; HALF_DERIVED_KEY_LENGTH]), Error>
+{
+	derived_keys(password, salt_bytes)
+}
+
+/**
+# Done Login
+
+split login into two parts:
+1. is prepare, after sending username to the server and before sending auth key
+2. is decrypt the master key
+*/
+pub(crate) fn get_master_key(derived_encryption_key: [u8; HALF_DERIVED_KEY_LENGTH], encrypted_master_key: &[u8]) -> Result<AesKey, Error>
+{
+	let decrypted_master_key = aes_decrypt(&derived_encryption_key, encrypted_master_key)?;
+
+	let decrypted_master_key: [u8; 32] = decrypted_master_key
+		.try_into()
+		.map_err(|_| Error::KeyDecryptFailed)?;
+
+	Ok(decrypted_master_key)
+}
 
 pub(crate) fn password_to_encrypt(password: &[u8]) -> Result<([u8; 32], [u8; 16]), Error>
 {
@@ -175,4 +205,67 @@ fn get_derived_single_key(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Erro
 		.map_err(|_| Error::PwHashFailed)?;
 
 	Ok(derived_key)
+}
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+	use crate::alg;
+
+	#[test]
+	fn test_derived_keys_from_password()
+	{
+		let master_key = alg::sym::aes_gcm::generate_key().unwrap();
+
+		let out = derived_keys_from_password(b"abc", &master_key).unwrap();
+
+		assert_eq!(out.alg, "ARGON-2-SHA256".to_string());
+	}
+
+	#[test]
+	fn test_derive_keys_for_auth()
+	{
+		//prepare register input
+		let master_key = alg::sym::aes_gcm::generate_key().unwrap();
+		let out = derived_keys_from_password(b"abc", &master_key).unwrap();
+
+		//create fake salt. this will be created on the server with the client random value
+		let salt = generate_salt(out.client_random_value);
+
+		let (master_key_key, auth_key) = derive_keys_for_auth(b"abc", &salt).unwrap();
+
+		//send the auth key to the server and valid it there
+		let mut hasher = Sha256::new();
+		hasher.update(auth_key);
+		let result = hasher.finalize();
+		// Keep only the first 128 bits (16 bytes) of the Hashed Authentication Key
+		let hashed_authentication_key_16bytes: [u8; 16] = result[..16].as_ref().try_into().unwrap();
+
+		assert_eq!(hashed_authentication_key_16bytes, out.hashed_authentication_key_16bytes);
+
+		let decrypted_master_key = get_master_key(master_key_key, &out.master_key_info.encrypted_master_key).unwrap();
+
+		assert_eq!(master_key, decrypted_master_key);
+	}
+
+	#[test]
+	fn test_password_to_encrypt_and_decrypt()
+	{
+		let test = "plaintext message";
+
+		//encrypt a value with a password, in prod this might be the key of the content
+		let (aes_key_for_encrypt, salt) = password_to_encrypt(b"my fancy password").unwrap();
+
+		let encrypted = alg::sym::aes_gcm::encrypt_with_generated_key(&aes_key_for_encrypt, test.as_ref()).unwrap();
+
+		//decrypt a value with password
+		let aes_key_for_decrypt = password_to_decrypt(b"my fancy password", &salt).unwrap();
+
+		let decrypted = alg::sym::aes_gcm::decrypt(&aes_key_for_decrypt, &encrypted).unwrap();
+
+		let str = std::str::from_utf8(&decrypted).unwrap();
+
+		assert_eq!(str, test);
+	}
 }
