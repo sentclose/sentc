@@ -1,4 +1,4 @@
-use sendclose_crypto::{aes, ecdh};
+use sendclose_crypto::{aes, argon, ecdh};
 
 pub fn aes_test() -> String
 {
@@ -8,4 +8,9 @@ pub fn aes_test() -> String
 pub fn ed_test() -> String
 {
 	ecdh()
+}
+
+pub fn argon_test() -> String
+{
+	argon()
 }

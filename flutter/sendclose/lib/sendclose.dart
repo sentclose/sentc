@@ -37,4 +37,9 @@ class Sendclose {
   {
     return api.edTest();
   }
+
+  Future<String> argonTest()
+  {
+    return api.argonTest();
+  }
 }
