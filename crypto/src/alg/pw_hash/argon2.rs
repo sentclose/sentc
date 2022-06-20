@@ -12,12 +12,19 @@ const SALT_STRING_MAX_LENGTH: usize = 200; //200 chars
 
 const SALT_HASH_INPUT_LENGTH: usize = RECOMMENDED_LENGTH + SALT_STRING_MAX_LENGTH; //216 bytes
 
+const DERIVED_KEY_LENGTH: usize = 64;
+
+const HALF_DERIVED_KEY_LENGTH: usize = DERIVED_KEY_LENGTH / 2;
+
 pub(crate) fn derived_keys_from_password(password: &[u8], master_key: &[u8]) -> Result<DeriveKeyOutput, Error>
 {
 	derive_key_with_pw_internally(password, master_key, &mut OsRng)
 }
 
-// pub(crate) fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; 32], [u8; 32]), Error>
+// pub(crate) fn derive_keys_for_auth(
+// 	password: &[u8],
+// 	salt_bytes: &[u8],
+// ) -> Result<([u8; HALF_DERIVED_KEY_LENGTH], [u8; HALF_DERIVED_KEY_LENGTH]), Error>
 // {
 // 	derived_keys(password, salt_bytes)
 // }
@@ -61,27 +68,33 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 	})
 }
 
-fn derived_keys(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; 32], [u8; 32]), Error>
+fn derived_keys(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; HALF_DERIVED_KEY_LENGTH], [u8; HALF_DERIVED_KEY_LENGTH]), Error>
 {
-	let params = Params::new(Params::DEFAULT_M_COST, Params::DEFAULT_T_COST, Params::DEFAULT_P_COST, Some(64)).map_err(|_| Error::PwHashFailed)?;
+	let params = Params::new(
+		Params::DEFAULT_M_COST,
+		Params::DEFAULT_T_COST,
+		Params::DEFAULT_P_COST,
+		Some(DERIVED_KEY_LENGTH),
+	)
+	.map_err(|_| Error::PwHashFailed)?;
 
 	let argon2 = Argon2::new(Algorithm::default(), Version::default(), params);
 
 	//should be 512 bits long
-	let mut derived_key = [0u8; 64];
+	let mut derived_key = [0u8; DERIVED_KEY_LENGTH];
 
 	argon2
 		.hash_password_into(password, salt_bytes, &mut derived_key)
 		.map_err(|_| Error::PwHashFailed)?;
 
 	//left is the encryption key for the master key
-	let left: [u8; 32] = match derived_key[..32].as_ref().try_into() {
+	let left: [u8; HALF_DERIVED_KEY_LENGTH] = match derived_key[..HALF_DERIVED_KEY_LENGTH].as_ref().try_into() {
 		Err(_e) => return Err(Error::PwSplitFailedLeft),
 		Ok(bytes) => bytes,
 	};
 
 	//right is the authentication key
-	let right: [u8; 32] = match derived_key[32..].as_ref().try_into() {
+	let right: [u8; HALF_DERIVED_KEY_LENGTH] = match derived_key[HALF_DERIVED_KEY_LENGTH..].as_ref().try_into() {
 		Err(_e) => return Err(Error::PwSplitFailedRight),
 		Ok(bytes) => bytes,
 	};
