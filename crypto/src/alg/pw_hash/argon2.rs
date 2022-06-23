@@ -100,10 +100,10 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 	Ok(DeriveKeyOutput {
 		client_random_value,
 		hashed_authentication_key_16bytes,
-		alg: "ARGON-2-SHA256".to_string(),
+		alg: "ARGON-2-SHA256",
 		master_key_info: MasterKeyInfo {
 			encrypted_master_key,
-			alg: "AES-GCM-256".to_string(),
+			alg: "AES-GCM-256",
 		},
 	})
 }
