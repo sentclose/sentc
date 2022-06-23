@@ -7,6 +7,8 @@ use crate::alg::sym::aes_gcm::{decrypt as aes_decrypt, encrypt_with_generated_ke
 use crate::error::Error;
 use crate::{AsymKeyOutput, Pk, Sk};
 
+pub const ECIES_OUTPUT: &'static str = "ECIES-ed25519";
+
 const HKDF_INFO: &[u8; 13] = b"ecies-ed25519";
 
 const PUBLIC_KEY_LENGTH: usize = 32;
@@ -16,7 +18,7 @@ pub(crate) fn generate_static_keypair() -> AsymKeyOutput
 	let (sk, pk) = generate_static_keypair_internally(&mut OsRng);
 
 	AsymKeyOutput {
-		alg: "ecies-ed25519",
+		alg: ECIES_OUTPUT,
 		pk: Pk::Ecies(pk.to_bytes()),
 		sk: Sk::Ecies(sk.to_bytes()),
 	}
