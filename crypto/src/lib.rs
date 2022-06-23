@@ -1,6 +1,7 @@
 mod alg;
 mod error;
 
+pub use self::alg::asym::{AsymKeyOutput, Pk, Sk};
 pub use self::alg::pw_hash::{DeriveKeyOutput, MasterKeyInfo};
 
 pub fn aes() -> String
@@ -58,7 +59,10 @@ pub fn ecdh() -> String
 	//let (alice_secret, alice_pk) = alg::asym::ecies::generate_static_keypair();
 
 	// Bob
-	let (bob_secret, bob_pk) = alg::asym::ecies::generate_static_keypair();
+	let bob_out = alg::asym::ecies::generate_static_keypair();
+
+	let bob_secret = bob_out.sk;
+	let bob_pk = bob_out.pk;
 
 	//Alice create a msg for Bob's public key
 	let alice_msg = "Hello Bob";

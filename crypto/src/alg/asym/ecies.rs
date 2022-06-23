@@ -5,24 +5,39 @@ use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
 use crate::alg::sym::aes_gcm::{decrypt as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey};
 use crate::error::Error;
+use crate::{AsymKeyOutput, Pk, Sk};
 
 const HKDF_INFO: &[u8; 13] = b"ecies-ed25519";
 
 const PUBLIC_KEY_LENGTH: usize = 32;
 
-pub(crate) fn generate_static_keypair() -> (StaticSecret, PublicKey)
+pub(crate) fn generate_static_keypair() -> AsymKeyOutput
 {
-	generate_static_keypair_internally(&mut OsRng)
+	let (sk, pk) = generate_static_keypair_internally(&mut OsRng);
+
+	AsymKeyOutput {
+		alg: "ecies-ed25519",
+		pk: Pk::Ecies(pk.to_bytes()),
+		sk: Sk::Ecies(sk.to_bytes()),
+	}
 }
 
-pub(crate) fn encrypt(receiver_pub: &PublicKey, data: &[u8]) -> Result<Vec<u8>, Error>
+pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
 {
-	encrypt_internally(receiver_pub, data, &mut OsRng)
+	let receiver_pub = match receiver_pub {
+		Pk::Ecies(pk) => PublicKey::from(pk.clone()),
+	};
+
+	encrypt_internally(&receiver_pub, data, &mut OsRng)
 }
 
-pub(crate) fn decrypt(receiver_sec: &StaticSecret, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
-	decrypt_internally(receiver_sec, ciphertext)
+	let receiver_sec = match receiver_sec {
+		Sk::Ecies(sk) => StaticSecret::from(sk.clone()),
+	};
+
+	decrypt_internally(&receiver_sec, ciphertext)
 }
 
 //__________________________________________________________________________________________________
