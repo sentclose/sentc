@@ -4,22 +4,34 @@ use aes_gcm::Aes256Gcm;
 use rand_core::{CryptoRng, OsRng, RngCore};
 
 use crate::error::Error;
+use crate::{SymKey, SymKeyOutput};
 
 const AES_IV_LENGTH: usize = 12;
 
+pub const AES_GCM_OUTPUT: &'static str = "AES-GCM-256";
+
 pub type AesKey = [u8; 32];
 
-pub(crate) fn generate_key() -> Result<[u8; 32], Error>
+pub(crate) fn generate_key() -> Result<SymKeyOutput, Error>
 {
-	generate_key_internally(&mut OsRng)
+	let key = generate_key_internally(&mut OsRng)?;
+
+	Ok(SymKeyOutput {
+		alg: AES_GCM_OUTPUT,
+		key: SymKey::Aes(key),
+	})
 }
 
-pub(crate) fn encrypt(data: &[u8]) -> Result<([u8; 32], Vec<u8>), Error>
+pub(crate) fn generate_and_encrypt(data: &[u8]) -> Result<(SymKeyOutput, Vec<u8>), Error>
 {
-	let key = generate_key()?;
+	let key_out = generate_key()?;
+
+	let key = match &key_out.key {
+		SymKey::Aes(k) => k,
+	};
 
 	match encrypt_with_generated_key(&key, data) {
-		Ok(res) => Ok((key, res)),
+		Ok(res) => Ok((key_out, res)),
 		Err(e) => Err(e),
 	}
 }
