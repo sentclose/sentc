@@ -2,7 +2,7 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sha2::{Digest, Sha256};
 
-use crate::alg::sym::aes_gcm::{decrypt as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey};
+use crate::alg::sym::aes_gcm::{decrypt as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey, AES_GCM_OUTPUT};
 use crate::error::Error;
 use crate::{DeriveKeyOutput, MasterKeyInfo};
 
@@ -15,6 +15,8 @@ const SALT_HASH_INPUT_LENGTH: usize = RECOMMENDED_LENGTH + SALT_STRING_MAX_LENGT
 const DERIVED_KEY_LENGTH: usize = 64;
 
 const HALF_DERIVED_KEY_LENGTH: usize = DERIVED_KEY_LENGTH / 2;
+
+pub const ARGON_2_OUTPUT: &'static str = "ARGON-2-SHA256";
 
 /**
 # Prepare registration
@@ -100,10 +102,10 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 	Ok(DeriveKeyOutput {
 		client_random_value,
 		hashed_authentication_key_16bytes,
-		alg: "ARGON-2-SHA256",
+		alg: ARGON_2_OUTPUT,
 		master_key_info: MasterKeyInfo {
 			encrypted_master_key,
-			alg: "AES-GCM-256",
+			alg: AES_GCM_OUTPUT,
 		},
 	})
 }
@@ -211,17 +213,22 @@ fn get_derived_single_key(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Erro
 mod test
 {
 	use super::*;
-	use crate::alg;
+	use crate::alg::sym::aes_gcm::AES_GCM_OUTPUT;
+	use crate::{alg, SymKey};
 
 	#[test]
 	fn test_derived_keys_from_password()
 	{
 		let master_key = alg::sym::aes_gcm::generate_key().unwrap();
 
-		let out = derived_keys_from_password(b"abc", &master_key).unwrap();
+		let key = match master_key.key {
+			SymKey::Aes(k) => k,
+		};
 
-		assert_eq!(out.alg, "ARGON-2-SHA256".to_string());
-		assert_eq!(out.master_key_info.alg, "AES-GCM-256".to_string());
+		let out = derived_keys_from_password(b"abc", &key).unwrap();
+
+		assert_eq!(out.alg, ARGON_2_OUTPUT);
+		assert_eq!(out.master_key_info.alg, AES_GCM_OUTPUT);
 	}
 
 	#[test]
@@ -229,7 +236,12 @@ mod test
 	{
 		//prepare register input
 		let master_key = alg::sym::aes_gcm::generate_key().unwrap();
-		let out = derived_keys_from_password(b"abc", &master_key).unwrap();
+
+		let key = match master_key.key {
+			SymKey::Aes(k) => k,
+		};
+
+		let out = derived_keys_from_password(b"abc", &key).unwrap();
 
 		//create fake salt. this will be created on the server with the client random value
 		let salt = generate_salt(out.client_random_value);
@@ -247,7 +259,7 @@ mod test
 
 		let decrypted_master_key = get_master_key(master_key_key, &out.master_key_info.encrypted_master_key).unwrap();
 
-		assert_eq!(master_key, decrypted_master_key);
+		assert_eq!(key, decrypted_master_key);
 	}
 
 	#[test]

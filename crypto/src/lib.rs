@@ -3,6 +3,7 @@ mod error;
 
 pub use self::alg::asym::{AsymKeyOutput, Pk, Sk};
 pub use self::alg::pw_hash::{DeriveKeyOutput, MasterKeyInfo};
+pub use self::alg::sym::{SymKey, SymKeyOutput};
 
 pub fn aes() -> String
 {
@@ -15,11 +16,15 @@ fn aes_intern() -> String
 	let test = "plaintext message";
 	let test2 = "plaintext message2";
 
-	let res = alg::sym::aes_gcm::encrypt(test.as_ref());
+	let res = alg::sym::aes_gcm::generate_and_encrypt(test.as_ref());
 
 	let (key, encrypted) = match res {
 		Err(e) => return format!("Error for encrypt test 1: {:?}", e),
 		Ok(v) => v,
+	};
+
+	let key = match key.key {
+		SymKey::Aes(k) => k,
 	};
 
 	let res = alg::sym::aes_gcm::encrypt_with_generated_key(&key, test2.as_ref());
@@ -81,7 +86,11 @@ pub fn argon() -> String
 {
 	let master_key = alg::sym::aes_gcm::generate_key().unwrap();
 
-	let out = alg::pw_hash::argon2::derived_keys_from_password(b"abc", &master_key).unwrap();
+	let key = match master_key.key {
+		SymKey::Aes(k) => k,
+	};
+
+	let out = alg::pw_hash::argon2::derived_keys_from_password(b"abc", &key).unwrap();
 
 	let encrypted_master_key = out.master_key_info.encrypted_master_key;
 
