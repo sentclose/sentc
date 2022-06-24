@@ -1,6 +1,6 @@
 use aes_gcm::aead::generic_array::GenericArray;
 use aes_gcm::aead::{Aead, NewAead};
-use aes_gcm::Aes256Gcm;
+use aes_gcm::{Aes256Gcm, Key};
 use rand_core::{CryptoRng, OsRng, RngCore};
 
 use crate::error::Error;
@@ -26,14 +26,17 @@ pub(crate) fn generate_and_encrypt(data: &[u8]) -> Result<(SymKeyOutput, Vec<u8>
 {
 	let key_out = generate_key()?;
 
-	let key = match &key_out.key {
-		SymKey::Aes(k) => k,
-	};
-
-	match encrypt_with_generated_key(&key, data) {
+	match encrypt(&key_out.key, data) {
 		Ok(res) => Ok((key_out, res)),
 		Err(e) => Err(e),
 	}
+}
+
+pub(crate) fn encrypt(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
+{
+	let key = get_key_from_enum(key);
+
+	encrypt_with_generated_key(key, data)
 }
 
 pub(crate) fn encrypt_with_generated_key(key: &AesKey, data: &[u8]) -> Result<Vec<u8>, Error>
@@ -41,13 +44,27 @@ pub(crate) fn encrypt_with_generated_key(key: &AesKey, data: &[u8]) -> Result<Ve
 	encrypt_internally(key, data, &mut OsRng)
 }
 
-pub(crate) fn decrypt(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+pub(crate) fn decrypt(key: &SymKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+{
+	let key = get_key_from_enum(key);
+
+	decrypt_internally(key, ciphertext)
+}
+
+pub(crate) fn decrypt_with_generated_key(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
 	decrypt_internally(key, ciphertext)
 }
 
 //__________________________________________________________________________________________________
 //internally function
+
+fn get_key_from_enum(key: &SymKey) -> &AesKey
+{
+	match key {
+		SymKey::Aes(k) => k,
+	}
+}
 
 fn generate_key_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<[u8; 32], Error>
 {
@@ -61,7 +78,7 @@ fn generate_key_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<[u8; 3
 
 fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], rng: &mut R) -> Result<Vec<u8>, Error>
 {
-	let key = GenericArray::from_slice(key);
+	let key = Key::from_slice(key);
 	let aead = Aes256Gcm::new(key);
 
 	//IV
@@ -84,7 +101,7 @@ fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], rng: &m
 
 fn decrypt_internally(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
-	let key = GenericArray::from_slice(key);
+	let key = Key::from_slice(key);
 	let aead = Aes256Gcm::new(key);
 
 	let nonce = GenericArray::from_slice(&ciphertext[..AES_IV_LENGTH]);
