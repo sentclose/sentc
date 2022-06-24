@@ -113,3 +113,104 @@ fn decrypt_internally(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 
 	Ok(decrypted)
 }
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+	use crate::error::Error::DecryptionFailed;
+
+	fn test_key_gen_output(output: &SymKeyOutput)
+	{
+		assert_eq!(output.alg, AES_GCM_OUTPUT);
+
+		let key = match output.key {
+			SymKey::Aes(k) => k,
+		};
+
+		assert_eq!(key.len(), 32);
+	}
+
+	#[test]
+	fn test_key_generated()
+	{
+		let output = generate_key().unwrap();
+
+		test_key_gen_output(&output);
+	}
+
+	#[test]
+	fn test_plain_encrypt_decrypt()
+	{
+		let text = "Hello world üöäéèßê°";
+
+		let output = generate_key().unwrap();
+
+		//test with plain key
+		let key = match output.key {
+			SymKey::Aes(k) => k,
+		};
+
+		let encrypted = encrypt_with_generated_key(&key, text.as_bytes()).unwrap();
+
+		let decrypted = decrypt_with_generated_key(&key, &encrypted).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+
+		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+
+		assert_eq!(text, decrypted_text);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt()
+	{
+		let text = "Hello world üöäéèßê°";
+
+		let output = generate_key().unwrap();
+
+		let encrypted = encrypt(&output.key, text.as_bytes()).unwrap();
+
+		let decrypted = decrypt(&output.key, &encrypted).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+
+		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+
+		assert_eq!(text, decrypted_text);
+	}
+
+	#[test]
+	fn test_generate_and_encrypt_decrypt()
+	{
+		let text = "Hello world üöäéèßê°";
+
+		let (out, encrypted) = generate_and_encrypt(text.as_bytes()).unwrap();
+
+		test_key_gen_output(&out);
+
+		//decrypt
+		let decrypted = decrypt(&out.key, &encrypted).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+
+		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+
+		assert_eq!(text, decrypted_text);
+	}
+
+	#[test]
+	fn test_not_decrypt_with_wrong_key()
+	{
+		let text = "Hello world üöäéèßê°";
+
+		let output1 = generate_key().unwrap();
+		let output2 = generate_key().unwrap();
+
+		let encrypted = encrypt(&output1.key, text.as_bytes()).unwrap();
+
+		let decrypt_result = decrypt(&output2.key, &encrypted);
+
+		assert!(matches!(decrypt_result, Err(DecryptionFailed)));
+	}
+}
