@@ -2,7 +2,7 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sha2::{Digest, Sha256};
 
-use crate::alg::sym::aes_gcm::{decrypt as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey, AES_GCM_OUTPUT};
+use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey, AES_GCM_OUTPUT};
 use crate::error::Error;
 use crate::{DeriveKeyOutput, MasterKeyInfo};
 
@@ -275,7 +275,7 @@ mod test
 		//decrypt a value with password
 		let aes_key_for_decrypt = password_to_decrypt(b"my fancy password", &salt).unwrap();
 
-		let decrypted = alg::sym::aes_gcm::decrypt(&aes_key_for_decrypt, &encrypted).unwrap();
+		let decrypted = alg::sym::aes_gcm::decrypt_with_generated_key(&aes_key_for_decrypt, &encrypted).unwrap();
 
 		let str = std::str::from_utf8(&decrypted).unwrap();
 

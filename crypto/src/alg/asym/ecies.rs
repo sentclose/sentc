@@ -3,7 +3,7 @@ use rand_core::{CryptoRng, OsRng, RngCore};
 use sha2::Sha256;
 use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
-use crate::alg::sym::aes_gcm::{decrypt as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey};
+use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey};
 use crate::error::Error;
 use crate::{AsymKeyOutput, Pk, Sk};
 

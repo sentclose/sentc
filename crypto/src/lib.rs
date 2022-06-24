@@ -18,16 +18,12 @@ fn aes_intern() -> String
 
 	let res = alg::sym::aes_gcm::generate_and_encrypt(test.as_ref());
 
-	let (key, encrypted) = match res {
+	let (output, encrypted) = match res {
 		Err(e) => return format!("Error for encrypt test 1: {:?}", e),
 		Ok(v) => v,
 	};
 
-	let key = match key.key {
-		SymKey::Aes(k) => k,
-	};
-
-	let res = alg::sym::aes_gcm::encrypt_with_generated_key(&key, test2.as_ref());
+	let res = alg::sym::aes_gcm::encrypt(&output.key, test2.as_ref());
 
 	let encrypted2 = match res {
 		Err(e) => return format!("Error for encrypt test 2: {:?}", e),
@@ -35,14 +31,14 @@ fn aes_intern() -> String
 	};
 
 	//decrypt
-	let res = alg::sym::aes_gcm::decrypt(&key, &encrypted);
+	let res = alg::sym::aes_gcm::decrypt(&output.key, &encrypted);
 
 	let decrypted = match res {
 		Err(e) => return format!("Error for decrypt test 1: {:?}", e),
 		Ok(v) => v,
 	};
 
-	let res = alg::sym::aes_gcm::decrypt(&key, &encrypted2);
+	let res = alg::sym::aes_gcm::decrypt(&output.key, &encrypted2);
 
 	let decrypted2 = match res {
 		Err(e) => return format!("Error for decrypt test 2: {:?}", e),
@@ -109,7 +105,7 @@ pub fn argon_pw_encrypt() -> String
 	//decrypt a value with password
 	let aes_key_for_decrypt = alg::pw_hash::argon2::password_to_decrypt(b"my fancy password", &salt).unwrap();
 
-	let decrypted = alg::sym::aes_gcm::decrypt(&aes_key_for_decrypt, &encrypted).unwrap();
+	let decrypted = alg::sym::aes_gcm::decrypt_with_generated_key(&aes_key_for_decrypt, &encrypted).unwrap();
 
 	let str = std::str::from_utf8(&decrypted).unwrap();
 
