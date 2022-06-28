@@ -53,6 +53,18 @@ pub extern "C" fn wire_argon_test(port_: i64) {
 	)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_sign_test(port_: i64) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "sign_test",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || move |task_callback| Ok(sign_test()),
+	)
+}
+
 // Section: wire structs
 
 // Section: wrapper structs

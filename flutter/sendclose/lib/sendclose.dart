@@ -17,7 +17,7 @@ class Sendclose {
   factory Sendclose()
   {
     const base = "sendclose_flutter";
-    final path = Platform.isWindows ? "../../../target/debug/$base.dll" : "lib$base.so";
+    final path = Platform.isWindows ? "../../../target/release/$base.dll" : "lib$base.so";
     late final dylib = Platform.isIOS
         ? DynamicLibrary.process()
         : Platform.isMacOS
@@ -41,5 +41,10 @@ class Sendclose {
   Future<String> argonTest()
   {
     return api.argonTest();
+  }
+
+  Future<String> signTest()
+  {
+    return api.signTest();
   }
 }

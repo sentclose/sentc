@@ -23,6 +23,10 @@ abstract class SendcloseFlutter {
   Future<String> argonTest({dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kArgonTestConstMeta;
+
+  Future<String> signTest({dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kSignTestConstMeta;
 }
 
 class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
@@ -72,6 +76,21 @@ class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
   FlutterRustBridgeTaskConstMeta get kArgonTestConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "argon_test",
+        argNames: [],
+      );
+
+  Future<String> signTest({dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port_) => inner.wire_sign_test(port_),
+        parseSuccessData: _wire2api_String,
+        constMeta: kSignTestConstMeta,
+        argValues: [],
+        hint: hint,
+      ));
+
+  FlutterRustBridgeTaskConstMeta get kSignTestConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "sign_test",
         argNames: [],
       );
 
@@ -155,6 +174,20 @@ class SendcloseFlutterWire implements FlutterRustBridgeWireBase {
           'wire_argon_test');
   late final _wire_argon_test =
       _wire_argon_testPtr.asFunction<void Function(int)>();
+
+  void wire_sign_test(
+    int port_,
+  ) {
+    return _wire_sign_test(
+      port_,
+    );
+  }
+
+  late final _wire_sign_testPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_sign_test');
+  late final _wire_sign_test =
+      _wire_sign_testPtr.asFunction<void Function(int)>();
 
   void free_WireSyncReturnStruct(
     WireSyncReturnStruct val,
