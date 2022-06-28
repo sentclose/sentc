@@ -2,7 +2,7 @@ mod alg;
 mod error;
 
 pub use self::alg::asym::{AsymKeyOutput, Pk, Sk};
-pub use self::alg::pw_hash::{DeriveKeyOutput, MasterKeyInfo};
+pub use self::alg::pw_hash::{ClientRandomValue, DeriveKeyOutput, HashedAuthenticationKey, MasterKeyInfo};
 pub use self::alg::sym::{SymKey, SymKeyOutput};
 
 pub fn aes() -> String

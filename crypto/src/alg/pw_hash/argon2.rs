@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 
 use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey, AES_GCM_OUTPUT};
 use crate::error::Error;
-use crate::{DeriveKeyOutput, MasterKeyInfo};
+use crate::{ClientRandomValue, DeriveKeyOutput, HashedAuthenticationKey, MasterKeyInfo};
 
 const RECOMMENDED_LENGTH: usize = 16;
 
@@ -100,8 +100,8 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 	let encrypted_master_key = aes_encrypt(&derived_encryption_key_bytes, master_key)?;
 
 	Ok(DeriveKeyOutput {
-		client_random_value,
-		hashed_authentication_key_16bytes,
+		client_random_value: ClientRandomValue::Argon2(client_random_value),
+		hashed_authentication_key_bytes: HashedAuthenticationKey::Argon2(hashed_authentication_key_16bytes),
 		alg: ARGON_2_OUTPUT,
 		master_key_info: MasterKeyInfo {
 			encrypted_master_key,
@@ -243,8 +243,16 @@ mod test
 
 		let out = derived_keys_from_password(b"abc", &key).unwrap();
 
+		let out_random_value = match out.client_random_value {
+			ClientRandomValue::Argon2(r) => r,
+		};
+
+		let out_hashed_auth_key = match out.hashed_authentication_key_bytes {
+			HashedAuthenticationKey::Argon2(k) => k,
+		};
+
 		//create fake salt. this will be created on the server with the client random value
-		let salt = generate_salt(out.client_random_value);
+		let salt = generate_salt(out_random_value);
 
 		let (master_key_key, auth_key) = derive_keys_for_auth(b"abc", &salt).unwrap();
 
@@ -255,7 +263,7 @@ mod test
 		// Keep only the first 128 bits (16 bytes) of the Hashed Authentication Key
 		let hashed_authentication_key_16bytes: [u8; 16] = result[..16].as_ref().try_into().unwrap();
 
-		assert_eq!(hashed_authentication_key_16bytes, out.hashed_authentication_key_16bytes);
+		assert_eq!(hashed_authentication_key_16bytes, out_hashed_auth_key);
 
 		let decrypted_master_key = get_master_key(master_key_key, &out.master_key_info.encrypted_master_key).unwrap();
 
