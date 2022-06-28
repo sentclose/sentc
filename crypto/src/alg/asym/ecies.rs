@@ -126,3 +126,93 @@ fn hkdf_sha256(ikm: &[u8]) -> AesKey
 
 	out
 }
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+	use crate::error::Error::{DecryptionFailed, DecryptionFailedCiphertextShort};
+
+	fn test_key_gen_output(out: &AsymKeyOutput)
+	{
+		assert_eq!(out.alg, ECIES_OUTPUT);
+
+		let pk = match out.pk {
+			Pk::Ecies(p) => p,
+		};
+
+		let sk = match out.sk {
+			Sk::Ecies(s) => s,
+		};
+
+		assert_eq!(pk.len(), 32);
+		assert_eq!(sk.len(), 32);
+	}
+
+	#[test]
+	fn test_key_gen()
+	{
+		let out = generate_static_keypair();
+
+		test_key_gen_output(&out);
+	}
+
+	#[test]
+	fn test_encrypt_and_decrypt()
+	{
+		let out = generate_static_keypair();
+		let sk = out.sk;
+		let pk = out.pk;
+
+		let text = "Hello world üöäéèßê°";
+
+		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+
+		let decrypted = decrypt(&sk, &encrypted).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+
+		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+
+		assert_eq!(text, decrypted_text);
+	}
+
+	#[test]
+	fn test_not_decrypt_with_wrong_key()
+	{
+		let out = generate_static_keypair();
+		let pk = out.pk;
+
+		let out1 = generate_static_keypair();
+		let sk1 = out1.sk;
+
+		let text = "Hello world üöäéèßê°";
+
+		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+
+		let decrypted_result = decrypt(&sk1, &encrypted);
+
+		assert!(matches!(decrypted_result, Err(DecryptionFailed)));
+	}
+
+	#[test]
+	fn test_not_decrypt_with_wrong_ciphertext()
+	{
+		let out = generate_static_keypair();
+		let sk = out.sk;
+		let pk = out.pk;
+
+		let text = "Hello world üöäéèßê°";
+
+		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+
+		//too short ciphertext: text must be min 32 long, output was 88 long
+		let encrypted = &encrypted[..(encrypted.len() - 56)];
+
+		let decrypted_result = decrypt(&sk, encrypted);
+
+		println!("{:?}", decrypted_result);
+
+		assert!(matches!(decrypted_result, Err(DecryptionFailedCiphertextShort)));
+	}
+}
