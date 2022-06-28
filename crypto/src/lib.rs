@@ -3,6 +3,7 @@ mod error;
 
 pub use self::alg::asym::{AsymKeyOutput, Pk, Sk};
 pub use self::alg::pw_hash::{ClientRandomValue, DeriveKeyOutput, HashedAuthenticationKey, MasterKeyInfo};
+pub use self::alg::sign::{SignK, SignOutput, VerifyK};
 pub use self::alg::sym::{SymKey, SymKeyOutput};
 
 pub fn aes() -> String
@@ -114,6 +115,26 @@ pub fn argon_pw_encrypt() -> String
 	str.to_owned()
 }
 
+pub fn sign() -> String
+{
+	let test = "plaintext message";
+
+	let out = alg::sign::ed25519::generate_key_pair();
+
+	let out = match out {
+		Err(_e) => return String::from("error"),
+		Ok(o) => o,
+	};
+
+	let data_with_sig = alg::sign::ed25519::sign(&out.sign_key, test.as_bytes()).unwrap();
+
+	let check = alg::sign::ed25519::verify(&out.verify_key, &data_with_sig).unwrap();
+
+	assert_eq!(check, true);
+
+	format!("check was: {}", check)
+}
+
 #[cfg(test)]
 mod test
 {
@@ -149,5 +170,13 @@ mod test
 		let str = argon_pw_encrypt();
 
 		assert_eq!(str, "plaintext message");
+	}
+
+	#[test]
+	fn test_sign()
+	{
+		let str = sign();
+
+		assert_eq!(str, "check was: true");
 	}
 }
