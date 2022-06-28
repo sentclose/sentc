@@ -211,8 +211,6 @@ mod test
 
 		let decrypted_result = decrypt(&sk, encrypted);
 
-		println!("{:?}", decrypted_result);
-
 		assert!(matches!(decrypted_result, Err(DecryptionFailedCiphertextShort)));
 	}
 }
