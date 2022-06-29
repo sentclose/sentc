@@ -2,6 +2,8 @@ mod alg;
 mod core;
 mod error;
 
+use base64ct::{Base64, Encoding};
+
 pub use self::alg::asym::{AsymKeyOutput, Pk, Sk};
 pub use self::alg::pw_hash::{
 	ClientRandomValue,
@@ -101,7 +103,7 @@ pub fn argon() -> String
 
 	let encrypted_master_key = out.master_key_info.encrypted_master_key;
 
-	base64::encode(encrypted_master_key)
+	Base64::encode_string(&encrypted_master_key)
 }
 
 pub fn argon_pw_encrypt() -> String

@@ -1,3 +1,5 @@
+use base64ct::{Base64, Encoding};
+
 use crate::alg::{asym, pw_hash, sign, sym};
 use crate::error::Error;
 use crate::{DeriveKeysForAuthOutput, DeriveMasterKeyForAuth, RegisterOutPut, SignK, Sk, SymKey};
@@ -49,8 +51,7 @@ pub(crate) fn register(password: String) -> Result<RegisterOutPut, Error>
 
 pub(crate) fn prepare_login(password: String, salt_string: String, derived_encryption_key: &'static str) -> Result<DeriveKeysForAuthOutput, Error>
 {
-	//TODO decode the salt string from secure base64
-	let salt = base64::decode(salt_string).map_err(|_| Error::DecodeSaltFailed)?;
+	let salt = Base64::decode_vec(salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
 
 	//expand the match arm when supporting more alg
 	let out = match derived_encryption_key {
@@ -70,10 +71,9 @@ pub(crate) fn done_login(
 	keypair_sign_alg: &'static str,
 ) -> Result<String, Error>
 {
-	//TODO decode the strings from secure base64
-	let encrypted_master_key = base64::decode(encrypted_master_key).map_err(|_| Error::DerivedKeyWrongFormat)?;
-	let encrypted_private_key = base64::decode(encrypted_private_key).map_err(|_| Error::DerivedKeyWrongFormat)?;
-	let encrypted_sign_key = base64::decode(encrypted_sign_key).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_private_key = Base64::decode_vec(encrypted_private_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 
 	//decrypt the master key from the derived key from password
 	let master_key = match derived_encryption_key {
@@ -145,15 +145,15 @@ mod test
 			ClientRandomValue::Argon2(v) => v,
 		};
 		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
-		let salt_string = base64::encode(salt_from_rand_value); //TODo test here with the secure base64
+		let salt_string = Base64::encode_string(&salt_from_rand_value);
 
 		let prep_login_out = prepare_login(password.to_string(), salt_string, out.derived_alg).unwrap();
 
 		//try to decrypt the master key
 		//prepare the encrypted values (from server in base64 encoded)
-		let encrypted_master_key = base64::encode(&out.master_key_info.encrypted_master_key);
-		let encrypted_private_key = base64::encode(&out.encrypted_private_key);
-		let encrypted_sign_key = base64::encode(&out.encrypted_sign_key);
+		let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
+		let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
+		let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
 		let login_out = done_login(
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
