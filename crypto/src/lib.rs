@@ -16,7 +16,7 @@ pub use self::alg::pw_hash::{
 };
 pub use self::alg::sign::{SignK, SignOutput, VerifyK};
 pub use self::alg::sym::{SymKey, SymKeyOutput};
-pub use self::core::RegisterOutPut;
+pub use self::core::{LoginDoneOutput, RegisterOutPut};
 
 pub fn aes() -> String
 {

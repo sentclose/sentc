@@ -1,4 +1,4 @@
-use crate::{ClientRandomValue, HashedAuthenticationKey, MasterKeyInfo, Pk, VerifyK};
+use crate::{ClientRandomValue, HashedAuthenticationKey, MasterKeyInfo, Pk, SignK, Sk, VerifyK};
 
 pub(crate) mod user;
 
@@ -20,4 +20,10 @@ pub struct RegisterOutPut
 	pub verify_key: VerifyK,
 	pub encrypted_sign_key: Vec<u8>,
 	pub keypair_sign_alg: &'static str,
+}
+
+pub struct LoginDoneOutput
+{
+	private_key: Sk,
+	sign_key: SignK,
 }

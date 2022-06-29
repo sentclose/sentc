@@ -2,7 +2,7 @@ use base64ct::{Base64, Encoding};
 
 use crate::alg::{asym, pw_hash, sign, sym};
 use crate::error::Error;
-use crate::{DeriveKeysForAuthOutput, DeriveMasterKeyForAuth, RegisterOutPut, SignK, Sk, SymKey};
+use crate::{DeriveKeysForAuthOutput, DeriveMasterKeyForAuth, LoginDoneOutput, RegisterOutPut, SignK, Sk, SymKey};
 
 pub(crate) fn register(password: String) -> Result<RegisterOutPut, Error>
 {
@@ -69,7 +69,7 @@ pub(crate) fn done_login(
 	keypair_encrypt_alg: &'static str,
 	encrypted_sign_key: String,
 	keypair_sign_alg: &'static str,
-) -> Result<String, Error>
+) -> Result<LoginDoneOutput, Error>
 {
 	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let encrypted_private_key = Base64::decode_vec(encrypted_private_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
@@ -109,13 +109,18 @@ pub(crate) fn done_login(
 		_ => return Err(Error::AlgNotFound),
 	};
 
-	Ok(format!("done"))
+	Ok(LoginDoneOutput {
+		private_key,
+		sign_key,
+	})
 }
 
 #[cfg(test)]
 mod test
 {
 	use super::*;
+	use crate::alg::asym::ecies;
+	use crate::alg::sign::ed25519;
 	use crate::ClientRandomValue;
 
 	#[test]
@@ -127,8 +132,8 @@ mod test
 		let out = register(password.to_string()).unwrap();
 
 		assert_eq!(out.master_key_alg, sym::aes_gcm::AES_GCM_OUTPUT);
-		assert_eq!(out.keypair_encrypt_alg, asym::ecies::ECIES_OUTPUT);
-		assert_eq!(out.keypair_sign_alg, sign::ed25519::ED25519_OUTPUT);
+		assert_eq!(out.keypair_encrypt_alg, ecies::ECIES_OUTPUT);
+		assert_eq!(out.keypair_sign_alg, ed25519::ED25519_OUTPUT);
 	}
 
 	#[test]
@@ -165,6 +170,22 @@ mod test
 		)
 		.unwrap();
 
-		assert_eq!(login_out, "done");
+		//try encrypt / decrypt with the keypair
+		let public_key = out.public_key;
+
+		let text = "Hello world üöäéèßê°";
+		let encrypted = ecies::encrypt(&public_key, text.as_bytes()).unwrap();
+		let decrypted = ecies::decrypt(&login_out.private_key, &encrypted).unwrap();
+		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+
+		assert_eq!(decrypted_text, text);
+
+		//try sign and verify
+		let verify_key = out.verify_key;
+
+		let data_with_sign = ed25519::sign(&login_out.sign_key, &encrypted).unwrap();
+		let verify_res = ed25519::verify(&verify_key, &data_with_sign).unwrap();
+
+		assert_eq!(verify_res, true);
 	}
 }
