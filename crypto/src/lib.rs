@@ -1,10 +1,20 @@
 mod alg;
+mod core;
 mod error;
 
 pub use self::alg::asym::{AsymKeyOutput, Pk, Sk};
-pub use self::alg::pw_hash::{ClientRandomValue, DeriveKeyOutput, HashedAuthenticationKey, MasterKeyInfo};
+pub use self::alg::pw_hash::{
+	ClientRandomValue,
+	DeriveAuthKeyForAuth,
+	DeriveKeyOutput,
+	DeriveKeysForAuthOutput,
+	DeriveMasterKeyForAuth,
+	HashedAuthenticationKey,
+	MasterKeyInfo,
+};
 pub use self::alg::sign::{SignK, SignOutput, VerifyK};
 pub use self::alg::sym::{SymKey, SymKeyOutput};
+pub use self::core::RegisterOutPut;
 
 pub fn aes() -> String
 {

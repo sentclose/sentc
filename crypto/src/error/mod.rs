@@ -20,4 +20,10 @@ pub enum Error
 	InitSignFailed,
 	DataToSignTooShort,
 	InitVerifyFailed,
+
+	AlgNotFound,
+	DecodeSaltFailed,
+	DerivedKeyWrongFormat,
+
+	DecodePrivateKeyFailed,
 }
