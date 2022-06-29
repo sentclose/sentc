@@ -23,3 +23,19 @@ pub struct DeriveKeyOutput
 	pub master_key_info: MasterKeyInfo,
 	pub alg: &'static str,
 }
+
+pub enum DeriveMasterKeyForAuth
+{
+	Argon2([u8; 32]),
+}
+
+pub enum DeriveAuthKeyForAuth
+{
+	Argon2([u8; 32]),
+}
+
+pub struct DeriveKeysForAuthOutput
+{
+	master_key_encryption_key: DeriveMasterKeyForAuth,
+	auth_key: DeriveAuthKeyForAuth,
+}

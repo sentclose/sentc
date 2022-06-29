@@ -4,7 +4,15 @@ use sha2::{Digest, Sha256};
 
 use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey, AES_GCM_OUTPUT};
 use crate::error::Error;
-use crate::{ClientRandomValue, DeriveKeyOutput, HashedAuthenticationKey, MasterKeyInfo};
+use crate::{
+	ClientRandomValue,
+	DeriveAuthKeyForAuth,
+	DeriveKeyOutput,
+	DeriveKeysForAuthOutput,
+	DeriveMasterKeyForAuth,
+	HashedAuthenticationKey,
+	MasterKeyInfo,
+};
 
 const RECOMMENDED_LENGTH: usize = 16;
 
@@ -35,12 +43,14 @@ pub(crate) fn derived_keys_from_password(password: &[u8], master_key: &[u8]) -> 
 3. return the encryption key and
 	return the auth key to send it to the server so the server can check the hashed auth key
 */
-pub(crate) fn derive_keys_for_auth(
-	password: &[u8],
-	salt_bytes: &[u8],
-) -> Result<([u8; HALF_DERIVED_KEY_LENGTH], [u8; HALF_DERIVED_KEY_LENGTH]), Error>
+pub(crate) fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8]) -> Result<DeriveKeysForAuthOutput, Error>
 {
-	derived_keys(password, salt_bytes)
+	let (master_key_encryption_key, auth_key) = derived_keys(password, salt_bytes)?;
+
+	Ok(DeriveKeysForAuthOutput {
+		master_key_encryption_key: DeriveMasterKeyForAuth::Argon2(master_key_encryption_key),
+		auth_key: DeriveAuthKeyForAuth::Argon2(auth_key),
+	})
 }
 
 /**
@@ -50,9 +60,9 @@ split login into two parts:
 1. is prepare, after sending username to the server and before sending auth key
 2. is decrypt the master key
 */
-pub(crate) fn get_master_key(derived_encryption_key: [u8; HALF_DERIVED_KEY_LENGTH], encrypted_master_key: &[u8]) -> Result<AesKey, Error>
+pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENGTH], encrypted_master_key: &[u8]) -> Result<AesKey, Error>
 {
-	let decrypted_master_key = aes_decrypt(&derived_encryption_key, encrypted_master_key)?;
+	let decrypted_master_key = aes_decrypt(derived_encryption_key, encrypted_master_key)?;
 
 	let decrypted_master_key: [u8; 32] = decrypted_master_key
 		.try_into()
@@ -254,7 +264,15 @@ mod test
 		//create fake salt. this will be created on the server with the client random value
 		let salt = generate_salt(out_random_value);
 
-		let (master_key_key, auth_key) = derive_keys_for_auth(b"abc", &salt).unwrap();
+		let derived_out = derive_keys_for_auth(b"abc", &salt).unwrap();
+
+		let master_key_key = match &derived_out.master_key_encryption_key {
+			DeriveMasterKeyForAuth::Argon2(k) => k,
+		};
+
+		let auth_key = match &derived_out.auth_key {
+			DeriveAuthKeyForAuth::Argon2(k) => k,
+		};
 
 		//send the auth key to the server and valid it there
 		let mut hasher = Sha256::new();
