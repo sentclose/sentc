@@ -1,4 +1,4 @@
-use crate::{ClientRandomValue, HashedAuthenticationKey, MasterKeyInfo, Pk, SignK, Sk, VerifyK};
+use crate::{ClientRandomValue, DeriveAuthKeyForAuth, HashedAuthenticationKey, MasterKeyInfo, Pk, SignK, Sk, VerifyK};
 
 pub(crate) mod user;
 
@@ -26,4 +26,13 @@ pub struct LoginDoneOutput
 {
 	private_key: Sk,
 	sign_key: SignK,
+}
+
+pub struct ChangePasswordOutput
+{
+	pub client_random_value: ClientRandomValue,
+	pub hashed_authentication_key_bytes: HashedAuthenticationKey,
+	pub master_key_info: MasterKeyInfo,
+	pub derived_alg: &'static str,
+	pub old_auth_key: DeriveAuthKeyForAuth,
 }

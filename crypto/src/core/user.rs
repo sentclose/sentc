@@ -2,7 +2,7 @@ use base64ct::{Base64, Encoding};
 
 use crate::alg::{asym, pw_hash, sign, sym};
 use crate::error::Error;
-use crate::{DeriveKeysForAuthOutput, DeriveMasterKeyForAuth, LoginDoneOutput, RegisterOutPut, SignK, Sk, SymKey};
+use crate::{ChangePasswordOutput, DeriveKeysForAuthOutput, DeriveMasterKeyForAuth, LoginDoneOutput, RegisterOutPut, SignK, Sk, SymKey};
 
 pub(crate) fn register(password: String) -> Result<RegisterOutPut, Error>
 {
@@ -49,12 +49,13 @@ pub(crate) fn register(password: String) -> Result<RegisterOutPut, Error>
 	})
 }
 
-pub(crate) fn prepare_login(password: String, salt_string: String, derived_encryption_key: &'static str) -> Result<DeriveKeysForAuthOutput, Error>
+pub(crate) fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: &'static str)
+	-> Result<DeriveKeysForAuthOutput, Error>
 {
 	let salt = Base64::decode_vec(salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
 
 	//expand the match arm when supporting more alg
-	let out = match derived_encryption_key {
+	let out = match derived_encryption_key_alg {
 		pw_hash::argon2::ARGON_2_OUTPUT => pw_hash::argon2::derive_keys_for_auth(password.as_bytes(), &salt)?,
 		_ => return Err(Error::AlgNotFound),
 	};
@@ -112,6 +113,57 @@ pub(crate) fn done_login(
 	Ok(LoginDoneOutput {
 		private_key,
 		sign_key,
+	})
+}
+
+/**
+# Prepare Password change
+
+before calling this function make a request to the login api endpoint with the username
+to get the salt from the api
+if the old pw was wrong this will checked in the api later after this function function
+
+get the old auth key from @see prepare_login()
+with the old pw and the old salt
+
+decrypt the master key with the old pw (because it is stored in the client but encrypted)
+
+use the function @see derivedKeysFromPassword with the new pw and the decrypted master key
+to create the new client random value, the new encrypted master key and the new hashed authkey
+
+send the return data back to the server
+*/
+pub(crate) fn change_password(
+	old_pw: String,
+	new_pw: String,
+	old_salt: String,
+	encrypted_master_key: String,
+	derived_encryption_key_alg: &'static str,
+) -> Result<ChangePasswordOutput, Error>
+{
+	//first make a request to login endpoint -> prepareLogin() with the username to get the salt
+	//get the old auth key
+	let prepare_login_output = prepare_login(old_pw, old_salt, derived_encryption_key_alg)?;
+
+	//decrypt the master key with the old pw.
+	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+
+	let master_key = match &prepare_login_output.master_key_encryption_key {
+		DeriveMasterKeyForAuth::Argon2(k) => pw_hash::argon2::get_master_key(k, &encrypted_master_key)?,
+	};
+
+	//encrypt the master key with the new pw and create a new salt with a new random value
+	//the 2nd check is necessary because master key from different alg can have different length
+	let derived = match master_key {
+		SymKey::Aes(raw_master_key) => pw_hash::argon2::derived_keys_from_password(new_pw.as_bytes(), &raw_master_key)?,
+	};
+
+	Ok(ChangePasswordOutput {
+		derived_alg: derived.alg,
+		client_random_value: derived.client_random_value,
+		hashed_authentication_key_bytes: derived.hashed_authentication_key_bytes,
+		master_key_info: derived.master_key_info,
+		old_auth_key: prepare_login_output.auth_key,
 	})
 }
 
@@ -187,5 +239,71 @@ mod test
 		let verify_res = ed25519::verify(&verify_key, &data_with_sign).unwrap();
 
 		assert_eq!(verify_res, true);
+	}
+
+	#[test]
+	fn test_pw_change()
+	{
+		//the normal register
+		let password = "abc*èéöäüê";
+		let new_password = "abcdfg";
+
+		let out = register(password.to_string()).unwrap();
+
+		//normally the salt gets calc by the api
+		let client_random_value = match out.client_random_value {
+			ClientRandomValue::Argon2(v) => v,
+		};
+		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
+		let old_salt_string = Base64::encode_string(&salt_from_rand_value);
+
+		let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
+
+		let pw_change_out = change_password(
+			password.to_string(),
+			new_password.to_string(),
+			old_salt_string.clone(),
+			encrypted_master_key,
+			out.derived_alg,
+		)
+		.unwrap();
+
+		let new_rand = match pw_change_out.client_random_value {
+			ClientRandomValue::Argon2(v) => v,
+		};
+
+		assert_ne!(client_random_value, new_rand);
+		//must be different because it is encrypted by a new password
+		assert_ne!(
+			out.master_key_info.encrypted_master_key,
+			pw_change_out.master_key_info.encrypted_master_key
+		);
+
+		//the decrypted master key must be the same
+		//first get the master key which was encrypted by the old password
+		let prep_login_old = prepare_login(password.to_string(), old_salt_string, out.derived_alg).unwrap();
+
+		let k = match &prep_login_old.master_key_encryption_key {
+			DeriveMasterKeyForAuth::Argon2(key) => key,
+		};
+		let old_master_key = pw_hash::argon2::get_master_key(k, &out.master_key_info.encrypted_master_key).unwrap();
+		let old_master_key = match old_master_key {
+			SymKey::Aes(k) => k,
+		};
+
+		//2nd get the master key which was encrypted by the new password
+		let new_salt = pw_hash::argon2::generate_salt(new_rand);
+		let new_salt_string = Base64::encode_string(&new_salt);
+		let prep_login_new = prepare_login(new_password.to_string(), new_salt_string, pw_change_out.derived_alg).unwrap();
+
+		let k = match &prep_login_new.master_key_encryption_key {
+			DeriveMasterKeyForAuth::Argon2(key) => key,
+		};
+		let new_master_key = pw_hash::argon2::get_master_key(k, &pw_change_out.master_key_info.encrypted_master_key).unwrap();
+		let new_master_key = match new_master_key {
+			SymKey::Aes(k) => k,
+		};
+
+		assert_eq!(old_master_key, new_master_key);
 	}
 }
