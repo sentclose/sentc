@@ -2,7 +2,7 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sha2::{Digest, Sha256};
 
-use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey, AES_GCM_OUTPUT};
+use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AES_GCM_OUTPUT};
 use crate::error::Error;
 use crate::{
 	ClientRandomValue,
@@ -12,6 +12,7 @@ use crate::{
 	DeriveMasterKeyForAuth,
 	HashedAuthenticationKey,
 	MasterKeyInfo,
+	SymKey,
 };
 
 const RECOMMENDED_LENGTH: usize = 16;
@@ -59,8 +60,9 @@ pub(crate) fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8]) -> Result
 split login into two parts:
 1. is prepare, after sending username to the server and before sending auth key
 2. is decrypt the master key
+3. export it as Sym Key enum
 */
-pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENGTH], encrypted_master_key: &[u8]) -> Result<AesKey, Error>
+pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENGTH], encrypted_master_key: &[u8]) -> Result<SymKey, Error>
 {
 	let decrypted_master_key = aes_decrypt(derived_encryption_key, encrypted_master_key)?;
 
@@ -68,7 +70,7 @@ pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENG
 		.try_into()
 		.map_err(|_| Error::KeyDecryptFailed)?;
 
-	Ok(decrypted_master_key)
+	Ok(SymKey::Aes(decrypted_master_key))
 }
 
 pub(crate) fn password_to_encrypt(password: &[u8]) -> Result<([u8; 32], [u8; 16]), Error>
@@ -154,7 +156,8 @@ fn derived_keys(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; HALF_DERIVED
 	Ok((left, right))
 }
 
-fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH]) -> Vec<u8>
+//this is pub crate because we need this function in later tests
+pub(crate) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH]) -> Vec<u8>
 {
 	let mut salt_string = "sendclose".to_string();
 
@@ -284,6 +287,9 @@ mod test
 		assert_eq!(hashed_authentication_key_16bytes, out_hashed_auth_key);
 
 		let decrypted_master_key = get_master_key(master_key_key, &out.master_key_info.encrypted_master_key).unwrap();
+		let decrypted_master_key = match decrypted_master_key {
+			SymKey::Aes(k) => k,
+		};
 
 		assert_eq!(key, decrypted_master_key);
 	}
