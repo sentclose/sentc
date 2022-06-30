@@ -96,12 +96,12 @@ pub(crate) fn register(password: String) -> Result<RegisterOutPut, Error>
 	})
 }
 
-pub(crate) fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: String) -> Result<DeriveKeysForAuthOutput, Error>
+pub(crate) fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: &str) -> Result<DeriveKeysForAuthOutput, Error>
 {
 	let salt = Base64::decode_vec(salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
 
 	//expand the match arm when supporting more alg
-	let out = match derived_encryption_key_alg.as_str() {
+	let out = match derived_encryption_key_alg {
 		pw_hash::argon2::ARGON_2_OUTPUT => pw_hash::argon2::derive_keys_for_auth(password.as_bytes(), &salt)?,
 		_ => return Err(Error::AlgNotFound),
 	};
@@ -113,9 +113,9 @@ pub(crate) fn done_login(
 	derived_encryption_key: &DeriveMasterKeyForAuth, //the value from prepare_login
 	encrypted_master_key: String,                    //as base64 encoded string from the server
 	encrypted_private_key: String,
-	keypair_encrypt_alg: String,
+	keypair_encrypt_alg: &str,
 	encrypted_sign_key: String,
-	keypair_sign_alg: String,
+	keypair_sign_alg: &str,
 ) -> Result<LoginDoneOutput, Error>
 {
 	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
@@ -138,7 +138,7 @@ pub(crate) fn done_login(
 	};
 
 	//decode the private keys to the enums to use them later
-	let private_key = match keypair_encrypt_alg.as_str() {
+	let private_key = match keypair_encrypt_alg {
 		asym::ecies::ECIES_OUTPUT => {
 			let private = private
 				.try_into()
@@ -148,7 +148,7 @@ pub(crate) fn done_login(
 		_ => return Err(Error::AlgNotFound),
 	};
 
-	let sign_key = match keypair_sign_alg.as_str() {
+	let sign_key = match keypair_sign_alg {
 		sign::ed25519::ED25519_OUTPUT => {
 			let sign = sign.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?;
 			SignK::Ed25519(sign)
@@ -184,7 +184,7 @@ pub(crate) fn change_password(
 	new_pw: String,
 	old_salt: String,
 	encrypted_master_key: String,
-	derived_encryption_key_alg: String,
+	derived_encryption_key_alg: &str,
 ) -> Result<ChangePasswordOutput, Error>
 {
 	//first make a request to login endpoint -> prepareLogin() with the username to get the salt
@@ -250,7 +250,7 @@ mod test
 		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
 		let salt_string = Base64::encode_string(&salt_from_rand_value);
 
-		let prep_login_out = prepare_login(password.to_string(), salt_string, out.derived_alg.to_string()).unwrap();
+		let prep_login_out = prepare_login(password.to_string(), salt_string, out.derived_alg).unwrap();
 
 		//try to decrypt the master key
 		//prepare the encrypted values (from server in base64 encoded)
@@ -262,9 +262,9 @@ mod test
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
 			encrypted_master_key,
 			encrypted_private_key,
-			out.keypair_encrypt_alg.to_string(),
+			out.keypair_encrypt_alg,
 			encrypted_sign_key,
-			out.keypair_sign_alg.to_string(),
+			out.keypair_sign_alg,
 		)
 		.unwrap();
 
@@ -310,7 +310,7 @@ mod test
 			new_password.to_string(),
 			old_salt_string.clone(),
 			encrypted_master_key,
-			out.derived_alg.to_string(),
+			out.derived_alg,
 		)
 		.unwrap();
 
@@ -327,7 +327,7 @@ mod test
 
 		//the decrypted master key must be the same
 		//first get the master key which was encrypted by the old password
-		let prep_login_old = prepare_login(password.to_string(), old_salt_string, out.derived_alg.to_string()).unwrap();
+		let prep_login_old = prepare_login(password.to_string(), old_salt_string, out.derived_alg).unwrap();
 
 		let k = match &prep_login_old.master_key_encryption_key {
 			DeriveMasterKeyForAuth::Argon2(key) => key,
@@ -340,7 +340,7 @@ mod test
 		//2nd get the master key which was encrypted by the new password
 		let new_salt = pw_hash::argon2::generate_salt(new_rand);
 		let new_salt_string = Base64::encode_string(&new_salt);
-		let prep_login_new = prepare_login(new_password.to_string(), new_salt_string, pw_change_out.derived_alg.to_string()).unwrap();
+		let prep_login_new = prepare_login(new_password.to_string(), new_salt_string, pw_change_out.derived_alg).unwrap();
 
 		let k = match &prep_login_new.master_key_encryption_key {
 			DeriveMasterKeyForAuth::Argon2(key) => key,
