@@ -1,22 +1,28 @@
 mod alg;
 mod core;
 mod error;
+mod user;
 
 use base64ct::{Base64, Encoding};
 
 pub(crate) use self::alg::asym::{AsymKeyOutput, Pk, Sk};
+#[cfg(feature = "rust")]
+pub use self::alg::pw_hash::DeriveMasterKeyForAuth;
+#[cfg(not(feature = "rust"))]
+pub(crate) use self::alg::pw_hash::DeriveMasterKeyForAuth;
 pub(crate) use self::alg::pw_hash::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	DeriveKeyOutput,
 	DeriveKeysForAuthOutput,
-	DeriveMasterKeyForAuth,
 	HashedAuthenticationKey,
 	MasterKeyInfo,
 };
 pub(crate) use self::alg::sign::{SignK, SignOutput, VerifyK};
 pub(crate) use self::alg::sym::{SymKey, SymKeyOutput};
-use crate::core::user::{done_login, prepare_login, register};
+pub use self::error::{err_to_msg, Error};
+pub use self::user::{change_password, done_login, prepare_login, register, DoneLoginOutput};
+use crate::core::user::{done_login as done_login_internally, prepare_login as prepare_login_internally, register as register_internally};
 
 pub fn aes() -> String
 {
@@ -151,7 +157,7 @@ pub fn register_test() -> String
 {
 	let password = "abc*èéöäüê";
 
-	let out = register(password.to_string()).unwrap();
+	let out = register_internally(password.to_string()).unwrap();
 
 	//and now try to login
 	//normally the salt gets calc by the api
@@ -161,7 +167,7 @@ pub fn register_test() -> String
 	let salt_from_rand_value = alg::pw_hash::argon2::generate_salt(client_random_value);
 	let salt_string = Base64::encode_string(&salt_from_rand_value);
 
-	let prep_login_out = prepare_login(password.to_string(), salt_string, out.derived_alg).unwrap();
+	let prep_login_out = prepare_login_internally(password.to_string(), salt_string, out.derived_alg).unwrap();
 
 	//try to decrypt the master key
 	//prepare the encrypted values (from server in base64 encoded)
@@ -169,7 +175,7 @@ pub fn register_test() -> String
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
 	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
-	let login_out = done_login(
+	let login_out = done_login_internally(
 		&prep_login_out.master_key_encryption_key, //the value comes from prepare login
 		encrypted_master_key,
 		encrypted_private_key,
