@@ -1,11 +1,11 @@
 pub(crate) mod ed25519;
 
-pub(crate) enum SignK
+pub enum SignK
 {
 	Ed25519([u8; 32]),
 }
 
-pub(crate) enum VerifyK
+pub enum VerifyK
 {
 	Ed25519([u8; 32]),
 }

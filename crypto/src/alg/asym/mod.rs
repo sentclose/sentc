@@ -1,11 +1,11 @@
 pub(crate) mod ecies;
 
-pub(crate) enum Pk
+pub enum Pk
 {
 	Ecies([u8; 32]),
 }
 
-pub(crate) enum Sk
+pub enum Sk
 {
 	Ecies([u8; 32]),
 }

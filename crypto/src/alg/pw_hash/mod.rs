@@ -13,7 +13,7 @@ pub(crate) enum ClientRandomValue
 
 pub(crate) enum HashedAuthenticationKey
 {
-	Argon2([u8; 16]),
+	Argon2([u8; 16]), //16 bytes of the org. hashed key
 }
 
 pub(crate) struct DeriveKeyOutput
@@ -24,7 +24,7 @@ pub(crate) struct DeriveKeyOutput
 	pub alg: &'static str,
 }
 
-pub(crate) enum DeriveMasterKeyForAuth
+pub enum DeriveMasterKeyForAuth
 {
 	Argon2([u8; 32]),
 }
