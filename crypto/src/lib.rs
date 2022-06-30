@@ -16,6 +16,7 @@ pub use self::alg::pw_hash::{
 };
 pub use self::alg::sign::{SignK, SignOutput, VerifyK};
 pub use self::alg::sym::{SymKey, SymKeyOutput};
+use crate::core::user::{done_login, prepare_login, register};
 
 pub fn aes() -> String
 {
@@ -146,6 +147,55 @@ pub fn sign() -> String
 	format!("check was: {}", check)
 }
 
+pub fn register_test() -> String
+{
+	let password = "abc*èéöäüê";
+
+	let out = register(password.to_string()).unwrap();
+
+	//and now try to login
+	//normally the salt gets calc by the api
+	let client_random_value = match out.client_random_value {
+		ClientRandomValue::Argon2(v) => v,
+	};
+	let salt_from_rand_value = alg::pw_hash::argon2::generate_salt(client_random_value);
+	let salt_string = Base64::encode_string(&salt_from_rand_value);
+
+	let prep_login_out = prepare_login(password.to_string(), salt_string, out.derived_alg).unwrap();
+
+	//try to decrypt the master key
+	//prepare the encrypted values (from server in base64 encoded)
+	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
+	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
+	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
+
+	let login_out = done_login(
+		&prep_login_out.master_key_encryption_key, //the value comes from prepare login
+		encrypted_master_key,
+		encrypted_private_key,
+		out.keypair_encrypt_alg,
+		encrypted_sign_key,
+		out.keypair_sign_alg,
+	)
+	.unwrap();
+
+	//try encrypt / decrypt with the keypair
+	let public_key = out.public_key;
+
+	let text = "Hello world üöäéèßê°";
+	let encrypted = alg::asym::ecies::encrypt(&public_key, text.as_bytes()).unwrap();
+	let decrypted = alg::asym::ecies::decrypt(&login_out.private_key, &encrypted).unwrap();
+	let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+
+	//try sign and verify
+	let verify_key = out.verify_key;
+
+	let data_with_sign = alg::sign::ed25519::sign(&login_out.sign_key, &encrypted).unwrap();
+	let verify_res = alg::sign::ed25519::verify(&verify_key, &data_with_sign).unwrap();
+
+	format!("register sign result was: {} and decrypted text was: {}", verify_res, decrypted_text)
+}
+
 #[cfg(test)]
 mod test
 {
@@ -189,5 +239,13 @@ mod test
 		let str = sign();
 
 		assert_eq!(str, "check was: true");
+	}
+
+	#[test]
+	fn test_register_full()
+	{
+		let str = register_test();
+
+		assert_eq!(str, "register sign result was: true and decrypted text was: Hello world üöäéèßê°");
 	}
 }
