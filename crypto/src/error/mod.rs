@@ -25,6 +25,8 @@ pub enum Error
 	DecodeSaltFailed,
 	DerivedKeyWrongFormat,
 
+	LoginServerOutputWrong,
+
 	DecodePrivateKeyFailed,
 
 	ImportingPrivateKeyFailed,

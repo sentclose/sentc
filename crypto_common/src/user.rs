@@ -46,6 +46,8 @@ impl RegisterData
 		F: Fn(serde_json::Error) -> E,
 		E: std::error::Error,
 	{
+		//called from server
+
 		match from_slice::<Self>(v) {
 			Err(e) => Err(err_fn(e)),
 			Ok(v) => Ok(v),
@@ -91,6 +93,40 @@ impl ChangePasswordData
 			Ok(v) => v,
 			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
 		}
+	}
+}
+
+//as base64 encoded string from the server
+#[derive(Serialize, Deserialize)]
+pub struct DoneLoginInput
+{
+	pub encrypted_master_key: String,
+	pub encrypted_private_key: String,
+	pub public_key_string: String,
+	pub keypair_encrypt_alg: String,
+	pub encrypted_sign_key: String,
+	pub verify_key_string: String,
+	pub keypair_sign_alg: String,
+}
+
+impl DoneLoginInput
+{
+	pub fn to_string<F, E>(&self, err_fn: F) -> Result<String, E>
+	where
+		F: Fn(serde_json::Error) -> E,
+		E: std::error::Error,
+	{
+		//called from server
+
+		match to_string(self) {
+			Ok(v) => Ok(v),
+			Err(e) => Err(err_fn(e)),
+		}
+	}
+
+	pub fn from_string(v: &[u8]) -> serde_json::Result<DoneLoginInput>
+	{
+		from_slice::<Self>(v)
 	}
 }
 

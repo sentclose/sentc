@@ -2,7 +2,7 @@ use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 #[cfg(not(feature = "rust"))]
 use sendclose_crypto_common::user::MasterKeyFormat;
-use sendclose_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, RegisterData};
+use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData};
 #[cfg(not(feature = "rust"))]
 use sendclose_crypto_common::user::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
 
@@ -110,7 +110,8 @@ fn prepare_login_internally(
 	derived_encryption_key_alg: String,
 ) -> Result<(String, DeriveMasterKeyForAuth), Error>
 {
-	let result = prepare_login_core(password, salt_string, derived_encryption_key_alg.as_str())?;
+	let salt = Base64::decode_vec(salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
+	let result = prepare_login_core(password, &salt, derived_encryption_key_alg.as_str())?;
 
 	//for the server
 	let auth_key = match result.auth_key {
@@ -149,32 +150,29 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 	format!("{{\"auth_key\": {}, \"master_key_encryption_key\": \"{}\"}}", auth_key, master_key_out)
 }
 
-fn done_login_internally(
-	master_key_encryption: &DeriveMasterKeyForAuth,
-	encrypted_master_key: String, //as base64 encoded string from the server
-	encrypted_private_key: String,
-	public_key_string: String,
-	keypair_encrypt_alg: String,
-	encrypted_sign_key: String,
-	verify_key_string: String,
-	keypair_sign_alg: String,
-) -> Result<DoneLoginOutput, Error>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: String) -> Result<DoneLoginOutput, Error>
 {
+	let server_output = DoneLoginInput::from_string(server_output.as_bytes()).map_err(|_| Error::LoginServerOutputWrong)?;
+
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+
 	let out = done_login_core(
 		&master_key_encryption,
-		encrypted_master_key,
-		encrypted_private_key,
-		keypair_encrypt_alg.as_str(),
-		encrypted_sign_key,
-		keypair_sign_alg.as_str(),
+		&encrypted_master_key,
+		&encrypted_private_key,
+		server_output.keypair_encrypt_alg.as_str(),
+		&encrypted_sign_key,
+		server_output.keypair_sign_alg.as_str(),
 	)?;
 
 	//now prepare the public and verify key for use
 
-	let public_key = import_key_from_pem(public_key_string)?;
-	let verify_key = import_key_from_pem(verify_key_string)?;
+	let public_key = import_key_from_pem(server_output.public_key_string)?;
+	let verify_key = import_key_from_pem(server_output.verify_key_string)?;
 
-	let public_key = match keypair_encrypt_alg.as_str() {
+	let public_key = match server_output.keypair_encrypt_alg.as_str() {
 		alg::asym::ecies::ECIES_OUTPUT => {
 			let public_key = public_key
 				.try_into()
@@ -184,7 +182,7 @@ fn done_login_internally(
 		_ => return Err(Error::AlgNotFound),
 	};
 
-	let verify_key = match keypair_sign_alg.as_str() {
+	let verify_key = match server_output.keypair_sign_alg.as_str() {
 		alg::sign::ed25519::ED25519_OUTPUT => {
 			let verify_key = verify_key
 				.try_into()
@@ -203,39 +201,15 @@ fn done_login_internally(
 }
 
 #[cfg(feature = "rust")]
-pub fn done_login(
-	master_key_encryption: &DeriveMasterKeyForAuth,
-	encrypted_master_key: String, //as base64 encoded string from the server
-	encrypted_private_key: String,
-	public_key_string: String,
-	keypair_encrypt_alg: String,
-	encrypted_sign_key: String,
-	verify_key_string: String,
-	keypair_sign_alg: String,
-) -> Result<DoneLoginOutput, Error>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: String) -> Result<DoneLoginOutput, Error>
 {
-	done_login_internally(
-		&master_key_encryption,
-		encrypted_master_key,
-		encrypted_private_key,
-		public_key_string,
-		keypair_encrypt_alg,
-		encrypted_sign_key,
-		verify_key_string,
-		keypair_sign_alg,
-	)
+	done_login_internally(&master_key_encryption, server_output)
 }
 
 #[cfg(not(feature = "rust"))]
 pub fn done_login(
 	master_key_encryption: String, //from the prepare login as base64 for exporting
-	encrypted_master_key: String,  //as base64 encoded string from the server
-	encrypted_private_key: String,
-	public_key_string: String,
-	keypair_encrypt_alg: String,
-	encrypted_sign_key: String,
-	verify_key_string: String,
-	keypair_sign_alg: String,
+	server_output: String,
 ) -> String
 {
 	let master_key_encryption = match MasterKeyFormat::from_string(master_key_encryption.as_bytes()) {
@@ -255,16 +229,7 @@ pub fn done_login(
 		},
 	};
 
-	let result = done_login_internally(
-		&master_key_encryption,
-		encrypted_master_key,
-		encrypted_private_key,
-		public_key_string,
-		keypair_encrypt_alg,
-		encrypted_sign_key,
-		verify_key_string,
-		keypair_sign_alg,
-	);
+	let result = done_login_internally(&master_key_encryption, server_output);
 
 	let result = match result {
 		Ok(v) => v,
@@ -295,7 +260,10 @@ fn change_password_internally(
 	derived_encryption_key_alg: String,
 ) -> Result<String, Error>
 {
-	let output = change_password_core(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg.as_str())?;
+	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let old_salt = Base64::decode_vec(old_salt.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
+
+	let output = change_password_core(old_pw, new_pw, &old_salt, &encrypted_master_key, derived_encryption_key_alg.as_str())?;
 
 	//prepare for the server
 	let new_encrypted_master_key = Base64::encode_string(&output.master_key_info.encrypted_master_key);
@@ -445,4 +413,44 @@ pub(crate) fn import_key_from_pem(pem: String) -> Result<Vec<u8>, Error>
 	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| Error::ImportingPublicKeyFailed)?;
 
 	Ok(data)
+}
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+
+	#[cfg(feature = "rust")]
+	mod test_rust_feature
+	{
+		use super::*;
+
+		#[test]
+		fn test_register()
+		{
+			let password = "abc*èéöäüê";
+
+			#[cfg(feature = "rust")]
+			let out = register(password.to_string()).unwrap();
+
+			println!("{}", out);
+		}
+	}
+
+	#[cfg(not(feature = "rust"))]
+	mod test_non_rust_feature
+	{
+		use super::*;
+
+		#[test]
+		fn test_register()
+		{
+			let password = "abc*èéöäüê";
+
+			#[cfg(not(feature = "rust"))]
+			let out = register(password.to_string());
+
+			println!("{}", out);
+		}
+	}
 }
