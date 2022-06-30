@@ -49,7 +49,11 @@
 
 			console.log(real1);
 			console.log("real 1 json pretty");
-			console.log(JSON.parse(real1))
+
+			/** @param {RegisterData} */
+			let register_out = JSON.parse(real1);
+
+			console.log(register_out)
 		}
 
 		run();
