@@ -165,22 +165,18 @@ pub fn register_test() -> String
 		ClientRandomValue::Argon2(v) => v,
 	};
 	let salt_from_rand_value = alg::pw_hash::argon2::generate_salt(client_random_value);
-	let salt_string = Base64::encode_string(&salt_from_rand_value);
 
-	let prep_login_out = prepare_login_internally(password.to_string(), salt_string, out.derived_alg).unwrap();
+	let prep_login_out = prepare_login_internally(password.to_string(), &salt_from_rand_value, out.derived_alg).unwrap();
 
 	//try to decrypt the master key
 	//prepare the encrypted values (from server in base64 encoded)
-	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
-	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
-	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
 	let login_out = done_login_internally(
 		&prep_login_out.master_key_encryption_key, //the value comes from prepare login
-		encrypted_master_key,
-		encrypted_private_key,
+		&out.master_key_info.encrypted_master_key,
+		&out.encrypted_private_key,
 		out.keypair_encrypt_alg,
-		encrypted_sign_key,
+		&out.encrypted_sign_key,
 		out.keypair_sign_alg,
 	)
 	.unwrap();
