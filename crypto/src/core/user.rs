@@ -2,7 +2,54 @@ use base64ct::{Base64, Encoding};
 
 use crate::alg::{asym, pw_hash, sign, sym};
 use crate::error::Error;
-use crate::{ChangePasswordOutput, DeriveKeysForAuthOutput, DeriveMasterKeyForAuth, LoginDoneOutput, RegisterOutPut, SignK, Sk, SymKey};
+use crate::{
+	ClientRandomValue,
+	DeriveAuthKeyForAuth,
+	DeriveKeysForAuthOutput,
+	DeriveMasterKeyForAuth,
+	HashedAuthenticationKey,
+	MasterKeyInfo,
+	Pk,
+	SignK,
+	Sk,
+	SymKey,
+	VerifyK,
+};
+
+pub struct RegisterOutPut
+{
+	//info about the raw master key (not the encrypted by the password!)
+	pub master_key_alg: &'static str,
+
+	//from key derived
+	pub client_random_value: ClientRandomValue,
+	pub hashed_authentication_key_bytes: HashedAuthenticationKey,
+	pub master_key_info: MasterKeyInfo,
+	pub derived_alg: &'static str,
+
+	//the key pairs incl. the encrypted secret keys
+	pub public_key: Pk,
+	pub encrypted_private_key: Vec<u8>,
+	pub keypair_encrypt_alg: &'static str,
+	pub verify_key: VerifyK,
+	pub encrypted_sign_key: Vec<u8>,
+	pub keypair_sign_alg: &'static str,
+}
+
+pub struct LoginDoneOutput
+{
+	private_key: Sk,
+	sign_key: SignK,
+}
+
+pub struct ChangePasswordOutput
+{
+	pub client_random_value: ClientRandomValue,
+	pub hashed_authentication_key_bytes: HashedAuthenticationKey,
+	pub master_key_info: MasterKeyInfo,
+	pub derived_alg: &'static str,
+	pub old_auth_key: DeriveAuthKeyForAuth,
+}
 
 pub(crate) fn register(password: String) -> Result<RegisterOutPut, Error>
 {
