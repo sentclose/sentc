@@ -47,4 +47,9 @@ class Sendclose {
   {
     return api.signTest();
   }
+
+  Future<String> registerTest()
+  {
+    return api.registerTestFull();
+  }
 }

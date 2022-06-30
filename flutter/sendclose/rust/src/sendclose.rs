@@ -1,4 +1,4 @@
-use sendclose_crypto::{aes, argon, ecdh, sign};
+use sendclose_crypto::{aes, argon, ecdh, register_test, sign};
 
 pub fn aes_test() -> String
 {
@@ -18,4 +18,9 @@ pub fn argon_test() -> String
 pub fn sign_test() -> String
 {
 	sign()
+}
+
+pub fn register_test_full() -> String
+{
+	register_test()
 }

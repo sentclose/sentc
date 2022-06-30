@@ -27,6 +27,10 @@ abstract class SendcloseFlutter {
   Future<String> signTest({dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kSignTestConstMeta;
+
+  Future<String> registerTestFull({dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kRegisterTestFullConstMeta;
 }
 
 class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
@@ -91,6 +95,21 @@ class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
   FlutterRustBridgeTaskConstMeta get kSignTestConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "sign_test",
+        argNames: [],
+      );
+
+  Future<String> registerTestFull({dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port_) => inner.wire_register_test_full(port_),
+        parseSuccessData: _wire2api_String,
+        constMeta: kRegisterTestFullConstMeta,
+        argValues: [],
+        hint: hint,
+      ));
+
+  FlutterRustBridgeTaskConstMeta get kRegisterTestFullConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "register_test_full",
         argNames: [],
       );
 
@@ -188,6 +207,20 @@ class SendcloseFlutterWire implements FlutterRustBridgeWireBase {
           'wire_sign_test');
   late final _wire_sign_test =
       _wire_sign_testPtr.asFunction<void Function(int)>();
+
+  void wire_register_test_full(
+    int port_,
+  ) {
+    return _wire_register_test_full(
+      port_,
+    );
+  }
+
+  late final _wire_register_test_fullPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_register_test_full');
+  late final _wire_register_test_full =
+      _wire_register_test_fullPtr.asFunction<void Function(int)>();
 
   void free_WireSyncReturnStruct(
     WireSyncReturnStruct val,

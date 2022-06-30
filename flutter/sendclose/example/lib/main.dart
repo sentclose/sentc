@@ -21,6 +21,7 @@ class _MyAppState extends State<MyApp> {
   late Future<void> ecdh_test;
   late Future<void> argon_test;
   late Future<void> sign_test;
+  late Future<void> register_test;
 
   @override
   void initState() {
@@ -30,6 +31,7 @@ class _MyAppState extends State<MyApp> {
     ecdh_test = _sendclosePlugin.edTest();
     argon_test = _sendclosePlugin.argonTest();
     sign_test = _sendclosePlugin.signTest();
+    register_test = _sendclosePlugin.registerTest();
   }
 
   @override
@@ -80,6 +82,18 @@ class _MyAppState extends State<MyApp> {
                   }),
               FutureBuilder<List<dynamic>>(
                   future: Future.wait([sign_test]),
+                  builder: (context, snap) {
+                    final data = snap.data;
+                    if (data == null) {
+                      return const Text("Loading");
+                    }
+                    return Text(
+                      '${data[0]}',
+                      style: Theme.of(context).textTheme.headline4,
+                    );
+                  }),
+              FutureBuilder<List<dynamic>>(
+                  future: Future.wait([register_test]),
                   builder: (context, snap) {
                     final data = snap.data;
                     if (data == null) {
