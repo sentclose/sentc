@@ -114,9 +114,9 @@ pub(crate) fn done_login(
 	derived_encryption_key: &DeriveMasterKeyForAuth, //the value from prepare_login
 	encrypted_master_key: String,                    //as base64 encoded string from the server
 	encrypted_private_key: String,
-	keypair_encrypt_alg: &'static str,
+	keypair_encrypt_alg: String,
 	encrypted_sign_key: String,
-	keypair_sign_alg: &'static str,
+	keypair_sign_alg: String,
 ) -> Result<LoginDoneOutput, Error>
 {
 	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
@@ -139,7 +139,7 @@ pub(crate) fn done_login(
 	};
 
 	//decode the private keys to the enums to use them later
-	let private_key = match keypair_encrypt_alg {
+	let private_key = match keypair_encrypt_alg.as_str() {
 		asym::ecies::ECIES_OUTPUT => {
 			let private = private
 				.try_into()
@@ -149,7 +149,7 @@ pub(crate) fn done_login(
 		_ => return Err(Error::AlgNotFound),
 	};
 
-	let sign_key = match keypair_sign_alg {
+	let sign_key = match keypair_sign_alg.as_str() {
 		sign::ed25519::ED25519_OUTPUT => {
 			let sign = sign.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?;
 			SignK::Ed25519(sign)
@@ -263,9 +263,9 @@ mod test
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
 			encrypted_master_key,
 			encrypted_private_key,
-			out.keypair_encrypt_alg,
+			out.keypair_encrypt_alg.to_string(),
 			encrypted_sign_key,
-			out.keypair_sign_alg,
+			out.keypair_sign_alg.to_string(),
 		)
 		.unwrap();
 
