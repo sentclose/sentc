@@ -4,8 +4,8 @@ mod error;
 
 use base64ct::{Base64, Encoding};
 
-pub use self::alg::asym::{AsymKeyOutput, Pk, Sk};
-pub use self::alg::pw_hash::{
+pub(crate) use self::alg::asym::{AsymKeyOutput, Pk, Sk};
+pub(crate) use self::alg::pw_hash::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	DeriveKeyOutput,
@@ -14,8 +14,8 @@ pub use self::alg::pw_hash::{
 	HashedAuthenticationKey,
 	MasterKeyInfo,
 };
-pub use self::alg::sign::{SignK, SignOutput, VerifyK};
-pub use self::alg::sym::{SymKey, SymKeyOutput};
+pub(crate) use self::alg::sign::{SignK, SignOutput, VerifyK};
+pub(crate) use self::alg::sym::{SymKey, SymKeyOutput};
 use crate::core::user::{done_login, prepare_login, register};
 
 pub fn aes() -> String
