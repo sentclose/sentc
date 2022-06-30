@@ -10,7 +10,7 @@ const AES_IV_LENGTH: usize = 12;
 
 pub const AES_GCM_OUTPUT: &'static str = "AES-GCM-256";
 
-pub type AesKey = [u8; 32];
+pub(crate) type AesKey = [u8; 32];
 
 pub(crate) fn generate_key() -> Result<SymKeyOutput, Error>
 {

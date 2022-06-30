@@ -16,7 +16,7 @@ use crate::{
 	VerifyK,
 };
 
-pub struct RegisterOutPut
+pub(crate) struct RegisterOutPut
 {
 	//info about the raw master key (not the encrypted by the password!)
 	pub master_key_alg: &'static str,
@@ -36,13 +36,13 @@ pub struct RegisterOutPut
 	pub keypair_sign_alg: &'static str,
 }
 
-pub struct LoginDoneOutput
+pub(crate) struct LoginDoneOutput
 {
 	pub private_key: Sk,
 	pub sign_key: SignK,
 }
 
-pub struct ChangePasswordOutput
+pub(crate) struct ChangePasswordOutput
 {
 	pub client_random_value: ClientRandomValue,
 	pub hashed_authentication_key_bytes: HashedAuthenticationKey,

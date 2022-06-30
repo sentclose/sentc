@@ -1,11 +1,11 @@
 pub(crate) mod aes_gcm;
 
-pub enum SymKey
+pub(crate) enum SymKey
 {
 	Aes([u8; 32]),
 }
 
-pub struct SymKeyOutput
+pub(crate) struct SymKeyOutput
 {
 	pub alg: &'static str,
 	pub key: SymKey,

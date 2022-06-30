@@ -1,22 +1,22 @@
 pub(crate) mod argon2;
 
-pub struct MasterKeyInfo
+pub(crate) struct MasterKeyInfo
 {
 	pub encrypted_master_key: Vec<u8>,
 	pub alg: &'static str, //describe how the master key is encrypted
 }
 
-pub enum ClientRandomValue
+pub(crate) enum ClientRandomValue
 {
 	Argon2([u8; 16]),
 }
 
-pub enum HashedAuthenticationKey
+pub(crate) enum HashedAuthenticationKey
 {
 	Argon2([u8; 16]),
 }
 
-pub struct DeriveKeyOutput
+pub(crate) struct DeriveKeyOutput
 {
 	pub client_random_value: ClientRandomValue,
 	pub hashed_authentication_key_bytes: HashedAuthenticationKey,
@@ -24,17 +24,17 @@ pub struct DeriveKeyOutput
 	pub alg: &'static str,
 }
 
-pub enum DeriveMasterKeyForAuth
+pub(crate) enum DeriveMasterKeyForAuth
 {
 	Argon2([u8; 32]),
 }
 
-pub enum DeriveAuthKeyForAuth
+pub(crate) enum DeriveAuthKeyForAuth
 {
 	Argon2([u8; 32]),
 }
 
-pub struct DeriveKeysForAuthOutput
+pub(crate) struct DeriveKeysForAuthOutput
 {
 	pub master_key_encryption_key: DeriveMasterKeyForAuth,
 	pub auth_key: DeriveAuthKeyForAuth,
