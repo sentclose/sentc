@@ -7,7 +7,7 @@
 </head>
 <body>
 	<script type="module">
-		import init, { aes_test, ed_test, argon_test, sign_test } from './pkg/sendclose_wasm.js';
+		import init, { aes_test, ed_test, argon_test, sign_test, register_test_full } from './pkg/sendclose_wasm.js';
 
 		async function run()
 		{
@@ -32,6 +32,13 @@
 			let string4 = sign_test();
 
 			console.log(string4);
+
+			console.log("_________________________________");
+
+			console.log("register test");
+			let string5 = register_test_full();
+
+			console.log(string5);
 		}
 
 		run();

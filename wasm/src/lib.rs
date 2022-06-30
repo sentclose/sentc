@@ -1,4 +1,4 @@
-use sendclose_crypto::{aes, argon, ecdh, sign};
+use sendclose_crypto::{aes, argon, ecdh, register_test, sign};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -23,4 +23,10 @@ pub fn argon_test() -> String
 pub fn sign_test() -> String
 {
 	sign()
+}
+
+#[wasm_bindgen]
+pub fn register_test_full() -> String
+{
+	register_test()
 }
