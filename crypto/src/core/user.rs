@@ -38,8 +38,8 @@ pub struct RegisterOutPut
 
 pub struct LoginDoneOutput
 {
-	private_key: Sk,
-	sign_key: SignK,
+	pub private_key: Sk,
+	pub sign_key: SignK,
 }
 
 pub struct ChangePasswordOutput
