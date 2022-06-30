@@ -184,12 +184,12 @@ pub(crate) fn change_password(
 	new_pw: String,
 	old_salt: String,
 	encrypted_master_key: String,
-	derived_encryption_key_alg: &'static str,
+	derived_encryption_key_alg: String,
 ) -> Result<ChangePasswordOutput, Error>
 {
 	//first make a request to login endpoint -> prepareLogin() with the username to get the salt
 	//get the old auth key
-	let prepare_login_output = prepare_login(old_pw, old_salt, derived_encryption_key_alg.to_string())?;
+	let prepare_login_output = prepare_login(old_pw, old_salt, derived_encryption_key_alg)?;
 
 	//decrypt the master key with the old pw.
 	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
@@ -310,7 +310,7 @@ mod test
 			new_password.to_string(),
 			old_salt_string.clone(),
 			encrypted_master_key,
-			out.derived_alg,
+			out.derived_alg.to_string(),
 		)
 		.unwrap();
 
