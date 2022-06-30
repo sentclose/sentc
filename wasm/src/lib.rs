@@ -56,23 +56,8 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 #[wasm_bindgen]
 pub fn done_login(
 	master_key_encryption: String, //from the prepare login as base64 for exporting
-	encrypted_master_key: String,  //as base64 encoded string from the server
-	encrypted_private_key: String,
-	public_key_string: String,
-	keypair_encrypt_alg: String,
-	encrypted_sign_key: String,
-	verify_key_string: String,
-	keypair_sign_alg: String,
+	server_output: String,
 ) -> String
 {
-	done_login_core(
-		master_key_encryption,
-		encrypted_master_key,
-		encrypted_private_key,
-		public_key_string,
-		keypair_encrypt_alg,
-		encrypted_sign_key,
-		verify_key_string,
-		keypair_sign_alg,
-	)
+	done_login_core(master_key_encryption, server_output)
 }
