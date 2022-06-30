@@ -41,25 +41,16 @@ pub struct RegisterData
 
 impl RegisterData
 {
-	pub fn from_string<F, E>(v: &[u8], err_fn: F) -> Result<Self, E>
-	where
-		F: Fn(serde_json::Error) -> E,
-		E: std::error::Error,
+	pub fn from_string(v: &[u8]) -> serde_json::Result<RegisterData>
 	{
 		//called from server
 
-		match from_slice::<Self>(v) {
-			Err(e) => Err(err_fn(e)),
-			Ok(v) => Ok(v),
-		}
+		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }
 
@@ -76,23 +67,14 @@ pub struct ChangePasswordData
 
 impl ChangePasswordData
 {
-	pub fn from_string<F, E>(v: &[u8], err_fn: F) -> Result<Self, E>
-	where
-		F: Fn(serde_json::Error) -> E,
-		E: std::error::Error,
+	pub fn from_string(v: &[u8]) -> serde_json::Result<ChangePasswordData>
 	{
-		match from_slice::<Self>(v) {
-			Err(e) => Err(err_fn(e)),
-			Ok(v) => Ok(v),
-		}
+		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }
 
@@ -138,20 +120,14 @@ pub enum MasterKeyFormat
 
 impl MasterKeyFormat
 {
-	pub fn from_string(v: &[u8]) -> Result<Self, String>
+	pub fn from_string(v: &[u8]) -> serde_json::Result<MasterKeyFormat>
 	{
-		match from_slice::<Self>(v) {
-			Err(_e) => Err(format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse")),
-			Ok(v) => Ok(v),
-		}
+		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }
 
@@ -169,12 +145,9 @@ impl PrivateKeyFormat
 		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }
 
@@ -192,12 +165,9 @@ impl PublicKeyFormat
 		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }
 
@@ -215,12 +185,9 @@ impl SignKeyFormat
 		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }
 
@@ -238,12 +205,9 @@ impl VerifyKeyFormat
 		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }
 
@@ -258,19 +222,13 @@ pub struct KeyData
 
 impl KeyData
 {
-	pub fn from_string(v: &[u8]) -> Result<Self, String>
+	pub fn from_string(v: &[u8]) -> serde_json::Result<KeyData>
 	{
-		match from_slice::<Self>(v) {
-			Err(_e) => Err(format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse")),
-			Ok(v) => Ok(v),
-		}
+		from_slice::<Self>(v)
 	}
 
-	pub fn to_string(&self) -> String
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		match to_string(self) {
-			Ok(v) => v,
-			Err(_e) => format!("{{\"status\": {}, \"error_message\": \"{}\"}}", -1, "Error while json parse"),
-		}
+		to_string(self)
 	}
 }

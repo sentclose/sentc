@@ -34,6 +34,9 @@ pub enum Error
 
 	ExportingPublicKeyFailed,
 	ImportingPublicKeyFailed,
+
+	JsonToStringFailed,
+	JsonParseFailed,
 }
 
 pub fn err_to_msg(error: Error) -> String

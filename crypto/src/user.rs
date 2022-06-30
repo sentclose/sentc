@@ -83,7 +83,9 @@ fn register_internally(password: String) -> Result<String, Error>
 	};
 
 	//use always to string, even for rust feature enable because this data is for the server
-	Ok(register_out.to_string())
+	Ok(register_out
+		.to_string()
+		.map_err(|_| Error::JsonToStringFailed)?)
 }
 
 #[cfg(feature = "rust")]
@@ -144,7 +146,10 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 		},
 	};
 
-	let master_key_out = master_key_encryption_key.to_string();
+	let master_key_out = match master_key_encryption_key.to_string() {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
+	};
 
 	//the impl needs to split it and give the master_key_encryption_key back for done login
 	format!("{{\"auth_key\": {}, \"master_key_encryption_key\": \"{}\"}}", auth_key, master_key_out)
@@ -214,7 +219,7 @@ pub fn done_login(
 {
 	let master_key_encryption = match MasterKeyFormat::from_string(master_key_encryption.as_bytes()) {
 		Ok(v) => v,
-		Err(e) => return e,
+		Err(_e) => return err_to_msg(Error::JsonParseFailed),
 	};
 
 	let master_key_encryption = match master_key_encryption {
@@ -249,7 +254,10 @@ pub fn done_login(
 		verify_key,
 	};
 
-	output.to_string()
+	match output.to_string() {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
+	}
 }
 
 fn change_password_internally(
@@ -290,7 +298,9 @@ fn change_password_internally(
 		old_auth_key,
 	};
 
-	Ok(pw_change_out.to_string())
+	Ok(pw_change_out
+		.to_string()
+		.map_err(|_| Error::JsonToStringFailed)?)
 }
 
 #[cfg(feature = "rust")]
