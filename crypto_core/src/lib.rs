@@ -24,6 +24,7 @@ mod mods;
 pub use self::alg::asym::ecies::ECIES_OUTPUT;
 pub(crate) use self::alg::asym::AsymKeyOutput;
 pub use self::alg::asym::{Pk, Sk};
+pub use self::alg::pw_hash::argon2::ARGON_2_OUTPUT;
 pub use self::alg::pw_hash::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
@@ -38,4 +39,5 @@ pub(crate) use self::alg::sign::SignOutput;
 pub use self::alg::sign::{SignK, VerifyK};
 pub(crate) use self::alg::sym::{SymKey, SymKeyOutput};
 pub use self::error::Error;
+pub use self::mods::generate_salt;
 pub use self::mods::user::*;
