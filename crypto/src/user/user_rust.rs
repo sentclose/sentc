@@ -37,11 +37,11 @@ pub fn reset_password(new_password: String, decrypted_private_key: &Sk, decrypte
 #[cfg(test)]
 mod test
 {
-	use base64ct::{Base64, Encoding};
-	use sendclose_crypto_common::user::{DoneLoginInput, RegisterData};
-	use sendclose_crypto_core::{ClientRandomValue, Sk};
+	use sendclose_crypto_common::user::RegisterData;
+	use sendclose_crypto_core::Sk;
 
 	use super::*;
+	use crate::test::{simulate_server_done_login, simulate_server_prepare_login};
 
 	#[test]
 	fn test_register()
@@ -61,37 +61,13 @@ mod test
 		let out = register(password.to_string()).unwrap();
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
-		let RegisterData {
-			derived,
-			master_key,
-		} = out;
 
-		//and now try to login
-		//normally the salt gets calc by the api
-		let client_random_value = Base64::decode_vec(derived.client_random_value.as_str()).unwrap();
-		let client_random_value = match derived.derived_alg.as_str() {
-			sendclose_crypto_core::ARGON_2_OUTPUT => ClientRandomValue::Argon2(client_random_value.try_into().unwrap()),
-			_ => panic!("alg not found"),
-		};
-
-		let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
-		let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
+		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, master_key_encryption_key) = prepare_login(password.to_string(), salt_from_rand_value, derived.derived_alg).unwrap();
+		let (_, master_key_encryption_key) = prepare_login(password.to_string(), salt_from_rand_value, out.derived.derived_alg.clone()).unwrap();
 
-		//get the server output back
-		let server_output = DoneLoginInput {
-			encrypted_master_key: master_key.encrypted_master_key,
-			encrypted_private_key: derived.encrypted_private_key,
-			encrypted_sign_key: derived.encrypted_sign_key,
-			public_key_string: derived.public_key,
-			verify_key_string: derived.verify_key,
-			keypair_encrypt_alg: derived.keypair_encrypt_alg,
-			keypair_sign_alg: derived.keypair_sign_alg,
-		};
-
-		let server_output = server_output.to_string().unwrap();
+		let server_output = simulate_server_done_login(out);
 
 		//now save the values
 		let login_out = done_login(&master_key_encryption_key, server_output).unwrap();

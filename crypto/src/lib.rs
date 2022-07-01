@@ -126,7 +126,45 @@ pub fn register_test() -> String
 #[cfg(test)]
 mod test
 {
+	use base64ct::{Base64, Encoding};
+	use sendclose_crypto_common::user::{DoneLoginInput, KeyDerivedData, RegisterData};
+
 	use super::*;
+
+	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
+	{
+		//and now try to login
+		//normally the salt gets calc by the api
+		let client_random_value = Base64::decode_vec(derived.client_random_value.as_str()).unwrap();
+		let client_random_value = match derived.derived_alg.as_str() {
+			sendclose_crypto_core::ARGON_2_OUTPUT => ClientRandomValue::Argon2(client_random_value.try_into().unwrap()),
+			_ => panic!("alg not found"),
+		};
+
+		let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
+		Base64::encode_string(&salt_from_rand_value)
+	}
+
+	pub(crate) fn simulate_server_done_login(data: RegisterData) -> String
+	{
+		let RegisterData {
+			derived,
+			master_key,
+		} = data;
+
+		//get the server output back
+		let server_output = DoneLoginInput {
+			encrypted_master_key: master_key.encrypted_master_key,
+			encrypted_private_key: derived.encrypted_private_key,
+			encrypted_sign_key: derived.encrypted_sign_key,
+			public_key_string: derived.public_key,
+			verify_key_string: derived.verify_key,
+			keypair_encrypt_alg: derived.keypair_encrypt_alg,
+			keypair_sign_alg: derived.keypair_sign_alg,
+		};
+
+		server_output.to_string().unwrap()
+	}
 
 	#[test]
 	fn test_register_test()
