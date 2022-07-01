@@ -34,7 +34,7 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 
 	let output = PrepareLoginData {
 		auth_key,
-		master_key_encryption_key
+		master_key_encryption_key,
 	};
 
 	match output.to_string() {
@@ -55,8 +55,13 @@ pub fn done_login(
 
 	let master_key_encryption = match master_key_encryption {
 		MasterKeyFormat::Argon2(mk) => {
+			let mk = match Base64::decode_vec(mk.as_str()) {
+				Ok(m) => m,
+				Err(_e) => return err_to_msg(Error::KeyDecryptFailed),
+			};
+
 			//if it was encrypted by a key which was derived by argon
-			let master_key_encryption_key: [u8; 32] = match mk.as_bytes().try_into() {
+			let master_key_encryption_key: [u8; 32] = match mk.try_into() {
 				Err(_e) => return err_to_msg(Error::KeyDecryptFailed),
 				Ok(k) => k,
 			};
