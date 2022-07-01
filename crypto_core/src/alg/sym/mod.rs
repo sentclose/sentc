@@ -1,6 +1,6 @@
 pub(crate) mod aes_gcm;
 
-pub(crate) enum SymKey
+pub enum SymKey
 {
 	Aes([u8; 32]),
 }
