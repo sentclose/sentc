@@ -37,7 +37,7 @@ pub fn reset_password(new_password: String, decrypted_private_key: &Sk, decrypte
 #[cfg(test)]
 mod test
 {
-	use sendclose_crypto_common::user::RegisterData;
+	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
 	use sendclose_crypto_core::Sk;
 
 	use super::*;
@@ -83,5 +83,33 @@ mod test
 		arr[3] = 0;
 
 		assert_ne!(private_key, arr);
+	}
+
+	#[test]
+	fn test_change_password()
+	{
+		let password = "abc*èéöäüê";
+		let new_password = "abcdfg";
+
+		let out = register(password.to_string()).unwrap();
+
+		let out = RegisterData::from_string(out.as_bytes()).unwrap();
+
+		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
+
+		let pw_change_out = change_password(
+			password.to_string(),
+			new_password.to_string(),
+			salt_from_rand_value,
+			out.master_key.encrypted_master_key.clone(),
+			out.derived.derived_alg,
+		)
+		.unwrap();
+
+		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_bytes()).unwrap();
+
+		assert_ne!(pw_change_out.new_client_random_value, out.derived.client_random_value);
+
+		assert_ne!(pw_change_out.new_encrypted_master_key, out.master_key.encrypted_master_key);
 	}
 }
