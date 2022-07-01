@@ -78,6 +78,26 @@ impl ChangePasswordData
 	}
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PrepareLoginData
+{
+	pub auth_key: String,
+	pub master_key_encryption_key: MasterKeyFormat,
+}
+
+impl PrepareLoginData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<PrepareLoginData>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
 //as base64 encoded string from the server
 #[derive(Serialize, Deserialize)]
 pub struct DoneLoginInput

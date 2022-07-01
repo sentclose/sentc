@@ -1,5 +1,5 @@
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{KeyData, MasterKeyFormat, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
+use sendclose_crypto_common::user::{KeyData, MasterKeyFormat, PrepareLoginData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 
 use crate::err_to_msg;
@@ -32,13 +32,15 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 		},
 	};
 
-	let master_key_out = match master_key_encryption_key.to_string() {
-		Ok(v) => v,
-		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
+	let output = PrepareLoginData {
+		auth_key,
+		master_key_encryption_key
 	};
 
-	//the impl needs to split it and give the master_key_encryption_key back for done login
-	format!("{{\"auth_key\": {}, \"master_key_encryption_key\": \"{}\"}}", auth_key, master_key_out)
+	match output.to_string() {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
+	}
 }
 
 pub fn done_login(
