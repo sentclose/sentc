@@ -113,17 +113,10 @@ pub struct DoneLoginInput
 
 impl DoneLoginInput
 {
-	pub fn to_string<F, E>(&self, err_fn: F) -> Result<String, E>
-	where
-		F: Fn(serde_json::Error) -> E,
-		E: std::error::Error,
+	pub fn to_string(&self) -> serde_json::Result<String>
 	{
 		//called from server
-
-		match to_string(self) {
-			Ok(v) => Ok(v),
-			Err(e) => Err(err_fn(e)),
-		}
+		to_string(self)
 	}
 
 	pub fn from_string(v: &[u8]) -> serde_json::Result<DoneLoginInput>
