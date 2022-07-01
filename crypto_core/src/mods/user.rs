@@ -51,6 +51,17 @@ pub struct ChangePasswordOutput
 	pub old_auth_key: DeriveAuthKeyForAuth,
 }
 
+pub struct ResetPasswordOutput
+{
+	pub master_key_alg: &'static str,
+	pub client_random_value: ClientRandomValue,
+	pub hashed_authentication_key_bytes: HashedAuthenticationKey,
+	pub master_key_info: MasterKeyInfo,
+	pub derived_alg: &'static str,
+	pub encrypted_private_key: Vec<u8>,
+	pub encrypted_sign_key: Vec<u8>,
+}
+
 #[cfg(feature = "argon2_aes_ecies_ed25519")]
 fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, Error>
 {
@@ -214,6 +225,59 @@ pub fn change_password(
 	})
 }
 
+#[cfg(feature = "argon2_aes_ecies_ed25519")]
+fn password_reset_argon2_aes_ecies_ed25519(new_pw: &str, decrypted_private_key: &Sk, decrypted_sign_key: &SignK)
+	-> Result<ResetPasswordOutput, Error>
+{
+	//1. create a new master key (because the old key was encrypted by the forgotten password and can't be restored)
+	let master_key = sym::aes_gcm::generate_key()?;
+
+	//2. encrypt the private and the sign key with the new master key
+	let encrypted_private_key = match decrypted_private_key {
+		Sk::Ecies(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+	};
+
+	let encrypted_sign_key = match decrypted_sign_key {
+		SignK::Ed25519(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+	};
+
+	//3. encrypt the new master key with the new password
+	let raw_master_key = match &master_key.key {
+		SymKey::Aes(k) => k,
+	};
+
+	let derived = pw_hash::argon2::derived_keys_from_password(new_pw.as_bytes(), raw_master_key)?;
+
+	Ok(ResetPasswordOutput {
+		master_key_alg: master_key.alg,
+		client_random_value: derived.client_random_value,
+		hashed_authentication_key_bytes: derived.hashed_authentication_key_bytes,
+		master_key_info: derived.master_key_info,
+		derived_alg: derived.alg,
+		encrypted_private_key,
+		encrypted_sign_key,
+	})
+}
+
+/**
+# Reset the users password
+
+Only works if the user has still access to the decrypted private key and the decrypted sign key (which are encrypted by the old password).
+
+1. create a new master key like register()
+2. encrypt the private and sign keys with the new master key. Use here the alg from the actual selected feature
+3. finally encrypt the new master key by the new password
+
+Security hint:
+- the server still awaits a valid auth token when sending the reset password request
+- an attacker needs access to the decrypted private key, decrypted sign key and the auth token
+*/
+pub fn password_reset(new_pw: &str, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<ResetPasswordOutput, Error>
+{
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	password_reset_argon2_aes_ecies_ed25519(new_pw, decrypted_private_key, decrypted_sign_key)
+}
+
 #[cfg(test)]
 mod test
 {
@@ -233,8 +297,11 @@ mod test
 		//register should not panic because we only use internally values!
 		let out = register(password).unwrap();
 
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		assert_eq!(out.master_key_alg, sym::aes_gcm::AES_GCM_OUTPUT);
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		assert_eq!(out.keypair_encrypt_alg, ecies::ECIES_OUTPUT);
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		assert_eq!(out.keypair_sign_alg, ed25519::ED25519_OUTPUT);
 	}
 
@@ -345,5 +412,72 @@ mod test
 		};
 
 		assert_eq!(old_master_key, new_master_key);
+	}
+
+	#[test]
+	fn test_password_reset()
+	{
+		let password = "abc*èéöäüê";
+		let out = register(password).unwrap();
+
+		let client_random_value = match out.client_random_value {
+			ClientRandomValue::Argon2(v) => v,
+		};
+		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
+
+		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
+
+		//try to decrypt the master key
+		let login_out = done_login(
+			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
+			&out.master_key_info.encrypted_master_key,
+			&out.encrypted_private_key,
+			out.keypair_encrypt_alg,
+			&out.encrypted_sign_key,
+			out.keypair_sign_alg,
+		)
+		.unwrap();
+
+		//reset the password
+		let new_password = "123";
+
+		let password_reset_out = password_reset(new_password, &login_out.private_key, &login_out.sign_key).unwrap();
+
+		//test if we can login with the new password
+		let client_random_value = match password_reset_out.client_random_value {
+			ClientRandomValue::Argon2(v) => v,
+		};
+		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
+
+		let prep_login_out_pw_reset = prepare_login(new_password, &salt_from_rand_value, password_reset_out.derived_alg).unwrap();
+
+		//try to decrypt the master key
+		let login_out_pw_reset = done_login(
+			&prep_login_out_pw_reset.master_key_encryption_key, //the value comes from prepare login
+			&password_reset_out.master_key_info.encrypted_master_key,
+			&password_reset_out.encrypted_private_key,
+			out.keypair_encrypt_alg,
+			&password_reset_out.encrypted_sign_key,
+			out.keypair_sign_alg,
+		)
+		.unwrap();
+
+		assert_ne!(
+			out.master_key_info.encrypted_master_key,
+			password_reset_out.master_key_info.encrypted_master_key
+		);
+
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		{
+			let pk = match login_out.private_key {
+				Sk::Ecies(k) => k,
+			};
+
+			let pk2 = match login_out_pw_reset.private_key {
+				Sk::Ecies(k2) => k2,
+			};
+
+			assert_eq!(pk, pk2);
+		}
 	}
 }
