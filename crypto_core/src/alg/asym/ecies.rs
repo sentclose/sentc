@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use hkdf::Hkdf;
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sha2::Sha256;
@@ -131,6 +133,7 @@ fn hkdf_sha256(ikm: &[u8]) -> AesKey
 mod test
 {
 	use super::*;
+	extern crate std; //use std here to check if the bytes output are correct to the input string
 	use crate::error::Error::{DecryptionFailed, DecryptionFailedCiphertextShort};
 
 	fn test_key_gen_output(out: &AsymKeyOutput)

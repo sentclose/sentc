@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use aes_gcm::aead::generic_array::GenericArray;
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key};
@@ -117,6 +119,8 @@ fn decrypt_internally(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 #[cfg(test)]
 mod test
 {
+	extern crate std; //use std here to check if the bytes output are correct to the input string
+
 	use super::*;
 	use crate::error::Error::DecryptionFailed;
 

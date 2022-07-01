@@ -492,7 +492,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
-name = "sendclose_crypto"
+name = "sendclose-crypto"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",
@@ -502,13 +502,14 @@ dependencies = [
  "hkdf",
  "pem-rfc7468",
  "rand_core 0.6.3",
- "sendclose_crypto_common",
+ "sendclose-crypto-common",
+ "sendclose-crypto-core",
  "sha2 0.10.2",
  "x25519-dalek",
 ]
 
 [[package]]
-name = "sendclose_crypto_common"
+name = "sendclose-crypto-common"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -516,11 +517,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "sendclose-crypto-core"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "argon2",
+ "ed25519-dalek",
+ "hkdf",
+ "rand_core 0.6.3",
+ "sha2 0.10.2",
+ "x25519-dalek",
+]
+
+[[package]]
 name = "sendclose_flutter"
 version = "0.1.0"
 dependencies = [
  "flutter_rust_bridge",
- "sendclose_crypto",
+ "sendclose-crypto",
 ]
 
 [[package]]
@@ -528,7 +542,7 @@ name = "sendclose_wasm"
 version = "0.1.0"
 dependencies = [
  "getrandom 0.2.6",
- "sendclose_crypto",
+ "sendclose-crypto",
  "sha2 0.10.2",
  "wasm-bindgen",
 ]

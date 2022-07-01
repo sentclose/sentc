@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
 use rand_core::{CryptoRng, OsRng, RngCore};
 

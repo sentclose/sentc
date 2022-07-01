@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crypto",
+    "crypto_core",
     "crypto_common",
     "wasm",
     "flutter/sendclose/rust"

@@ -1,3 +1,6 @@
+use alloc::borrow::ToOwned;
+use alloc::vec::Vec;
+
 use argon2::{Algorithm, Argon2, Params, Version};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sha2::{Digest, Sha256};
@@ -159,7 +162,7 @@ fn derived_keys(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; HALF_DERIVED
 //this is pub crate because we need this function in later tests
 pub(crate) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH]) -> Vec<u8>
 {
-	let mut salt_string = "sendclose".to_string();
+	let mut salt_string = "sentc".to_owned();
 
 	//pad the salt string to 200 chars with the letter P
 	for _i in salt_string.len()..SALT_STRING_MAX_LENGTH {
@@ -226,6 +229,7 @@ fn get_derived_single_key(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Erro
 mod test
 {
 	use super::*;
+	extern crate std; //use std here to check if the bytes output are correct to the input string
 	use crate::alg::sym::aes_gcm::AES_GCM_OUTPUT;
 	use crate::{alg, SymKey};
 
