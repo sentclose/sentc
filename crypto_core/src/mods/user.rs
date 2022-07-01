@@ -51,7 +51,8 @@ pub struct ChangePasswordOutput
 	pub old_auth_key: DeriveAuthKeyForAuth,
 }
 
-pub fn register(password: &str) -> Result<RegisterOutPut, Error>
+#[cfg(feature = "argon2_aes_ecies_ed25519")]
+fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, Error>
 {
 	//1. create aes master key
 	let master_key = sym::aes_gcm::generate_key()?;
@@ -94,6 +95,14 @@ pub fn register(password: &str) -> Result<RegisterOutPut, Error>
 		public_key: keypair.pk,
 		keypair_encrypt_alg: keypair.alg,
 	})
+}
+
+pub fn register(password: &str) -> Result<RegisterOutPut, Error>
+{
+	//define at register which alg should be used, but support all other alg in the other functions
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	register_argon2_aes_ecies_ed25519(password)
 }
 
 pub fn prepare_login(password: &str, salt: &[u8], derived_encryption_key_alg: &str) -> Result<DeriveKeysForAuthOutput, Error>
