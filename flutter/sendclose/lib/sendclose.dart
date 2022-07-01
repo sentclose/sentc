@@ -17,7 +17,7 @@ class Sendclose {
   factory Sendclose()
   {
     const base = "sendclose_flutter";
-    final path = Platform.isWindows ? "../../../target/release/$base.dll" : "lib$base.so";
+    final path = Platform.isWindows ? "$base.dll" : "lib$base.so";
     late final dylib = Platform.isIOS
         ? DynamicLibrary.process()
         : Platform.isMacOS

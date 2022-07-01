@@ -44,10 +44,12 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 
+include(../cmake/main.cmake)
+
 # List of absolute paths to libraries that should be bundled with the plugin.
 # This list could contain prebuilt libraries, or libraries created by an
 # external build triggered from this build file.
 set(sendclose_bundled_libraries
-  ""
+  "$<TARGET_FILE:${CRATE_NAME}>"
   PARENT_SCOPE
 )
