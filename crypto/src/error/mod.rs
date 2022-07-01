@@ -11,6 +11,8 @@ pub fn err_to_msg(error: Error) -> String
 
 		//salt decode error (from base64 string to bytes)
 		Error::DecodeSaltFailed => out_error(4, "The salt has a wrong format"),
+
+		Error::JsonToStringFailed => out_error(100, "Cannot create a string from this object"),
 		_ => out_error(0, "other"),
 	}
 }
