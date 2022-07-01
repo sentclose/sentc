@@ -258,17 +258,6 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
-dependencies = [
- "cfg-if",
- "libc",
- "wasi 0.9.0+wasi-snapshot-preview1",
-]
-
-[[package]]
-name = "getrandom"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9be70c98951c83b8d2f8f60d7065fa6d5146873094452a1008da8c2f1e4205ad"
@@ -276,7 +265,7 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "wasi 0.10.2+wasi-snapshot-preview1",
+ "wasi",
  "wasm-bindgen",
 ]
 
@@ -457,9 +446,6 @@ name = "rand_core"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
-dependencies = [
- "getrandom 0.1.16",
-]
 
 [[package]]
 name = "rand_core"
@@ -467,7 +453,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
- "getrandom 0.2.6",
+ "getrandom",
 ]
 
 [[package]]
@@ -495,17 +481,10 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 name = "sendclose-crypto"
 version = "0.1.0"
 dependencies = [
- "aes-gcm",
- "argon2",
  "base64ct",
- "ed25519-dalek",
- "hkdf",
  "pem-rfc7468",
- "rand_core 0.6.3",
  "sendclose-crypto-common",
  "sendclose-crypto-core",
- "sha2 0.10.2",
- "x25519-dalek",
 ]
 
 [[package]]
@@ -542,7 +521,7 @@ dependencies = [
 name = "sendclose_wasm"
 version = "0.1.0"
 dependencies = [
- "getrandom 0.2.6",
+ "getrandom",
  "sendclose-crypto",
  "sha2 0.10.2",
  "wasm-bindgen",
@@ -686,12 +665,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "wasi"
-version = "0.9.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "wasi"
