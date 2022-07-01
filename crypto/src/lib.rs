@@ -1,10 +1,139 @@
 mod error;
 mod user;
 
-//use base64ct::{Base64, Encoding};
+use base64ct::{Base64, Encoding};
+use sendclose_crypto_common::user::{DoneLoginInput, RegisterData};
+#[cfg(not(feature = "rust"))]
+use sendclose_crypto_common::user::{KeyData, PrepareLoginData, PrivateKeyFormat};
+use sendclose_crypto_core::ClientRandomValue;
+#[cfg(feature = "rust")]
+use sendclose_crypto_core::Sk;
 
 pub use self::error::err_to_msg;
 pub use self::user::{change_password, done_login, prepare_login, register, DoneLoginOutput};
+
+#[cfg(feature = "rust")]
+pub fn register_test() -> String
+{
+	let password = "abc*èéöäüê";
+
+	let out = register(password.to_string()).unwrap();
+
+	let out = RegisterData::from_string(out.as_bytes()).unwrap();
+	let RegisterData {
+		derived,
+		master_key,
+	} = out;
+
+	//and now try to login
+	//normally the salt gets calc by the api
+	let client_random_value = Base64::decode_vec(derived.client_random_value.as_str()).unwrap();
+	let client_random_value = match derived.derived_alg.as_str() {
+		sendclose_crypto_core::ARGON_2_OUTPUT => ClientRandomValue::Argon2(client_random_value.try_into().unwrap()),
+		_ => panic!("alg not found"),
+	};
+
+	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
+	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
+
+	//back to the client, send prep login out string to the server if it is no err
+	let (_, master_key_encryption_key) = prepare_login(password.to_string(), salt_from_rand_value, derived.derived_alg).unwrap();
+
+	//get the server output back
+	let server_output = DoneLoginInput {
+		encrypted_master_key: master_key.encrypted_master_key,
+		encrypted_private_key: derived.encrypted_private_key,
+		encrypted_sign_key: derived.encrypted_sign_key,
+		public_key_string: derived.public_key,
+		verify_key_string: derived.verify_key,
+		keypair_encrypt_alg: derived.keypair_encrypt_alg,
+		keypair_sign_alg: derived.keypair_sign_alg,
+	};
+
+	let server_output = server_output.to_string().unwrap();
+
+	//now save the values
+	#[cfg(feature = "rust")]
+	let login_out = done_login(&master_key_encryption_key, server_output).unwrap();
+
+	let private_key = match login_out.private_key {
+		Sk::Ecies(k) => k,
+	};
+
+	format!("register done with private key: {:?}", private_key)
+}
+
+#[cfg(not(feature = "rust"))]
+pub fn register_test() -> String
+{
+	let password = "abc*èéöäüê";
+
+	let out = register(password.to_string());
+
+	let out = RegisterData::from_string(out.as_bytes()).unwrap();
+	let RegisterData {
+		derived,
+		master_key,
+	} = out;
+
+	//and now try to login
+	//normally the salt gets calc by the api
+	let client_random_value = Base64::decode_vec(derived.client_random_value.as_str()).unwrap();
+	let client_random_value = match derived.derived_alg.as_str() {
+		sendclose_crypto_core::ARGON_2_OUTPUT => ClientRandomValue::Argon2(client_random_value.try_into().unwrap()),
+		_ => panic!("alg not found"),
+	};
+
+	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
+	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
+
+	//back to the client, send prep login out string to the server if it is no err
+	let prep_login_out = prepare_login(password.to_string(), salt_from_rand_value, derived.derived_alg);
+
+	//and get the master_key_encryption_key for done login
+	let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
+	let master_key_encryption_key = prep_login_out.master_key_encryption_key;
+
+	//get the server output back
+	let server_output = DoneLoginInput {
+		encrypted_master_key: master_key.encrypted_master_key,
+		encrypted_private_key: derived.encrypted_private_key,
+		encrypted_sign_key: derived.encrypted_sign_key,
+		public_key_string: derived.public_key,
+		verify_key_string: derived.verify_key,
+		keypair_encrypt_alg: derived.keypair_encrypt_alg,
+		keypair_sign_alg: derived.keypair_sign_alg,
+	};
+
+	let server_output = server_output.to_string().unwrap();
+
+	//now save the values
+	#[cfg(not(feature = "rust"))]
+	let login_out = done_login(
+		master_key_encryption_key.to_string().unwrap(), //the value comes from prepare login
+		server_output,
+	);
+
+	let login_out = KeyData::from_string(&login_out.as_bytes()).unwrap();
+
+	let private_key = match login_out.private_key {
+		PrivateKeyFormat::Ecies(k) => k,
+	};
+
+	format!("register done with private key: {:?}", private_key)
+}
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+
+	#[test]
+	fn test_register_test()
+	{
+		register_test();
+	}
+}
 
 /*
 pub fn aes() -> String
@@ -136,50 +265,6 @@ pub fn sign() -> String
 	format!("check was: {}", check)
 }
 
-pub fn register_test() -> String
-{
-	let password = "abc*èéöäüê";
-
-	let out = register_internally(password.to_string()).unwrap();
-
-	//and now try to login
-	//normally the salt gets calc by the api
-	let client_random_value = match out.client_random_value {
-		ClientRandomValue::Argon2(v) => v,
-	};
-	let salt_from_rand_value = alg::pw_hash::argon2::generate_salt(client_random_value);
-
-	let prep_login_out = prepare_login_internally(password.to_string(), &salt_from_rand_value, out.derived_alg).unwrap();
-
-	//try to decrypt the master key
-	//prepare the encrypted values (from server in base64 encoded)
-
-	let login_out = done_login_internally(
-		&prep_login_out.master_key_encryption_key, //the value comes from prepare login
-		&out.master_key_info.encrypted_master_key,
-		&out.encrypted_private_key,
-		out.keypair_encrypt_alg,
-		&out.encrypted_sign_key,
-		out.keypair_sign_alg,
-	)
-	.unwrap();
-
-	//try encrypt / decrypt with the keypair
-	let public_key = out.public_key;
-
-	let text = "Hello world üöäéèßê°";
-	let encrypted = alg::asym::ecies::encrypt(&public_key, text.as_bytes()).unwrap();
-	let decrypted = alg::asym::ecies::decrypt(&login_out.private_key, &encrypted).unwrap();
-	let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
-
-	//try sign and verify
-	let verify_key = out.verify_key;
-
-	let data_with_sign = alg::sign::ed25519::sign(&login_out.sign_key, &encrypted).unwrap();
-	let verify_res = alg::sign::ed25519::verify(&verify_key, &data_with_sign).unwrap();
-
-	format!("register sign result was: {} and decrypted text was: {}", verify_res, decrypted_text)
-}
 
 #[cfg(test)]
 mod test
