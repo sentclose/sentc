@@ -8,12 +8,14 @@
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData, ResetPasswordData};
-use sendclose_crypto_core::{
+use sendclose_crypto_core::user::{
 	change_password as change_password_core,
 	done_login as done_login_core,
 	password_reset as password_reset_core,
 	prepare_login as prepare_login_core,
 	register as register_core,
+};
+use sendclose_crypto_core::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	DeriveMasterKeyForAuth,
