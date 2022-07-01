@@ -40,6 +40,7 @@ pub use self::alg::pw_hash::{
 pub use self::alg::sign::ed25519::ED25519_OUTPUT;
 pub(crate) use self::alg::sign::SignOutput;
 pub use self::alg::sign::{SignK, VerifyK};
+pub use self::alg::sym::aes_gcm::AES_GCM_OUTPUT;
 pub use self::alg::sym::SymKey;
 pub(crate) use self::alg::sym::SymKeyOutput;
 pub use self::error::Error;
