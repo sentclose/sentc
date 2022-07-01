@@ -1,38 +1,5 @@
-use sendclose_crypto::{
-	aes,
-	argon,
-	done_login as done_login_core,
-	ecdh,
-	prepare_login as prepare_login_core,
-	register as register_core,
-	register_test,
-	sign,
-};
+use sendclose_crypto::{done_login as done_login_core, prepare_login as prepare_login_core, register as register_core, register_test};
 use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-pub fn aes_test() -> String
-{
-	aes()
-}
-
-#[wasm_bindgen]
-pub fn ed_test() -> String
-{
-	ecdh()
-}
-
-#[wasm_bindgen]
-pub fn argon_test() -> String
-{
-	argon()
-}
-
-#[wasm_bindgen]
-pub fn sign_test() -> String
-{
-	sign()
-}
 
 #[wasm_bindgen]
 pub fn register_test_full() -> String
