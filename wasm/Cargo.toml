@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # own crypto lib
-sendclose_crypto = {version = "0.1.0", path = "../crypto"}
+sendclose-crypto = {version = "0.1.0", path = "../crypto"}
 
 # must be js feature for wasm
 getrandom = { version = "0.2", features = ["js"] }

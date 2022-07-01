@@ -1,12 +1,12 @@
 [package]
-name = "sendclose_crypto"
+name = "sendclose-crypto"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sendclose_crypto_common = {version = "0.1.0", path = "../crypto_common"}
+sendclose-crypto-common = {version = "0.1.0", path = "../crypto_common"}
 
 aes-gcm = "0.9.4"
 # pre here because we must use rand_core version 0.6.3 under the hood but the actual version of x25519-dalek uses version 0.5
