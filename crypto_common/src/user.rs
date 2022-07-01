@@ -79,6 +79,30 @@ impl ChangePasswordData
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct ResetPasswordData
+{
+	pub client_random_value: String, //don't use the enum for out, we will get the enum form the derived alg on the server (because the rand value is only used on the server)
+	pub hashed_authentication_key: String,
+	pub master_key: MasterKey,
+	pub derived_alg: String,
+	pub encrypted_private_key: String,
+	pub encrypted_sign_key: String,
+}
+
+impl ResetPasswordData
+{
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+
+	pub fn from_string(v: &[u8]) -> serde_json::Result<ResetPasswordData>
+	{
+		from_slice::<Self>(v)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct PrepareLoginData
 {
 	pub auth_key: String,

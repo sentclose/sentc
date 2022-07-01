@@ -1,6 +1,6 @@
-use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
+use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, SignK, Sk};
 
-use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally};
+use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
 use crate::DoneLoginOutput;
 
 pub fn register(password: String) -> Result<String, Error>
@@ -27,6 +27,11 @@ pub fn change_password(
 ) -> Result<String, Error>
 {
 	change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg)
+}
+
+pub fn reset_password(new_password: String, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<String, Error>
+{
+	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
 }
 
 #[cfg(test)]

@@ -3,7 +3,7 @@ use sendclose_crypto_common::user::{KeyData, MasterKeyFormat, PrepareLoginData, 
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 
 use crate::err_to_msg;
-use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally};
+use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
 
 pub fn register(password: String) -> String
 {
@@ -101,6 +101,24 @@ pub fn change_password(old_pw: String, new_pw: String, old_salt: String, encrypt
 	match change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg) {
 		Err(e) => return err_to_msg(e),
 		Ok(v) => v,
+	}
+}
+
+pub fn reset_password(new_password: String, decrypted_private_key: String, decrypted_sign_key: String) -> String
+{
+	let decrypted_private_key = match import_private_key(decrypted_private_key) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let decrypted_sign_key = match import_sign_key(decrypted_sign_key) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	match reset_password_internally(new_password, &decrypted_private_key, &decrypted_sign_key) {
+		Ok(v) => v,
+		Err(e) => err_to_msg(e),
 	}
 }
 

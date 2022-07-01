@@ -7,10 +7,11 @@
 
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
-use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData};
+use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData, ResetPasswordData};
 use sendclose_crypto_core::{
 	change_password as change_password_core,
 	done_login as done_login_core,
+	password_reset as password_reset_core,
 	prepare_login as prepare_login_core,
 	register as register_core,
 	ClientRandomValue,
@@ -34,10 +35,10 @@ pub mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
-pub use self::user::{change_password, done_login, prepare_login, register};
+pub use self::user::{change_password, done_login, prepare_login, register, reset_password};
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
-pub use self::user_rust::{change_password, done_login, prepare_login, register};
+pub use self::user_rust::{change_password, done_login, prepare_login, register, reset_password};
 
 pub struct DoneLoginOutput
 {
@@ -235,6 +236,41 @@ fn change_password_internally(
 	Ok(pw_change_out
 		.to_string()
 		.map_err(|_| Error::JsonToStringFailed)?)
+}
+
+fn reset_password_internally(new_password: String, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<String, Error>
+{
+	let out = password_reset_core(new_password.as_str(), decrypted_private_key, decrypted_sign_key)?;
+
+	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
+	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
+	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
+
+	//prepare for the server
+	let client_random_value = match out.client_random_value {
+		ClientRandomValue::Argon2(v) => Base64::encode_string(&v),
+	};
+
+	let hashed_authentication_key = match out.hashed_authentication_key_bytes {
+		HashedAuthenticationKey::Argon2(h) => Base64::encode_string(&h),
+	};
+
+	let master_key = MasterKey {
+		encrypted_master_key,
+		master_key_alg: out.master_key_alg.to_string(),
+		encrypted_master_key_alg: out.master_key_info.alg.to_string(),
+	};
+
+	let data = ResetPasswordData {
+		client_random_value,
+		hashed_authentication_key,
+		master_key,
+		derived_alg: out.derived_alg.to_string(),
+		encrypted_sign_key,
+		encrypted_private_key,
+	};
+
+	Ok(data.to_string().map_err(|_| Error::JsonToStringFailed)?)
 }
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>

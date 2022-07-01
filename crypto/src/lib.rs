@@ -10,7 +10,7 @@ use sendclose_crypto_core::ClientRandomValue;
 use sendclose_crypto_core::Sk;
 
 pub use self::error::err_to_msg;
-pub use self::user::{change_password, done_login, prepare_login, register, DoneLoginOutput};
+pub use self::user::{change_password, done_login, prepare_login, register, reset_password, DoneLoginOutput};
 
 #[cfg(feature = "rust")]
 pub fn register_test() -> String
