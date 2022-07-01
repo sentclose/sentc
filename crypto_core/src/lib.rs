@@ -19,7 +19,10 @@ extern crate alloc;
 
 mod alg;
 mod error;
-mod mods;
+pub mod group;
+pub mod user;
+
+use alloc::vec::Vec;
 
 pub use self::alg::asym::ecies::ECIES_OUTPUT;
 pub(crate) use self::alg::asym::AsymKeyOutput;
@@ -37,7 +40,13 @@ pub use self::alg::pw_hash::{
 pub use self::alg::sign::ed25519::ED25519_OUTPUT;
 pub(crate) use self::alg::sign::SignOutput;
 pub use self::alg::sign::{SignK, VerifyK};
-pub(crate) use self::alg::sym::{SymKey, SymKeyOutput};
+pub use self::alg::sym::SymKey;
+pub(crate) use self::alg::sym::SymKeyOutput;
 pub use self::error::Error;
-pub use self::mods::generate_salt;
-pub use self::mods::user::*;
+
+pub fn generate_salt(client_random_value: ClientRandomValue) -> Vec<u8>
+{
+	match client_random_value {
+		ClientRandomValue::Argon2(v) => alg::pw_hash::argon2::generate_salt(v),
+	}
+}
