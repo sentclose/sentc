@@ -28,24 +28,9 @@ class Sendclose {
     return Sendclose._(api);
   }
 
-  Future<String> aesTest()
+  Future<String> register(String password)
   {
-    return api.aesTest();
-  }
-
-  Future<String> edTest()
-  {
-    return api.edTest();
-  }
-
-  Future<String> argonTest()
-  {
-    return api.argonTest();
-  }
-
-  Future<String> signTest()
-  {
-    return api.signTest();
+    return api.register(password: password);
   }
 
   Future<String> registerTest()

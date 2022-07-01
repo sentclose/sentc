@@ -17,20 +17,14 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _sendclosePlugin = Sendclose();
 
-  late Future<void> aes_test;
-  late Future<void> ecdh_test;
-  late Future<void> argon_test;
-  late Future<void> sign_test;
+  late Future<void> register;
   late Future<void> register_test;
 
   @override
   void initState() {
     super.initState();
 
-    aes_test = _sendclosePlugin.aesTest();
-    ecdh_test = _sendclosePlugin.edTest();
-    argon_test = _sendclosePlugin.argonTest();
-    sign_test = _sendclosePlugin.signTest();
+    register = _sendclosePlugin.register("abc");
     register_test = _sendclosePlugin.registerTest();
   }
 
@@ -45,43 +39,7 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             children: <Widget>[
               FutureBuilder<List<dynamic>>(
-                  future: Future.wait([aes_test]),
-                  builder: (context, snap) {
-                    final data = snap.data;
-                    if (data == null) {
-                      return const Text("Loading");
-                    }
-                    return Text(
-                      '${data[0]}',
-                      style: Theme.of(context).textTheme.headline4,
-                    );
-                  }),
-              FutureBuilder<List<dynamic>>(
-                  future: Future.wait([ecdh_test]),
-                  builder: (context, snap) {
-                    final data = snap.data;
-                    if (data == null) {
-                      return const Text("Loading");
-                    }
-                    return Text(
-                      '${data[0]}',
-                      style: Theme.of(context).textTheme.headline4,
-                    );
-                  }),
-              FutureBuilder<List<dynamic>>(
-                  future: Future.wait([argon_test]),
-                  builder: (context, snap) {
-                    final data = snap.data;
-                    if (data == null) {
-                      return const Text("Loading");
-                    }
-                    return Text(
-                      '${data[0]}',
-                      style: Theme.of(context).textTheme.headline4,
-                    );
-                  }),
-              FutureBuilder<List<dynamic>>(
-                  future: Future.wait([sign_test]),
+                  future: Future.wait([register]),
                   builder: (context, snap) {
                     final data = snap.data;
                     if (data == null) {
