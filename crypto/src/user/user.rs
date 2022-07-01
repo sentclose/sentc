@@ -1,8 +1,9 @@
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::user::{KeyData, MasterKeyFormat, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
+use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 
+use crate::err_to_msg;
 use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally};
-use crate::{err_to_msg, DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 
 pub fn register(password: String) -> String
 {

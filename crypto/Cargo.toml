@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+sendclose-crypto-core = {version = "0.1.0", path = "../crypto_core"}
 sendclose-crypto-common = {version = "0.1.0", path = "../crypto_common"}
 
 aes-gcm = "0.9.4"

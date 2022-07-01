@@ -1,29 +1,12 @@
-mod alg;
-mod core;
 mod error;
 mod user;
 
-use base64ct::{Base64, Encoding};
+//use base64ct::{Base64, Encoding};
 
-pub(crate) use self::alg::asym::{AsymKeyOutput, Pk, Sk};
-#[cfg(feature = "rust")]
-pub use self::alg::pw_hash::DeriveMasterKeyForAuth;
-#[cfg(not(feature = "rust"))]
-pub(crate) use self::alg::pw_hash::DeriveMasterKeyForAuth;
-pub(crate) use self::alg::pw_hash::{
-	ClientRandomValue,
-	DeriveAuthKeyForAuth,
-	DeriveKeyOutput,
-	DeriveKeysForAuthOutput,
-	HashedAuthenticationKey,
-	MasterKeyInfo,
-};
-pub(crate) use self::alg::sign::{SignK, SignOutput, VerifyK};
-pub(crate) use self::alg::sym::{SymKey, SymKeyOutput};
-pub use self::error::{err_to_msg, Error};
+pub use self::error::err_to_msg;
 pub use self::user::{change_password, done_login, prepare_login, register, DoneLoginOutput};
-use crate::core::user::{done_login as done_login_internally, prepare_login as prepare_login_internally, register as register_internally};
 
+/*
 pub fn aes() -> String
 {
 	//aes
@@ -251,3 +234,4 @@ mod test
 		assert_eq!(str, "register sign result was: true and decrypted text was: Hello world üöäéèßê°");
 	}
 }
+*/

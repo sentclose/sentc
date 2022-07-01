@@ -8,14 +8,23 @@
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData};
-
-use crate::core::user::{
+use sendclose_crypto_core::{
 	change_password as change_password_core,
 	done_login as done_login_core,
 	prepare_login as prepare_login_core,
 	register as register_core,
+	ClientRandomValue,
+	DeriveAuthKeyForAuth,
+	DeriveMasterKeyForAuth,
+	Error,
+	HashedAuthenticationKey,
+	Pk,
+	SignK,
+	Sk,
+	VerifyK,
+	ECIES_OUTPUT,
+	ED25519_OUTPUT,
 };
-use crate::{alg, ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, Error, HashedAuthenticationKey, Pk, SignK, Sk, VerifyK};
 
 #[cfg(feature = "rust")]
 pub mod user_rust;
@@ -40,7 +49,7 @@ pub struct DoneLoginOutput
 
 fn register_internally(password: String) -> Result<String, Error>
 {
-	let out = register_core(password)?;
+	let out = register_core(password.as_str())?;
 
 	//transform the register output into json
 
@@ -112,7 +121,7 @@ fn prepare_login_internally(
 ) -> Result<(String, DeriveMasterKeyForAuth), Error>
 {
 	let salt = Base64::decode_vec(salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
-	let result = prepare_login_core(password, &salt, derived_encryption_key_alg.as_str())?;
+	let result = prepare_login_core(password.as_str(), &salt, derived_encryption_key_alg.as_str())?;
 
 	//for the server
 	let auth_key = match result.auth_key {
@@ -152,7 +161,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 	let verify_key = import_key_from_pem(server_output.verify_key_string)?;
 
 	let public_key = match server_output.keypair_encrypt_alg.as_str() {
-		alg::asym::ecies::ECIES_OUTPUT => {
+		ECIES_OUTPUT => {
 			let public_key = public_key
 				.try_into()
 				.map_err(|_| Error::DecodePrivateKeyFailed)?;
@@ -162,7 +171,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 	};
 
 	let verify_key = match server_output.keypair_sign_alg.as_str() {
-		alg::sign::ed25519::ED25519_OUTPUT => {
+		ED25519_OUTPUT => {
 			let verify_key = verify_key
 				.try_into()
 				.map_err(|_| Error::DecodePrivateKeyFailed)?;
@@ -190,7 +199,13 @@ fn change_password_internally(
 	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(old_salt.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
 
-	let output = change_password_core(old_pw, new_pw, &old_salt, &encrypted_master_key, derived_encryption_key_alg.as_str())?;
+	let output = change_password_core(
+		old_pw.as_str(),
+		new_pw.as_str(),
+		&old_salt,
+		&encrypted_master_key,
+		derived_encryption_key_alg.as_str(),
+	)?;
 
 	//prepare for the server
 	let new_encrypted_master_key = Base64::encode_string(&output.master_key_info.encrypted_master_key);
