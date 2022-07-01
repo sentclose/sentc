@@ -287,7 +287,7 @@ mod test
 	use super::*;
 	use crate::alg::asym::ecies;
 	use crate::alg::sign::ed25519;
-	use crate::ClientRandomValue;
+	use crate::{generate_salt, ClientRandomValue};
 
 	#[test]
 	fn test_register()
@@ -315,10 +315,7 @@ mod test
 
 		//and now try to login
 		//normally the salt gets calc by the api
-		let client_random_value = match out.client_random_value {
-			ClientRandomValue::Argon2(v) => v,
-		};
-		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
+		let salt_from_rand_value = generate_salt(out.client_random_value);
 
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
@@ -333,23 +330,26 @@ mod test
 		)
 		.unwrap();
 
-		//try encrypt / decrypt with the keypair
-		let public_key = out.public_key;
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		{
+			//try encrypt / decrypt with the keypair
+			let public_key = out.public_key;
 
-		let text = "Hello world üöäéèßê°";
-		let encrypted = ecies::encrypt(&public_key, text.as_bytes()).unwrap();
-		let decrypted = ecies::decrypt(&login_out.private_key, &encrypted).unwrap();
-		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+			let text = "Hello world üöäéèßê°";
+			let encrypted = ecies::encrypt(&public_key, text.as_bytes()).unwrap();
+			let decrypted = ecies::decrypt(&login_out.private_key, &encrypted).unwrap();
+			let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
 
-		assert_eq!(decrypted_text, text);
+			assert_eq!(decrypted_text, text);
 
-		//try sign and verify
-		let verify_key = out.verify_key;
+			//try sign and verify
+			let verify_key = out.verify_key;
 
-		let data_with_sign = ed25519::sign(&login_out.sign_key, &encrypted).unwrap();
-		let verify_res = ed25519::verify(&verify_key, &data_with_sign).unwrap();
+			let data_with_sign = ed25519::sign(&login_out.sign_key, &encrypted).unwrap();
+			let verify_res = ed25519::verify(&verify_key, &data_with_sign).unwrap();
 
-		assert_eq!(verify_res, true);
+			assert_eq!(verify_res, true);
+		}
 	}
 
 	#[test]
@@ -362,10 +362,11 @@ mod test
 		let out = register(password).unwrap();
 
 		//normally the salt gets calc by the api
-		let client_random_value = match out.client_random_value {
-			ClientRandomValue::Argon2(v) => v,
+		let salt_from_rand_value = match out.client_random_value {
+			//for all different random value alg
+			//classic way here because when generating salt we will move the value, but we need the old salt for pw change and after for comparing the output
+			ClientRandomValue::Argon2(v) => pw_hash::argon2::generate_salt(v),
 		};
-		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
 
 		let pw_change_out = change_password(
 			password,
@@ -376,11 +377,19 @@ mod test
 		)
 		.unwrap();
 
-		let new_rand = match pw_change_out.client_random_value {
-			ClientRandomValue::Argon2(v) => v,
-		};
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		{
+			let client_random_value = match out.client_random_value {
+				ClientRandomValue::Argon2(v) => v,
+			};
 
-		assert_ne!(client_random_value, new_rand);
+			let new_rand = match pw_change_out.client_random_value {
+				ClientRandomValue::Argon2(v) => v,
+			};
+
+			assert_ne!(client_random_value, new_rand);
+		}
+
 		//must be different because it is encrypted by a new password
 		assert_ne!(
 			out.master_key_info.encrypted_master_key,
@@ -391,27 +400,30 @@ mod test
 		//first get the master key which was encrypted by the old password
 		let prep_login_old = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
-		let k = match &prep_login_old.master_key_encryption_key {
-			DeriveMasterKeyForAuth::Argon2(key) => key,
-		};
-		let old_master_key = pw_hash::argon2::get_master_key(k, &out.master_key_info.encrypted_master_key).unwrap();
-		let old_master_key = match old_master_key {
-			SymKey::Aes(k) => k,
-		};
-
 		//2nd get the master key which was encrypted by the new password
-		let new_salt = pw_hash::argon2::generate_salt(new_rand);
+		let new_salt = generate_salt(pw_change_out.client_random_value);
 		let prep_login_new = prepare_login(new_password, &new_salt, pw_change_out.derived_alg).unwrap();
 
-		let k = match &prep_login_new.master_key_encryption_key {
-			DeriveMasterKeyForAuth::Argon2(key) => key,
-		};
-		let new_master_key = pw_hash::argon2::get_master_key(k, &pw_change_out.master_key_info.encrypted_master_key).unwrap();
-		let new_master_key = match new_master_key {
-			SymKey::Aes(k) => k,
-		};
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		{
+			let k = match &prep_login_old.master_key_encryption_key {
+				DeriveMasterKeyForAuth::Argon2(key) => key,
+			};
+			let old_master_key = pw_hash::argon2::get_master_key(k, &out.master_key_info.encrypted_master_key).unwrap();
+			let old_master_key = match old_master_key {
+				SymKey::Aes(k) => k,
+			};
 
-		assert_eq!(old_master_key, new_master_key);
+			let k = match &prep_login_new.master_key_encryption_key {
+				DeriveMasterKeyForAuth::Argon2(key) => key,
+			};
+			let new_master_key = pw_hash::argon2::get_master_key(k, &pw_change_out.master_key_info.encrypted_master_key).unwrap();
+			let new_master_key = match new_master_key {
+				SymKey::Aes(k) => k,
+			};
+
+			assert_eq!(old_master_key, new_master_key);
+		}
 	}
 
 	#[test]
@@ -420,10 +432,7 @@ mod test
 		let password = "abc*èéöäüê";
 		let out = register(password).unwrap();
 
-		let client_random_value = match out.client_random_value {
-			ClientRandomValue::Argon2(v) => v,
-		};
-		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
+		let salt_from_rand_value = generate_salt(out.client_random_value);
 
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
@@ -444,10 +453,7 @@ mod test
 		let password_reset_out = password_reset(new_password, &login_out.private_key, &login_out.sign_key).unwrap();
 
 		//test if we can login with the new password
-		let client_random_value = match password_reset_out.client_random_value {
-			ClientRandomValue::Argon2(v) => v,
-		};
-		let salt_from_rand_value = pw_hash::argon2::generate_salt(client_random_value);
+		let salt_from_rand_value = generate_salt(password_reset_out.client_random_value);
 
 		let prep_login_out_pw_reset = prepare_login(new_password, &salt_from_rand_value, password_reset_out.derived_alg).unwrap();
 
