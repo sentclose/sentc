@@ -522,6 +522,7 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "argon2",
+ "curve25519-dalek",
  "ed25519-dalek",
  "hkdf",
  "rand_core 0.6.3",
