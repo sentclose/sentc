@@ -281,8 +281,7 @@ pub fn password_reset(new_pw: &str, decrypted_private_key: &Sk, decrypted_sign_k
 #[cfg(test)]
 mod test
 {
-	//use std here to check if the bytes output are correct to the input string
-	extern crate std;
+	use core::str::from_utf8;
 
 	use super::*;
 	use crate::alg::asym::ecies;
@@ -337,7 +336,7 @@ mod test
 		let text = "Hello world üöäéèßê°";
 		let encrypted = encrypt_asymmetric(&public_key, text.as_bytes()).unwrap();
 		let decrypted = decrypt_asymmetric(&login_out.private_key, &encrypted).unwrap();
-		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+		let decrypted_text = from_utf8(&decrypted).unwrap();
 
 		assert_eq!(decrypted_text, text);
 

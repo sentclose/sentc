@@ -132,8 +132,9 @@ fn hkdf_sha256(ikm: &[u8]) -> AesKey
 #[cfg(test)]
 mod test
 {
+	use core::str::from_utf8;
+
 	use super::*;
-	extern crate std; //use std here to check if the bytes output are correct to the input string
 	use crate::error::Error::{DecryptionFailed, DecryptionFailedCiphertextShort};
 
 	fn test_key_gen_output(out: &AsymKeyOutput)
@@ -175,7 +176,7 @@ mod test
 
 		assert_eq!(text.as_bytes(), decrypted);
 
-		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+		let decrypted_text = from_utf8(&decrypted).unwrap();
 
 		assert_eq!(text, decrypted_text);
 	}

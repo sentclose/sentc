@@ -26,6 +26,7 @@ pub enum Error
 	DerivedKeyWrongFormat,
 
 	LoginServerOutputWrong,
+	KeyRotationServerOutputWrong,
 
 	DecodePrivateKeyFailed,
 

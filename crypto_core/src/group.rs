@@ -280,10 +280,8 @@ pub fn prepare_group_keys_for_new_member(requester_public_key: &Pk, group_keys: 
 #[cfg(test)]
 mod test
 {
-	//use std here to check if the bytes output are correct to the input string
-	extern crate std;
-
 	use alloc::vec;
+	use core::str::from_utf8;
 
 	use super::*;
 	use crate::alg::sym::aes_gcm::AES_GCM_OUTPUT;
@@ -346,7 +344,7 @@ mod test
 
 		assert_eq!(decrypted, text.as_bytes());
 
-		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+		let decrypted_text = from_utf8(&decrypted).unwrap();
 		assert_eq!(decrypted_text, text);
 
 		let encrypted_pri = encrypt_asymmetric(&group_out.public_group_key, text.as_bytes()).unwrap();
@@ -354,7 +352,7 @@ mod test
 
 		assert_eq!(decrypted_pri, text.as_bytes());
 
-		let decrypted_text = std::str::from_utf8(&decrypted_pri).unwrap();
+		let decrypted_text = from_utf8(&decrypted_pri).unwrap();
 		assert_eq!(decrypted_text, text);
 	}
 

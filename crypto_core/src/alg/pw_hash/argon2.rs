@@ -228,8 +228,9 @@ fn get_derived_single_key(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Erro
 #[cfg(test)]
 mod test
 {
+	use core::str::from_utf8;
+
 	use super::*;
-	extern crate std; //use std here to check if the bytes output are correct to the input string
 	use crate::alg::sym::aes_gcm::AES_GCM_OUTPUT;
 	use crate::{alg, SymKey};
 
@@ -313,7 +314,7 @@ mod test
 
 		let decrypted = alg::sym::aes_gcm::decrypt_with_generated_key(&aes_key_for_decrypt, &encrypted).unwrap();
 
-		let str = std::str::from_utf8(&decrypted).unwrap();
+		let str = from_utf8(&decrypted).unwrap();
 
 		assert_eq!(str, test);
 	}
