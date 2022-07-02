@@ -18,6 +18,7 @@
 extern crate alloc;
 
 mod alg;
+pub mod crypto;
 mod error;
 pub mod group;
 pub mod user;

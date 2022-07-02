@@ -287,6 +287,7 @@ mod test
 	use super::*;
 	use crate::alg::asym::ecies;
 	use crate::alg::sign::ed25519;
+	use crate::crypto::{decrypt_asymmetric, encrypt_asymmetric, sign, verify};
 	use crate::{generate_salt, ClientRandomValue};
 
 	#[test]
@@ -330,26 +331,23 @@ mod test
 		)
 		.unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			//try encrypt / decrypt with the keypair
-			let public_key = out.public_key;
+		//try encrypt / decrypt with the keypair
+		let public_key = out.public_key;
 
-			let text = "Hello world üöäéèßê°";
-			let encrypted = ecies::encrypt(&public_key, text.as_bytes()).unwrap();
-			let decrypted = ecies::decrypt(&login_out.private_key, &encrypted).unwrap();
-			let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
+		let text = "Hello world üöäéèßê°";
+		let encrypted = encrypt_asymmetric(&public_key, text.as_bytes()).unwrap();
+		let decrypted = decrypt_asymmetric(&login_out.private_key, &encrypted).unwrap();
+		let decrypted_text = std::str::from_utf8(&decrypted).unwrap();
 
-			assert_eq!(decrypted_text, text);
+		assert_eq!(decrypted_text, text);
 
-			//try sign and verify
-			let verify_key = out.verify_key;
+		//try sign and verify
+		let verify_key = out.verify_key;
 
-			let data_with_sign = ed25519::sign(&login_out.sign_key, &encrypted).unwrap();
-			let (_data, verify_res) = ed25519::verify(&verify_key, &data_with_sign).unwrap();
+		let data_with_sign = sign(&login_out.sign_key, &encrypted).unwrap();
+		let (_data, verify_res) = verify(&verify_key, &data_with_sign).unwrap();
 
-			assert_eq!(verify_res, true);
-		}
+		assert_eq!(verify_res, true);
 	}
 
 	#[test]
