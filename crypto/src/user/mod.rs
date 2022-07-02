@@ -30,10 +30,10 @@ use sendclose_crypto_core::{
 };
 
 #[cfg(feature = "rust")]
-pub mod user_rust;
+mod user_rust;
 
 #[cfg(not(feature = "rust"))]
-pub mod user;
+mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
