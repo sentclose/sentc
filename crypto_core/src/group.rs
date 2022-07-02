@@ -24,7 +24,7 @@ pub struct KeyRotationOutput
 	pub keypair_encrypt_alg: &'static str,
 	pub encrypted_group_key_by_ephemeral: Vec<u8>,
 	pub ephemeral_alg: &'static str,
-	pub encrypted_ephemeral_key: Vec<u8>, //encrypted by the old group key. encrypt this key with every other member public key on the server
+	pub encrypted_ephemeral_key: Vec<u8>, //encrypted by the previous_group_key group key. encrypt this key with every other member public key on the server
 }
 
 pub struct PrepareGroupKeysForNewMemberOutput
@@ -81,7 +81,7 @@ pub fn prepare_create(creators_public_key: &Pk) -> Result<CreateGroupOutput, Err
 }
 
 #[cfg(feature = "argon2_aes_ecies_ed25519")]
-fn key_rotation_aes_ecies_ed25519(old_group_key: &SymKey, invoker_public_key: &Pk) -> Result<KeyRotationOutput, Error>
+fn key_rotation_aes_ecies_ed25519(previous_group_key: &SymKey, invoker_public_key: &Pk) -> Result<KeyRotationOutput, Error>
 {
 	//1. create new group keys
 	let group_key = sym::aes_gcm::generate_key()?;
@@ -107,8 +107,8 @@ fn key_rotation_aes_ecies_ed25519(old_group_key: &SymKey, invoker_public_key: &P
 	//4. encrypt the new group with the ephemeral_key.
 	let encrypted_group_key_by_ephemeral = sym::aes_gcm::encrypt_with_generated_key(raw_ephemeral_key, raw_group_key)?;
 
-	//5. encrypt the ephemeral key with the old group key, so all group member can get the new key. this encrypted ephemeral key will get encrypted by every group uses public key
-	let encrypted_ephemeral_key = match old_group_key {
+	//5. encrypt the ephemeral key with the previous_group_key group key, so all group member can get the new key. this encrypted ephemeral key will get encrypted by every group uses public key
+	let encrypted_ephemeral_key = match previous_group_key {
 		SymKey::Aes(k) => sym::aes_gcm::encrypt_with_generated_key(k, raw_ephemeral_key)?,
 	};
 
@@ -134,16 +134,16 @@ fn key_rotation_aes_ecies_ed25519(old_group_key: &SymKey, invoker_public_key: &P
 	})
 }
 
-pub fn key_rotation(old_group_key: &SymKey, invoker_public_key: &Pk) -> Result<KeyRotationOutput, Error>
+pub fn key_rotation(previous_group_key: &SymKey, invoker_public_key: &Pk) -> Result<KeyRotationOutput, Error>
 {
 	#[cfg(feature = "argon2_aes_ecies_ed25519")]
-	key_rotation_aes_ecies_ed25519(old_group_key, invoker_public_key)
+	key_rotation_aes_ecies_ed25519(previous_group_key, invoker_public_key)
 }
 
 pub fn done_key_rotation(
 	private_key: &Sk,
 	public_key: &Pk,
-	old_group: &SymKey,
+	previous_group_key: &SymKey,
 	encrypted_ephemeral_key_by_group_key_and_public_key: &[u8],
 	encrypted_group_key_by_ephemeral: &[u8],
 	ephemeral_alg: &str,
@@ -152,8 +152,8 @@ pub fn done_key_rotation(
 	//1. decrypt the encrypted ephemeral key with the private key
 	let decrypted_encrypted_ephemeral_key = decrypt_asymmetric(private_key, encrypted_ephemeral_key_by_group_key_and_public_key)?;
 
-	//2. decrypt the encrypted ephemeral key then with the old group key (the previous group key)
-	let decrypted_ephemeral_key = decrypt_symmetric(old_group, &decrypted_encrypted_ephemeral_key)?;
+	//2. decrypt the encrypted ephemeral key then with the previous_group_key group key (the previous group key)
+	let decrypted_ephemeral_key = decrypt_symmetric(previous_group_key, &decrypted_encrypted_ephemeral_key)?;
 
 	//3.decrypt the new group key with the decrypted ephemeral key
 	let new_group_key = match ephemeral_alg {
@@ -392,7 +392,7 @@ mod test
 
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		{
-			let old_key = match &group_key {
+			let previous_group_key = match &group_key {
 				SymKey::Aes(k) => k,
 			};
 
@@ -401,7 +401,7 @@ mod test
 			};
 
 			//should not the same because this is a new group key
-			assert_ne!(old_key, new_key);
+			assert_ne!(previous_group_key, new_key);
 		}
 
 		//do the server key rotation
@@ -435,7 +435,7 @@ mod test
 
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		{
-			let old_key = match &group_key {
+			let previous_group_key = match &group_key {
 				SymKey::Aes(k) => k,
 			};
 
@@ -448,7 +448,7 @@ mod test
 			};
 
 			assert_eq!(new_key, new_key2); //should be the same
-			assert_ne!(old_key, new_key2); //should not the same because this is a new group key
+			assert_ne!(previous_group_key, new_key2); //should not the same because this is a new group key
 		}
 	}
 
