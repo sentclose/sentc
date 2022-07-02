@@ -27,6 +27,13 @@ pub struct KeyRotationOutput
 	pub encrypted_ephemeral_key: Vec<u8>, //encrypted by the old group key. encrypt this key with every other member public key on the server
 }
 
+pub struct AcceptJoinReqOutput
+{
+	pub alg: &'static str,
+	pub encrypted_group_key: Vec<u8>,
+	pub encrypted_group_key_alg: &'static str,
+}
+
 #[cfg(feature = "argon2_aes_ecies_ed25519")]
 fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk) -> Result<CreateGroupOutput, Error>
 {
@@ -176,6 +183,8 @@ pub fn get_group(
 	key_pair_alg: &str,
 ) -> Result<(SymKey, Sk), Error>
 {
+	//call this for every group key with the private key, because every group key can be created and encrypted by different alg.
+
 	//1. decrypt the group key
 	let decrypted_group_key = decrypt_asymmetric(private_key, encrypted_group_key)?;
 
@@ -211,11 +220,49 @@ pub fn get_group(
 	Ok((decrypted_group_key, decrypted_private_group_key))
 }
 
+pub fn accept_join_req(requester_public_key: &Pk, group_keys: &[&SymKey]) -> Result<Vec<AcceptJoinReqOutput>, Error>
+{
+	//encrypt all group keys with the requester public key, so he / she can access the data
+	/*
+		can't use the method from key rotation, where only the first key needs to pass to the other user and the rest gets encrypted by the server,
+		because after all member got their new room key the rotation keys gets deleted
+		 so every group key needs to encrypt for the new user
+	*/
+
+	let mut encrypted_group_keys: Vec<AcceptJoinReqOutput> = Vec::with_capacity(group_keys.len());
+
+	let encrypted_group_key_alg = match requester_public_key {
+		Pk::Ecies(_) => asym::ecies::ECIES_OUTPUT,
+	};
+
+	for group_key in group_keys {
+		let (encrypted_group_key, group_key_alg) = match group_key {
+			SymKey::Aes(k) => {
+				//encrypt everytime single because we don't know what format the sym key has and we only know it by checking the enum,
+				//so we can't save it in a variable
+				let encrypted_group_key = encrypt_asymmetric(requester_public_key, k)?;
+
+				(encrypted_group_key, sym::aes_gcm::AES_GCM_OUTPUT)
+			},
+		};
+
+		encrypted_group_keys.push(AcceptJoinReqOutput {
+			encrypted_group_key,
+			alg: group_key_alg,
+			encrypted_group_key_alg: encrypted_group_key_alg.clone(),
+		});
+	}
+
+	Ok(encrypted_group_keys)
+}
+
 #[cfg(test)]
 mod test
 {
 	//use std here to check if the bytes output are correct to the input string
 	extern crate std;
+
+	use alloc::vec;
 
 	use super::*;
 	use crate::alg::sym::aes_gcm::AES_GCM_OUTPUT;
@@ -381,6 +428,111 @@ mod test
 
 			assert_eq!(new_key, new_key2); //should be the same
 			assert_ne!(old_key, new_key2); //should not the same because this is a new group key
+		}
+	}
+
+	#[test]
+	fn test_accept_join_req()
+	{
+		let (user_1_pk, user_1_out) = create_dummy_user();
+		let (user_2_pk, user_2_out) = create_dummy_user();
+
+		let group_out = prepare_create(&user_1_pk).unwrap();
+		let (group_key, _group_pri_key) = get_group(
+			&user_1_out.private_key,
+			&group_out.encrypted_group_key,
+			&group_out.encrypted_private_group_key,
+			group_out.group_key_alg,
+			group_out.keypair_encrypt_alg,
+		)
+		.unwrap();
+
+		//create multiple group keys
+		let rotation_out = key_rotation(&group_key, &user_1_pk).unwrap();
+		let (new_group_key, _new_group_pri_key) = get_group(
+			&user_1_out.private_key,
+			&rotation_out.encrypted_group_key_by_user,
+			&rotation_out.encrypted_private_group_key,
+			rotation_out.group_key_alg,
+			rotation_out.keypair_encrypt_alg,
+		)
+		.unwrap();
+
+		let rotation_out_1 = key_rotation(&new_group_key, &user_1_pk).unwrap();
+		let (new_group_key_1, _new_group_pri_key_1) = get_group(
+			&user_1_out.private_key,
+			&rotation_out_1.encrypted_group_key_by_user,
+			&rotation_out_1.encrypted_private_group_key,
+			rotation_out_1.group_key_alg,
+			rotation_out_1.keypair_encrypt_alg,
+		)
+		.unwrap();
+
+		let rotation_out_2 = key_rotation(&new_group_key_1, &user_1_pk).unwrap();
+		let (new_group_key_2, _new_group_pri_key_2) = get_group(
+			&user_1_out.private_key,
+			&rotation_out_2.encrypted_group_key_by_user,
+			&rotation_out_2.encrypted_private_group_key,
+			rotation_out_2.group_key_alg,
+			rotation_out_2.keypair_encrypt_alg,
+		)
+		.unwrap();
+
+		//now do the accept join req
+		//put all group keys into a vec
+		let group_keys = vec![&group_key, &new_group_key, &new_group_key_1, &new_group_key_2];
+
+		let new_user_out = accept_join_req(&user_2_pk, &group_keys).unwrap();
+
+		//try to get group from the 2nd user
+		//can't use loop here because we need to know which group key we are actual processing
+		let group_key_2 = &new_user_out[1];
+
+		let (new_user_group_key_2, _new_user_group_pri_key_2) = get_group(
+			&user_2_out.private_key,
+			&group_key_2.encrypted_group_key,
+			&rotation_out.encrypted_private_group_key, //normally get from the server
+			rotation_out.group_key_alg,
+			rotation_out.keypair_encrypt_alg,
+		)
+		.unwrap();
+
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		{
+			//check if the keys are the same
+			let user_1_key_2 = match &new_group_key {
+				SymKey::Aes(k) => *k,
+			};
+
+			let user_2_key_2 = match new_user_group_key_2 {
+				SymKey::Aes(k) => k,
+			};
+
+			assert_eq!(user_1_key_2, user_2_key_2);
+		}
+
+		let group_key_3 = &new_user_out[2];
+
+		let (new_user_group_key_3, _new_user_group_pri_key_3) = get_group(
+			&user_2_out.private_key,
+			&group_key_3.encrypted_group_key,
+			&rotation_out_1.encrypted_private_group_key, //normally get from the server
+			rotation_out_1.group_key_alg,
+			rotation_out_1.keypair_encrypt_alg,
+		)
+		.unwrap();
+
+		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		{
+			let user_1_key_3 = match &new_group_key_1 {
+				SymKey::Aes(k) => *k,
+			};
+
+			let user_2_key_3 = match new_user_group_key_3 {
+				SymKey::Aes(k) => k,
+			};
+
+			assert_eq!(user_1_key_3, user_2_key_3);
 		}
 	}
 }
