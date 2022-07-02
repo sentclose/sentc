@@ -1,5 +1,5 @@
 mod error;
-mod user;
+pub mod user;
 
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::user::{DoneLoginInput, RegisterData};
@@ -10,7 +10,7 @@ use sendclose_crypto_core::ClientRandomValue;
 use sendclose_crypto_core::Sk;
 
 pub use self::error::err_to_msg;
-pub use self::user::{change_password, done_login, prepare_login, register, reset_password, DoneLoginOutput};
+use crate::user::{done_login, prepare_login, register};
 
 #[cfg(feature = "rust")]
 pub fn register_test() -> String
