@@ -33,7 +33,7 @@ use sendclose_crypto_core::{
 mod user_rust;
 
 #[cfg(not(feature = "rust"))]
-mod user;
+pub(crate) mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
@@ -289,7 +289,7 @@ pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
 
 pub(crate) fn import_key_from_pem(pem: String) -> Result<Vec<u8>, Error>
 {
-	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| Error::ImportingPublicKeyFailed)?;
+	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| Error::ImportingKeyFromPemFailed)?;
 
 	Ok(data)
 }

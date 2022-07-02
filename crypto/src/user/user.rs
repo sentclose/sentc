@@ -142,6 +142,21 @@ pub(crate) fn import_private_key(private_key_string: String) -> Result<Sk, Error
 	}
 }
 
+pub(crate) fn import_public_key(public_key_string: String) -> Result<Pk, Error>
+{
+	let public_key_format = PublicKeyFormat::from_string(public_key_string.as_bytes()).map_err(|_| Error::ImportPublicKeyFailed)?;
+
+	match public_key_format {
+		PublicKeyFormat::Ecies(s) => {
+			let bytes = Base64::decode_vec(s.as_str()).map_err(|_| Error::ImportPublicKeyFailed)?;
+
+			let key = bytes.try_into().map_err(|_| Error::ImportPublicKeyFailed)?;
+
+			Ok(Pk::Ecies(key))
+		},
+	}
+}
+
 pub(crate) fn import_sign_key(sign_key_string: String) -> Result<SignK, Error>
 {
 	let sign_key_format = SignKeyFormat::from_string(sign_key_string.as_bytes()).map_err(|_| Error::ImportingSignKeyFailed)?;
