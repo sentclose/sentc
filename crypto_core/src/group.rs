@@ -27,7 +27,7 @@ pub struct KeyRotationOutput
 	pub encrypted_ephemeral_key: Vec<u8>, //encrypted by the old group key. encrypt this key with every other member public key on the server
 }
 
-pub struct AcceptJoinReqOutput
+pub struct PrepareGroupKeysForNewMemberOutput
 {
 	pub alg: &'static str,
 	pub encrypted_group_key: Vec<u8>,
@@ -220,7 +220,28 @@ pub fn get_group(
 	Ok((decrypted_group_key, decrypted_private_group_key))
 }
 
-pub fn accept_join_req(requester_public_key: &Pk, group_keys: &[&SymKey]) -> Result<Vec<AcceptJoinReqOutput>, Error>
+/**
+# Prepare all group keys for a new added or invited member
+
+Use this function to accept a new group join request or prepare an invite request.
+
+In both cases, all created group keys are needed for the new user to access.
+
+```ignore
+//get your group keys
+use sendclose_crypto_core::group::prepare_group_keys_for_new_member;
+use sendclose_crypto_core::Pk;
+
+let group_keys = vec![&group_key, &new_group_key, &new_group_key_1, &new_group_key_2];
+
+//get the new users public key
+let user_pk = Pk::Ecies([0u8; 32]);	//get it from the server
+
+let new_user_out = prepare_group_keys_for_new_member(&user_pk, &group_keys);
+```
+*/
+pub fn prepare_group_keys_for_new_member(requester_public_key: &Pk, group_keys: &[&SymKey])
+	-> Result<Vec<PrepareGroupKeysForNewMemberOutput>, Error>
 {
 	//encrypt all group keys with the requester public key, so he / she can access the data
 	/*
@@ -229,7 +250,7 @@ pub fn accept_join_req(requester_public_key: &Pk, group_keys: &[&SymKey]) -> Res
 		 so every group key needs to encrypt for the new user
 	*/
 
-	let mut encrypted_group_keys: Vec<AcceptJoinReqOutput> = Vec::with_capacity(group_keys.len());
+	let mut encrypted_group_keys: Vec<PrepareGroupKeysForNewMemberOutput> = Vec::with_capacity(group_keys.len());
 
 	let encrypted_group_key_alg = match requester_public_key {
 		Pk::Ecies(_) => asym::ecies::ECIES_OUTPUT,
@@ -246,7 +267,7 @@ pub fn accept_join_req(requester_public_key: &Pk, group_keys: &[&SymKey]) -> Res
 			},
 		};
 
-		encrypted_group_keys.push(AcceptJoinReqOutput {
+		encrypted_group_keys.push(PrepareGroupKeysForNewMemberOutput {
 			encrypted_group_key,
 			alg: group_key_alg,
 			encrypted_group_key_alg: encrypted_group_key_alg.clone(),
@@ -482,7 +503,7 @@ mod test
 		//put all group keys into a vec
 		let group_keys = vec![&group_key, &new_group_key, &new_group_key_1, &new_group_key_2];
 
-		let new_user_out = accept_join_req(&user_2_pk, &group_keys).unwrap();
+		let new_user_out = prepare_group_keys_for_new_member(&user_2_pk, &group_keys).unwrap();
 
 		//try to get group from the 2nd user
 		//can't use loop here because we need to know which group key we are actual processing
