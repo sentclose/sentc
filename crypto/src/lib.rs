@@ -1,4 +1,5 @@
 mod error;
+pub mod group;
 pub mod user;
 
 use base64ct::{Base64, Encoding};
