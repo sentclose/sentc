@@ -88,6 +88,8 @@ pub fn done_login(
 		sign_key,
 		public_key,
 		verify_key,
+		keypair_encrypt_id: result.keypair_encrypt_id,
+		keypair_sign_id: result.keypair_sign_id,
 	};
 
 	match output.to_string() {

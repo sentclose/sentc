@@ -133,6 +133,8 @@ pub struct DoneLoginInput
 	pub encrypted_sign_key: String,
 	pub verify_key_string: String,
 	pub keypair_sign_alg: String,
+	pub keypair_encrypt_id: String,
+	pub keypair_sign_id: String,
 }
 
 impl DoneLoginInput
@@ -255,6 +257,8 @@ pub struct KeyData
 	pub public_key: PublicKeyFormat,
 	pub sign_key: SignKeyFormat,
 	pub verify_key: VerifyKeyFormat,
+	pub keypair_encrypt_id: String,
+	pub keypair_sign_id: String,
 }
 
 impl KeyData

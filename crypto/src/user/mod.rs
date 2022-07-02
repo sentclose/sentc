@@ -48,6 +48,8 @@ pub struct DoneLoginOutput
 	pub sign_key: SignK,
 	pub public_key: Pk,
 	pub verify_key: VerifyK,
+	pub keypair_encrypt_id: String,
+	pub keypair_sign_id: String,
 }
 
 fn register_internally(password: String) -> Result<String, Error>
@@ -188,6 +190,8 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		sign_key: out.sign_key,
 		public_key,
 		verify_key,
+		keypair_sign_id: server_output.keypair_sign_id,
+		keypair_encrypt_id: server_output.keypair_encrypt_id,
 	})
 }
 

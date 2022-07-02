@@ -48,6 +48,8 @@ pub fn register_test() -> String
 		verify_key_string: derived.verify_key,
 		keypair_encrypt_alg: derived.keypair_encrypt_alg,
 		keypair_sign_alg: derived.keypair_sign_alg,
+		keypair_encrypt_id: "abc".to_string(),
+		keypair_sign_id: "dfg".to_string(),
 	};
 
 	let server_output = server_output.to_string().unwrap();
@@ -103,6 +105,8 @@ pub fn register_test() -> String
 		verify_key_string: derived.verify_key,
 		keypair_encrypt_alg: derived.keypair_encrypt_alg,
 		keypair_sign_alg: derived.keypair_sign_alg,
+		keypair_encrypt_id: "abc".to_string(),
+		keypair_sign_id: "dfg".to_string(),
 	};
 
 	let server_output = server_output.to_string().unwrap();
@@ -161,6 +165,8 @@ mod test
 			verify_key_string: derived.verify_key,
 			keypair_encrypt_alg: derived.keypair_encrypt_alg,
 			keypair_sign_alg: derived.keypair_sign_alg,
+			keypair_encrypt_id: "abc".to_string(),
+			keypair_sign_id: "dfg".to_string(),
 		};
 
 		server_output.to_string().unwrap()

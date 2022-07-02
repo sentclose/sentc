@@ -1,7 +1,13 @@
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, SignK, Sk};
 
-use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
-use crate::DoneLoginOutput;
+use crate::user::{
+	change_password_internally,
+	done_login_internally,
+	prepare_login_internally,
+	register_internally,
+	reset_password_internally,
+	DoneLoginOutput,
+};
 
 pub fn register(password: String) -> Result<String, Error>
 {
