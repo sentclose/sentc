@@ -3,8 +3,8 @@ use sendclose_crypto_common::SymKeyFormat;
 use sendclose_crypto_core::{Error, SymKey};
 
 use crate::err_to_msg;
-use crate::group::{key_rotation_internally, prepare_create_internally};
-use crate::user::user::import_public_key;
+use crate::group::{done_key_rotation_internally, key_rotation_internally, prepare_create_internally};
+use crate::user::user::{import_private_key, import_public_key};
 
 pub fn prepare_create(creators_public_key: String, creator_public_key_id: String) -> String
 {
@@ -33,6 +33,30 @@ pub fn key_rotation(previous_group_key: String, invoker_public_key: String, prev
 	};
 
 	match key_rotation_internally(&previous_group_key, &invoker_public_key, previous_group_key_id, invoker_public_key_id) {
+		Ok(v) => v,
+		Err(e) => err_to_msg(e),
+	}
+}
+
+pub fn done_key_rotation(private_key: String, public_key: String, previous_group_key: String, server_output: String, public_key_id: String)
+	-> String
+{
+	let previous_group_key = match import_sym_key(previous_group_key) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let private_key = match import_private_key(private_key) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let public_key = match import_public_key(public_key) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	match done_key_rotation_internally(&private_key, &public_key, &previous_group_key, server_output, public_key_id) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
 	}

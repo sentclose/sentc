@@ -56,3 +56,46 @@ impl KeyRotationData
 		to_string(self)
 	}
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct KeyRotationInput
+{
+	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
+	pub encrypted_group_key_by_ephemeral: String,
+	pub ephemeral_alg: String,
+}
+
+impl KeyRotationInput
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		//this function is used internally
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DoneKeyRotationData
+{
+	pub encrypted_new_group_key: String,
+	pub public_key_id: String,
+}
+
+impl DoneKeyRotationData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		//this function is used internally
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
