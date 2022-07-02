@@ -32,9 +32,10 @@ pub enum Error
 	ImportingPrivateKeyFailed,
 	ImportingSignKeyFailed,
 	ImportSymmetricKeyFailed,
+	ImportPublicKeyFailed,
 
 	ExportingPublicKeyFailed,
-	ImportingPublicKeyFailed,
+	ImportingKeyFromPemFailed,
 
 	JsonToStringFailed,
 	JsonParseFailed,
