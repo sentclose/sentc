@@ -346,7 +346,7 @@ mod test
 			let verify_key = out.verify_key;
 
 			let data_with_sign = ed25519::sign(&login_out.sign_key, &encrypted).unwrap();
-			let verify_res = ed25519::verify(&verify_key, &data_with_sign).unwrap();
+			let (_data, verify_res) = ed25519::verify(&verify_key, &data_with_sign).unwrap();
 
 			assert_eq!(verify_res, true);
 		}

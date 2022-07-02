@@ -48,7 +48,7 @@ pub(crate) fn sign(sign_key: &SignK, data: &[u8]) -> Result<Vec<u8>, Error>
 	Ok(output)
 }
 
-pub(crate) fn verify(verify_key: &VerifyK, data_with_sig: &[u8]) -> Result<bool, Error>
+pub(crate) fn verify(verify_key: &VerifyK, data_with_sig: &[u8]) -> Result<(Vec<u8>, bool), Error>
 {
 	if data_with_sig.len() <= SIG_LENGTH {
 		return Err(Error::DataToSignTooShort);
@@ -66,9 +66,13 @@ pub(crate) fn verify(verify_key: &VerifyK, data_with_sig: &[u8]) -> Result<bool,
 
 	let result = vk.verify(data, &sig);
 
+	//get the data without the sig
+	let mut output: Vec<u8> = Vec::with_capacity(data.len());
+	output.extend(data);
+
 	match result {
-		Err(_e) => Ok(false),
-		Ok(()) => Ok(true),
+		Err(_e) => Ok((output, false)),
+		Ok(()) => Ok((output, true)),
 	}
 }
 
@@ -126,9 +130,10 @@ mod test
 
 		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
 
-		let check = verify(&out.verify_key, &data_with_sig).unwrap();
+		let (data, check) = verify(&out.verify_key, &data_with_sig).unwrap();
 
 		assert_eq!(check, true);
+		assert_eq!(data, text.as_bytes());
 	}
 
 	#[test]
@@ -141,9 +146,10 @@ mod test
 
 		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
 
-		let check = verify(&out1.verify_key, &data_with_sig).unwrap();
+		let (data, check) = verify(&out1.verify_key, &data_with_sig).unwrap();
 
 		assert_eq!(check, false);
+		assert_eq!(data, text.as_bytes());
 	}
 
 	#[test]
@@ -171,7 +177,7 @@ mod test
 
 		let data_with_sig = &data_with_sig[..SIG_LENGTH + 2];
 
-		let check = verify(&out.verify_key, &data_with_sig).unwrap();
+		let (_data, check) = verify(&out.verify_key, &data_with_sig).unwrap();
 
 		assert_eq!(check, false);
 	}
