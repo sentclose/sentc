@@ -31,6 +31,7 @@ pub enum Error
 
 	ImportingPrivateKeyFailed,
 	ImportingSignKeyFailed,
+	ImportSymmetricKeyFailed,
 
 	ExportingPublicKeyFailed,
 	ImportingPublicKeyFailed,
