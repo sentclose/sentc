@@ -1,14 +1,23 @@
 use alloc::string::String;
 
-use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::group::{GroupServerOutput, KeyRotationInput};
-use sendclose_crypto_core::{Error, SymKey};
+use sendclose_crypto_core::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
+use crate::err_to_msg;
 use crate::group::{done_key_rotation_internally, get_group_internally, key_rotation_internally, prepare_create_internally};
-use crate::user::{export_private_key, export_public_key, import_private_key, import_public_key, PublicKeyFormat};
-use crate::{err_to_msg, PrivateKeyFormat};
+use crate::util::{
+	export_private_key,
+	export_public_key,
+	export_sym_key,
+	import_private_key,
+	import_public_key,
+	import_sym_key,
+	PrivateKeyFormat,
+	PublicKeyFormat,
+	SymKeyFormat,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct GroupData
@@ -19,28 +28,6 @@ pub struct GroupData
 }
 
 impl GroupData
-{
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
-	{
-		from_slice::<Self>(v)
-	}
-
-	pub fn to_string(&self) -> serde_json::Result<String>
-	{
-		to_string(self)
-	}
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum SymKeyFormat
-{
-	Aes
-	{
-		key: String, key_id: String
-	},
-}
-
-impl SymKeyFormat
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
@@ -143,40 +130,5 @@ pub fn get_group(private_key: String, server_output: String) -> String
 	match output.to_string() {
 		Ok(v) => v,
 		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
-	}
-}
-
-pub(crate) fn import_sym_key(key_string: String) -> Result<(SymKey, String), Error>
-{
-	let key_format = SymKeyFormat::from_string(key_string.as_bytes()).map_err(|_| Error::ImportSymmetricKeyFailed)?;
-
-	match key_format {
-		SymKeyFormat::Aes {
-			key,
-			key_id,
-		} => {
-			//to bytes via base64
-			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportSymmetricKeyFailed)?;
-
-			let key = bytes
-				.try_into()
-				.map_err(|_| Error::ImportSymmetricKeyFailed)?;
-
-			Ok((SymKey::Aes(key), key_id))
-		},
-	}
-}
-
-pub(crate) fn export_sym_key(key: SymKey, key_id: String) -> SymKeyFormat
-{
-	match key {
-		SymKey::Aes(k) => {
-			let sym_key = Base64::encode_string(&k);
-
-			SymKeyFormat::Aes {
-				key_id,
-				key: sym_key,
-			}
-		},
 	}
 }

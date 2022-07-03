@@ -1,16 +1,11 @@
 use alloc::string::String;
 
 use sendclose_crypto_common::group::{GroupServerOutput, KeyRotationInput};
-use sendclose_crypto_core::{Error, SymKey};
+use sendclose_crypto_core::Error;
 
 use crate::group::{done_key_rotation_internally, get_group_internally, key_rotation_internally, prepare_create_internally};
-use crate::user::{PrivateKeyFormat, PublicKeyFormat};
-
-pub struct SymKeyFormat
-{
-	pub key: SymKey,
-	pub key_id: String,
-}
+use crate::util::{PublicKeyFormat, SymKeyFormat};
+use crate::PrivateKeyFormat;
 
 pub struct GroupData
 {

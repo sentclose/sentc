@@ -36,36 +36,10 @@ mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
-pub use self::user::{
-	change_password,
-	done_login,
-	prepare_login,
-	register,
-	reset_password,
-	KeyData,
-	MasterKeyFormat,
-	PrepareLoginData,
-	PrivateKeyFormat,
-	PublicKeyFormat,
-	SignKeyFormat,
-	VerifyKeyFormat,
-};
-#[cfg(not(feature = "rust"))]
-pub(crate) use self::user::{export_private_key, export_public_key, import_private_key, import_public_key};
+pub use self::user::{change_password, done_login, prepare_login, register, reset_password, MasterKeyFormat, PrepareLoginData};
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
-pub use self::user_rust::{
-	change_password,
-	done_login,
-	prepare_login,
-	register,
-	reset_password,
-	KeyData,
-	PrivateKeyFormat,
-	PublicKeyFormat,
-	SignKeyFormat,
-	VerifyKeyFormat,
-};
+pub use self::user_rust::{change_password, done_login, prepare_login, register, reset_password};
 
 /**
 # internally used key store

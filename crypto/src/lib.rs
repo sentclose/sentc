@@ -17,9 +17,10 @@ use sendclose_crypto_core::ClientRandomValue;
 use sendclose_crypto_core::Sk;
 
 pub use self::error::err_to_msg;
-use crate::user::{done_login, prepare_login, register};
 #[cfg(not(feature = "rust"))]
-use crate::user::{KeyData, PrepareLoginData, PrivateKeyFormat};
+use crate::user::PrepareLoginData;
+use crate::user::{done_login, prepare_login, register};
+use crate::util::{KeyData, PrivateKeyFormat};
 
 #[cfg(feature = "rust")]
 pub fn register_test() -> String

@@ -1,9 +1,36 @@
+#[cfg(feature = "rust")]
+mod util_rust;
+
+#[cfg(not(feature = "rust"))]
+mod util_non_rust;
+
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sendclose_crypto_core::{ClientRandomValue, DeriveAuthKeyForAuth, Error, HashedAuthenticationKey, Pk, VerifyK, ECIES_OUTPUT, ED25519_OUTPUT};
+
+#[cfg(not(feature = "rust"))]
+pub(crate) use self::util_non_rust::{
+	export_private_key,
+	export_public_key,
+	export_sign_key,
+	export_sym_key,
+	export_verify_key,
+	import_private_key,
+	import_public_key,
+	import_sign_key,
+	import_sym_key,
+	KeyData,
+	PrivateKeyFormat,
+	PublicKeyFormat,
+	SignKeyFormat,
+	SymKeyFormat,
+	VerifyKeyFormat,
+};
+#[cfg(feature = "rust")]
+pub(crate) use self::util_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
 {

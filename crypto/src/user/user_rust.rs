@@ -1,49 +1,10 @@
 use alloc::string::String;
 
 use sendclose_crypto_common::user::DoneLoginInput;
-use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
+use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 
 use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
-
-pub struct PrivateKeyFormat
-{
-	pub key: Sk,
-	pub key_id: String,
-}
-
-pub struct PublicKeyFormat
-{
-	pub key: Pk,
-	pub key_id: String,
-}
-
-pub struct SignKeyFormat
-{
-	pub key: SignK,
-	pub key_id: String,
-}
-
-pub struct VerifyKeyFormat
-{
-	pub key: VerifyK,
-	pub key_id: String,
-}
-
-/**
-# key storage structure for the rust feature
-
-It can be used with other rust programs.
-
-The different to the internally DoneLoginOutput ist that,
-the KeyFormat is sued for each where, were the key id is saved too
-*/
-pub struct KeyData
-{
-	pub private_key: PrivateKeyFormat,
-	pub sign_key: SignKeyFormat,
-	pub public_key: PublicKeyFormat,
-	pub verify_key: VerifyKeyFormat,
-}
+use crate::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
 
 pub fn register(password: String) -> Result<String, Error>
 {

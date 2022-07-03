@@ -23,11 +23,9 @@ mod group;
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::group::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData, SymKeyFormat};
-#[cfg(not(feature = "rust"))]
-pub(crate) use self::group::{export_sym_key, import_sym_key};
+pub use self::group::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData};
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData, SymKeyFormat};
+pub use self::group_rust::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData};
 
 pub(crate) struct DoneGettingGroupOutput
 {
