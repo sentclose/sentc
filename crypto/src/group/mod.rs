@@ -22,9 +22,9 @@ mod group;
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::group::{done_key_rotation, key_rotation, prepare_create};
+pub use self::group::{done_key_rotation, key_rotation, prepare_create, SymKeyFormat};
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, key_rotation, prepare_create};
+pub use self::group_rust::{done_key_rotation, key_rotation, prepare_create, SymKeyFormat};
 
 fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: String) -> Result<String, Error>
 {

@@ -13,6 +13,10 @@ sendclose-crypto-common = {version = "0.1.0", path = "../crypto_common"}
 base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}  # must use this version because it is not comp. with password_hash from argon2
 pem-rfc7468 = {version = "0.3.1", features = ["alloc"]}
 
+# json handling
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"], optional = true}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true}
+
 [features]
-default = []
+default = ["serde_json","serde"]
 rust = []

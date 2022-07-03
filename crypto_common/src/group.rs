@@ -19,7 +19,6 @@ impl CreateData
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
-		//this function is used internally
 		from_slice::<Self>(v)
 	}
 
@@ -49,7 +48,6 @@ impl KeyRotationData
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
-		//this function is used internally
 		from_slice::<Self>(v)
 	}
 
@@ -72,7 +70,6 @@ impl KeyRotationInput
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
-		//this function is used internally
 		from_slice::<Self>(v)
 	}
 
@@ -93,7 +90,6 @@ impl DoneKeyRotationData
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
-		//this function is used internally
 		from_slice::<Self>(v)
 	}
 

@@ -36,16 +36,49 @@ use sendclose_crypto_core::{
 mod user_rust;
 
 #[cfg(not(feature = "rust"))]
-pub(crate) mod user;
+mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
-pub use self::user::{change_password, done_login, prepare_login, register, reset_password};
+pub use self::user::{
+	change_password,
+	done_login,
+	prepare_login,
+	register,
+	reset_password,
+	KeyData,
+	MasterKeyFormat,
+	PrepareLoginData,
+	PrivateKeyFormat,
+	PublicKeyFormat,
+	SignKeyFormat,
+	VerifyKeyFormat,
+};
+#[cfg(not(feature = "rust"))]
+pub(crate) use self::user::{import_private_key, import_public_key};
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
-pub use self::user_rust::{change_password, done_login, prepare_login, register, reset_password};
+pub use self::user_rust::{
+	change_password,
+	done_login,
+	prepare_login,
+	register,
+	reset_password,
+	KeyData,
+	PrivateKeyFormat,
+	PublicKeyFormat,
+	SignKeyFormat,
+	VerifyKeyFormat,
+};
 
-pub struct DoneLoginOutput
+/**
+# internally used key store
+
+The keys are in the right internally format.
+
+This can be used when feature rust in enabled
+*/
+pub(crate) struct DoneLoginOutput
 {
 	pub private_key: Sk,
 	pub sign_key: SignK,

@@ -1,15 +1,48 @@
 use alloc::string::String;
 
-use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, SignK, Sk};
+use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 
-use crate::user::{
-	change_password_internally,
-	done_login_internally,
-	prepare_login_internally,
-	register_internally,
-	reset_password_internally,
-	DoneLoginOutput,
-};
+use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
+
+pub struct PrivateKeyFormat
+{
+	pub key: Sk,
+	pub key_id: String,
+}
+
+pub struct PublicKeyFormat
+{
+	pub key: Pk,
+	pub key_id: String,
+}
+
+pub struct SignKeyFormat
+{
+	pub key: SignK,
+	pub key_id: String,
+}
+
+pub struct VerifyKeyFormat
+{
+	pub key: VerifyK,
+	pub key_id: String,
+}
+
+/**
+# key storage structure for the rust feature
+
+It can be used with other rust programs.
+
+The different to the internally DoneLoginOutput ist that,
+the KeyFormat is sued for each where, were the key id is saved too
+*/
+pub struct KeyData
+{
+	pub private_key: PrivateKeyFormat,
+	pub sign_key: SignKeyFormat,
+	pub public_key: PublicKeyFormat,
+	pub verify_key: VerifyKeyFormat,
+}
 
 pub fn register(password: String) -> Result<String, Error>
 {
@@ -21,9 +54,28 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 	prepare_login_internally(password, salt_string, derived_encryption_key_alg)
 }
 
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: String) -> Result<DoneLoginOutput, Error>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: String) -> Result<KeyData, Error>
 {
-	done_login_internally(&master_key_encryption, server_output)
+	let out = done_login_internally(&master_key_encryption, server_output)?;
+
+	Ok(KeyData {
+		private_key: PrivateKeyFormat {
+			key: out.private_key,
+			key_id: out.keypair_encrypt_id.clone(),
+		},
+		sign_key: SignKeyFormat {
+			key: out.sign_key,
+			key_id: out.keypair_sign_id.clone(),
+		},
+		public_key: PublicKeyFormat {
+			key: out.public_key,
+			key_id: out.keypair_encrypt_id,
+		},
+		verify_key: VerifyKeyFormat {
+			key: out.verify_key,
+			key_id: out.keypair_sign_id,
+		},
+	})
 }
 
 pub fn change_password(
@@ -37,9 +89,9 @@ pub fn change_password(
 	change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg)
 }
 
-pub fn reset_password(new_password: String, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<String, Error>
+pub fn reset_password(new_password: String, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, Error>
 {
-	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
+	reset_password_internally(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)
 }
 
 #[cfg(test)]
@@ -84,7 +136,7 @@ mod test
 		//now save the values
 		let login_out = done_login(&master_key_encryption_key, server_output).unwrap();
 
-		let private_key = match login_out.private_key {
+		let private_key = match login_out.private_key.key {
 			Sk::Ecies(k) => k,
 		};
 

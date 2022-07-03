@@ -485,6 +485,8 @@ dependencies = [
  "pem-rfc7468",
  "sendclose-crypto-common",
  "sendclose-crypto-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

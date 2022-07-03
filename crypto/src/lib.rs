@@ -11,14 +11,14 @@ use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::user::{DoneLoginInput, RegisterData};
-#[cfg(not(feature = "rust"))]
-use sendclose_crypto_common::user::{KeyData, PrepareLoginData, PrivateKeyFormat};
 use sendclose_crypto_core::ClientRandomValue;
 #[cfg(feature = "rust")]
 use sendclose_crypto_core::Sk;
 
 pub use self::error::err_to_msg;
 use crate::user::{done_login, prepare_login, register};
+#[cfg(not(feature = "rust"))]
+use crate::user::{KeyData, PrepareLoginData, PrivateKeyFormat};
 
 #[cfg(feature = "rust")]
 pub fn register_test() -> String
@@ -66,7 +66,7 @@ pub fn register_test() -> String
 	#[cfg(feature = "rust")]
 	let login_out = done_login(&master_key_encryption_key, server_output).unwrap();
 
-	let private_key = match login_out.private_key {
+	let private_key = match login_out.private_key.key {
 		Sk::Ecies(k) => k,
 	};
 
@@ -129,7 +129,10 @@ pub fn register_test() -> String
 	let login_out = KeyData::from_string(&login_out.as_bytes()).unwrap();
 
 	let private_key = match login_out.private_key {
-		PrivateKeyFormat::Ecies(k) => k,
+		PrivateKeyFormat::Ecies {
+			key_id: _key_id,
+			key,
+		} => key,
 	};
 
 	format!("register done with private key: {:?}", private_key)

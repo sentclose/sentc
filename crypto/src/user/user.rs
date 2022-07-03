@@ -1,11 +1,166 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{KeyData, MasterKeyFormat, PrepareLoginData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
+use serde::{Deserialize, Serialize};
+use serde_json::{from_slice, to_string};
 
 use crate::err_to_msg;
 use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
+
+#[derive(Serialize, Deserialize)]
+pub enum MasterKeyFormat
+{
+	Argon2(String),
+}
+
+impl MasterKeyFormat
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PrepareLoginData
+{
+	pub auth_key: String,
+	pub master_key_encryption_key: MasterKeyFormat,
+}
+
+impl PrepareLoginData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum PrivateKeyFormat
+{
+	Ecies
+	{
+		key: String, key_id: String
+	},
+}
+
+impl PrivateKeyFormat
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum PublicKeyFormat
+{
+	Ecies
+	{
+		key: String, key_id: String
+	},
+}
+
+impl PublicKeyFormat
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum SignKeyFormat
+{
+	Ed25519
+	{
+		key: String, key_id: String
+	},
+}
+
+impl SignKeyFormat
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum VerifyKeyFormat
+{
+	Ed25519
+	{
+		key: String, key_id: String
+	},
+}
+
+impl VerifyKeyFormat
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+/**
+# Key data to communicate with other ffi programs via Strings
+
+This data must be serialized for exporting and deserialized for import
+*/
+#[derive(Serialize, Deserialize)]
+pub struct KeyData
+{
+	pub private_key: PrivateKeyFormat,
+	pub public_key: PublicKeyFormat,
+	pub sign_key: SignKeyFormat,
+	pub verify_key: VerifyKeyFormat,
+}
+
+impl KeyData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
 
 pub fn register(password: String) -> String
 {
@@ -79,19 +234,17 @@ pub fn done_login(
 		Err(e) => return err_to_msg(e),
 	};
 
-	let private_key = export_private_key(result.private_key);
+	let private_key = export_private_key(result.private_key, result.keypair_encrypt_id.clone());
 	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
-	let public_key = export_public_key(result.public_key);
-	let sign_key = export_sign_key(result.sign_key);
-	let verify_key = export_verify_key(result.verify_key);
+	let public_key = export_public_key(result.public_key, result.keypair_encrypt_id);
+	let sign_key = export_sign_key(result.sign_key, result.keypair_sign_id.clone());
+	let verify_key = export_verify_key(result.verify_key, result.keypair_sign_id);
 
 	let output = KeyData {
 		private_key,
 		sign_key,
 		public_key,
 		verify_key,
-		keypair_encrypt_id: result.keypair_encrypt_id,
-		keypair_sign_id: result.keypair_sign_id,
 	};
 
 	match output.to_string() {
@@ -110,12 +263,12 @@ pub fn change_password(old_pw: String, new_pw: String, old_salt: String, encrypt
 
 pub fn reset_password(new_password: String, decrypted_private_key: String, decrypted_sign_key: String) -> String
 {
-	let decrypted_private_key = match import_private_key(decrypted_private_key) {
+	let (decrypted_private_key, _) = match import_private_key(decrypted_private_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let decrypted_sign_key = match import_sign_key(decrypted_sign_key) {
+	let (decrypted_sign_key, _) = match import_sign_key(decrypted_sign_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -126,97 +279,118 @@ pub fn reset_password(new_password: String, decrypted_private_key: String, decry
 	}
 }
 
-pub(crate) fn import_private_key(private_key_string: String) -> Result<Sk, Error>
+pub(crate) fn import_private_key(private_key_string: String) -> Result<(Sk, String), Error>
 {
 	let private_key_format = PrivateKeyFormat::from_string(private_key_string.as_bytes()).map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
 	match private_key_format {
-		PrivateKeyFormat::Ecies(s) => {
+		PrivateKeyFormat::Ecies {
+			key_id,
+			key,
+		} => {
 			//to bytes via base64
-			let bytes = Base64::decode_vec(s.as_str()).map_err(|_| Error::ImportingPrivateKeyFailed)?;
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
 			let private_key: [u8; 32] = bytes
 				.try_into()
 				.map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
-			Ok(Sk::Ecies(private_key))
+			Ok((Sk::Ecies(private_key), key_id))
 		},
 	}
 }
 
-pub(crate) fn import_public_key(public_key_string: String) -> Result<Pk, Error>
+pub(crate) fn import_public_key(public_key_string: String) -> Result<(Pk, String), Error>
 {
 	let public_key_format = PublicKeyFormat::from_string(public_key_string.as_bytes()).map_err(|_| Error::ImportPublicKeyFailed)?;
 
 	match public_key_format {
-		PublicKeyFormat::Ecies(s) => {
-			let bytes = Base64::decode_vec(s.as_str()).map_err(|_| Error::ImportPublicKeyFailed)?;
+		PublicKeyFormat::Ecies {
+			key_id,
+			key,
+		} => {
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportPublicKeyFailed)?;
 
 			let key = bytes.try_into().map_err(|_| Error::ImportPublicKeyFailed)?;
 
-			Ok(Pk::Ecies(key))
+			Ok((Pk::Ecies(key), key_id))
 		},
 	}
 }
 
-pub(crate) fn import_sign_key(sign_key_string: String) -> Result<SignK, Error>
+pub(crate) fn import_sign_key(sign_key_string: String) -> Result<(SignK, String), Error>
 {
 	let sign_key_format = SignKeyFormat::from_string(sign_key_string.as_bytes()).map_err(|_| Error::ImportingSignKeyFailed)?;
 
 	match sign_key_format {
-		SignKeyFormat::Ed25519(s) => {
+		SignKeyFormat::Ed25519 {
+			key_id,
+			key,
+		} => {
 			//to bytes via base64
-			let bytes = Base64::decode_vec(s.as_str()).map_err(|_| Error::ImportingSignKeyFailed)?;
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportingSignKeyFailed)?;
 
 			let sign_key: [u8; 32] = bytes
 				.try_into()
 				.map_err(|_| Error::ImportingSignKeyFailed)?;
 
-			Ok(SignK::Ed25519(sign_key))
+			Ok((SignK::Ed25519(sign_key), key_id))
 		},
 	}
 }
 
-pub(crate) fn export_private_key(private_key: Sk) -> PrivateKeyFormat
+pub(crate) fn export_private_key(private_key: Sk, key_id: String) -> PrivateKeyFormat
 {
 	match private_key {
 		Sk::Ecies(k) => {
 			let private_key_string = Base64::encode_string(&k);
 
-			PrivateKeyFormat::Ecies(private_key_string)
+			PrivateKeyFormat::Ecies {
+				key_id,
+				key: private_key_string,
+			}
 		},
 	}
 }
 
-pub(crate) fn export_public_key(public_key: Pk) -> PublicKeyFormat
+pub(crate) fn export_public_key(public_key: Pk, key_id: String) -> PublicKeyFormat
 {
 	match public_key {
 		Pk::Ecies(k) => {
 			let public_key_string = Base64::encode_string(&k);
 
-			PublicKeyFormat::Ecies(public_key_string)
+			PublicKeyFormat::Ecies {
+				key_id,
+				key: public_key_string,
+			}
 		},
 	}
 }
 
-pub(crate) fn export_sign_key(sign_key: SignK) -> SignKeyFormat
+pub(crate) fn export_sign_key(sign_key: SignK, key_id: String) -> SignKeyFormat
 {
 	match sign_key {
 		SignK::Ed25519(k) => {
 			let sign_key_string = Base64::encode_string(&k);
 
-			SignKeyFormat::Ed25519(sign_key_string)
+			SignKeyFormat::Ed25519 {
+				key_id,
+				key: sign_key_string,
+			}
 		},
 	}
 }
 
-pub(crate) fn export_verify_key(verify_key: VerifyK) -> VerifyKeyFormat
+pub(crate) fn export_verify_key(verify_key: VerifyK, key_id: String) -> VerifyKeyFormat
 {
 	match verify_key {
 		VerifyK::Ed25519(k) => {
 			let verify_key_string = Base64::encode_string(&k);
 
-			VerifyKeyFormat::Ed25519(verify_key_string)
+			VerifyKeyFormat::Ed25519 {
+				key_id,
+				key: verify_key_string,
+			}
 		},
 	}
 }
@@ -272,7 +446,10 @@ mod test
 		let login_out = KeyData::from_string(&login_out.as_bytes()).unwrap();
 
 		let private_key = match login_out.private_key {
-			PrivateKeyFormat::Ecies(k) => k,
+			PrivateKeyFormat::Ecies {
+				key_id,
+				key,
+			} => key,
 		};
 
 		assert_ne!(private_key, "");
