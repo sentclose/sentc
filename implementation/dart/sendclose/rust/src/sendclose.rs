@@ -9,12 +9,12 @@ pub fn register_test_full() -> String
 //real usage
 pub fn register(password: String) -> String
 {
-	register_core(password)
+	register_core(password.as_str())
 }
 
 pub fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: String) -> String
 {
-	prepare_login_core(password, salt_string, derived_encryption_key_alg)
+	prepare_login_core(password.as_str(), salt_string.as_str(), derived_encryption_key_alg.as_str())
 }
 
 pub fn done_login(
@@ -22,5 +22,5 @@ pub fn done_login(
 	server_output: String,
 ) -> String
 {
-	done_login_core(master_key_encryption, server_output)
+	done_login_core(master_key_encryption.as_str(), server_output.as_str())
 }

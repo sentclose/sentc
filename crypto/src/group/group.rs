@@ -47,9 +47,9 @@ impl GroupData
 	}
 }
 
-pub fn prepare_create(creators_public_key: String) -> String
+pub fn prepare_create(creators_public_key: &str) -> String
 {
-	let (creators_public_key, creator_public_key_id) = match import_public_key(creators_public_key.as_str()) {
+	let (creators_public_key, creator_public_key_id) = match import_public_key(creators_public_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -60,15 +60,15 @@ pub fn prepare_create(creators_public_key: String) -> String
 	}
 }
 
-pub fn key_rotation(previous_group_key: String, invoker_public_key: String) -> String
+pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> String
 {
 	//the ids comes from the storage of the current impl from the sdk, the group key id comes from get group
-	let (previous_group_key, previous_group_key_id) = match import_sym_key(previous_group_key.as_str()) {
+	let (previous_group_key, previous_group_key_id) = match import_sym_key(previous_group_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (invoker_public_key, invoker_public_key_id) = match import_public_key(invoker_public_key.as_str()) {
+	let (invoker_public_key, invoker_public_key_id) = match import_public_key(invoker_public_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -84,19 +84,19 @@ pub fn key_rotation(previous_group_key: String, invoker_public_key: String) -> S
 	}
 }
 
-pub fn done_key_rotation(private_key: String, public_key: String, previous_group_key: String, server_output: String) -> String
+pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key: &str, server_output: &str) -> String
 {
-	let (previous_group_key, _) = match import_sym_key(previous_group_key.as_str()) {
+	let (previous_group_key, _) = match import_sym_key(previous_group_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (private_key, _) = match import_private_key(private_key.as_str()) {
+	let (private_key, _) = match import_private_key(private_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (public_key, public_key_id) = match import_public_key(public_key.as_str()) {
+	let (public_key, public_key_id) = match import_public_key(public_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -112,9 +112,9 @@ pub fn done_key_rotation(private_key: String, public_key: String, previous_group
 	}
 }
 
-pub fn get_group(private_key: String, server_output: String) -> String
+pub fn get_group(private_key: &str, server_output: &str) -> String
 {
-	let (private_key, _) = match import_private_key(private_key.as_str()) {
+	let (private_key, _) = match import_private_key(private_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -145,7 +145,7 @@ pub fn get_group(private_key: String, server_output: String) -> String
 	}
 }
 
-pub fn prepare_group_keys_for_new_member(requester_public_key: String, group_keys: &[String]) -> String
+pub fn prepare_group_keys_for_new_member(requester_public_key: &str, group_keys: &[String]) -> String
 {
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 	let mut group_key_ids = Vec::with_capacity(group_keys.len());
@@ -161,7 +161,7 @@ pub fn prepare_group_keys_for_new_member(requester_public_key: String, group_key
 		group_key_ids.push(id);
 	}
 
-	let (pk, pk_id) = match import_public_key(requester_public_key.as_str()) {
+	let (pk, pk_id) = match import_public_key(requester_public_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};

@@ -82,7 +82,7 @@ pub fn register_test() -> String
 	let password = "abc*èéöäüê";
 
 	#[cfg(not(feature = "rust"))]
-	let out = register(password.to_string());
+	let out = register(password);
 
 	let out = RegisterData::from_string(out.as_bytes()).unwrap();
 	let RegisterData {
@@ -103,7 +103,7 @@ pub fn register_test() -> String
 
 	//back to the client, send prep login out string to the server if it is no err
 	#[cfg(not(feature = "rust"))]
-	let prep_login_out = prepare_login(password.to_string(), salt_from_rand_value, derived.derived_alg);
+	let prep_login_out = prepare_login(password, salt_from_rand_value.as_str(), derived.derived_alg.as_str());
 
 	//and get the master_key_encryption_key for done login
 	let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
@@ -127,8 +127,8 @@ pub fn register_test() -> String
 	//now save the values
 	#[cfg(not(feature = "rust"))]
 	let login_out = done_login(
-		master_key_encryption_key.to_string().unwrap(), //the value comes from prepare login
-		server_output,
+		master_key_encryption_key.to_string().unwrap().as_str(), //the value comes from prepare login
+		server_output.as_str(),
 	);
 
 	let login_out = KeyData::from_string(&login_out.as_bytes()).unwrap();

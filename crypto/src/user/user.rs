@@ -49,9 +49,9 @@ impl PrepareLoginData
 	}
 }
 
-pub fn register(password: String) -> String
+pub fn register(password: &str) -> String
 {
-	match register_internally(password.as_str()) {
+	match register_internally(password) {
 		Err(e) => {
 			//create the err to json
 			return err_to_msg(e);
@@ -60,13 +60,12 @@ pub fn register(password: String) -> String
 	}
 }
 
-pub fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: String) -> String
+pub fn prepare_login(password: &str, salt_string: &str, derived_encryption_key_alg: &str) -> String
 {
-	let (auth_key, master_key_encryption_key) =
-		match prepare_login_internally(password.as_str(), salt_string.as_str(), derived_encryption_key_alg.as_str()) {
-			Err(e) => return err_to_msg(e),
-			Ok(o) => o,
-		};
+	let (auth_key, master_key_encryption_key) = match prepare_login_internally(password, salt_string, derived_encryption_key_alg) {
+		Err(e) => return err_to_msg(e),
+		Ok(o) => o,
+	};
 
 	//return the encryption key for the master key to the app and then use it for done login
 	let master_key_encryption_key = match master_key_encryption_key {
@@ -89,8 +88,8 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 }
 
 pub fn done_login(
-	master_key_encryption: String, //from the prepare login as base64 for exporting
-	server_output: String,
+	master_key_encryption: &str, //from the prepare login as base64 for exporting
+	server_output: &str,
 ) -> String
 {
 	let master_key_encryption = match MasterKeyFormat::from_string(master_key_encryption.as_bytes()) {
@@ -146,33 +145,27 @@ pub fn done_login(
 	}
 }
 
-pub fn change_password(old_pw: String, new_pw: String, old_salt: String, encrypted_master_key: String, derived_encryption_key_alg: String) -> String
+pub fn change_password(old_pw: &str, new_pw: &str, old_salt: &str, encrypted_master_key: &str, derived_encryption_key_alg: &str) -> String
 {
-	match change_password_internally(
-		old_pw.as_str(),
-		new_pw.as_str(),
-		old_salt.as_str(),
-		encrypted_master_key.as_str(),
-		derived_encryption_key_alg.as_str(),
-	) {
+	match change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg) {
 		Err(e) => return err_to_msg(e),
 		Ok(v) => v,
 	}
 }
 
-pub fn reset_password(new_password: String, decrypted_private_key: String, decrypted_sign_key: String) -> String
+pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> String
 {
-	let (decrypted_private_key, _) = match import_private_key(decrypted_private_key.as_str()) {
+	let (decrypted_private_key, _) = match import_private_key(decrypted_private_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (decrypted_sign_key, _) = match import_sign_key(decrypted_sign_key.as_str()) {
+	let (decrypted_sign_key, _) = match import_sign_key(decrypted_sign_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	match reset_password_internally(new_password.as_str(), &decrypted_private_key, &decrypted_sign_key) {
+	match reset_password_internally(new_password, &decrypted_private_key, &decrypted_sign_key) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
 	}
@@ -182,8 +175,6 @@ pub fn reset_password(new_password: String, decrypted_private_key: String, decry
 mod test
 {
 	extern crate std;
-
-	use alloc::string::ToString;
 
 	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
 
@@ -196,7 +187,7 @@ mod test
 	{
 		let password = "abc*èéöäüê";
 
-		let out = register(password.to_string());
+		let out = register(password);
 
 		std::println!("{}", out);
 	}
@@ -206,14 +197,14 @@ mod test
 	{
 		let password = "abc*èéöäüê";
 
-		let out = register(password.to_string());
+		let out = register(password);
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let prep_login_out = prepare_login(password.to_string(), salt_from_rand_value, out.derived.derived_alg.clone());
+		let prep_login_out = prepare_login(password, salt_from_rand_value.as_str(), out.derived.derived_alg.as_str());
 
 		//and get the master_key_encryption_key for done login
 		let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
@@ -223,8 +214,8 @@ mod test
 
 		//now save the values
 		let login_out = done_login(
-			master_key_encryption_key.to_string().unwrap(), //the value comes from prepare login
-			server_output,
+			master_key_encryption_key.to_string().unwrap().as_str(), //the value comes from prepare login
+			server_output.as_str(),
 		);
 
 		let login_out = KeyData::from_string(&login_out.as_bytes()).unwrap();
@@ -245,18 +236,18 @@ mod test
 		let password = "abc*èéöäüê";
 		let new_password = "abcdfg";
 
-		let out = register(password.to_string());
+		let out = register(password);
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
 
 		let pw_change_out = change_password(
-			password.to_string(),
-			new_password.to_string(),
-			salt_from_rand_value,
-			out.master_key.encrypted_master_key.clone(),
-			out.derived.derived_alg,
+			password,
+			new_password,
+			salt_from_rand_value.as_str(),
+			out.master_key.encrypted_master_key.as_str(),
+			out.derived.derived_alg.as_str(),
 		);
 
 		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_bytes()).unwrap();
