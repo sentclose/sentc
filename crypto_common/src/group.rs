@@ -63,6 +63,7 @@ pub struct KeyRotationInput
 	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
 	pub encrypted_group_key_by_ephemeral: String,
 	pub ephemeral_alg: String,
+	pub previous_group_key_id: String, //use this in the client sdk to load the right group key from the storage
 }
 
 impl KeyRotationInput
