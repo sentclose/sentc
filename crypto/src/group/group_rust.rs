@@ -1,9 +1,16 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use sendclose_crypto_common::group::{GroupServerOutput, KeyRotationInput};
 use sendclose_crypto_core::Error;
 
-use crate::group::{done_key_rotation_internally, get_group_internally, key_rotation_internally, prepare_create_internally};
+use crate::group::{
+	done_key_rotation_internally,
+	get_group_internally,
+	key_rotation_internally,
+	prepare_create_internally,
+	prepare_group_keys_for_new_member_internally,
+};
 use crate::util::{PublicKeyFormat, SymKeyFormat};
 use crate::PrivateKeyFormat;
 
@@ -63,4 +70,22 @@ pub fn get_group(private_key: &PrivateKeyFormat, server_output: &GroupServerOutp
 			key_id: out.group_key_id,
 		},
 	})
+}
+
+pub fn prepare_group_keys_for_new_member(requester_public_key: &PublicKeyFormat, group_keys: &[SymKeyFormat]) -> Result<String, Error>
+{
+	let mut split_group_keys = Vec::with_capacity(group_keys.len());
+	let mut group_key_ids = Vec::with_capacity(group_keys.len());
+
+	for group_key in group_keys {
+		split_group_keys.push(&group_key.key);
+		group_key_ids.push(group_key.key_id.as_str())
+	}
+
+	prepare_group_keys_for_new_member_internally(
+		&requester_public_key.key,
+		&split_group_keys,
+		&group_key_ids,
+		requester_public_key.key_id.as_str(),
+	)
 }

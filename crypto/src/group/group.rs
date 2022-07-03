@@ -1,12 +1,19 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use sendclose_crypto_common::group::{GroupServerOutput, KeyRotationInput};
-use sendclose_crypto_core::Error;
+use sendclose_crypto_core::{Error, SymKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
 use crate::err_to_msg;
-use crate::group::{done_key_rotation_internally, get_group_internally, key_rotation_internally, prepare_create_internally};
+use crate::group::{
+	done_key_rotation_internally,
+	get_group_internally,
+	key_rotation_internally,
+	prepare_create_internally,
+	prepare_group_keys_for_new_member_internally,
+};
 use crate::util::{
 	export_private_key,
 	export_public_key,
@@ -42,7 +49,7 @@ impl GroupData
 
 pub fn prepare_create(creators_public_key: String) -> String
 {
-	let (creators_public_key, creator_public_key_id) = match import_public_key(creators_public_key) {
+	let (creators_public_key, creator_public_key_id) = match import_public_key(creators_public_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -56,12 +63,12 @@ pub fn prepare_create(creators_public_key: String) -> String
 pub fn key_rotation(previous_group_key: String, invoker_public_key: String) -> String
 {
 	//the ids comes from the storage of the current impl from the sdk, the group key id comes from get group
-	let (previous_group_key, previous_group_key_id) = match import_sym_key(previous_group_key) {
+	let (previous_group_key, previous_group_key_id) = match import_sym_key(previous_group_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (invoker_public_key, invoker_public_key_id) = match import_public_key(invoker_public_key) {
+	let (invoker_public_key, invoker_public_key_id) = match import_public_key(invoker_public_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -74,17 +81,17 @@ pub fn key_rotation(previous_group_key: String, invoker_public_key: String) -> S
 
 pub fn done_key_rotation(private_key: String, public_key: String, previous_group_key: String, server_output: String) -> String
 {
-	let (previous_group_key, _) = match import_sym_key(previous_group_key) {
+	let (previous_group_key, _) = match import_sym_key(previous_group_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (private_key, _) = match import_private_key(private_key) {
+	let (private_key, _) = match import_private_key(private_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (public_key, public_key_id) = match import_public_key(public_key) {
+	let (public_key, public_key_id) = match import_public_key(public_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -102,7 +109,7 @@ pub fn done_key_rotation(private_key: String, public_key: String, previous_group
 
 pub fn get_group(private_key: String, server_output: String) -> String
 {
-	let (private_key, _) = match import_private_key(private_key) {
+	let (private_key, _) = match import_private_key(private_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -131,4 +138,53 @@ pub fn get_group(private_key: String, server_output: String) -> String
 		Ok(v) => v,
 		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
 	}
+}
+
+pub fn prepare_group_keys_for_new_member(requester_public_key: String, group_keys: &[String]) -> String
+{
+	let mut saved_keys = Vec::with_capacity(group_keys.len());
+	let mut group_key_ids = Vec::with_capacity(group_keys.len());
+
+	//split group key and id
+	for group_key in group_keys {
+		let (key, id) = match import_sym_key(group_key) {
+			Ok(v) => v,
+			Err(e) => return err_to_msg(e),
+		};
+
+		saved_keys.push(key);
+		group_key_ids.push(id);
+	}
+
+	let (pk, pk_id) = match import_public_key(requester_public_key.as_str()) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let (split_group_keys, split_group_ids) = prepare_group_keys_for_new_member_with_ref(&saved_keys, &group_key_ids);
+
+	match prepare_group_keys_for_new_member_internally(&pk, &split_group_keys, &split_group_ids, pk_id.as_str()) {
+		Ok(o) => o,
+		Err(e) => return err_to_msg(e),
+	}
+}
+
+fn prepare_group_keys_for_new_member_with_ref<'a>(saved_keys: &'a Vec<SymKey>, group_key_ids: &'a Vec<String>) -> (Vec<&'a SymKey>, Vec<&'a str>)
+{
+	//this is needed because we need only ref of the group key not the group key itself.
+	//but for the non rust version the key is just a string which gets
+
+	let mut split_group_keys = Vec::with_capacity(saved_keys.len());
+	let mut split_group_key_ids = Vec::with_capacity(saved_keys.len());
+
+	let mut i = 0;
+
+	for saved_key in saved_keys {
+		split_group_keys.push(saved_key);
+		split_group_key_ids.push(group_key_ids[i].as_str());
+
+		i += 1;
+	}
+
+	(split_group_keys, split_group_key_ids)
 }

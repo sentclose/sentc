@@ -3,14 +3,24 @@
 //handle the key id for get group, and the rotation + accept / invite user
 
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::group::{CreateData, DoneKeyRotationData, GroupServerOutput, KeyRotationData, KeyRotationInput};
+use sendclose_crypto_common::group::{
+	CreateData,
+	DoneKeyRotationData,
+	GroupKeysForNewMember,
+	GroupKeysForNewMemberServerInput,
+	GroupServerOutput,
+	KeyRotationData,
+	KeyRotationInput,
+};
 use sendclose_crypto_core::group::{
 	done_key_rotation as done_key_rotation_core,
 	get_group as get_group_core,
 	key_rotation as key_rotation_core,
 	prepare_create as prepare_create_core,
+	prepare_group_keys_for_new_member as prepare_group_keys_for_new_member_core,
 };
 use sendclose_crypto_core::{Error, Pk, Sk, SymKey};
 
@@ -23,9 +33,9 @@ mod group;
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::group::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData};
+pub use self::group::{done_key_rotation, get_group, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupData};
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData};
+pub use self::group_rust::{done_key_rotation, get_group, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupData};
 
 pub(crate) struct DoneGettingGroupOutput
 {
@@ -163,4 +173,40 @@ fn get_group_internally(private_key: &Sk, server_output: &GroupServerOutput) -> 
 		key_pair_id: server_output.key_pair_id.clone(),
 		group_key_id: server_output.group_key_id.clone(),
 	})
+}
+
+fn prepare_group_keys_for_new_member_internally(
+	requester_public_key: &Pk,
+	group_keys: &[&SymKey],
+	group_key_ids: &[&str],
+	requester_public_key_id: &str,
+) -> Result<String, Error>
+{
+	//get all the group keys from the server and use get group for all (if not already on the device)
+	let out = prepare_group_keys_for_new_member_core(requester_public_key, group_keys)?;
+
+	//transform this vec to the server input by encode each encrypted key to base64
+	let mut encrypted_group_keys: Vec<GroupKeysForNewMember> = Vec::with_capacity(out.len());
+
+	let mut i = 0;
+
+	for key_out in out {
+		let encrypted_group_key = Base64::encode_string(&key_out.encrypted_group_key);
+		let key_id = group_key_ids[i].to_string();
+
+		encrypted_group_keys.push(GroupKeysForNewMember {
+			encrypted_group_key,
+			alg: key_out.alg.to_string(),
+			user_public_key_id: requester_public_key_id.to_string(),
+			key_id,
+		});
+
+		i += 1;
+	}
+
+	let server_input = GroupKeysForNewMemberServerInput(encrypted_group_keys);
+
+	Ok(server_input
+		.to_string()
+		.map_err(|_| Error::JsonToStringFailed)?)
 }
