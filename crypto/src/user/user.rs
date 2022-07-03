@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::user::{KeyData, MasterKeyFormat, PrepareLoginData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
@@ -222,6 +224,10 @@ pub(crate) fn export_verify_key(verify_key: VerifyK) -> VerifyKeyFormat
 #[cfg(test)]
 mod test
 {
+	extern crate std;
+
+	use alloc::string::ToString;
+
 	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
 
 	use super::*;
@@ -234,7 +240,7 @@ mod test
 
 		let out = register(password.to_string());
 
-		println!("{}", out);
+		std::println!("{}", out);
 	}
 
 	#[test]

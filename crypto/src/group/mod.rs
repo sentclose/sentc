@@ -2,6 +2,8 @@
 //but in the higher level mod we must care
 //handle the key id for get group, and the rotation + accept / invite user
 
+use alloc::string::{String, ToString};
+
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::group::{CreateData, DoneKeyRotationData, KeyRotationData, KeyRotationInput};
 use sendclose_crypto_core::group::{

@@ -1,5 +1,11 @@
+#![no_std]
+
+extern crate alloc;
+
 pub mod group;
 pub mod user;
+
+use alloc::string::String;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};

@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, SignK, Sk};
 
 use crate::user::{
@@ -43,6 +45,10 @@ pub fn reset_password(new_password: String, decrypted_private_key: &Sk, decrypte
 #[cfg(test)]
 mod test
 {
+	extern crate std;
+
+	use alloc::string::ToString;
+
 	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
 	use sendclose_crypto_core::Sk;
 
@@ -56,7 +62,7 @@ mod test
 
 		let out = register(password.to_string()).unwrap();
 
-		println!("rust: {}", out);
+		std::println!("rust: {}", out);
 	}
 
 	#[test]

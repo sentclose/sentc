@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 # json handling
-serde_json = "1.0.81"
-serde = { version = "1.0", features = ["derive"] }
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }

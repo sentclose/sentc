@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use sendclose_crypto_core::{Error, Pk, Sk, SymKey};
 
 use crate::group::{done_key_rotation_internally, key_rotation_internally, prepare_create_internally};

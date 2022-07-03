@@ -5,6 +5,9 @@
 //!
 //! If rust feature is enabled the rust functions are used. The return is no longer just a json string but rust structs and enums to work with
 
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData, ResetPasswordData};

@@ -1,3 +1,9 @@
+#![no_std]
+
+extern crate alloc;
+
+use alloc::string::String;
+
 use sendclose_crypto::register_test;
 use sendclose_crypto::user::{done_login as done_login_core, prepare_login as prepare_login_core, register as register_core};
 use wasm_bindgen::prelude::*;

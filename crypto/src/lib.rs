@@ -1,6 +1,13 @@
+#![no_std]
+
+extern crate alloc;
+
 mod error;
 pub mod group;
 pub mod user;
+
+use alloc::format;
+use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::user::{DoneLoginInput, RegisterData};

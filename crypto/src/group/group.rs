@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::SymKeyFormat;
 use sendclose_crypto_core::{Error, SymKey};
