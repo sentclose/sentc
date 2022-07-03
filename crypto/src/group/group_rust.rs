@@ -23,7 +23,7 @@ pub struct GroupData
 
 pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, Error>
 {
-	prepare_create_internally(&creators_public_key.key, creators_public_key.key_id.clone())
+	prepare_create_internally(&creators_public_key.key, creators_public_key.key_id.as_str())
 }
 
 pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat) -> Result<String, Error>
@@ -31,8 +31,8 @@ pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &Publ
 	key_rotation_internally(
 		&previous_group_key.key,
 		&invoker_public_key.key,
-		previous_group_key.key_id.clone(),
-		invoker_public_key.key_id.clone(),
+		previous_group_key.key_id.as_str(),
+		invoker_public_key.key_id.as_str(),
 	)
 }
 
@@ -48,7 +48,7 @@ pub fn done_key_rotation(
 		&public_key.key,
 		&previous_group_key.key,
 		server_output,
-		public_key.key_id.clone(),
+		public_key.key_id.as_str(),
 	)
 }
 

@@ -54,7 +54,7 @@ pub fn prepare_create(creators_public_key: String) -> String
 		Err(e) => return err_to_msg(e),
 	};
 
-	match prepare_create_internally(&creators_public_key, creator_public_key_id) {
+	match prepare_create_internally(&creators_public_key, creator_public_key_id.as_str()) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
 	}
@@ -73,7 +73,12 @@ pub fn key_rotation(previous_group_key: String, invoker_public_key: String) -> S
 		Err(e) => return err_to_msg(e),
 	};
 
-	match key_rotation_internally(&previous_group_key, &invoker_public_key, previous_group_key_id, invoker_public_key_id) {
+	match key_rotation_internally(
+		&previous_group_key,
+		&invoker_public_key,
+		previous_group_key_id.as_str(),
+		invoker_public_key_id.as_str(),
+	) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
 	}
@@ -101,7 +106,7 @@ pub fn done_key_rotation(private_key: String, public_key: String, previous_group
 		Err(e) => return err_to_msg(e),
 	};
 
-	match done_key_rotation_internally(&private_key, &public_key, &previous_group_key, &server_output, public_key_id) {
+	match done_key_rotation_internally(&private_key, &public_key, &previous_group_key, &server_output, public_key_id.as_str()) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
 	}

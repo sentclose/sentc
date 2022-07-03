@@ -46,7 +46,7 @@ pub(crate) struct DoneGettingGroupOutput
 	pub group_key_id: String,
 }
 
-fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: String) -> Result<String, Error>
+fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: &str) -> Result<String, Error>
 {
 	let out = prepare_create_core(creators_public_key)?;
 
@@ -64,7 +64,7 @@ fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: St
 		encrypted_group_key_alg: out.encrypted_group_key_alg.to_string(),
 		group_key_alg: out.group_key_alg.to_string(),
 		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
-		creator_public_key_id,
+		creator_public_key_id: creator_public_key_id.to_string(),
 	};
 
 	Ok(create_out
@@ -75,8 +75,8 @@ fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: St
 fn key_rotation_internally(
 	previous_group_key: &SymKey,
 	invoker_public_key: &Pk,
-	previous_group_key_id: String,
-	invoker_public_key_id: String,
+	previous_group_key_id: &str,
+	invoker_public_key_id: &str,
 ) -> Result<String, Error>
 {
 	let out = key_rotation_core(previous_group_key, invoker_public_key)?;
@@ -100,8 +100,8 @@ fn key_rotation_internally(
 		encrypted_group_key_by_ephemeral,
 		ephemeral_alg: out.ephemeral_alg.to_string(),
 		encrypted_ephemeral_key,
-		previous_group_key_id,
-		invoker_public_key_id,
+		previous_group_key_id: previous_group_key_id.to_string(),
+		invoker_public_key_id: invoker_public_key_id.to_string(),
 	};
 
 	Ok(rotation_out
@@ -114,7 +114,7 @@ fn done_key_rotation_internally(
 	public_key: &Pk,
 	previous_group_key: &SymKey,
 	server_output: &KeyRotationInput,
-	public_key_id: String,
+	public_key_id: &str,
 ) -> Result<String, Error>
 {
 	//the id of the previous group key was returned by the server too so the sdk impl knows which key it used
@@ -142,7 +142,7 @@ fn done_key_rotation_internally(
 
 	let done_rotation_out = DoneKeyRotationData {
 		encrypted_new_group_key,
-		public_key_id,
+		public_key_id: public_key_id.to_string(),
 	};
 
 	Ok(done_rotation_out
