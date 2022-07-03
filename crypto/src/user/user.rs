@@ -155,12 +155,12 @@ pub fn change_password(old_pw: String, new_pw: String, old_salt: String, encrypt
 
 pub fn reset_password(new_password: String, decrypted_private_key: String, decrypted_sign_key: String) -> String
 {
-	let (decrypted_private_key, _) = match import_private_key(decrypted_private_key) {
+	let (decrypted_private_key, _) = match import_private_key(decrypted_private_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (decrypted_sign_key, _) = match import_sign_key(decrypted_sign_key) {
+	let (decrypted_sign_key, _) = match import_sign_key(decrypted_sign_key.as_str()) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};

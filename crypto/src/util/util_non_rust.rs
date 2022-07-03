@@ -142,11 +142,16 @@ impl SymKeyFormat
 	}
 }
 
-pub(crate) fn import_private_key(private_key_string: String) -> Result<(Sk, String), Error>
+pub(crate) fn import_private_key(private_key_string: &str) -> Result<(Sk, String), Error>
 {
 	let private_key_format = PrivateKeyFormat::from_string(private_key_string.as_bytes()).map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
-	match private_key_format {
+	import_private_key_from_format(&private_key_format)
+}
+
+pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<(Sk, String), Error>
+{
+	match key {
 		PrivateKeyFormat::Ecies {
 			key_id,
 			key,
@@ -158,16 +163,21 @@ pub(crate) fn import_private_key(private_key_string: String) -> Result<(Sk, Stri
 				.try_into()
 				.map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
-			Ok((Sk::Ecies(private_key), key_id))
+			Ok((Sk::Ecies(private_key), key_id.clone()))
 		},
 	}
 }
 
-pub(crate) fn import_public_key(public_key_string: String) -> Result<(Pk, String), Error>
+pub(crate) fn import_public_key(public_key_string: &str) -> Result<(Pk, String), Error>
 {
 	let public_key_format = PublicKeyFormat::from_string(public_key_string.as_bytes()).map_err(|_| Error::ImportPublicKeyFailed)?;
 
-	match public_key_format {
+	import_public_key_from_format(&public_key_format)
+}
+
+pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<(Pk, String), Error>
+{
+	match key {
 		PublicKeyFormat::Ecies {
 			key_id,
 			key,
@@ -176,16 +186,21 @@ pub(crate) fn import_public_key(public_key_string: String) -> Result<(Pk, String
 
 			let key = bytes.try_into().map_err(|_| Error::ImportPublicKeyFailed)?;
 
-			Ok((Pk::Ecies(key), key_id))
+			Ok((Pk::Ecies(key), key_id.clone()))
 		},
 	}
 }
 
-pub(crate) fn import_sign_key(sign_key_string: String) -> Result<(SignK, String), Error>
+pub(crate) fn import_sign_key(sign_key_string: &str) -> Result<(SignK, String), Error>
 {
 	let sign_key_format = SignKeyFormat::from_string(sign_key_string.as_bytes()).map_err(|_| Error::ImportingSignKeyFailed)?;
 
-	match sign_key_format {
+	import_sign_key_from_format(&sign_key_format)
+}
+
+pub(crate) fn import_sign_key_from_format(key: &SignKeyFormat) -> Result<(SignK, String), Error>
+{
+	match key {
 		SignKeyFormat::Ed25519 {
 			key_id,
 			key,
@@ -197,7 +212,7 @@ pub(crate) fn import_sign_key(sign_key_string: String) -> Result<(SignK, String)
 				.try_into()
 				.map_err(|_| Error::ImportingSignKeyFailed)?;
 
-			Ok((SignK::Ed25519(sign_key), key_id))
+			Ok((SignK::Ed25519(sign_key), key_id.clone()))
 		},
 	}
 }
@@ -258,11 +273,16 @@ pub(crate) fn export_verify_key(verify_key: VerifyK, key_id: String) -> VerifyKe
 	}
 }
 
-pub(crate) fn import_sym_key(key_string: String) -> Result<(SymKey, String), Error>
+pub(crate) fn import_sym_key(key_string: &str) -> Result<(SymKey, String), Error>
 {
 	let key_format = SymKeyFormat::from_string(key_string.as_bytes()).map_err(|_| Error::ImportSymmetricKeyFailed)?;
 
-	match key_format {
+	import_sym_key_from_format(&key_format)
+}
+
+pub(crate) fn import_sym_key_from_format(key: &SymKeyFormat) -> Result<(SymKey, String), Error>
+{
+	match key {
 		SymKeyFormat::Aes {
 			key,
 			key_id,
@@ -274,7 +294,7 @@ pub(crate) fn import_sym_key(key_string: String) -> Result<(SymKey, String), Err
 				.try_into()
 				.map_err(|_| Error::ImportSymmetricKeyFailed)?;
 
-			Ok((SymKey::Aes(key), key_id))
+			Ok((SymKey::Aes(key), key_id.clone()))
 		},
 	}
 }
