@@ -30,14 +30,7 @@ pub(crate) use self::util_non_rust::{
 	VerifyKeyFormat,
 };
 #[cfg(feature = "rust")]
-pub(crate) use self::util_rust::{
-	KeyData,
-	PrivateKeyFormat,
-	PublicKeyFormat,
-	SignKeyFormat,
-	SymKeyFormat,
-	VerifyKeyFormat,
-};
+pub(crate) use self::util_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
 {
@@ -47,7 +40,7 @@ pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
 	Ok(key)
 }
 
-pub(crate) fn import_key_from_pem(pem: &String) -> Result<Vec<u8>, Error>
+pub(crate) fn import_key_from_pem(pem: &str) -> Result<Vec<u8>, Error>
 {
 	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| Error::ImportingKeyFromPemFailed)?;
 
@@ -90,7 +83,7 @@ pub(crate) fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &Deri
 	}
 }
 
-pub(crate) fn import_public_key_from_pem_with_alg(public_key: &String, alg: &str) -> Result<Pk, Error>
+pub(crate) fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<Pk, Error>
 {
 	let public_key = import_key_from_pem(public_key)?;
 
@@ -105,7 +98,7 @@ pub(crate) fn import_public_key_from_pem_with_alg(public_key: &String, alg: &str
 	}
 }
 
-pub(crate) fn import_verify_key_from_pem_with_alg(verify_key: &String, alg: &str) -> Result<VerifyK, Error>
+pub(crate) fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -> Result<VerifyK, Error>
 {
 	let verify_key = import_key_from_pem(verify_key)?;
 

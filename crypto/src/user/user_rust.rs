@@ -6,12 +6,12 @@ use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
 use crate::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
 
-pub fn register(password: String) -> Result<String, Error>
+pub fn register(password: &str) -> Result<String, Error>
 {
 	register_internally(password)
 }
 
-pub fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: String) -> Result<(String, DeriveMasterKeyForAuth), Error>
+pub fn prepare_login(password: &str, salt_string: &str, derived_encryption_key_alg: &str) -> Result<(String, DeriveMasterKeyForAuth), Error>
 {
 	prepare_login_internally(password, salt_string, derived_encryption_key_alg)
 }
@@ -41,17 +41,17 @@ pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output:
 }
 
 pub fn change_password(
-	old_pw: String,
-	new_pw: String,
-	old_salt: String,
-	encrypted_master_key: String,
-	derived_encryption_key_alg: String,
+	old_pw: &str,
+	new_pw: &str,
+	old_salt: &str,
+	encrypted_master_key: &str,
+	derived_encryption_key_alg: &str,
 ) -> Result<String, Error>
 {
 	change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg)
 }
 
-pub fn reset_password(new_password: String, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, Error>
+pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, Error>
 {
 	reset_password_internally(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)
 }
@@ -74,7 +74,7 @@ mod test
 	{
 		let password = "abc*èéöäüê";
 
-		let out = register(password.to_string()).unwrap();
+		let out = register(password).unwrap();
 
 		std::println!("rust: {}", out);
 	}
@@ -84,14 +84,14 @@ mod test
 	{
 		let password = "abc*èéöäüê";
 
-		let out = register(password.to_string()).unwrap();
+		let out = register(password).unwrap();
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, master_key_encryption_key) = prepare_login(password.to_string(), salt_from_rand_value, out.derived.derived_alg.clone()).unwrap();
+		let (_, master_key_encryption_key) = prepare_login(password, salt_from_rand_value.as_str(), out.derived.derived_alg.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
@@ -117,18 +117,18 @@ mod test
 		let password = "abc*èéöäüê";
 		let new_password = "abcdfg";
 
-		let out = register(password.to_string()).unwrap();
+		let out = register(password).unwrap();
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
 
 		let pw_change_out = change_password(
-			password.to_string(),
-			new_password.to_string(),
-			salt_from_rand_value,
-			out.master_key.encrypted_master_key.clone(),
-			out.derived.derived_alg,
+			password,
+			new_password,
+			salt_from_rand_value.as_str(),
+			out.master_key.encrypted_master_key.as_str(),
+			out.derived.derived_alg.as_str(),
 		)
 		.unwrap();
 

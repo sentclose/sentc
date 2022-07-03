@@ -20,6 +20,7 @@ pub use self::error::err_to_msg;
 #[cfg(not(feature = "rust"))]
 use crate::user::PrepareLoginData;
 use crate::user::{done_login, prepare_login, register};
+#[cfg(not(feature = "rust"))]
 use crate::util::{KeyData, PrivateKeyFormat};
 
 #[cfg(feature = "rust")]
@@ -27,7 +28,8 @@ pub fn register_test() -> String
 {
 	let password = "abc*èéöäüê";
 
-	let out = register(password.to_string()).unwrap();
+	#[cfg(feature = "rust")]
+	let out = register(password).unwrap();
 
 	let out = RegisterData::from_string(out.as_bytes()).unwrap();
 	let RegisterData {
@@ -47,7 +49,8 @@ pub fn register_test() -> String
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
 	//back to the client, send prep login out string to the server if it is no err
-	let (_, master_key_encryption_key) = prepare_login(password.to_string(), salt_from_rand_value, derived.derived_alg).unwrap();
+	#[cfg(feature = "rust")]
+	let (_, master_key_encryption_key) = prepare_login(password, salt_from_rand_value.as_str(), derived.derived_alg.as_str()).unwrap();
 
 	//get the server output back
 	let server_output = DoneLoginInput {
@@ -78,6 +81,7 @@ pub fn register_test() -> String
 {
 	let password = "abc*èéöäüê";
 
+	#[cfg(not(feature = "rust"))]
 	let out = register(password.to_string());
 
 	let out = RegisterData::from_string(out.as_bytes()).unwrap();
@@ -98,6 +102,7 @@ pub fn register_test() -> String
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
 	//back to the client, send prep login out string to the server if it is no err
+	#[cfg(not(feature = "rust"))]
 	let prep_login_out = prepare_login(password.to_string(), salt_from_rand_value, derived.derived_alg);
 
 	//and get the master_key_encryption_key for done login

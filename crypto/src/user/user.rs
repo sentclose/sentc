@@ -51,7 +51,7 @@ impl PrepareLoginData
 
 pub fn register(password: String) -> String
 {
-	match register_internally(password) {
+	match register_internally(password.as_str()) {
 		Err(e) => {
 			//create the err to json
 			return err_to_msg(e);
@@ -62,10 +62,11 @@ pub fn register(password: String) -> String
 
 pub fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: String) -> String
 {
-	let (auth_key, master_key_encryption_key) = match prepare_login_internally(password, salt_string, derived_encryption_key_alg) {
-		Err(e) => return err_to_msg(e),
-		Ok(o) => o,
-	};
+	let (auth_key, master_key_encryption_key) =
+		match prepare_login_internally(password.as_str(), salt_string.as_str(), derived_encryption_key_alg.as_str()) {
+			Err(e) => return err_to_msg(e),
+			Ok(o) => o,
+		};
 
 	//return the encryption key for the master key to the app and then use it for done login
 	let master_key_encryption_key = match master_key_encryption_key {
@@ -147,7 +148,13 @@ pub fn done_login(
 
 pub fn change_password(old_pw: String, new_pw: String, old_salt: String, encrypted_master_key: String, derived_encryption_key_alg: String) -> String
 {
-	match change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg) {
+	match change_password_internally(
+		old_pw.as_str(),
+		new_pw.as_str(),
+		old_salt.as_str(),
+		encrypted_master_key.as_str(),
+		derived_encryption_key_alg.as_str(),
+	) {
 		Err(e) => return err_to_msg(e),
 		Ok(v) => v,
 	}
@@ -165,7 +172,7 @@ pub fn reset_password(new_password: String, decrypted_private_key: String, decry
 		Err(e) => return err_to_msg(e),
 	};
 
-	match reset_password_internally(new_password, &decrypted_private_key, &decrypted_sign_key) {
+	match reset_password_internally(new_password.as_str(), &decrypted_private_key, &decrypted_sign_key) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
 	}

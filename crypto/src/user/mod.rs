@@ -58,9 +58,9 @@ pub(crate) struct DoneLoginOutput
 	pub keypair_sign_id: String,
 }
 
-fn register_internally(password: String) -> Result<String, Error>
+fn register_internally(password: &str) -> Result<String, Error>
 {
-	let out = register_core(password.as_str())?;
+	let out = register_core(password)?;
 
 	//transform the register output into json
 
@@ -116,14 +116,10 @@ fn register_internally(password: String) -> Result<String, Error>
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-fn prepare_login_internally(
-	password: String,
-	salt_string: String,
-	derived_encryption_key_alg: String,
-) -> Result<(String, DeriveMasterKeyForAuth), Error>
+fn prepare_login_internally(password: &str, salt_string: &str, derived_encryption_key_alg: &str) -> Result<(String, DeriveMasterKeyForAuth), Error>
 {
-	let salt = Base64::decode_vec(salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
-	let result = prepare_login_core(password.as_str(), &salt, derived_encryption_key_alg.as_str())?;
+	let salt = Base64::decode_vec(salt_string).map_err(|_| Error::DecodeSaltFailed)?;
+	let result = prepare_login_core(password, &salt, derived_encryption_key_alg)?;
 
 	//for the server
 	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
@@ -154,9 +150,9 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 	)?;
 
 	//now prepare the public and verify key for use
-	let public_key = import_public_key_from_pem_with_alg(&server_output.public_key_string, server_output.keypair_encrypt_alg.as_str())?;
+	let public_key = import_public_key_from_pem_with_alg(server_output.public_key_string.as_str(), server_output.keypair_encrypt_alg.as_str())?;
 
-	let verify_key = import_verify_key_from_pem_with_alg(&server_output.verify_key_string, server_output.keypair_sign_alg.as_str())?;
+	let verify_key = import_verify_key_from_pem_with_alg(server_output.verify_key_string.as_str(), server_output.keypair_sign_alg.as_str())?;
 
 	Ok(DoneLoginOutput {
 		private_key: out.private_key,
@@ -169,23 +165,17 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 }
 
 fn change_password_internally(
-	old_pw: String,
-	new_pw: String,
-	old_salt: String,
-	encrypted_master_key: String,
-	derived_encryption_key_alg: String,
+	old_pw: &str,
+	new_pw: &str,
+	old_salt: &str,
+	encrypted_master_key: &str,
+	derived_encryption_key_alg: &str,
 ) -> Result<String, Error>
 {
-	let encrypted_master_key = Base64::decode_vec(encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
-	let old_salt = Base64::decode_vec(old_salt.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
+	let encrypted_master_key = Base64::decode_vec(encrypted_master_key).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let old_salt = Base64::decode_vec(old_salt).map_err(|_| Error::DecodeSaltFailed)?;
 
-	let output = change_password_core(
-		old_pw.as_str(),
-		new_pw.as_str(),
-		&old_salt,
-		&encrypted_master_key,
-		derived_encryption_key_alg.as_str(),
-	)?;
+	let output = change_password_core(old_pw, new_pw, &old_salt, &encrypted_master_key, derived_encryption_key_alg)?;
 
 	//prepare for the server
 	let new_encrypted_master_key = Base64::encode_string(&output.master_key_info.encrypted_master_key);
@@ -211,9 +201,9 @@ fn change_password_internally(
 		.map_err(|_| Error::JsonToStringFailed)?)
 }
 
-fn reset_password_internally(new_password: String, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<String, Error>
+fn reset_password_internally(new_password: &str, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<String, Error>
 {
-	let out = password_reset_core(new_password.as_str(), decrypted_private_key, decrypted_sign_key)?;
+	let out = password_reset_core(new_password, decrypted_private_key, decrypted_sign_key)?;
 
 	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
