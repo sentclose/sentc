@@ -11,7 +11,7 @@ crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 # own crypto lib
-sendclose-crypto = {version = "0.1.0", path = "../../../crypto" }
+sendclose-crypto = {version = "0.1.0", path = "../../../../crypto" }
 
 # flutter ffi
 flutter_rust_bridge = "1"

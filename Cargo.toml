@@ -3,8 +3,8 @@ members = [
     "crypto",
     "crypto_core",
     "crypto_common",
-    "wasm",
-    "flutter/sendclose/rust"
+    "implementation/js/sentclose_wasm",
+    "implementation/dart/sendclose/rust"
 ]
 
 [profile.release]
