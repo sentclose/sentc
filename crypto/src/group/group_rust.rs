@@ -11,8 +11,7 @@ use crate::group::{
 	prepare_create_internally,
 	prepare_group_keys_for_new_member_internally,
 };
-use crate::util::{PublicKeyFormat, SymKeyFormat};
-use crate::PrivateKeyFormat;
+use crate::util::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat};
 
 pub struct GroupData
 {
