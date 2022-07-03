@@ -1,5 +1,6 @@
 use alloc::string::String;
 
+use sendclose_crypto_common::group::KeyRotationInput;
 use sendclose_crypto_core::{Error, SymKey};
 
 use crate::group::{done_key_rotation_internally, key_rotation_internally, prepare_create_internally};
@@ -30,7 +31,7 @@ pub fn done_key_rotation(
 	private_key: &PrivateKeyFormat,
 	public_key: &PublicKeyFormat,
 	previous_group_key: &SymKeyFormat,
-	server_output: String,
+	server_output: &KeyRotationInput,
 ) -> Result<String, Error>
 {
 	done_key_rotation_internally(

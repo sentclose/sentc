@@ -5,9 +5,10 @@
 use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::group::{CreateData, DoneKeyRotationData, KeyRotationData, KeyRotationInput};
+use sendclose_crypto_common::group::{CreateData, DoneKeyRotationData, GroupServerOutput, KeyRotationData, KeyRotationInput};
 use sendclose_crypto_core::group::{
 	done_key_rotation as done_key_rotation_core,
+	get_group as get_group_core,
 	key_rotation as key_rotation_core,
 	prepare_create as prepare_create_core,
 };
@@ -99,13 +100,11 @@ fn done_key_rotation_internally(
 	private_key: &Sk,
 	public_key: &Pk,
 	previous_group_key: &SymKey,
-	server_output: String,
+	server_output: &KeyRotationInput,
 	public_key_id: String,
 ) -> Result<String, Error>
 {
 	//the id of the previous group key was returned by the server too so the sdk impl knows which key it used
-
-	let server_output = KeyRotationInput::from_string(server_output.as_bytes()).map_err(|_| Error::KeyRotationServerOutputWrong)?;
 
 	//this values were encoded by key_rotation_internally
 	let encrypted_ephemeral_key_by_group_key_and_public_key = Base64::decode_vec(

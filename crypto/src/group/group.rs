@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
+use sendclose_crypto_common::group::KeyRotationInput;
 use sendclose_crypto_core::{Error, SymKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -80,7 +81,12 @@ pub fn done_key_rotation(private_key: String, public_key: String, previous_group
 		Err(e) => return err_to_msg(e),
 	};
 
-	match done_key_rotation_internally(&private_key, &public_key, &previous_group_key, server_output, public_key_id) {
+	let server_output = match KeyRotationInput::from_string(server_output.as_bytes()).map_err(|_| Error::KeyRotationServerOutputWrong) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	match done_key_rotation_internally(&private_key, &public_key, &previous_group_key, &server_output, public_key_id) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
 	}
