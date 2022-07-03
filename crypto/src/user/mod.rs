@@ -203,7 +203,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		ECIES_OUTPUT => {
 			let public_key = public_key
 				.try_into()
-				.map_err(|_| Error::DecodePrivateKeyFailed)?;
+				.map_err(|_| Error::DecodePublicKeyFailed)?;
 			Pk::Ecies(public_key)
 		},
 		_ => return Err(Error::AlgNotFound),
@@ -213,7 +213,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		ED25519_OUTPUT => {
 			let verify_key = verify_key
 				.try_into()
-				.map_err(|_| Error::DecodePrivateKeyFailed)?;
+				.map_err(|_| Error::DecodePublicKeyFailed)?;
 			VerifyK::Ed25519(verify_key)
 		},
 		_ => return Err(Error::AlgNotFound),
