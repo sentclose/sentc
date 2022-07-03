@@ -30,7 +30,14 @@ pub(crate) use self::util_non_rust::{
 	VerifyKeyFormat,
 };
 #[cfg(feature = "rust")]
-pub(crate) use self::util_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
+pub(crate) use self::util_rust::{
+	KeyData,
+	PrivateKeyFormat,
+	PublicKeyFormat,
+	SignKeyFormat,
+	SymKeyFormat,
+	VerifyKeyFormat,
+};
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
 {
