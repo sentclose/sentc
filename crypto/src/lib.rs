@@ -5,6 +5,7 @@ extern crate alloc;
 mod error;
 pub mod group;
 pub mod user;
+mod util;
 
 use alloc::format;
 use alloc::string::{String, ToString};

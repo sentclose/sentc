@@ -12,9 +12,9 @@ use sendclose_crypto_core::group::{
 	key_rotation as key_rotation_core,
 	prepare_create as prepare_create_core,
 };
-use sendclose_crypto_core::{Error, Pk, Sk, SymKey, ECIES_OUTPUT};
+use sendclose_crypto_core::{Error, Pk, Sk, SymKey};
 
-use crate::user::{export_key_to_pem, import_key_from_pem};
+use crate::util::{export_public_key_to_pem, import_public_key_from_pem_with_alg};
 
 #[cfg(not(feature = "rust"))]
 mod group;
@@ -47,9 +47,7 @@ fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: St
 	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
 
 	//2. export the public key
-	let public_group_key = match out.public_group_key {
-		Pk::Ecies(k) => export_key_to_pem(&k)?,
-	};
+	let public_group_key = export_public_key_to_pem(&out.public_group_key)?;
 
 	let create_out = CreateData {
 		public_group_key,
@@ -82,9 +80,7 @@ fn key_rotation_internally(
 	let encrypted_ephemeral_key = Base64::encode_string(&out.encrypted_ephemeral_key);
 
 	//2. export the public key
-	let public_group_key = match out.public_group_key {
-		Pk::Ecies(k) => export_key_to_pem(&k)?,
-	};
+	let public_group_key = export_public_key_to_pem(&out.public_group_key)?;
 
 	let rotation_out = KeyRotationData {
 		encrypted_group_key_by_user,
@@ -160,18 +156,7 @@ fn get_group_internally(private_key: &Sk, server_output: &GroupServerOutput) -> 
 		server_output.keypair_encrypt_alg.as_str(),
 	)?;
 
-	let public_group_key = import_key_from_pem(&server_output.public_group_key)?;
-
-	let public_group_key = match server_output.keypair_encrypt_alg.as_str() {
-		ECIES_OUTPUT => {
-			let public_group_key = public_group_key
-				.try_into()
-				.map_err(|_| Error::DecodePublicKeyFailed)?;
-
-			Pk::Ecies(public_group_key)
-		},
-		_ => return Err(Error::AlgNotFound),
-	};
+	let public_group_key = import_public_key_from_pem_with_alg(&server_output.public_group_key, server_output.keypair_encrypt_alg.as_str())?;
 
 	Ok(DoneGettingGroupOutput {
 		group_key,

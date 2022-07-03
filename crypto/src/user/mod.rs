@@ -6,10 +6,8 @@
 //! If rust feature is enabled the rust functions are used. The return is no longer just a json string but rust structs and enums to work with
 
 use alloc::string::{String, ToString};
-use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use pem_rfc7468::LineEnding;
 use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData, ResetPasswordData};
 use sendclose_crypto_core::user::{
 	change_password as change_password_core,
@@ -18,18 +16,16 @@ use sendclose_crypto_core::user::{
 	prepare_login as prepare_login_core,
 	register as register_core,
 };
-use sendclose_crypto_core::{
-	ClientRandomValue,
-	DeriveAuthKeyForAuth,
-	DeriveMasterKeyForAuth,
-	Error,
-	HashedAuthenticationKey,
-	Pk,
-	SignK,
-	Sk,
-	VerifyK,
-	ECIES_OUTPUT,
-	ED25519_OUTPUT,
+use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
+
+use crate::util::{
+	client_random_value_to_string,
+	derive_auth_key_for_auth_to_string,
+	export_public_key_to_pem,
+	export_verify_key_to_pem,
+	hashed_authentication_key_to_string,
+	import_public_key_from_pem_with_alg,
+	import_verify_key_from_pem_with_alg,
 };
 
 #[cfg(feature = "rust")]
@@ -100,24 +96,15 @@ fn register_internally(password: String) -> Result<String, Error>
 	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
 	//2. export the public keys (decrypt and verify) to a key format
-	let public_key = match out.public_key {
-		//match against the public key variants
-		Pk::Ecies(k) => export_key_to_pem(&k)?,
-	};
+	let public_key = export_public_key_to_pem(&out.public_key)?;
 
-	let verify_key = match out.verify_key {
-		VerifyK::Ed25519(k) => export_key_to_pem(&k)?,
-	};
+	let verify_key = export_verify_key_to_pem(&out.verify_key)?;
 
 	//3. export the random value
-	let client_random_value = match out.client_random_value {
-		ClientRandomValue::Argon2(v) => Base64::encode_string(&v),
-	};
+	let client_random_value = client_random_value_to_string(&out.client_random_value);
 
 	//4. export the hashed auth key (the first 16 bits)
-	let hashed_authentication_key = match out.hashed_authentication_key_bytes {
-		HashedAuthenticationKey::Argon2(h) => Base64::encode_string(&h),
-	};
+	let hashed_authentication_key = hashed_authentication_key_to_string(&out.hashed_authentication_key_bytes);
 
 	//5. create the structs
 	let master_key = MasterKey {
@@ -165,9 +152,7 @@ fn prepare_login_internally(
 	let result = prepare_login_core(password.as_str(), &salt, derived_encryption_key_alg.as_str())?;
 
 	//for the server
-	let auth_key = match result.auth_key {
-		DeriveAuthKeyForAuth::Argon2(k) => Base64::encode_string(&k),
-	};
+	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
 
 	Ok((auth_key, result.master_key_encryption_key))
 }
@@ -195,29 +180,9 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 	)?;
 
 	//now prepare the public and verify key for use
+	let public_key = import_public_key_from_pem_with_alg(&server_output.public_key_string, server_output.keypair_encrypt_alg.as_str())?;
 
-	let public_key = import_key_from_pem(&server_output.public_key_string)?;
-	let verify_key = import_key_from_pem(&server_output.verify_key_string)?;
-
-	let public_key = match server_output.keypair_encrypt_alg.as_str() {
-		ECIES_OUTPUT => {
-			let public_key = public_key
-				.try_into()
-				.map_err(|_| Error::DecodePublicKeyFailed)?;
-			Pk::Ecies(public_key)
-		},
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	let verify_key = match server_output.keypair_sign_alg.as_str() {
-		ED25519_OUTPUT => {
-			let verify_key = verify_key
-				.try_into()
-				.map_err(|_| Error::DecodePublicKeyFailed)?;
-			VerifyK::Ed25519(verify_key)
-		},
-		_ => return Err(Error::AlgNotFound),
-	};
+	let verify_key = import_verify_key_from_pem_with_alg(&server_output.verify_key_string, server_output.keypair_sign_alg.as_str())?;
 
 	Ok(DoneLoginOutput {
 		private_key: out.private_key,
@@ -251,18 +216,12 @@ fn change_password_internally(
 	//prepare for the server
 	let new_encrypted_master_key = Base64::encode_string(&output.master_key_info.encrypted_master_key);
 
-	let new_client_random_value = match output.client_random_value {
-		ClientRandomValue::Argon2(v) => Base64::encode_string(&v),
-	};
+	let new_client_random_value = client_random_value_to_string(&output.client_random_value);
 
 	//the 16 bytes of the org. hashed key
-	let new_hashed_authentication_key = match output.hashed_authentication_key_bytes {
-		HashedAuthenticationKey::Argon2(h) => Base64::encode_string(&h),
-	};
+	let new_hashed_authentication_key = hashed_authentication_key_to_string(&output.hashed_authentication_key_bytes);
 
-	let old_auth_key = match output.old_auth_key {
-		DeriveAuthKeyForAuth::Argon2(h) => Base64::encode_string(&h),
-	};
+	let old_auth_key = derive_auth_key_for_auth_to_string(&output.old_auth_key);
 
 	let pw_change_out = ChangePasswordData {
 		new_derived_alg: output.derived_alg.to_string(),
@@ -287,13 +246,8 @@ fn reset_password_internally(new_password: String, decrypted_private_key: &Sk, d
 	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
 	//prepare for the server
-	let client_random_value = match out.client_random_value {
-		ClientRandomValue::Argon2(v) => Base64::encode_string(&v),
-	};
-
-	let hashed_authentication_key = match out.hashed_authentication_key_bytes {
-		HashedAuthenticationKey::Argon2(h) => Base64::encode_string(&h),
-	};
+	let client_random_value = client_random_value_to_string(&out.client_random_value);
+	let hashed_authentication_key = hashed_authentication_key_to_string(&out.hashed_authentication_key_bytes);
 
 	let master_key = MasterKey {
 		encrypted_master_key,
@@ -311,19 +265,4 @@ fn reset_password_internally(new_password: String, decrypted_private_key: &Sk, d
 	};
 
 	Ok(data.to_string().map_err(|_| Error::JsonToStringFailed)?)
-}
-
-pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
-{
-	//export should not panic because we are creating the keys
-	let key = pem_rfc7468::encode_string("PUBLIC KEY", LineEnding::default(), key).map_err(|_| Error::ExportingPublicKeyFailed)?;
-
-	Ok(key)
-}
-
-pub(crate) fn import_key_from_pem(pem: &String) -> Result<Vec<u8>, Error>
-{
-	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| Error::ImportingKeyFromPemFailed)?;
-
-	Ok(data)
 }
