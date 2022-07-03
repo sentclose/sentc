@@ -12,9 +12,9 @@ use sendclose_crypto_core::group::{
 	key_rotation as key_rotation_core,
 	prepare_create as prepare_create_core,
 };
-use sendclose_crypto_core::{Error, Pk, Sk, SymKey};
+use sendclose_crypto_core::{Error, Pk, Sk, SymKey, ECIES_OUTPUT};
 
-use crate::user::export_key_to_pem;
+use crate::user::{export_key_to_pem, import_key_from_pem};
 
 #[cfg(not(feature = "rust"))]
 mod group;
@@ -23,11 +23,20 @@ mod group;
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::group::{done_key_rotation, key_rotation, prepare_create, SymKeyFormat};
+pub use self::group::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData, SymKeyFormat};
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::group::{export_sym_key, import_sym_key};
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, key_rotation, prepare_create, SymKeyFormat};
+pub use self::group_rust::{done_key_rotation, get_group, key_rotation, prepare_create, GroupData, SymKeyFormat};
+
+pub(crate) struct DoneGettingGroupOutput
+{
+	pub group_key: SymKey,
+	pub private_group_key: Sk,
+	pub public_group_key: Pk,
+	pub key_pair_id: String,
+	pub group_key_id: String,
+}
 
 fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: String) -> Result<String, Error>
 {
@@ -135,4 +144,40 @@ fn done_key_rotation_internally(
 	Ok(done_rotation_out
 		.to_string()
 		.map_err(|_| Error::JsonToStringFailed)?)
+}
+
+fn get_group_internally(private_key: &Sk, server_output: &GroupServerOutput) -> Result<DoneGettingGroupOutput, Error>
+{
+	//the user_public_key_id is used to get the right private key
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+
+	let (group_key, private_group_key) = get_group_core(
+		private_key,
+		&encrypted_master_key,
+		&encrypted_private_key,
+		server_output.group_key_alg.as_str(),
+		server_output.keypair_encrypt_alg.as_str(),
+	)?;
+
+	let public_group_key = import_key_from_pem(&server_output.public_group_key)?;
+
+	let public_group_key = match server_output.keypair_encrypt_alg.as_str() {
+		ECIES_OUTPUT => {
+			let public_group_key = public_group_key
+				.try_into()
+				.map_err(|_| Error::DecodePublicKeyFailed)?;
+
+			Pk::Ecies(public_group_key)
+		},
+		_ => return Err(Error::AlgNotFound),
+	};
+
+	Ok(DoneGettingGroupOutput {
+		group_key,
+		private_group_key,
+		public_group_key,
+		key_pair_id: server_output.key_pair_id.clone(),
+		group_key_id: server_output.group_key_id.clone(),
+	})
 }

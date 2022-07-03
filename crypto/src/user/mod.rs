@@ -55,7 +55,7 @@ pub use self::user::{
 	VerifyKeyFormat,
 };
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::user::{import_private_key, import_public_key};
+pub(crate) use self::user::{export_private_key, export_public_key, import_private_key, import_public_key};
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
 pub use self::user_rust::{

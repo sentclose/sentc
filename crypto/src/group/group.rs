@@ -1,14 +1,35 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::group::KeyRotationInput;
+use sendclose_crypto_common::group::{GroupServerOutput, KeyRotationInput};
 use sendclose_crypto_core::{Error, SymKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
-use crate::err_to_msg;
-use crate::group::{done_key_rotation_internally, key_rotation_internally, prepare_create_internally};
-use crate::user::{import_private_key, import_public_key};
+use crate::group::{done_key_rotation_internally, get_group_internally, key_rotation_internally, prepare_create_internally};
+use crate::user::{export_private_key, export_public_key, import_private_key, import_public_key, PublicKeyFormat};
+use crate::{err_to_msg, PrivateKeyFormat};
+
+#[derive(Serialize, Deserialize)]
+pub struct GroupData
+{
+	pub private_group_key: PrivateKeyFormat,
+	pub public_group_key: PublicKeyFormat,
+	pub group_key: SymKeyFormat,
+}
+
+impl GroupData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
 
 #[derive(Serialize, Deserialize)]
 pub enum SymKeyFormat
@@ -89,6 +110,39 @@ pub fn done_key_rotation(private_key: String, public_key: String, previous_group
 	match done_key_rotation_internally(&private_key, &public_key, &previous_group_key, &server_output, public_key_id) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
+	}
+}
+
+pub fn get_group(private_key: String, server_output: String) -> String
+{
+	let (private_key, _) = match import_private_key(private_key) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let server_output = match GroupServerOutput::from_string(server_output.as_bytes()).map_err(|_| Error::GettingGroupDataFailed) {
+		Ok(v) => v,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let result = match get_group_internally(&private_key, &server_output) {
+		Ok(v) => v,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let private_group_key = export_private_key(result.private_group_key, result.key_pair_id.clone());
+	let public_group_key = export_public_key(result.public_group_key, result.key_pair_id);
+	let group_key = export_sym_key(result.group_key, result.group_key_id);
+
+	let output = GroupData {
+		private_group_key,
+		public_group_key,
+		group_key,
+	};
+
+	match output.to_string() {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
 	}
 }
 

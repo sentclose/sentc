@@ -98,3 +98,29 @@ impl DoneKeyRotationData
 		to_string(self)
 	}
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct GroupServerOutput
+{
+	pub encrypted_group_key: String,
+	pub group_key_alg: String,
+	pub group_key_id: String,
+	pub encrypted_private_group_key: String,
+	pub public_group_key: String,
+	pub keypair_encrypt_alg: String,
+	pub key_pair_id: String,
+	pub user_public_key_id: String, //to know what private key we should use to decrypt
+}
+
+impl GroupServerOutput
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
