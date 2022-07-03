@@ -23,6 +23,8 @@ mod group_rust;
 
 #[cfg(not(feature = "rust"))]
 pub use self::group::{done_key_rotation, key_rotation, prepare_create, SymKeyFormat};
+#[cfg(not(feature = "rust"))]
+pub(crate) use self::group::{export_sym_key, import_sym_key};
 #[cfg(feature = "rust")]
 pub use self::group_rust::{done_key_rotation, key_rotation, prepare_create, SymKeyFormat};
 
