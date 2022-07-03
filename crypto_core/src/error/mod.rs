@@ -28,7 +28,10 @@ pub enum Error
 	LoginServerOutputWrong,
 	KeyRotationServerOutputWrong,
 
+	GettingGroupDataFailed,
+
 	DecodePrivateKeyFailed,
+	DecodePublicKeyFailed,
 
 	ImportingPrivateKeyFailed,
 	ImportingSignKeyFailed,
