@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
+use sendclose_crypto_common::user::DoneLoginInput;
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -227,7 +228,12 @@ pub fn done_login(
 		},
 	};
 
-	let result = done_login_internally(&master_key_encryption, server_output);
+	let server_output = match DoneLoginInput::from_string(server_output.as_bytes()).map_err(|_| Error::LoginServerOutputWrong) {
+		Ok(v) => v,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let result = done_login_internally(&master_key_encryption, &server_output);
 
 	let result = match result {
 		Ok(v) => v,
@@ -405,7 +411,7 @@ mod test
 	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
 
 	use super::*;
-	use crate::test::{simulate_server_done_login, simulate_server_prepare_login};
+	use crate::test::{simulate_server_done_login_as_string, simulate_server_prepare_login};
 
 	#[test]
 	fn test_register()
@@ -435,7 +441,7 @@ mod test
 		let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
 		let master_key_encryption_key = prep_login_out.master_key_encryption_key;
 
-		let server_output = simulate_server_done_login(out);
+		let server_output = simulate_server_done_login_as_string(out);
 
 		//now save the values
 		let login_out = done_login(
@@ -447,7 +453,7 @@ mod test
 
 		let private_key = match login_out.private_key {
 			PrivateKeyFormat::Ecies {
-				key_id,
+				key_id: _,
 				key,
 			} => key,
 		};

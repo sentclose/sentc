@@ -179,10 +179,8 @@ fn prepare_login_internally(
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: String) -> Result<DoneLoginOutput, Error>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginInput) -> Result<DoneLoginOutput, Error>
 {
-	let server_output = DoneLoginInput::from_string(server_output.as_bytes()).map_err(|_| Error::LoginServerOutputWrong)?;
-
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
@@ -198,8 +196,8 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 
 	//now prepare the public and verify key for use
 
-	let public_key = import_key_from_pem(server_output.public_key_string)?;
-	let verify_key = import_key_from_pem(server_output.verify_key_string)?;
+	let public_key = import_key_from_pem(&server_output.public_key_string)?;
+	let verify_key = import_key_from_pem(&server_output.verify_key_string)?;
 
 	let public_key = match server_output.keypair_encrypt_alg.as_str() {
 		ECIES_OUTPUT => {
@@ -226,8 +224,8 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		sign_key: out.sign_key,
 		public_key,
 		verify_key,
-		keypair_sign_id: server_output.keypair_sign_id,
-		keypair_encrypt_id: server_output.keypair_encrypt_id,
+		keypair_sign_id: server_output.keypair_sign_id.clone(),
+		keypair_encrypt_id: server_output.keypair_encrypt_id.clone(),
 	})
 }
 
@@ -323,7 +321,7 @@ pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
 	Ok(key)
 }
 
-pub(crate) fn import_key_from_pem(pem: String) -> Result<Vec<u8>, Error>
+pub(crate) fn import_key_from_pem(pem: &String) -> Result<Vec<u8>, Error>
 {
 	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| Error::ImportingKeyFromPemFailed)?;
 

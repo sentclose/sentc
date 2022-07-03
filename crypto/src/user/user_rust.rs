@@ -1,5 +1,6 @@
 use alloc::string::String;
 
+use sendclose_crypto_common::user::DoneLoginInput;
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 
 use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
@@ -54,7 +55,7 @@ pub fn prepare_login(password: String, salt_string: String, derived_encryption_k
 	prepare_login_internally(password, salt_string, derived_encryption_key_alg)
 }
 
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: String) -> Result<KeyData, Error>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginInput) -> Result<KeyData, Error>
 {
 	let out = done_login_internally(&master_key_encryption, server_output)?;
 
@@ -134,7 +135,7 @@ mod test
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let login_out = done_login(&master_key_encryption_key, server_output).unwrap();
+		let login_out = done_login(&master_key_encryption_key, &server_output).unwrap();
 
 		let private_key = match login_out.private_key.key {
 			Sk::Ecies(k) => k,

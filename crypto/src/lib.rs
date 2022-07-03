@@ -60,11 +60,9 @@ pub fn register_test() -> String
 		keypair_sign_id: "dfg".to_string(),
 	};
 
-	let server_output = server_output.to_string().unwrap();
-
 	//now save the values
 	#[cfg(feature = "rust")]
-	let login_out = done_login(&master_key_encryption_key, server_output).unwrap();
+	let login_out = done_login(&master_key_encryption_key, &server_output).unwrap();
 
 	let private_key = match login_out.private_key.key {
 		Sk::Ecies(k) => k,
@@ -160,7 +158,7 @@ mod test
 		Base64::encode_string(&salt_from_rand_value)
 	}
 
-	pub(crate) fn simulate_server_done_login(data: RegisterData) -> String
+	pub(crate) fn simulate_server_done_login(data: RegisterData) -> DoneLoginInput
 	{
 		let RegisterData {
 			derived,
@@ -168,7 +166,7 @@ mod test
 		} = data;
 
 		//get the server output back
-		let server_output = DoneLoginInput {
+		DoneLoginInput {
 			encrypted_master_key: master_key.encrypted_master_key,
 			encrypted_private_key: derived.encrypted_private_key,
 			encrypted_sign_key: derived.encrypted_sign_key,
@@ -178,9 +176,12 @@ mod test
 			keypair_sign_alg: derived.keypair_sign_alg,
 			keypair_encrypt_id: "abc".to_string(),
 			keypair_sign_id: "dfg".to_string(),
-		};
+		}
+	}
 
-		server_output.to_string().unwrap()
+	pub(crate) fn simulate_server_done_login_as_string(data: RegisterData) -> String
+	{
+		simulate_server_done_login(data).to_string().unwrap()
 	}
 
 	#[test]
