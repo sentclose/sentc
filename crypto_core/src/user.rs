@@ -125,6 +125,8 @@ Both private and sign key gets encrypted by the master key.
 
 ## For key update:
 Just register the user again with a password, it should be the same password for usability but it can a different password too.
+Then login again and encrypt everything what was encrypt by the old keys with the new keys
+(e.g. group keys (encrypted by public key), or direct encrypted data).
 */
 pub fn register(password: &str) -> Result<RegisterOutPut, Error>
 {
