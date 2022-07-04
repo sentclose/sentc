@@ -12,9 +12,9 @@ pub fn register(password: String) -> String
 	register_core(password.as_str())
 }
 
-pub fn prepare_login(password: String, salt_string: String, derived_encryption_key_alg: String) -> String
+pub fn prepare_login(password: String, server_output: String) -> String
 {
-	prepare_login_core(password.as_str(), salt_string.as_str(), derived_encryption_key_alg.as_str())
+	prepare_login_core(password.as_str(), server_output.as_str())
 }
 
 pub fn done_login(
