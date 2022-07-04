@@ -106,7 +106,7 @@ impl ResetPasswordData
 
 //as base64 encoded string from the server
 #[derive(Serialize, Deserialize)]
-pub struct DoneLoginServerOutput
+pub struct DoneLoginServerKeysOutput
 {
 	pub encrypted_master_key: String,
 	pub encrypted_private_key: String,
@@ -119,7 +119,7 @@ pub struct DoneLoginServerOutput
 	pub keypair_sign_id: String,
 }
 
-impl DoneLoginServerOutput
+impl DoneLoginServerKeysOutput
 {
 	pub fn to_string(&self) -> serde_json::Result<String>
 	{
@@ -127,7 +127,7 @@ impl DoneLoginServerOutput
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<DoneLoginServerOutput>
+	pub fn from_string(v: &[u8]) -> serde_json::Result<DoneLoginServerKeysOutput>
 	{
 		from_slice::<Self>(v)
 	}

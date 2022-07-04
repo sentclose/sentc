@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::DoneLoginServerOutput;
+use sendclose_crypto_common::user::DoneLoginServerKeysOutput;
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -114,7 +114,7 @@ pub fn done_login(
 		},
 	};
 
-	let server_output = match DoneLoginServerOutput::from_string(server_output.as_bytes()).map_err(|_| Error::LoginServerOutputWrong) {
+	let server_output = match DoneLoginServerKeysOutput::from_string(server_output.as_bytes()).map_err(|_| Error::LoginServerOutputWrong) {
 		Ok(v) => v,
 		Err(e) => return err_to_msg(e),
 	};

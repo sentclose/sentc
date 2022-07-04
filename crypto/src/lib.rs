@@ -11,7 +11,7 @@ use alloc::format;
 use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{DoneLoginServerOutput, RegisterData};
+use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, RegisterData};
 use sendclose_crypto_core::ClientRandomValue;
 #[cfg(feature = "rust")]
 use sendclose_crypto_core::Sk;
@@ -53,7 +53,7 @@ pub fn register_test() -> String
 	let (_, master_key_encryption_key) = prepare_login(password, salt_from_rand_value.as_str(), derived.derived_alg.as_str()).unwrap();
 
 	//get the server output back
-	let server_output = DoneLoginServerOutput {
+	let server_output = DoneLoginServerKeysOutput {
 		encrypted_master_key: master_key.encrypted_master_key,
 		encrypted_private_key: derived.encrypted_private_key,
 		encrypted_sign_key: derived.encrypted_sign_key,
@@ -110,7 +110,7 @@ pub fn register_test() -> String
 	let master_key_encryption_key = prep_login_out.master_key_encryption_key;
 
 	//get the server output back
-	let server_output = DoneLoginServerOutput {
+	let server_output = DoneLoginServerKeysOutput {
 		encrypted_master_key: master_key.encrypted_master_key,
 		encrypted_private_key: derived.encrypted_private_key,
 		encrypted_sign_key: derived.encrypted_sign_key,
@@ -147,7 +147,7 @@ pub fn register_test() -> String
 mod test
 {
 	use base64ct::{Base64, Encoding};
-	use sendclose_crypto_common::user::{DoneLoginServerOutput, KeyDerivedData, RegisterData};
+	use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, KeyDerivedData, RegisterData};
 
 	use super::*;
 
@@ -165,7 +165,7 @@ mod test
 		Base64::encode_string(&salt_from_rand_value)
 	}
 
-	pub(crate) fn simulate_server_done_login(data: RegisterData) -> DoneLoginServerOutput
+	pub(crate) fn simulate_server_done_login(data: RegisterData) -> DoneLoginServerKeysOutput
 	{
 		let RegisterData {
 			derived,
@@ -173,7 +173,7 @@ mod test
 		} = data;
 
 		//get the server output back
-		DoneLoginServerOutput {
+		DoneLoginServerKeysOutput {
 			encrypted_master_key: master_key.encrypted_master_key,
 			encrypted_private_key: derived.encrypted_private_key,
 			encrypted_sign_key: derived.encrypted_sign_key,
