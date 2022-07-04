@@ -13,7 +13,7 @@ use crate::group::{
 };
 use crate::util::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat};
 
-pub struct GroupData
+pub struct GroupKeyData
 {
 	pub private_group_key: PrivateKeyFormat,
 	pub public_group_key: PublicKeyFormat,
@@ -51,11 +51,11 @@ pub fn done_key_rotation(
 	)
 }
 
-pub fn get_group_keys(private_key: &PrivateKeyFormat, server_output: &GroupKeyServerOutput) -> Result<GroupData, Error>
+pub fn get_group_keys(private_key: &PrivateKeyFormat, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, Error>
 {
 	let out = get_group_keys_internally(&private_key.key, server_output)?;
 
-	Ok(GroupData {
+	Ok(GroupKeyData {
 		private_group_key: PrivateKeyFormat {
 			key: out.private_group_key,
 			key_id: out.key_pair_id.clone(),

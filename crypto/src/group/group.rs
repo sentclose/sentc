@@ -27,14 +27,14 @@ use crate::util::{
 };
 
 #[derive(Serialize, Deserialize)]
-pub struct GroupData
+pub struct GroupKeyData
 {
 	pub private_group_key: PrivateKeyFormat,
 	pub public_group_key: PublicKeyFormat,
 	pub group_key: SymKeyFormat,
 }
 
-impl GroupData
+impl GroupKeyData
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
@@ -133,7 +133,7 @@ pub fn get_group_keys(private_key: &str, server_output: &str) -> String
 	let public_group_key = export_public_key(result.public_group_key, result.key_pair_id);
 	let group_key = export_sym_key(result.group_key, result.group_key_id);
 
-	let output = GroupData {
+	let output = GroupKeyData {
 		private_group_key,
 		public_group_key,
 		group_key,
