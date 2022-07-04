@@ -1,8 +1,8 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupKeyServerOutput, KeyRotationInput};
-use sendclose_crypto_core::{Error, SymKey};
+use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sendclose_crypto_core::{Error, Sk, SymKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
@@ -35,6 +35,26 @@ pub struct GroupKeyData
 }
 
 impl GroupKeyData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GroupOutData
+{
+	pub group_id: String,
+	pub keys: Vec<GroupKeyData>,
+}
+
+impl GroupOutData
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
@@ -112,35 +132,52 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 	}
 }
 
-pub fn get_group_keys(private_key: &str, server_output: &str) -> String
+fn get_group_keys(private_key: &Sk, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, Error>
 {
-	let (private_key, _) = match import_private_key(private_key) {
-		Ok(k) => k,
-		Err(e) => return err_to_msg(e),
-	};
-
-	let server_output = match GroupKeyServerOutput::from_string(server_output.as_bytes()).map_err(|_| Error::GettingGroupDataFailed) {
-		Ok(v) => v,
-		Err(e) => return err_to_msg(e),
-	};
-
-	let result = match get_group_keys_internally(&private_key, &server_output) {
-		Ok(v) => v,
-		Err(e) => return err_to_msg(e),
-	};
+	let result = get_group_keys_internally(&private_key, &server_output)?;
 
 	let private_group_key = export_private_key(result.private_group_key, result.key_pair_id.clone());
 	let public_group_key = export_public_key(result.public_group_key, result.key_pair_id);
 	let group_key = export_sym_key(result.group_key, result.group_key_id);
 
-	let output = GroupKeyData {
+	Ok(GroupKeyData {
 		private_group_key,
 		public_group_key,
 		group_key,
+	})
+}
+
+pub fn get_group_data(private_key: &str, server_output: &str) -> String
+{
+	let server_output = match GroupServerData::from_string(server_output.as_bytes()) {
+		Ok(o) => o,
+		Err(_e) => return err_to_msg(Error::JsonParseFailed),
 	};
 
-	match output.to_string() {
-		Ok(v) => v,
+	let (private_key, _) = match import_private_key(private_key) {
+		Ok(k) => k,
+		Err(e) => return err_to_msg(e),
+	};
+
+	//resolve a group key page
+	let mut keys = Vec::with_capacity(server_output.keys.len());
+
+	for key in server_output.keys {
+		let value = match get_group_keys(&private_key, &key) {
+			Ok(v) => v,
+			Err(e) => return err_to_msg(e),
+		};
+
+		keys.push(value);
+	}
+
+	let data = GroupOutData {
+		group_id: server_output.group_id,
+		keys,
+	};
+
+	match data.to_string() {
+		Ok(o) => o,
 		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
 	}
 }

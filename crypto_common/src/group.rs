@@ -143,14 +143,14 @@ impl GroupKeyServerOutput
 save this in the sdk impl storage
 */
 #[derive(Serialize, Deserialize)]
-pub struct GroupData
+pub struct GroupServerData
 {
 	pub group_id: String,
 	pub keys: Vec<GroupKeyServerOutput>,
 	pub keys_page: i32, //when returning the keys as pagination
 }
 
-impl GroupData
+impl GroupServerData
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{

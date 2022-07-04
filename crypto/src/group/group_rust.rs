@@ -1,8 +1,8 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupKeyServerOutput, KeyRotationInput};
-use sendclose_crypto_core::Error;
+use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sendclose_crypto_core::{Error, Sk};
 
 use crate::group::{
 	done_key_rotation_internally,
@@ -18,6 +18,12 @@ pub struct GroupKeyData
 	pub private_group_key: PrivateKeyFormat,
 	pub public_group_key: PublicKeyFormat,
 	pub group_key: SymKeyFormat,
+}
+
+pub struct GroupOutData
+{
+	pub keys: Vec<GroupKeyData>,
+	pub group_id: String,
 }
 
 pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, Error>
@@ -51,9 +57,9 @@ pub fn done_key_rotation(
 	)
 }
 
-pub fn get_group_keys(private_key: &PrivateKeyFormat, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, Error>
+fn get_group_keys(private_key: &Sk, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, Error>
 {
-	let out = get_group_keys_internally(&private_key.key, server_output)?;
+	let out = get_group_keys_internally(private_key, server_output)?;
 
 	Ok(GroupKeyData {
 		private_group_key: PrivateKeyFormat {
@@ -68,6 +74,22 @@ pub fn get_group_keys(private_key: &PrivateKeyFormat, server_output: &GroupKeySe
 			key: out.group_key,
 			key_id: out.group_key_id,
 		},
+	})
+}
+
+pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &GroupServerData) -> Result<GroupOutData, Error>
+{
+	let private_key = &private_key.key;
+
+	let mut keys = Vec::with_capacity(server_output.keys.len());
+
+	for key in &server_output.keys {
+		keys.push(get_group_keys(private_key, key)?);
+	}
+
+	Ok(GroupOutData {
+		keys,
+		group_id: server_output.group_id.clone(),
 	})
 }
 

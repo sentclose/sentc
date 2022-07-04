@@ -33,9 +33,25 @@ mod group;
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::group::{done_key_rotation, get_group_keys, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupKeyData};
+pub use self::group::{
+	done_key_rotation,
+	get_group_data,
+	key_rotation,
+	prepare_create,
+	prepare_group_keys_for_new_member,
+	GroupKeyData,
+	GroupOutData,
+};
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, get_group_keys, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupKeyData};
+pub use self::group_rust::{
+	done_key_rotation,
+	get_group_data,
+	key_rotation,
+	prepare_create,
+	prepare_group_keys_for_new_member,
+	GroupKeyData,
+	GroupOutData,
+};
 
 pub(crate) struct DoneGettingGroupKeysOutput
 {
