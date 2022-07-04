@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use sendclose_crypto_common::user::DoneLoginInput;
+use sendclose_crypto_common::user::DoneLoginServerOutput;
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 
 use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
@@ -16,7 +16,7 @@ pub fn prepare_login(password: &str, salt_string: &str, derived_encryption_key_a
 	prepare_login_internally(password, salt_string, derived_encryption_key_alg)
 }
 
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginInput) -> Result<KeyData, Error>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerOutput) -> Result<KeyData, Error>
 {
 	let out = done_login_internally(&master_key_encryption, server_output)?;
 

@@ -8,7 +8,7 @@
 use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginInput, KeyDerivedData, MasterKey, RegisterData, ResetPasswordData};
+use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginServerOutput, KeyDerivedData, MasterKey, RegisterData, ResetPasswordData};
 use sendclose_crypto_core::user::{
 	change_password as change_password_core,
 	done_login as done_login_core,
@@ -134,7 +134,7 @@ fn prepare_login_internally(password: &str, salt_string: &str, derived_encryptio
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginInput) -> Result<DoneLoginOutput, Error>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerOutput) -> Result<DoneLoginOutput, Error>
 {
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
