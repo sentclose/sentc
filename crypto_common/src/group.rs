@@ -100,8 +100,19 @@ impl DoneKeyRotationData
 	}
 }
 
+/**
+# the current keys of a group
+
+contains:
+- encrypted group key
+- encrypted private group (e.g. for sub group)
+- public key
+- and which public key was used to encrypt the group key
+
+A group can have multiple of these structs for each key rotation
+*/
 #[derive(Serialize, Deserialize)]
-pub struct GroupServerOutput
+pub struct GroupKeyServerOutput
 {
 	pub encrypted_group_key: String,
 	pub group_key_alg: String,
@@ -113,7 +124,33 @@ pub struct GroupServerOutput
 	pub user_public_key_id: String, //to know what private key we should use to decrypt
 }
 
-impl GroupServerOutput
+impl GroupKeyServerOutput
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+/**
+# The data about the group from the server
+
+save this in the sdk impl storage
+*/
+#[derive(Serialize, Deserialize)]
+pub struct GroupData
+{
+	pub group_id: String,
+	pub keys: Vec<GroupKeyServerOutput>,
+	pub keys_page: i32, //when returning the keys as pagination
+}
+
+impl GroupData
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{

@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupServerOutput, KeyRotationInput};
+use sendclose_crypto_common::group::{GroupKeyServerOutput, KeyRotationInput};
 use sendclose_crypto_core::{Error, SymKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -9,7 +9,7 @@ use serde_json::{from_slice, to_string};
 use crate::err_to_msg;
 use crate::group::{
 	done_key_rotation_internally,
-	get_group_internally,
+	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_create_internally,
 	prepare_group_keys_for_new_member_internally,
@@ -112,19 +112,19 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 	}
 }
 
-pub fn get_group(private_key: &str, server_output: &str) -> String
+pub fn get_group_keys(private_key: &str, server_output: &str) -> String
 {
 	let (private_key, _) = match import_private_key(private_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let server_output = match GroupServerOutput::from_string(server_output.as_bytes()).map_err(|_| Error::GettingGroupDataFailed) {
+	let server_output = match GroupKeyServerOutput::from_string(server_output.as_bytes()).map_err(|_| Error::GettingGroupDataFailed) {
 		Ok(v) => v,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let result = match get_group_internally(&private_key, &server_output) {
+	let result = match get_group_keys_internally(&private_key, &server_output) {
 		Ok(v) => v,
 		Err(e) => return err_to_msg(e),
 	};

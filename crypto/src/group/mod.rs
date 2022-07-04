@@ -9,9 +9,9 @@ use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::group::{
 	CreateData,
 	DoneKeyRotationData,
+	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
-	GroupServerOutput,
 	KeyRotationData,
 	KeyRotationInput,
 };
@@ -33,9 +33,9 @@ mod group;
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::group::{done_key_rotation, get_group, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupData};
+pub use self::group::{done_key_rotation, get_group_keys, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupData};
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, get_group, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupData};
+pub use self::group_rust::{done_key_rotation, get_group_keys, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupData};
 
 pub(crate) struct DoneGettingGroupOutput
 {
@@ -150,7 +150,7 @@ fn done_key_rotation_internally(
 		.map_err(|_| Error::JsonToStringFailed)?)
 }
 
-fn get_group_internally(private_key: &Sk, server_output: &GroupServerOutput) -> Result<DoneGettingGroupOutput, Error>
+fn get_group_keys_internally(private_key: &Sk, server_output: &GroupKeyServerOutput) -> Result<DoneGettingGroupOutput, Error>
 {
 	//the user_public_key_id is used to get the right private key
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;

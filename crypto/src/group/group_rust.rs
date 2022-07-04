@@ -1,12 +1,12 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupServerOutput, KeyRotationInput};
+use sendclose_crypto_common::group::{GroupKeyServerOutput, KeyRotationInput};
 use sendclose_crypto_core::Error;
 
 use crate::group::{
 	done_key_rotation_internally,
-	get_group_internally,
+	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_create_internally,
 	prepare_group_keys_for_new_member_internally,
@@ -51,9 +51,9 @@ pub fn done_key_rotation(
 	)
 }
 
-pub fn get_group(private_key: &PrivateKeyFormat, server_output: &GroupServerOutput) -> Result<GroupData, Error>
+pub fn get_group_keys(private_key: &PrivateKeyFormat, server_output: &GroupKeyServerOutput) -> Result<GroupData, Error>
 {
-	let out = get_group_internally(&private_key.key, server_output)?;
+	let out = get_group_keys_internally(&private_key.key, server_output)?;
 
 	Ok(GroupData {
 		private_group_key: PrivateKeyFormat {
