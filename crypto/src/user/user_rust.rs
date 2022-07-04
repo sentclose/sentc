@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use sendclose_crypto_common::user::DoneLoginServerKeysOutput;
+use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput};
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 
 use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
@@ -11,9 +11,9 @@ pub fn register(password: &str) -> Result<String, Error>
 	register_internally(password)
 }
 
-pub fn prepare_login(password: &str, salt_string: &str, derived_encryption_key_alg: &str) -> Result<(String, DeriveMasterKeyForAuth), Error>
+pub fn prepare_login(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), Error>
 {
-	prepare_login_internally(password, salt_string, derived_encryption_key_alg)
+	prepare_login_internally(password, server_output)
 }
 
 pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyData, Error>
@@ -88,10 +88,10 @@ mod test
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
 
-		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
+		let server_output = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, master_key_encryption_key) = prepare_login(password, salt_from_rand_value.as_str(), out.derived.derived_alg.as_str()).unwrap();
+		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
@@ -126,7 +126,7 @@ mod test
 		let pw_change_out = change_password(
 			password,
 			new_password,
-			salt_from_rand_value.as_str(),
+			salt_from_rand_value.salt_string.as_str(),
 			out.master_key.encrypted_master_key.as_str(),
 			out.derived.derived_alg.as_str(),
 		)

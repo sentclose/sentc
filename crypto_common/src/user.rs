@@ -1,4 +1,5 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -43,10 +44,8 @@ pub struct RegisterData
 
 impl RegisterData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<RegisterData>
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
-		//called from server
-
 		from_slice::<Self>(v)
 	}
 
@@ -69,7 +68,7 @@ pub struct ChangePasswordData
 
 impl ChangePasswordData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<ChangePasswordData>
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
 		from_slice::<Self>(v)
 	}
@@ -98,7 +97,28 @@ impl ResetPasswordData
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<ResetPasswordData>
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PrepareLoginSaltServerOutput
+{
+	pub salt_string: String,
+	pub derived_encryption_key_alg: String,
+	pub key_id: String,
+}
+
+impl PrepareLoginSaltServerOutput
+{
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
 		from_slice::<Self>(v)
 	}
@@ -123,11 +143,30 @@ impl DoneLoginServerKeysOutput
 {
 	pub fn to_string(&self) -> serde_json::Result<String>
 	{
-		//called from server
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<DoneLoginServerKeysOutput>
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DoneLoginServerOutput
+{
+	pub keys: Vec<DoneLoginServerKeysOutput>, //for all used user keys
+	pub user_id: String,
+}
+
+impl DoneLoginServerOutput
+{
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
 		from_slice::<Self>(v)
 	}

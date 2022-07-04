@@ -11,7 +11,7 @@ use alloc::format;
 use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, RegisterData};
+use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
 use sendclose_crypto_core::ClientRandomValue;
 #[cfg(feature = "rust")]
 use sendclose_crypto_core::Sk;
@@ -48,9 +48,15 @@ pub fn register_test() -> String
 	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
+	let server_output = PrepareLoginSaltServerOutput {
+		salt_string: salt_from_rand_value,
+		derived_encryption_key_alg: derived.derived_alg.clone(),
+		key_id: "1234".to_string(),
+	};
+
 	//back to the client, send prep login out string to the server if it is no err
 	#[cfg(feature = "rust")]
-	let (_, master_key_encryption_key) = prepare_login(password, salt_from_rand_value.as_str(), derived.derived_alg.as_str()).unwrap();
+	let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
 
 	//get the server output back
 	let server_output = DoneLoginServerKeysOutput {
@@ -101,9 +107,15 @@ pub fn register_test() -> String
 	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
+	let server_output = PrepareLoginSaltServerOutput {
+		salt_string: salt_from_rand_value,
+		derived_encryption_key_alg: derived.derived_alg.clone(),
+		key_id: "1234".to_string(),
+	};
+
 	//back to the client, send prep login out string to the server if it is no err
 	#[cfg(not(feature = "rust"))]
-	let prep_login_out = prepare_login(password, salt_from_rand_value.as_str(), derived.derived_alg.as_str());
+	let prep_login_out = prepare_login(password, server_output.to_string().unwrap().as_str());
 
 	//and get the master_key_encryption_key for done login
 	let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
@@ -147,11 +159,11 @@ pub fn register_test() -> String
 mod test
 {
 	use base64ct::{Base64, Encoding};
-	use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, KeyDerivedData, RegisterData};
+	use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, KeyDerivedData, PrepareLoginSaltServerOutput, RegisterData};
 
 	use super::*;
 
-	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
+	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> PrepareLoginSaltServerOutput
 	{
 		//and now try to login
 		//normally the salt gets calc by the api
@@ -162,7 +174,13 @@ mod test
 		};
 
 		let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
-		Base64::encode_string(&salt_from_rand_value)
+		let salt_string = Base64::encode_string(&salt_from_rand_value);
+
+		PrepareLoginSaltServerOutput {
+			salt_string,
+			derived_encryption_key_alg: derived.derived_alg.clone(),
+			key_id: "1234".to_string(),
+		}
 	}
 
 	pub(crate) fn simulate_server_done_login(data: RegisterData) -> DoneLoginServerKeysOutput

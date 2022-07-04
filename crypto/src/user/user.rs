@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::DoneLoginServerKeysOutput;
+use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput};
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -60,9 +60,14 @@ pub fn register(password: &str) -> String
 	}
 }
 
-pub fn prepare_login(password: &str, salt_string: &str, derived_encryption_key_alg: &str) -> String
+pub fn prepare_login(password: &str, server_output: &str) -> String
 {
-	let (auth_key, master_key_encryption_key) = match prepare_login_internally(password, salt_string, derived_encryption_key_alg) {
+	let server_output = match PrepareLoginSaltServerOutput::from_string(server_output.as_bytes()) {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonParseFailed),
+	};
+
+	let (auth_key, master_key_encryption_key) = match prepare_login_internally(password, &server_output) {
 		Err(e) => return err_to_msg(e),
 		Ok(o) => o,
 	};
@@ -201,10 +206,12 @@ mod test
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
 
-		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
+		let server_output = simulate_server_prepare_login(&out.derived)
+			.to_string()
+			.unwrap();
 
 		//back to the client, send prep login out string to the server if it is no err
-		let prep_login_out = prepare_login(password, salt_from_rand_value.as_str(), out.derived.derived_alg.as_str());
+		let prep_login_out = prepare_login(password, server_output.as_str());
 
 		//and get the master_key_encryption_key for done login
 		let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
@@ -245,7 +252,7 @@ mod test
 		let pw_change_out = change_password(
 			password,
 			new_password,
-			salt_from_rand_value.as_str(),
+			salt_from_rand_value.salt_string.as_str(),
 			out.master_key.encrypted_master_key.as_str(),
 			out.derived.derived_alg.as_str(),
 		);

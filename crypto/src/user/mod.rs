@@ -8,7 +8,15 @@
 use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{ChangePasswordData, DoneLoginServerKeysOutput, KeyDerivedData, MasterKey, RegisterData, ResetPasswordData};
+use sendclose_crypto_common::user::{
+	ChangePasswordData,
+	DoneLoginServerKeysOutput,
+	KeyDerivedData,
+	MasterKey,
+	PrepareLoginSaltServerOutput,
+	RegisterData,
+	ResetPasswordData,
+};
 use sendclose_crypto_core::user::{
 	change_password as change_password_core,
 	done_login as done_login_core,
@@ -116,10 +124,10 @@ fn register_internally(password: &str) -> Result<String, Error>
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-fn prepare_login_internally(password: &str, salt_string: &str, derived_encryption_key_alg: &str) -> Result<(String, DeriveMasterKeyForAuth), Error>
+fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), Error>
 {
-	let salt = Base64::decode_vec(salt_string).map_err(|_| Error::DecodeSaltFailed)?;
-	let result = prepare_login_core(password, &salt, derived_encryption_key_alg)?;
+	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
+	let result = prepare_login_core(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
 	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
