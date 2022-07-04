@@ -152,14 +152,32 @@ impl DoneLoginServerKeysOutput
 	}
 }
 
+/**
+# Multiple login keys used
+
+This is used to get all of the other keys of the user.
+Just call prepare_login to get the derived key for the master key and then call done_login.
+Call this right after login with the password.
+
+This is only possible with a valid auth key.
+
+This is only used for key update and only for the process of key update. So the usually max count is 2 (old and new).
+Change or reset password are not possible in time of the key update.
+
+<br>
+
+## important!
+Don't return this for the first login try. For the first login try just return the PrepareLoginSaltServerOutput of the latest keys!
+ */
 #[derive(Serialize, Deserialize)]
-pub struct DoneLoginServerOutput
+pub struct MultipleLoginServerOutput
 {
-	pub keys: Vec<DoneLoginServerKeysOutput>, //for all used user keys
 	pub user_id: String,
+	pub logins: Vec<PrepareLoginSaltServerOutput>,
+	pub done_logins: Vec<DoneLoginServerKeysOutput>,
 }
 
-impl DoneLoginServerOutput
+impl MultipleLoginServerOutput
 {
 	pub fn to_string(&self) -> serde_json::Result<String>
 	{

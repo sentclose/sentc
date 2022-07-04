@@ -1,9 +1,17 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
-use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput};
+use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 
-use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
+use crate::user::{
+	change_password_internally,
+	done_login_internally,
+	prepare_login_internally,
+	prepare_update_user_keys_internally,
+	register_internally,
+	reset_password_internally,
+};
 use crate::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
 
 pub fn register(password: &str) -> Result<String, Error>
@@ -54,6 +62,37 @@ pub fn change_password(
 pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, Error>
 {
 	reset_password_internally(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)
+}
+
+pub fn prepare_update_user_keys(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyData>, Error>
+{
+	let out_arr = prepare_update_user_keys_internally(password, server_output)?;
+
+	let mut output = Vec::with_capacity(out_arr.len());
+
+	//like done login, prepare the values
+	for out in out_arr {
+		output.push(KeyData {
+			private_key: PrivateKeyFormat {
+				key: out.private_key,
+				key_id: out.keypair_encrypt_id.clone(),
+			},
+			sign_key: SignKeyFormat {
+				key: out.sign_key,
+				key_id: out.keypair_sign_id.clone(),
+			},
+			public_key: PublicKeyFormat {
+				key: out.public_key,
+				key_id: out.keypair_encrypt_id,
+			},
+			verify_key: VerifyKeyFormat {
+				key: out.verify_key,
+				key_id: out.keypair_sign_id,
+			},
+		});
+	}
+
+	Ok(output)
 }
 
 #[cfg(test)]

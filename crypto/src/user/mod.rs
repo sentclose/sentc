@@ -6,6 +6,7 @@
 //! If rust feature is enabled the rust functions are used. The return is no longer just a json string but rust structs and enums to work with
 
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::user::{
@@ -13,6 +14,7 @@ use sendclose_crypto_common::user::{
 	DoneLoginServerKeysOutput,
 	KeyDerivedData,
 	MasterKey,
+	MultipleLoginServerOutput,
 	PrepareLoginSaltServerOutput,
 	RegisterData,
 	ResetPasswordData,
@@ -44,10 +46,19 @@ mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
-pub use self::user::{change_password, done_login, prepare_login, register, reset_password, MasterKeyFormat, PrepareLoginData};
+pub use self::user::{
+	change_password,
+	done_login,
+	prepare_login,
+	prepare_update_user_keys,
+	register,
+	reset_password,
+	MasterKeyFormat,
+	PrepareLoginData,
+};
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
-pub use self::user_rust::{change_password, done_login, prepare_login, register, reset_password};
+pub use self::user_rust::{change_password, done_login, prepare_login, prepare_update_user_keys, register, reset_password};
 
 /**
 # internally used key store
@@ -238,4 +249,43 @@ fn reset_password_internally(new_password: &str, decrypted_private_key: &Sk, dec
 	};
 
 	Ok(data.to_string().map_err(|_| Error::JsonToStringFailed)?)
+}
+
+/**
+# Prepare update user keys
+
+When changing the user keys so the user can update the old content which was encrypted by the old user keys.
+
+After this step the user got access to all old user keys and
+can start decrypting the content with the old keys and encrypt it with the new keys.
+
+Password change or reset is not possible during the key update.
+*/
+fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<DoneLoginOutput>, Error>
+{
+	let mut encrypted_output = Vec::with_capacity(server_output.logins.len());
+
+	//decrypt all keys via the password, so the sdk can start to decrypt the content with the old keys and encrypt with the new
+
+	let mut i = 0;
+
+	for out in &server_output.logins {
+		//get the derived key from the password
+		//the auth key is not needed because we are already logged in
+		let (_, derived_key) = prepare_login_internally(password, out)?;
+
+		//now done login
+		//should everytime the same len
+		let done_login_server_output = match server_output.done_logins.get(i) {
+			Some(v) => v,
+			None => return Err(Error::KeyDecryptFailed),
+		};
+
+		let done_login = done_login_internally(&derived_key, done_login_server_output)?;
+		encrypted_output.push(done_login);
+
+		i += 1;
+	}
+
+	Ok(encrypted_output)
 }

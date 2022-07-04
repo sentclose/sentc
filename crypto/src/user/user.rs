@@ -1,13 +1,21 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput};
+use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
 use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
 use crate::err_to_msg;
-use crate::user::{change_password_internally, done_login_internally, prepare_login_internally, register_internally, reset_password_internally};
+use crate::user::{
+	change_password_internally,
+	done_login_internally,
+	prepare_login_internally,
+	prepare_update_user_keys_internally,
+	register_internally,
+	reset_password_internally,
+};
 use crate::util::{export_private_key, export_public_key, export_sign_key, export_verify_key, import_private_key, import_sign_key, KeyData};
 
 #[derive(Serialize, Deserialize)]
@@ -173,6 +181,46 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 	match reset_password_internally(new_password, &decrypted_private_key, &decrypted_sign_key) {
 		Ok(v) => v,
 		Err(e) => err_to_msg(e),
+	}
+}
+
+pub fn prepare_update_user_keys(password: &str, server_output: &str) -> String
+{
+	let server_output = match MultipleLoginServerOutput::from_string(server_output.as_bytes()) {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonParseFailed),
+	};
+
+	let out = match prepare_update_user_keys_internally(password, &server_output) {
+		Ok(v) => v,
+		Err(e) => return err_to_msg(e),
+	};
+
+	let mut output_arr = Vec::with_capacity(out.len());
+
+	for result in out {
+		//like done login but for all keys
+
+		let private_key = export_private_key(result.private_key, result.keypair_encrypt_id.clone());
+		//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
+		let public_key = export_public_key(result.public_key, result.keypair_encrypt_id);
+		let sign_key = export_sign_key(result.sign_key, result.keypair_sign_id.clone());
+		let verify_key = export_verify_key(result.verify_key, result.keypair_sign_id);
+
+		let output = KeyData {
+			private_key,
+			sign_key,
+			public_key,
+			verify_key,
+		};
+
+		output_arr.push(output);
+	}
+
+	//now this keys can be used to new encrypt the old content
+	match to_string(&output_arr) {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonToStringFailed),
 	}
 }
 
