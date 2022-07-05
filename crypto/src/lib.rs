@@ -12,7 +12,6 @@ use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
 use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
-use sendclose_crypto_core::ClientRandomValue;
 #[cfg(feature = "rust")]
 use sendclose_crypto_core::Sk;
 
@@ -20,6 +19,7 @@ pub use self::error::err_to_msg;
 #[cfg(not(feature = "rust"))]
 use crate::user::PrepareLoginData;
 use crate::user::{done_login, prepare_login, register};
+use crate::util::client_random_value_from_string;
 #[cfg(not(feature = "rust"))]
 use crate::util::{KeyData, PrivateKeyFormat};
 
@@ -39,11 +39,7 @@ pub fn register_test() -> String
 
 	//and now try to login
 	//normally the salt gets calc by the api
-	let client_random_value = Base64::decode_vec(derived.client_random_value.as_str()).unwrap();
-	let client_random_value = match derived.derived_alg.as_str() {
-		sendclose_crypto_core::ARGON_2_OUTPUT => ClientRandomValue::Argon2(client_random_value.try_into().unwrap()),
-		_ => panic!("alg not found"),
-	};
+	let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
 
 	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
@@ -98,11 +94,7 @@ pub fn register_test() -> String
 
 	//and now try to login
 	//normally the salt gets calc by the api
-	let client_random_value = Base64::decode_vec(derived.client_random_value.as_str()).unwrap();
-	let client_random_value = match derived.derived_alg.as_str() {
-		sendclose_crypto_core::ARGON_2_OUTPUT => ClientRandomValue::Argon2(client_random_value.try_into().unwrap()),
-		_ => panic!("alg not found"),
-	};
+	let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
 
 	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
@@ -167,12 +159,7 @@ mod test
 	{
 		//and now try to login
 		//normally the salt gets calc by the api
-		let client_random_value = Base64::decode_vec(derived.client_random_value.as_str()).unwrap();
-		let client_random_value = match derived.derived_alg.as_str() {
-			sendclose_crypto_core::ARGON_2_OUTPUT => ClientRandomValue::Argon2(client_random_value.try_into().unwrap()),
-			_ => panic!("alg not found"),
-		};
-
+		let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
 		let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
 		let salt_string = Base64::encode_string(&salt_from_rand_value);
 
@@ -204,6 +191,7 @@ mod test
 		}
 	}
 
+	#[cfg(not(feature = "rust"))]
 	pub(crate) fn simulate_server_done_login_as_string(data: RegisterData) -> String
 	{
 		simulate_server_done_login(data).to_string().unwrap()

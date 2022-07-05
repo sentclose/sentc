@@ -23,6 +23,7 @@ pub enum Error
 
 	AlgNotFound,
 	DecodeSaltFailed,
+	DecodeRandomValueFailed,
 	DerivedKeyWrongFormat,
 
 	LoginServerOutputWrong,
