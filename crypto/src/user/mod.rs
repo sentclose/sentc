@@ -26,9 +26,10 @@ use sendclose_crypto_core::user::{
 	prepare_login as prepare_login_core,
 	register as register_core,
 };
-use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
+use sendclose_crypto_core::{generate_salt, DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
 
 use crate::util::{
+	client_random_value_from_string,
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
 	export_public_key_to_pem,
@@ -259,6 +260,10 @@ When changing the user keys so the user can update the old content which was enc
 After this step the user got access to all old user keys and
 can start decrypting the content with the old keys and encrypt it with the new keys.
 
+This function is used when the user don't new encrypt all content as once but split it around days.
+When the user will start new encrypt the next chunks, this function is needed to get the old key too
+(because for login we only use the actual keys).
+
 Password change or reset is not possible during the key update.
 */
 fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<DoneLoginOutput>, Error>
@@ -271,8 +276,12 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 
 	for out in &server_output.logins {
 		//get the derived key from the password
-		//the auth key is not needed because we are already logged in
-		let (_, derived_key) = prepare_login_internally(password, out)?;
+		//creat the salt in the client for the old keys. it is ok because the user is already auth
+		let client_random_value = client_random_value_from_string(out.client_random_value.as_str(), out.derived_encryption_key_alg.as_str())?;
+		let salt = generate_salt(client_random_value);
+
+		let result = prepare_login_core(password, &salt, out.derived_encryption_key_alg.as_str())?;
+		let derived_key = result.master_key_encryption_key;
 
 		//now done login
 		//should everytime the same len

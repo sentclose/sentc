@@ -152,6 +152,27 @@ impl DoneLoginServerKeysOutput
 	}
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PrepareLoginForKeyUpdateServerOutput
+{
+	pub client_random_value: String, //instead of prepare login (where the server creates the salt), for key update the client creates the salt for the old keys
+	pub derived_encryption_key_alg: String,
+	pub key_id: String,
+}
+
+impl PrepareLoginForKeyUpdateServerOutput
+{
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+}
+
 /**
 # Multiple login keys used
 
@@ -173,7 +194,7 @@ Don't return this for the first login try. For the first login try just return t
 pub struct MultipleLoginServerOutput
 {
 	pub user_id: String,
-	pub logins: Vec<PrepareLoginSaltServerOutput>,
+	pub logins: Vec<PrepareLoginForKeyUpdateServerOutput>,
 	pub done_logins: Vec<DoneLoginServerKeysOutput>,
 }
 
