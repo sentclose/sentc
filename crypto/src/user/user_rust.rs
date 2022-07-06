@@ -12,7 +12,7 @@ use crate::user::{
 	register_internally,
 	reset_password_internally,
 };
-use crate::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, VerifyKeyFormat};
+use crate::util::{KeyData, PrivateKeyFormat, SignKeyFormat};
 
 pub fn register(password: &str) -> Result<String, Error>
 {
@@ -26,26 +26,7 @@ pub fn prepare_login(password: &str, server_output: &PrepareLoginSaltServerOutpu
 
 pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyData, Error>
 {
-	let out = done_login_internally(&master_key_encryption, server_output)?;
-
-	Ok(KeyData {
-		private_key: PrivateKeyFormat {
-			key: out.private_key,
-			key_id: out.keypair_encrypt_id.clone(),
-		},
-		sign_key: SignKeyFormat {
-			key: out.sign_key,
-			key_id: out.keypair_sign_id.clone(),
-		},
-		public_key: PublicKeyFormat {
-			key: out.public_key,
-			key_id: out.keypair_encrypt_id,
-		},
-		verify_key: VerifyKeyFormat {
-			key: out.verify_key,
-			key_id: out.keypair_sign_id,
-		},
-	})
+	done_login_internally(&master_key_encryption, server_output)
 }
 
 pub fn change_password(
@@ -59,48 +40,23 @@ pub fn change_password(
 	change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg)
 }
 
+//the feature marco here because of ide err, because the format would not match when rust feature is disabled.
+#[cfg(feature = "rust")]
 pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, Error>
 {
-	reset_password_internally(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)
+	#[cfg(feature = "rust")]
+	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
 }
 
 pub fn prepare_update_user_keys(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyData>, Error>
 {
-	let out_arr = prepare_update_user_keys_internally(password, server_output)?;
-
-	let mut output = Vec::with_capacity(out_arr.len());
-
-	//like done login, prepare the values
-	for out in out_arr {
-		output.push(KeyData {
-			private_key: PrivateKeyFormat {
-				key: out.private_key,
-				key_id: out.keypair_encrypt_id.clone(),
-			},
-			sign_key: SignKeyFormat {
-				key: out.sign_key,
-				key_id: out.keypair_sign_id.clone(),
-			},
-			public_key: PublicKeyFormat {
-				key: out.public_key,
-				key_id: out.keypair_encrypt_id,
-			},
-			verify_key: VerifyKeyFormat {
-				key: out.verify_key,
-				key_id: out.keypair_sign_id,
-			},
-		});
-	}
-
-	Ok(output)
+	prepare_update_user_keys_internally(password, server_output)
 }
 
 #[cfg(test)]
 mod test
 {
 	extern crate std;
-
-	use alloc::string::ToString;
 
 	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
 	use sendclose_crypto_core::Sk;

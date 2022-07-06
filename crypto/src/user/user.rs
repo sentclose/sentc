@@ -139,11 +139,11 @@ pub fn done_login(
 		Err(e) => return err_to_msg(e),
 	};
 
-	let private_key = export_private_key(result.private_key, result.keypair_encrypt_id.clone());
+	let private_key = export_private_key(result.private_key);
 	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
-	let public_key = export_public_key(result.public_key, result.keypair_encrypt_id);
-	let sign_key = export_sign_key(result.sign_key, result.keypair_sign_id.clone());
-	let verify_key = export_verify_key(result.verify_key, result.keypair_sign_id);
+	let public_key = export_public_key(result.public_key);
+	let sign_key = export_sign_key(result.sign_key);
+	let verify_key = export_verify_key(result.verify_key);
 
 	let output = KeyData {
 		private_key,
@@ -168,12 +168,12 @@ pub fn change_password(old_pw: &str, new_pw: &str, old_salt: &str, encrypted_mas
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> String
 {
-	let (decrypted_private_key, _) = match import_private_key(decrypted_private_key) {
+	let decrypted_private_key = match import_private_key(decrypted_private_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
 
-	let (decrypted_sign_key, _) = match import_sign_key(decrypted_sign_key) {
+	let decrypted_sign_key = match import_sign_key(decrypted_sign_key) {
 		Ok(k) => k,
 		Err(e) => return err_to_msg(e),
 	};
@@ -201,11 +201,11 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> String
 	for result in out {
 		//like done login but for all keys
 
-		let private_key = export_private_key(result.private_key, result.keypair_encrypt_id.clone());
+		let private_key = export_private_key(result.private_key);
 		//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
-		let public_key = export_public_key(result.public_key, result.keypair_encrypt_id);
-		let sign_key = export_sign_key(result.sign_key, result.keypair_sign_id.clone());
-		let verify_key = export_verify_key(result.verify_key, result.keypair_sign_id);
+		let public_key = export_public_key(result.public_key);
+		let sign_key = export_sign_key(result.sign_key);
+		let verify_key = export_verify_key(result.verify_key);
 
 		let output = KeyData {
 			private_key,

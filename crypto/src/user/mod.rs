@@ -26,17 +26,22 @@ use sendclose_crypto_core::user::{
 	prepare_login as prepare_login_core,
 	register as register_core,
 };
-use sendclose_crypto_core::{generate_salt, DeriveMasterKeyForAuth, Error, Pk, SignK, Sk, VerifyK};
+use sendclose_crypto_core::{generate_salt, DeriveMasterKeyForAuth, Error};
 
 use crate::util::{
 	client_random_value_from_string,
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
-	export_public_key_to_pem,
-	export_verify_key_to_pem,
+	export_raw_public_key_to_pem,
+	export_raw_verify_key_to_pem,
 	hashed_authentication_key_to_string,
 	import_public_key_from_pem_with_alg,
 	import_verify_key_from_pem_with_alg,
+	KeyDataInt,
+	PrivateKeyFormatInt,
+	PublicKeyFormatInt,
+	SignKeyFormatInt,
+	VerifyKeyFormatInt,
 };
 
 #[cfg(feature = "rust")]
@@ -61,23 +66,6 @@ pub use self::user::{
 #[cfg(feature = "rust")]
 pub use self::user_rust::{change_password, done_login, prepare_login, prepare_update_user_keys, register, reset_password};
 
-/**
-# internally used key store
-
-The keys are in the right internally format.
-
-This can be used when feature rust in enabled
-*/
-pub(crate) struct DoneLoginOutput
-{
-	pub private_key: Sk,
-	pub sign_key: SignK,
-	pub public_key: Pk,
-	pub verify_key: VerifyK,
-	pub keypair_encrypt_id: String,
-	pub keypair_sign_id: String,
-}
-
 fn register_internally(password: &str) -> Result<String, Error>
 {
 	let out = register_core(password)?;
@@ -90,9 +78,9 @@ fn register_internally(password: &str) -> Result<String, Error>
 	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
 	//2. export the public keys (decrypt and verify) to a key format
-	let public_key = export_public_key_to_pem(&out.public_key)?;
+	let public_key = export_raw_public_key_to_pem(&out.public_key)?;
 
-	let verify_key = export_verify_key_to_pem(&out.verify_key)?;
+	let verify_key = export_raw_verify_key_to_pem(&out.verify_key)?;
 
 	//3. export the random value
 	let client_random_value = client_random_value_to_string(&out.client_random_value);
@@ -154,8 +142,7 @@ fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServ
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput)
-	-> Result<DoneLoginOutput, Error>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyDataInt, Error>
 {
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
@@ -175,13 +162,23 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 
 	let verify_key = import_verify_key_from_pem_with_alg(server_output.verify_key_string.as_str(), server_output.keypair_sign_alg.as_str())?;
 
-	Ok(DoneLoginOutput {
-		private_key: out.private_key,
-		sign_key: out.sign_key,
-		public_key,
-		verify_key,
-		keypair_sign_id: server_output.keypair_sign_id.clone(),
-		keypair_encrypt_id: server_output.keypair_encrypt_id.clone(),
+	Ok(KeyDataInt {
+		private_key: PrivateKeyFormatInt {
+			key_id: server_output.keypair_encrypt_id.clone(),
+			key: out.private_key,
+		},
+		sign_key: SignKeyFormatInt {
+			key_id: server_output.keypair_sign_id.clone(),
+			key: out.sign_key,
+		},
+		public_key: PublicKeyFormatInt {
+			key_id: server_output.keypair_encrypt_id.clone(),
+			key: public_key,
+		},
+		verify_key: VerifyKeyFormatInt {
+			key_id: server_output.keypair_sign_id.clone(),
+			key: verify_key,
+		},
 	})
 }
 
@@ -222,9 +219,13 @@ fn change_password_internally(
 		.map_err(|_| Error::JsonToStringFailed)?)
 }
 
-fn reset_password_internally(new_password: &str, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<String, Error>
+fn reset_password_internally(
+	new_password: &str,
+	decrypted_private_key: &PrivateKeyFormatInt,
+	decrypted_sign_key: &SignKeyFormatInt,
+) -> Result<String, Error>
 {
-	let out = password_reset_core(new_password, decrypted_private_key, decrypted_sign_key)?;
+	let out = password_reset_core(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)?;
 
 	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
@@ -266,7 +267,7 @@ When the user will start new encrypt the next chunks, this function is needed to
 
 Password change or reset is not possible during the key update.
 */
-fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<DoneLoginOutput>, Error>
+fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyDataInt>, Error>
 {
 	let mut encrypted_output = Vec::with_capacity(server_output.logins.len());
 

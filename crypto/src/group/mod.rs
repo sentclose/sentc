@@ -22,9 +22,9 @@ use sendclose_crypto_core::group::{
 	prepare_create as prepare_create_core,
 	prepare_group_keys_for_new_member as prepare_group_keys_for_new_member_core,
 };
-use sendclose_crypto_core::{Error, Pk, Sk, SymKey};
+use sendclose_crypto_core::Error;
 
-use crate::util::{export_public_key_to_pem, import_public_key_from_pem_with_alg};
+use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
 
 #[cfg(not(feature = "rust"))]
 mod group;
@@ -43,35 +43,27 @@ pub use self::group::{
 	GroupOutData,
 };
 #[cfg(feature = "rust")]
-pub use self::group_rust::{
-	done_key_rotation,
-	get_group_data,
-	key_rotation,
-	prepare_create,
-	prepare_group_keys_for_new_member,
-	GroupKeyData,
-	GroupOutData,
-};
+pub use self::group_rust::{done_key_rotation, get_group_data, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupOutData};
+#[cfg(feature = "rust")]
+pub use self::DoneGettingGroupKeysOutput as GroupKeyData;
 
-pub(crate) struct DoneGettingGroupKeysOutput
+pub struct DoneGettingGroupKeysOutput
 {
-	pub group_key: SymKey,
-	pub private_group_key: Sk,
-	pub public_group_key: Pk,
-	pub key_pair_id: String,
-	pub group_key_id: String,
+	pub group_key: SymKeyFormatInt,
+	pub private_group_key: PrivateKeyFormatInt,
+	pub public_group_key: PublicKeyFormatInt,
 }
 
-fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: &str) -> Result<String, Error>
+fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, Error>
 {
-	let out = prepare_create_core(creators_public_key)?;
+	let out = prepare_create_core(&creators_public_key.key)?;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
 	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
 
 	//2. export the public key
-	let public_group_key = export_public_key_to_pem(&out.public_group_key)?;
+	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
 
 	let create_out = CreateData {
 		public_group_key,
@@ -80,7 +72,7 @@ fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: &s
 		encrypted_group_key_alg: out.encrypted_group_key_alg.to_string(),
 		group_key_alg: out.group_key_alg.to_string(),
 		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
-		creator_public_key_id: creator_public_key_id.to_string(),
+		creator_public_key_id: creators_public_key.key_id.clone(),
 	};
 
 	Ok(create_out
@@ -88,14 +80,9 @@ fn prepare_create_internally(creators_public_key: &Pk, creator_public_key_id: &s
 		.map_err(|_| Error::JsonToStringFailed)?)
 }
 
-fn key_rotation_internally(
-	previous_group_key: &SymKey,
-	invoker_public_key: &Pk,
-	previous_group_key_id: &str,
-	invoker_public_key_id: &str,
-) -> Result<String, Error>
+fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_key: &PublicKeyFormatInt) -> Result<String, Error>
 {
-	let out = key_rotation_core(previous_group_key, invoker_public_key)?;
+	let out = key_rotation_core(&previous_group_key.key, &invoker_public_key.key)?;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key_by_user = Base64::encode_string(&out.encrypted_group_key_by_user);
@@ -104,7 +91,7 @@ fn key_rotation_internally(
 	let encrypted_ephemeral_key = Base64::encode_string(&out.encrypted_ephemeral_key);
 
 	//2. export the public key
-	let public_group_key = export_public_key_to_pem(&out.public_group_key)?;
+	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
 
 	let rotation_out = KeyRotationData {
 		encrypted_group_key_by_user,
@@ -116,8 +103,8 @@ fn key_rotation_internally(
 		encrypted_group_key_by_ephemeral,
 		ephemeral_alg: out.ephemeral_alg.to_string(),
 		encrypted_ephemeral_key,
-		previous_group_key_id: previous_group_key_id.to_string(),
-		invoker_public_key_id: invoker_public_key_id.to_string(),
+		previous_group_key_id: previous_group_key.key_id.clone(),
+		invoker_public_key_id: invoker_public_key.key_id.clone(),
 	};
 
 	Ok(rotation_out
@@ -126,11 +113,10 @@ fn key_rotation_internally(
 }
 
 fn done_key_rotation_internally(
-	private_key: &Sk,
-	public_key: &Pk,
-	previous_group_key: &SymKey,
+	private_key: &PrivateKeyFormatInt,
+	public_key: &PublicKeyFormatInt,
+	previous_group_key: &SymKeyFormatInt,
 	server_output: &KeyRotationInput,
-	public_key_id: &str,
 ) -> Result<String, Error>
 {
 	//the id of the previous group key was returned by the server too so the sdk impl knows which key it used
@@ -146,9 +132,9 @@ fn done_key_rotation_internally(
 		Base64::decode_vec(server_output.encrypted_group_key_by_ephemeral.as_str()).map_err(|_| Error::KeyRotationServerOutputWrong)?;
 
 	let out = done_key_rotation_core(
-		private_key,
-		public_key,
-		previous_group_key,
+		&private_key.key,
+		&public_key.key,
+		&previous_group_key.key,
 		&encrypted_ephemeral_key_by_group_key_and_public_key,
 		&encrypted_group_key_by_ephemeral,
 		server_output.ephemeral_alg.as_str(),
@@ -158,7 +144,7 @@ fn done_key_rotation_internally(
 
 	let done_rotation_out = DoneKeyRotationData {
 		encrypted_new_group_key,
-		public_key_id: public_key_id.to_string(),
+		public_key_id: public_key.key_id.clone(),
 	};
 
 	Ok(done_rotation_out
@@ -166,14 +152,14 @@ fn done_key_rotation_internally(
 		.map_err(|_| Error::JsonToStringFailed)?)
 }
 
-fn get_group_keys_internally(private_key: &Sk, server_output: &GroupKeyServerOutput) -> Result<DoneGettingGroupKeysOutput, Error>
+fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<DoneGettingGroupKeysOutput, Error>
 {
 	//the user_public_key_id is used to get the right private key
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
 
 	let (group_key, private_group_key) = get_group_core(
-		private_key,
+		&private_key.key,
 		&encrypted_master_key,
 		&encrypted_private_key,
 		server_output.group_key_alg.as_str(),
@@ -183,23 +169,34 @@ fn get_group_keys_internally(private_key: &Sk, server_output: &GroupKeyServerOut
 	let public_group_key = import_public_key_from_pem_with_alg(&server_output.public_group_key, server_output.keypair_encrypt_alg.as_str())?;
 
 	Ok(DoneGettingGroupKeysOutput {
-		group_key,
-		private_group_key,
-		public_group_key,
-		key_pair_id: server_output.key_pair_id.clone(),
-		group_key_id: server_output.group_key_id.clone(),
+		group_key: SymKeyFormatInt {
+			key: group_key,
+			key_id: server_output.group_key_id.clone(),
+		},
+		private_group_key: PrivateKeyFormatInt {
+			key_id: server_output.key_pair_id.clone(),
+			key: private_group_key,
+		},
+		public_group_key: PublicKeyFormatInt {
+			key_id: server_output.key_pair_id.clone(),
+			key: public_group_key,
+		},
 	})
 }
 
-fn prepare_group_keys_for_new_member_internally(
-	requester_public_key: &Pk,
-	group_keys: &[&SymKey],
-	group_key_ids: &[&str],
-	requester_public_key_id: &str,
-) -> Result<String, Error>
+fn prepare_group_keys_for_new_member_internally(requester_public_key: &PublicKeyFormatInt, group_keys: &[&SymKeyFormatInt]) -> Result<String, Error>
 {
+	//split group keys and their ids
+	let mut split_group_keys = Vec::with_capacity(group_keys.len());
+	let mut split_group_ids = Vec::with_capacity(group_keys.len());
+
+	for group_key in group_keys {
+		split_group_keys.push(&group_key.key);
+		split_group_ids.push(group_key.key_id.as_str());
+	}
+
 	//get all the group keys from the server and use get group for all (if not already on the device)
-	let out = prepare_group_keys_for_new_member_core(requester_public_key, group_keys)?;
+	let out = prepare_group_keys_for_new_member_core(&requester_public_key.key, &split_group_keys)?;
 
 	//transform this vec to the server input by encode each encrypted key to base64
 	let mut encrypted_group_keys: Vec<GroupKeysForNewMember> = Vec::with_capacity(out.len());
@@ -208,12 +205,12 @@ fn prepare_group_keys_for_new_member_internally(
 
 	for key_out in out {
 		let encrypted_group_key = Base64::encode_string(&key_out.encrypted_group_key);
-		let key_id = group_key_ids[i].to_string();
+		let key_id = split_group_ids[i].to_string();
 
 		encrypted_group_keys.push(GroupKeysForNewMember {
 			encrypted_group_key,
 			alg: key_out.alg.to_string(),
-			user_public_key_id: requester_public_key_id.to_string(),
+			user_public_key_id: requester_public_key.key_id.to_string(),
 			key_id,
 		});
 

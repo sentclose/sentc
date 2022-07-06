@@ -1,6 +1,3 @@
-#[cfg(feature = "rust")]
-mod util_rust;
-
 #[cfg(not(feature = "rust"))]
 mod util_non_rust;
 
@@ -15,6 +12,9 @@ use sendclose_crypto_core::{
 	Error,
 	HashedAuthenticationKey,
 	Pk,
+	SignK,
+	Sk,
+	SymKey,
 	VerifyK,
 	ARGON_2_OUTPUT,
 	ECIES_OUTPUT,
@@ -39,8 +39,62 @@ pub(crate) use self::util_non_rust::{
 	SymKeyFormat,
 	VerifyKeyFormat,
 };
+//if rust feature is enabled export the internally functions as externally
 #[cfg(feature = "rust")]
-pub(crate) use self::util_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
+pub(crate) use self::{
+	KeyDataInt as KeyData,
+	PrivateKeyFormatInt as PrivateKeyFormat,
+	PublicKeyFormatInt as PublicKeyFormat,
+	SignKeyFormatInt as SignKeyFormat,
+	SymKeyFormatInt as SymKeyFormat,
+	VerifyKeyFormatInt as VerifyKeyFormat,
+};
+
+pub struct SymKeyFormatInt
+{
+	pub key: SymKey,
+	pub key_id: String,
+}
+
+pub struct PrivateKeyFormatInt
+{
+	pub key: Sk,
+	pub key_id: String,
+}
+
+pub struct PublicKeyFormatInt
+{
+	pub key: Pk,
+	pub key_id: String,
+}
+
+pub struct SignKeyFormatInt
+{
+	pub key: SignK,
+	pub key_id: String,
+}
+
+pub struct VerifyKeyFormatInt
+{
+	pub key: VerifyK,
+	pub key_id: String,
+}
+
+/**
+# key storage structure for the rust feature
+
+It can be used with other rust programs.
+
+The different to the internally DoneLoginOutput ist that,
+the KeyFormat is sued for each where, were the key id is saved too
+ */
+pub struct KeyDataInt
+{
+	pub private_key: PrivateKeyFormatInt,
+	pub sign_key: SignKeyFormatInt,
+	pub public_key: PublicKeyFormatInt,
+	pub verify_key: VerifyKeyFormatInt,
+}
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
 {
@@ -57,7 +111,7 @@ pub(crate) fn import_key_from_pem(pem: &str) -> Result<Vec<u8>, Error>
 	Ok(data)
 }
 
-pub(crate) fn export_public_key_to_pem(key: &Pk) -> Result<String, Error>
+pub(crate) fn export_raw_public_key_to_pem(key: &Pk) -> Result<String, Error>
 {
 	match key {
 		//match against the public key variants
@@ -65,7 +119,7 @@ pub(crate) fn export_public_key_to_pem(key: &Pk) -> Result<String, Error>
 	}
 }
 
-pub(crate) fn export_verify_key_to_pem(key: &VerifyK) -> Result<String, Error>
+pub(crate) fn export_raw_verify_key_to_pem(key: &VerifyK) -> Result<String, Error>
 {
 	match key {
 		VerifyK::Ed25519(k) => export_key_to_pem(k),

@@ -5,6 +5,8 @@ use sendclose_crypto_core::{Error, Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
+use crate::util::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+
 #[derive(Serialize, Deserialize)]
 pub enum PrivateKeyFormat
 {
@@ -142,14 +144,14 @@ impl SymKeyFormat
 	}
 }
 
-pub(crate) fn import_private_key(private_key_string: &str) -> Result<(Sk, String), Error>
+pub(crate) fn import_private_key(private_key_string: &str) -> Result<PrivateKeyFormatInt, Error>
 {
 	let private_key_format = PrivateKeyFormat::from_string(private_key_string.as_bytes()).map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
 	import_private_key_from_format(&private_key_format)
 }
 
-pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<(Sk, String), Error>
+pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<PrivateKeyFormatInt, Error>
 {
 	match key {
 		PrivateKeyFormat::Ecies {
@@ -163,19 +165,22 @@ pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<(
 				.try_into()
 				.map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
-			Ok((Sk::Ecies(private_key), key_id.clone()))
+			Ok(PrivateKeyFormatInt {
+				key_id: key_id.clone(),
+				key: Sk::Ecies(private_key),
+			})
 		},
 	}
 }
 
-pub(crate) fn import_public_key(public_key_string: &str) -> Result<(Pk, String), Error>
+pub(crate) fn import_public_key(public_key_string: &str) -> Result<PublicKeyFormatInt, Error>
 {
 	let public_key_format = PublicKeyFormat::from_string(public_key_string.as_bytes()).map_err(|_| Error::ImportPublicKeyFailed)?;
 
 	import_public_key_from_format(&public_key_format)
 }
 
-pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<(Pk, String), Error>
+pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<PublicKeyFormatInt, Error>
 {
 	match key {
 		PublicKeyFormat::Ecies {
@@ -186,19 +191,22 @@ pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<(Pk
 
 			let key = bytes.try_into().map_err(|_| Error::ImportPublicKeyFailed)?;
 
-			Ok((Pk::Ecies(key), key_id.clone()))
+			Ok(PublicKeyFormatInt {
+				key_id: key_id.clone(),
+				key: Pk::Ecies(key),
+			})
 		},
 	}
 }
 
-pub(crate) fn import_sign_key(sign_key_string: &str) -> Result<(SignK, String), Error>
+pub(crate) fn import_sign_key(sign_key_string: &str) -> Result<SignKeyFormatInt, Error>
 {
 	let sign_key_format = SignKeyFormat::from_string(sign_key_string.as_bytes()).map_err(|_| Error::ImportingSignKeyFailed)?;
 
 	import_sign_key_from_format(&sign_key_format)
 }
 
-pub(crate) fn import_sign_key_from_format(key: &SignKeyFormat) -> Result<(SignK, String), Error>
+pub(crate) fn import_sign_key_from_format(key: &SignKeyFormat) -> Result<SignKeyFormatInt, Error>
 {
 	match key {
 		SignKeyFormat::Ed25519 {
@@ -212,75 +220,78 @@ pub(crate) fn import_sign_key_from_format(key: &SignKeyFormat) -> Result<(SignK,
 				.try_into()
 				.map_err(|_| Error::ImportingSignKeyFailed)?;
 
-			Ok((SignK::Ed25519(sign_key), key_id.clone()))
+			Ok(SignKeyFormatInt {
+				key_id: key_id.clone(),
+				key: SignK::Ed25519(sign_key),
+			})
 		},
 	}
 }
 
-pub(crate) fn export_private_key(private_key: Sk, key_id: String) -> PrivateKeyFormat
+pub(crate) fn export_private_key(private_key: PrivateKeyFormatInt) -> PrivateKeyFormat
 {
-	match private_key {
+	match private_key.key {
 		Sk::Ecies(k) => {
 			let private_key_string = Base64::encode_string(&k);
 
 			PrivateKeyFormat::Ecies {
-				key_id,
+				key_id: private_key.key_id,
 				key: private_key_string,
 			}
 		},
 	}
 }
 
-pub(crate) fn export_public_key(public_key: Pk, key_id: String) -> PublicKeyFormat
+pub(crate) fn export_public_key(public_key: PublicKeyFormatInt) -> PublicKeyFormat
 {
-	match public_key {
+	match public_key.key {
 		Pk::Ecies(k) => {
 			let public_key_string = Base64::encode_string(&k);
 
 			PublicKeyFormat::Ecies {
-				key_id,
+				key_id: public_key.key_id,
 				key: public_key_string,
 			}
 		},
 	}
 }
 
-pub(crate) fn export_sign_key(sign_key: SignK, key_id: String) -> SignKeyFormat
+pub(crate) fn export_sign_key(sign_key: SignKeyFormatInt) -> SignKeyFormat
 {
-	match sign_key {
+	match sign_key.key {
 		SignK::Ed25519(k) => {
 			let sign_key_string = Base64::encode_string(&k);
 
 			SignKeyFormat::Ed25519 {
-				key_id,
+				key_id: sign_key.key_id,
 				key: sign_key_string,
 			}
 		},
 	}
 }
 
-pub(crate) fn export_verify_key(verify_key: VerifyK, key_id: String) -> VerifyKeyFormat
+pub(crate) fn export_verify_key(verify_key: VerifyKeyFormatInt) -> VerifyKeyFormat
 {
-	match verify_key {
+	match verify_key.key {
 		VerifyK::Ed25519(k) => {
 			let verify_key_string = Base64::encode_string(&k);
 
 			VerifyKeyFormat::Ed25519 {
-				key_id,
+				key_id: verify_key.key_id,
 				key: verify_key_string,
 			}
 		},
 	}
 }
 
-pub(crate) fn import_sym_key(key_string: &str) -> Result<(SymKey, String), Error>
+pub(crate) fn import_sym_key(key_string: &str) -> Result<SymKeyFormatInt, Error>
 {
 	let key_format = SymKeyFormat::from_string(key_string.as_bytes()).map_err(|_| Error::ImportSymmetricKeyFailed)?;
 
 	import_sym_key_from_format(&key_format)
 }
 
-pub(crate) fn import_sym_key_from_format(key: &SymKeyFormat) -> Result<(SymKey, String), Error>
+pub(crate) fn import_sym_key_from_format(key: &SymKeyFormat) -> Result<SymKeyFormatInt, Error>
 {
 	match key {
 		SymKeyFormat::Aes {
@@ -294,19 +305,22 @@ pub(crate) fn import_sym_key_from_format(key: &SymKeyFormat) -> Result<(SymKey, 
 				.try_into()
 				.map_err(|_| Error::ImportSymmetricKeyFailed)?;
 
-			Ok((SymKey::Aes(key), key_id.clone()))
+			Ok(SymKeyFormatInt {
+				key_id: key_id.clone(),
+				key: SymKey::Aes(key),
+			})
 		},
 	}
 }
 
-pub(crate) fn export_sym_key(key: SymKey, key_id: String) -> SymKeyFormat
+pub(crate) fn export_sym_key(key: SymKeyFormatInt) -> SymKeyFormat
 {
-	match key {
+	match key.key {
 		SymKey::Aes(k) => {
 			let sym_key = Base64::encode_string(&k);
 
 			SymKeyFormat::Aes {
-				key_id,
+				key_id: key.key_id,
 				key: sym_key,
 			}
 		},
