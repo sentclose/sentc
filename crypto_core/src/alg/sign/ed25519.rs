@@ -48,31 +48,36 @@ pub(crate) fn sign(sign_key: &SignK, data: &[u8]) -> Result<Vec<u8>, Error>
 	Ok(output)
 }
 
-pub(crate) fn verify(verify_key: &VerifyK, data_with_sig: &[u8]) -> Result<(Vec<u8>, bool), Error>
+pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
 	if data_with_sig.len() <= SIG_LENGTH {
 		return Err(Error::DataToSignTooShort);
 	}
 
-	let vk = match verify_key {
-		VerifyK::Ed25519(k) => PublicKey::from_bytes(k).map_err(|_| Error::InitVerifyFailed)?,
-	};
-
 	//split sign and data
 	let sig = &data_with_sig[..SIG_LENGTH];
 	let data = &data_with_sig[SIG_LENGTH..];
+
+	Ok((sig, data))
+}
+
+pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
+{
+	let (sig, data) = split_sig_and_data(data_with_sig)?;
+
+	let vk = match verify_key {
+		VerifyK::Ed25519(k) => PublicKey::from_bytes(k).map_err(|_| Error::InitVerifyFailed)?,
+	};
 
 	let sig = Signature::from_bytes(sig).map_err(|_| Error::InitVerifyFailed)?;
 
 	let result = vk.verify(data, &sig);
 
 	//get the data without the sig
-	let mut output: Vec<u8> = Vec::with_capacity(data.len());
-	output.extend(data);
 
 	match result {
-		Err(_e) => Ok((output, false)),
-		Ok(()) => Ok((output, true)),
+		Err(_e) => Ok((data, false)),
+		Ok(()) => Ok((data, true)),
 	}
 }
 

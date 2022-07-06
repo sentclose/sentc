@@ -37,9 +37,17 @@ pub fn sign(sign_key: &SignK, data_to_sign: &[u8]) -> Result<Vec<u8>, Error>
 	}
 }
 
-pub fn verify(verify_key: &VerifyK, data_with_sign: &[u8]) -> Result<(Vec<u8>, bool), Error>
+pub fn verify<'a>(verify_key: &VerifyK, data_with_sign: &'a [u8]) -> Result<(&'a [u8], bool), Error>
 {
 	match verify_key {
 		VerifyK::Ed25519(_) => alg::sign::ed25519::verify(verify_key, data_with_sign),
+	}
+}
+
+pub fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'a [u8], &'a [u8]), Error>
+{
+	match alg {
+		alg::sign::ed25519::ED25519_OUTPUT => alg::sign::ed25519::split_sig_and_data(data_with_sign),
+		_ => Err(Error::AlgNotFound),
 	}
 }
