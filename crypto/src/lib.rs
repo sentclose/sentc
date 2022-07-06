@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+mod crypto;
 mod error;
 pub mod group;
 pub mod user;

@@ -44,4 +44,7 @@ pub enum Error
 
 	JsonToStringFailed,
 	JsonParseFailed,
+
+	SigFoundNotKey,
+	VerifyFailed,
 }
