@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupNewMemberPublicKeyData, GroupServerData, KeyRotationInput};
 use sendclose_crypto_core::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -179,8 +179,13 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> String
 	}
 }
 
-pub fn prepare_group_keys_for_new_member(requester_public_key: &str, group_keys: &[String]) -> String
+pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &[String]) -> String
 {
+	let requester_public_key_data = match GroupNewMemberPublicKeyData::from_string(requester_public_key_data.as_bytes()) {
+		Ok(v) => v,
+		Err(_e) => return err_to_msg(Error::JsonParseFailed),
+	};
+
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 
 	//split group key and id
@@ -193,14 +198,9 @@ pub fn prepare_group_keys_for_new_member(requester_public_key: &str, group_keys:
 		saved_keys.push(key);
 	}
 
-	let pk = match import_public_key(requester_public_key) {
-		Ok(k) => k,
-		Err(e) => return err_to_msg(e),
-	};
-
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	match prepare_group_keys_for_new_member_internally(&pk, &split_group_keys) {
+	match prepare_group_keys_for_new_member_internally(&requester_public_key_data, &split_group_keys) {
 		Ok(o) => o,
 		Err(e) => return err_to_msg(e),
 	}

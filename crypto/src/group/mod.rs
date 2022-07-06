@@ -12,6 +12,7 @@ use sendclose_crypto_common::group::{
 	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
+	GroupNewMemberPublicKeyData,
 	KeyRotationData,
 	KeyRotationInput,
 };
@@ -184,8 +185,16 @@ fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &
 	})
 }
 
-fn prepare_group_keys_for_new_member_internally(requester_public_key: &PublicKeyFormatInt, group_keys: &[&SymKeyFormatInt]) -> Result<String, Error>
+fn prepare_group_keys_for_new_member_internally(
+	requester_public_key_data: &GroupNewMemberPublicKeyData,
+	group_keys: &[&SymKeyFormatInt],
+) -> Result<String, Error>
 {
+	let public_key = import_public_key_from_pem_with_alg(
+		requester_public_key_data.public_key_pem.as_str(),
+		requester_public_key_data.public_key_alg.as_str(),
+	)?;
+
 	//split group keys and their ids
 	let mut split_group_keys = Vec::with_capacity(group_keys.len());
 	let mut split_group_ids = Vec::with_capacity(group_keys.len());
@@ -196,7 +205,7 @@ fn prepare_group_keys_for_new_member_internally(requester_public_key: &PublicKey
 	}
 
 	//get all the group keys from the server and use get group for all (if not already on the device)
-	let out = prepare_group_keys_for_new_member_core(&requester_public_key.key, &split_group_keys)?;
+	let out = prepare_group_keys_for_new_member_core(&public_key, &split_group_keys)?;
 
 	//transform this vec to the server input by encode each encrypted key to base64
 	let mut encrypted_group_keys: Vec<GroupKeysForNewMember> = Vec::with_capacity(out.len());
@@ -210,7 +219,7 @@ fn prepare_group_keys_for_new_member_internally(requester_public_key: &PublicKey
 		encrypted_group_keys.push(GroupKeysForNewMember {
 			encrypted_group_key,
 			alg: key_out.alg.to_string(),
-			user_public_key_id: requester_public_key.key_id.to_string(),
+			user_public_key_id: requester_public_key_data.public_key_id.to_string(),
 			key_id,
 		});
 

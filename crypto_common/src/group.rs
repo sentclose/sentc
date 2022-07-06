@@ -164,6 +164,27 @@ impl GroupServerData
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct GroupNewMemberPublicKeyData
+{
+	pub public_key_pem: String,
+	pub public_key_alg: String,
+	pub public_key_id: String,
+}
+
+impl GroupNewMemberPublicKeyData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct GroupKeysForNewMember
 {
 	pub encrypted_group_key: String, //base64 encoded
