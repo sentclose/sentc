@@ -16,12 +16,11 @@ use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltS
 use sendclose_crypto_core::Sk;
 
 pub use self::error::err_to_msg;
+pub use self::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
 #[cfg(not(feature = "rust"))]
 use crate::user::PrepareLoginData;
 use crate::user::{done_login, prepare_login, register};
 use crate::util::client_random_value_from_string;
-#[cfg(not(feature = "rust"))]
-use crate::util::{KeyData, PrivateKeyFormat};
 
 #[cfg(feature = "rust")]
 pub fn register_test() -> String
