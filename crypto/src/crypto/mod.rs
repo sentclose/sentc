@@ -1,25 +1,14 @@
 #[cfg(feature = "rust")]
 mod crypto_rust;
 
-use alloc::string::{String, ToString};
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
+use sendclose_crypto_common::crypto::{EncryptedHead, SignHead};
 use sendclose_crypto_core::crypto::{decrypt_symmetric, encrypt_symmetric, sign, split_sig_and_data, verify};
 use sendclose_crypto_core::{Error, SignK, ED25519_OUTPUT};
 
 use crate::util::{SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
-
-pub struct SignHead
-{
-	pub id: String,
-	pub alg: String, //in case at decrypt the user got no access to the verify key, but we still need to split data and sig
-}
-
-pub struct EncryptedHead
-{
-	pub id: String,
-	pub sign: Option<SignHead>, //the key id of the sign key
-}
 
 fn encrypt_raw_symmetric_internally(
 	key: &SymKeyFormatInt,
