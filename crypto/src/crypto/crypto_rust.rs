@@ -55,7 +55,7 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_sym_raw()
 	{
-		let (user, public_key, verify_key) = create_user();
+		let (user, _public_key, _verify_key) = create_user();
 
 		let group = create_group(&user);
 		let group_key = &group.keys[0].group_key;
@@ -74,7 +74,7 @@ mod test
 	fn test_encrypt_decrypt_sym_raw_with_sig()
 	{
 		//create a rust dummy user
-		let (user, public_key, verify_key) = create_user();
+		let (user, _public_key, verify_key) = create_user();
 
 		let group = create_group(&user);
 		let group_key = &group.keys[0].group_key;
@@ -93,7 +93,7 @@ mod test
 	fn test_encrypt_decrypt_asym_raw()
 	{
 		let text = "123*+^êéèüöß";
-		let (user, public_key, verify_key) = create_user();
+		let (user, public_key, _verify_key) = create_user();
 
 		let (head, encrypted) = encrypt_raw_asymmetric(&public_key, text.as_bytes(), None).unwrap();
 
