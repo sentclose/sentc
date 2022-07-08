@@ -211,7 +211,7 @@ mod test
 	}
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_user() -> (KeyDataInt, UserPublicKeyData, UserVerifyKeyData)
+	pub(crate) fn create_user() -> (KeyData, UserPublicKeyData, UserVerifyKeyData)
 	{
 		let password = "12345";
 
@@ -239,11 +239,12 @@ mod test
 		#[cfg(feature = "rust")]
 		let done_login = done_login(&master_key_encryption_key, &server_output).unwrap();
 
+		#[cfg(feature = "rust")]
 		(done_login, user_public_key_data, user_verify_key_data)
 	}
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &KeyDataInt) -> GroupOutData
+	pub(crate) fn create_group(user: &KeyData) -> GroupOutData
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -268,6 +269,83 @@ mod test
 
 		#[cfg(feature = "rust")]
 		get_group_data(&user.private_key, &group_server_output).unwrap()
+	}
+
+	#[cfg(not(feature = "rust"))]
+	pub(crate) fn create_user() -> (KeyData, UserPublicKeyData, UserVerifyKeyData)
+	{
+		let password = "12345";
+
+		let out_string = register(password);
+
+		let out = RegisterData::from_string(out_string.as_bytes()).unwrap();
+		let server_output = simulate_server_prepare_login(&out.derived);
+		let server_output_string = server_output.to_string().unwrap();
+		#[cfg(not(feature = "rust"))]
+		let prepare_login_string = prepare_login(password, server_output_string.as_str());
+
+		let PrepareLoginData {
+			master_key_encryption_key,
+			..
+		} = PrepareLoginData::from_string(prepare_login_string.as_bytes()).unwrap();
+
+		let user_public_key_data = UserPublicKeyData {
+			public_key_pem: out.derived.public_key.to_string(),
+			public_key_alg: out.derived.keypair_encrypt_alg.to_string(),
+			public_key_id: "abc".to_string(),
+		};
+
+		let user_verify_key_data = UserVerifyKeyData {
+			verify_key_pem: out.derived.verify_key.to_string(),
+			verify_key_alg: out.derived.keypair_sign_alg.to_string(),
+			verify_key_id: "dfg".to_string(),
+		};
+
+		let server_output = simulate_server_done_login(out);
+
+		#[cfg(not(feature = "rust"))]
+		let done_login_string = done_login(
+			master_key_encryption_key.to_string().unwrap().as_str(),
+			server_output.to_string().unwrap().as_str(),
+		);
+
+		let done_login = KeyData::from_string(done_login_string.as_bytes()).unwrap();
+
+		#[cfg(not(feature = "rust"))]
+		(done_login, user_public_key_data, user_verify_key_data)
+	}
+
+	#[cfg(not(feature = "rust"))]
+	pub(crate) fn create_group(user: &KeyData) -> GroupOutData
+	{
+		#[cfg(not(feature = "rust"))]
+		let group = prepare_create(user.public_key.to_string().unwrap().as_str());
+		let group = CreateData::from_string(group.as_bytes()).unwrap();
+
+		let group_server_output = GroupKeyServerOutput {
+			encrypted_group_key: group.encrypted_group_key,
+			group_key_alg: group.group_key_alg,
+			group_key_id: "123".to_string(),
+			encrypted_private_group_key: group.encrypted_private_group_key,
+			public_group_key: group.public_group_key,
+			keypair_encrypt_alg: group.keypair_encrypt_alg,
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+		};
+
+		let group_server_output = GroupServerData {
+			group_id: "123".to_string(),
+			keys: vec![group_server_output],
+			keys_page: 0,
+		};
+
+		#[cfg(not(feature = "rust"))]
+		let group_data_string = get_group_data(
+			user.private_key.to_string().unwrap().as_str(),
+			group_server_output.to_string().unwrap().as_str(),
+		);
+
+		GroupOutData::from_string(group_data_string.as_bytes()).unwrap()
 	}
 
 	#[test]

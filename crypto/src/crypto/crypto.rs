@@ -183,3 +183,91 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 
 	Ok(decrypted)
 }
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+	use crate::test::{create_group, create_user};
+
+	#[test]
+	fn test_encrypt_decrypt_sym_raw()
+	{
+		let (user, _public_key, _verify_key) = create_user();
+		let group = create_group(&user);
+		let group_key = &group.keys[0].group_key;
+
+		let text = "123*+^êéèüöß";
+
+		let (head, encrypted) = encrypt_raw_symmetric(group_key.to_string().unwrap().as_str(), text.as_bytes(), "").unwrap();
+
+		let decrypted = decrypt_raw_symmetric(group_key.to_string().unwrap().as_str(), &encrypted, &head, "").unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_sym_raw_with_sig()
+	{
+		let (user, _public_key, verify_key) = create_user();
+
+		let group = create_group(&user);
+		let group_key = &group.keys[0].group_key;
+
+		let text = "123*+^êéèüöß";
+
+		let (head, encrypted) = encrypt_raw_symmetric(
+			group_key.to_string().unwrap().as_str(),
+			text.as_bytes(),
+			user.sign_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		let decrypted = decrypt_raw_symmetric(
+			group_key.to_string().unwrap().as_str(),
+			&encrypted,
+			&head,
+			verify_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_asym_raw()
+	{
+		let text = "123*+^êéèüöß";
+		let (user, public_key, _verify_key) = create_user();
+
+		let (head, encrypted) = encrypt_raw_asymmetric(public_key.to_string().unwrap().as_str(), text.as_bytes(), "").unwrap();
+
+		let decrypted = decrypt_raw_asymmetric(user.private_key.to_string().unwrap().as_str(), &encrypted, &head, "").unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_asym_raw_with_sig()
+	{
+		let text = "123*+^êéèüöß";
+		let (user, public_key, verify_key) = create_user();
+
+		let (head, encrypted) = encrypt_raw_asymmetric(
+			public_key.to_string().unwrap().as_str(),
+			text.as_bytes(),
+			user.sign_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		let decrypted = decrypt_raw_asymmetric(
+			user.private_key.to_string().unwrap().as_str(),
+			&encrypted,
+			&head,
+			verify_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+}
