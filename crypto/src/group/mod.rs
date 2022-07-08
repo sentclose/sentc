@@ -6,7 +6,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::group::{
+use sentc_crypto_common::group::{
 	CreateData,
 	DoneKeyRotationData,
 	GroupKeyServerOutput,
@@ -15,15 +15,15 @@ use sendclose_crypto_common::group::{
 	KeyRotationData,
 	KeyRotationInput,
 };
-use sendclose_crypto_common::user::UserPublicKeyData;
-use sendclose_crypto_core::group::{
+use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_core::group::{
 	done_key_rotation as done_key_rotation_core,
 	get_group as get_group_core,
 	key_rotation as key_rotation_core,
 	prepare_create as prepare_create_core,
 	prepare_group_keys_for_new_member as prepare_group_keys_for_new_member_core,
 };
-use sendclose_crypto_core::{Error, Pk};
+use sentc_crypto_core::{Error, Pk};
 
 use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
 

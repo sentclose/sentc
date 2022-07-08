@@ -229,8 +229,8 @@ In both cases, all created group keys are needed for the new user to access.
 
 ```ignore
 //get your group keys
-use sendclose_crypto_core::group::prepare_group_keys_for_new_member;
-use sendclose_crypto_core::Pk;
+use sentc_crypto_core::group::prepare_group_keys_for_new_member;
+use sentc_crypto_core::Pk;
 
 let group_keys = vec![&group_key, &new_group_key, &new_group_key_1, &new_group_key_2];
 

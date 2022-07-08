@@ -1,8 +1,8 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
-use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
+use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
+use sentc_crypto_core::{DeriveMasterKeyForAuth, Error};
 
 use crate::user::{
 	change_password_internally,
@@ -55,8 +55,8 @@ mod test
 {
 	extern crate std;
 
-	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
-	use sendclose_crypto_core::Sk;
+	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
+	use sentc_crypto_core::Sk;
 
 	use super::*;
 	use crate::test::{simulate_server_done_login, simulate_server_prepare_login};

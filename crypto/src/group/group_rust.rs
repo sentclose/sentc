@@ -1,9 +1,9 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
-use sendclose_crypto_common::user::UserPublicKeyData;
-use sendclose_crypto_core::Error;
+use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_core::Error;
 
 use crate::group::{
 	done_key_rotation_internally,
@@ -71,7 +71,7 @@ mod test
 	use alloc::string::ToString;
 	use alloc::vec;
 
-	use sendclose_crypto_common::group::CreateData;
+	use sentc_crypto_common::group::CreateData;
 
 	use super::*;
 	use crate::test::create_user;

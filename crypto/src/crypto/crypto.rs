@@ -1,9 +1,9 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::crypto::EncryptedHead;
-use sendclose_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sendclose_crypto_core::Error;
+use sentc_crypto_common::crypto::EncryptedHead;
+use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_core::Error;
 
 use crate::crypto::{
 	decrypt_raw_asymmetric_internally,

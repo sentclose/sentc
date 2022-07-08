@@ -1,7 +1,7 @@
 use alloc::format;
 use alloc::string::String;
 
-use sendclose_crypto_core::Error;
+use sentc_crypto_core::Error;
 
 pub fn err_to_msg(error: Error) -> String
 {

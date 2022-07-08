@@ -2,8 +2,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
-use sendclose_crypto_core::{DeriveMasterKeyForAuth, Error};
+use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
+use sentc_crypto_core::{DeriveMasterKeyForAuth, Error};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
@@ -229,7 +229,7 @@ mod test
 {
 	extern crate std;
 
-	use sendclose_crypto_common::user::{ChangePasswordData, RegisterData};
+	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
 
 	use super::*;
 	use crate::test::{simulate_server_done_login_as_string, simulate_server_prepare_login};
