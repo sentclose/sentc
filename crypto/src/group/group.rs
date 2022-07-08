@@ -1,7 +1,8 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupNewMemberPublicKeyData, GroupServerData, KeyRotationInput};
+use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sendclose_crypto_common::user::UserPublicKeyData;
 use sendclose_crypto_core::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
@@ -181,7 +182,7 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> String
 
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &[String]) -> String
 {
-	let requester_public_key_data = match GroupNewMemberPublicKeyData::from_string(requester_public_key_data.as_bytes()) {
+	let requester_public_key_data = match UserPublicKeyData::from_string(requester_public_key_data.as_bytes()) {
 		Ok(v) => v,
 		Err(_e) => return err_to_msg(Error::JsonParseFailed),
 	};

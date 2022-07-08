@@ -1,7 +1,8 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupNewMemberPublicKeyData, GroupServerData, KeyRotationInput};
+use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sendclose_crypto_common::user::UserPublicKeyData;
 use sendclose_crypto_core::Error;
 
 use crate::group::{
@@ -59,10 +60,7 @@ pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &GroupServe
 	})
 }
 
-pub fn prepare_group_keys_for_new_member(
-	requester_public_key_data: &GroupNewMemberPublicKeyData,
-	group_keys: &[&SymKeyFormat],
-) -> Result<String, Error>
+pub fn prepare_group_keys_for_new_member(requester_public_key_data: &UserPublicKeyData, group_keys: &[&SymKeyFormat]) -> Result<String, Error>
 {
 	prepare_group_keys_for_new_member_internally(requester_public_key_data, group_keys)
 }

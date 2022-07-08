@@ -104,6 +104,48 @@ impl ResetPasswordData
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct UserPublicKeyData
+{
+	pub public_key_pem: String,
+	pub public_key_alg: String,
+	pub public_key_id: String,
+}
+
+impl UserPublicKeyData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UserVerifyKeyData
+{
+	pub verify_key_pem: String,
+	pub verify_key_alg: String,
+	pub verify_key_id: String,
+}
+
+impl UserVerifyKeyData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct PrepareLoginSaltServerOutput
 {
 	pub salt_string: String,

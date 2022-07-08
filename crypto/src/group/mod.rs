@@ -12,10 +12,10 @@ use sendclose_crypto_common::group::{
 	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
-	GroupNewMemberPublicKeyData,
 	KeyRotationData,
 	KeyRotationInput,
 };
+use sendclose_crypto_common::user::UserPublicKeyData;
 use sendclose_crypto_core::group::{
 	done_key_rotation as done_key_rotation_core,
 	get_group as get_group_core,
@@ -23,7 +23,7 @@ use sendclose_crypto_core::group::{
 	prepare_create as prepare_create_core,
 	prepare_group_keys_for_new_member as prepare_group_keys_for_new_member_core,
 };
-use sendclose_crypto_core::Error;
+use sendclose_crypto_core::{Error, Pk};
 
 use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
 
@@ -186,7 +186,7 @@ fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &
 }
 
 fn prepare_group_keys_for_new_member_internally(
-	requester_public_key_data: &GroupNewMemberPublicKeyData,
+	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormatInt],
 ) -> Result<String, Error>
 {
@@ -195,6 +195,15 @@ fn prepare_group_keys_for_new_member_internally(
 		requester_public_key_data.public_key_alg.as_str(),
 	)?;
 
+	prepare_group_keys_for_new_member_internally_with_public_key(&public_key, requester_public_key_data.public_key_id.as_str(), group_keys)
+}
+
+pub(crate) fn prepare_group_keys_for_new_member_internally_with_public_key(
+	public_key: &Pk,
+	public_key_id: &str,
+	group_keys: &[&SymKeyFormatInt],
+) -> Result<String, Error>
+{
 	//split group keys and their ids
 	let mut split_group_keys = Vec::with_capacity(group_keys.len());
 	let mut split_group_ids = Vec::with_capacity(group_keys.len());
@@ -205,7 +214,7 @@ fn prepare_group_keys_for_new_member_internally(
 	}
 
 	//get all the group keys from the server and use get group for all (if not already on the device)
-	let out = prepare_group_keys_for_new_member_core(&public_key, &split_group_keys)?;
+	let out = prepare_group_keys_for_new_member_core(public_key, &split_group_keys)?;
 
 	//transform this vec to the server input by encode each encrypted key to base64
 	let mut encrypted_group_keys: Vec<GroupKeysForNewMember> = Vec::with_capacity(out.len());
@@ -219,8 +228,8 @@ fn prepare_group_keys_for_new_member_internally(
 		encrypted_group_keys.push(GroupKeysForNewMember {
 			encrypted_group_key,
 			alg: key_out.alg.to_string(),
-			user_public_key_id: requester_public_key_data.public_key_id.to_string(),
-			key_id,
+			user_public_key_id: public_key_id.to_string(),
+			key_id, //support multiple groups at once (important for user key update)
 		});
 
 		i += 1;
