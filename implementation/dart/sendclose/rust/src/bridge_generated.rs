@@ -45,12 +45,7 @@ pub extern "C" fn wire_register(port_: i64, password: *mut wire_uint_8_list) {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_prepare_login(
-	port_: i64,
-	password: *mut wire_uint_8_list,
-	salt_string: *mut wire_uint_8_list,
-	derived_encryption_key_alg: *mut wire_uint_8_list,
-) {
+pub extern "C" fn wire_prepare_login(port_: i64, password: *mut wire_uint_8_list, server_output: *mut wire_uint_8_list) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
 			debug_name: "prepare_login",
@@ -59,9 +54,8 @@ pub extern "C" fn wire_prepare_login(
 		},
 		move || {
 			let api_password = password.wire2api();
-			let api_salt_string = salt_string.wire2api();
-			let api_derived_encryption_key_alg = derived_encryption_key_alg.wire2api();
-			move |task_callback| Ok(prepare_login(api_password, api_salt_string, api_derived_encryption_key_alg))
+			let api_server_output = server_output.wire2api();
+			move |task_callback| Ok(prepare_login(api_password, api_server_output))
 		},
 	)
 }

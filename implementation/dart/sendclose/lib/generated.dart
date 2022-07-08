@@ -21,10 +21,7 @@ abstract class SendcloseFlutter {
   FlutterRustBridgeTaskConstMeta get kRegisterConstMeta;
 
   Future<String> prepareLogin(
-      {required String password,
-      required String saltString,
-      required String derivedEncryptionKeyAlg,
-      dynamic hint});
+      {required String password, required String serverOutput, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kPrepareLoginConstMeta;
 
@@ -76,25 +73,21 @@ class SendcloseFlutterImpl extends FlutterRustBridgeBase<SendcloseFlutterWire>
 
   Future<String> prepareLogin(
           {required String password,
-          required String saltString,
-          required String derivedEncryptionKeyAlg,
+          required String serverOutput,
           dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
         callFfi: (port_) => inner.wire_prepare_login(
-            port_,
-            _api2wire_String(password),
-            _api2wire_String(saltString),
-            _api2wire_String(derivedEncryptionKeyAlg)),
+            port_, _api2wire_String(password), _api2wire_String(serverOutput)),
         parseSuccessData: _wire2api_String,
         constMeta: kPrepareLoginConstMeta,
-        argValues: [password, saltString, derivedEncryptionKeyAlg],
+        argValues: [password, serverOutput],
         hint: hint,
       ));
 
   FlutterRustBridgeTaskConstMeta get kPrepareLoginConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "prepare_login",
-        argNames: ["password", "saltString", "derivedEncryptionKeyAlg"],
+        argNames: ["password", "serverOutput"],
       );
 
   Future<String> doneLogin(
@@ -206,27 +199,22 @@ class SendcloseFlutterWire implements FlutterRustBridgeWireBase {
   void wire_prepare_login(
     int port_,
     ffi.Pointer<wire_uint_8_list> password,
-    ffi.Pointer<wire_uint_8_list> salt_string,
-    ffi.Pointer<wire_uint_8_list> derived_encryption_key_alg,
+    ffi.Pointer<wire_uint_8_list> server_output,
   ) {
     return _wire_prepare_login(
       port_,
       password,
-      salt_string,
-      derived_encryption_key_alg,
+      server_output,
     );
   }
 
   late final _wire_prepare_loginPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(
-              ffi.Int64,
-              ffi.Pointer<wire_uint_8_list>,
-              ffi.Pointer<wire_uint_8_list>,
+          ffi.Void Function(ffi.Int64, ffi.Pointer<wire_uint_8_list>,
               ffi.Pointer<wire_uint_8_list>)>>('wire_prepare_login');
   late final _wire_prepare_login = _wire_prepare_loginPtr.asFunction<
-      void Function(int, ffi.Pointer<wire_uint_8_list>,
-          ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
+      void Function(
+          int, ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
 
   void wire_done_login(
     int port_,
