@@ -4,7 +4,6 @@ members = [
     "crypto_core",
     "crypto_common",
     "implementation/js/sentc_wasm",
-    "implementation/dart/sendclose/rust",
     "implementation/dart/sentc/rust"
 ]
 
