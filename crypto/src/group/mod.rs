@@ -57,6 +57,7 @@ pub struct DoneGettingGroupKeysOutput
 
 fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, Error>
 {
+	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
 	let out = prepare_create_core(&creators_public_key.key)?;
 
 	//1. encode the values to base64 for the server
