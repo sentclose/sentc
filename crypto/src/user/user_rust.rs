@@ -40,11 +40,8 @@ pub fn change_password(
 	change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg)
 }
 
-//the feature marco here because of ide err, because the format would not match when rust feature is disabled.
-#[cfg(feature = "rust")]
 pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, Error>
 {
-	#[cfg(feature = "rust")]
 	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
 }
 
