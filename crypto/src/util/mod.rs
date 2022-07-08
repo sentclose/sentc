@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
-use sendclose_crypto_core::{
+use sentc_crypto_core::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	Error,

@@ -6,10 +6,10 @@ mod crypto_rust;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::crypto::{EncryptedHead, SignHead};
-use sendclose_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sendclose_crypto_core::crypto::{decrypt_asymmetric, decrypt_symmetric, encrypt_asymmetric, encrypt_symmetric, sign, split_sig_and_data, verify};
-use sendclose_crypto_core::{Error, SignK, ED25519_OUTPUT};
+use sentc_crypto_common::crypto::{EncryptedHead, SignHead};
+use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_core::crypto::{decrypt_asymmetric, decrypt_symmetric, encrypt_asymmetric, encrypt_symmetric, sign, split_sig_and_data, verify};
+use sentc_crypto_core::{Error, SignK, ED25519_OUTPUT};
 
 #[cfg(not(feature = "rust"))]
 pub use self::crypto::{decrypt_raw_asymmetric, decrypt_raw_symmetric, encrypt_raw_asymmetric, encrypt_raw_symmetric};

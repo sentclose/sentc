@@ -12,9 +12,9 @@ use alloc::format;
 use alloc::string::{String, ToString};
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
+use sentc_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
 #[cfg(feature = "rust")]
-use sendclose_crypto_core::Sk;
+use sentc_crypto_core::Sk;
 
 pub use self::error::err_to_msg;
 pub use self::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
@@ -41,7 +41,7 @@ pub fn register_test() -> String
 	//normally the salt gets calc by the api
 	let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
 
-	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
+	let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
 	let server_output = PrepareLoginSaltServerOutput {
@@ -96,7 +96,7 @@ pub fn register_test() -> String
 	//normally the salt gets calc by the api
 	let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
 
-	let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
+	let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
 	let server_output = PrepareLoginSaltServerOutput {
@@ -153,8 +153,8 @@ mod test
 	use alloc::vec;
 
 	use base64ct::{Base64, Encoding};
-	use sendclose_crypto_common::group::{CreateData, GroupKeyServerOutput, GroupServerData};
-	use sendclose_crypto_common::user::{
+	use sentc_crypto_common::group::{CreateData, GroupKeyServerOutput, GroupServerData};
+	use sentc_crypto_common::user::{
 		DoneLoginServerKeysOutput,
 		KeyDerivedData,
 		PrepareLoginSaltServerOutput,
@@ -166,6 +166,7 @@ mod test
 	use super::*;
 	use crate::group::{get_group_data, prepare_create, GroupOutData};
 	use crate::user::{done_login, prepare_login, register};
+	#[cfg(feature = "rust")]
 	use crate::util::KeyDataInt;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> PrepareLoginSaltServerOutput
@@ -173,7 +174,7 @@ mod test
 		//and now try to login
 		//normally the salt gets calc by the api
 		let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
-		let salt_from_rand_value = sendclose_crypto_core::generate_salt(client_random_value);
+		let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
 		let salt_string = Base64::encode_string(&salt_from_rand_value);
 
 		PrepareLoginSaltServerOutput {

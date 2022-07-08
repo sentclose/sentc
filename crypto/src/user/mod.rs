@@ -9,7 +9,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_common::user::{
+use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginServerKeysOutput,
 	KeyDerivedData,
@@ -19,14 +19,14 @@ use sendclose_crypto_common::user::{
 	RegisterData,
 	ResetPasswordData,
 };
-use sendclose_crypto_core::user::{
+use sentc_crypto_core::user::{
 	change_password as change_password_core,
 	done_login as done_login_core,
 	password_reset as password_reset_core,
 	prepare_login as prepare_login_core,
 	register as register_core,
 };
-use sendclose_crypto_core::{generate_salt, DeriveMasterKeyForAuth, Error};
+use sentc_crypto_core::{generate_salt, DeriveMasterKeyForAuth, Error};
 
 use crate::util::{
 	client_random_value_from_string,

@@ -1,5 +1,5 @@
 [package]
-name = "sendclose-crypto-common"
+name = "sentc-crypto-common"
 version = "0.1.0"
 edition = "2021"
 

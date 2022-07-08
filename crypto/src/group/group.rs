@@ -1,9 +1,9 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sendclose_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
-use sendclose_crypto_common::user::UserPublicKeyData;
-use sendclose_crypto_core::Error;
+use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_core::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 

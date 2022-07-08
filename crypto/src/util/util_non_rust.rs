@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sendclose_crypto_core::{Error, Pk, SignK, Sk, SymKey, VerifyK};
+use sentc_crypto_core::{Error, Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, to_string};
 
