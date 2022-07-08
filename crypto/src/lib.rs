@@ -203,6 +203,7 @@ mod test
 		simulate_server_done_login(data).to_string().unwrap()
 	}
 
+	#[cfg(feature = "rust")]
 	pub(crate) fn create_user() -> KeyDataInt
 	{
 		let password = "12345";
@@ -211,15 +212,19 @@ mod test
 
 		let out = RegisterData::from_string(out.as_bytes()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
+		#[cfg(feature = "rust")]
 		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
+		#[cfg(feature = "rust")]
 		done_login(&master_key_encryption_key, &server_output).unwrap()
 	}
 
+	#[cfg(feature = "rust")]
 	pub(crate) fn create_group(user: &KeyDataInt) -> GroupOutData
 	{
+		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
 		let group = CreateData::from_string(group.as_bytes()).unwrap();
 
@@ -240,6 +245,7 @@ mod test
 			keys_page: 0,
 		};
 
+		#[cfg(feature = "rust")]
 		get_group_data(&user.private_key, &group_server_output).unwrap()
 	}
 
