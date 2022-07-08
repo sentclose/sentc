@@ -12,7 +12,7 @@ use sendclose_crypto_core::crypto::{decrypt_asymmetric, decrypt_symmetric, encry
 use sendclose_crypto_core::{Error, SignK, ED25519_OUTPUT};
 
 #[cfg(not(feature = "rust"))]
-pub use self::crypto::{decrypt_raw_symmetric, encrypt_raw_symmetric};
+pub use self::crypto::{decrypt_raw_asymmetric, decrypt_raw_symmetric, encrypt_raw_asymmetric, encrypt_raw_symmetric};
 #[cfg(feature = "rust")]
 pub use self::crypto_rust::{decrypt_raw_asymmetric, decrypt_raw_symmetric, encrypt_raw_asymmetric, encrypt_raw_symmetric};
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
