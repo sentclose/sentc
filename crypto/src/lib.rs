@@ -154,7 +154,14 @@ mod test
 
 	use base64ct::{Base64, Encoding};
 	use sendclose_crypto_common::group::{CreateData, GroupKeyServerOutput, GroupServerData};
-	use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, KeyDerivedData, PrepareLoginSaltServerOutput, RegisterData};
+	use sendclose_crypto_common::user::{
+		DoneLoginServerKeysOutput,
+		KeyDerivedData,
+		PrepareLoginSaltServerOutput,
+		RegisterData,
+		UserPublicKeyData,
+		UserVerifyKeyData,
+	};
 
 	use super::*;
 	use crate::group::{get_group_data, prepare_create, GroupOutData};
@@ -204,21 +211,35 @@ mod test
 	}
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_user() -> KeyDataInt
+	pub(crate) fn create_user() -> (KeyDataInt, UserPublicKeyData, UserVerifyKeyData)
 	{
 		let password = "12345";
 
-		let out = register(password).unwrap();
+		let out_string = register(password).unwrap();
 
-		let out = RegisterData::from_string(out.as_bytes()).unwrap();
+		let out = RegisterData::from_string(out_string.as_bytes()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
 		#[cfg(feature = "rust")]
 		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
 
+		let user_public_key_data = UserPublicKeyData {
+			public_key_pem: out.derived.public_key.to_string(),
+			public_key_alg: out.derived.keypair_encrypt_alg.to_string(),
+			public_key_id: "abc".to_string(),
+		};
+
+		let user_verify_key_data = UserVerifyKeyData {
+			verify_key_pem: out.derived.verify_key.to_string(),
+			verify_key_alg: out.derived.keypair_sign_alg.to_string(),
+			verify_key_id: "dfg".to_string(),
+		};
+
 		let server_output = simulate_server_done_login(out);
 
 		#[cfg(feature = "rust")]
-		done_login(&master_key_encryption_key, &server_output).unwrap()
+		let done_login = done_login(&master_key_encryption_key, &server_output).unwrap();
+
+		(done_login, user_public_key_data, user_verify_key_data)
 	}
 
 	#[cfg(feature = "rust")]
@@ -255,189 +276,3 @@ mod test
 		register_test();
 	}
 }
-
-/*
-pub fn aes() -> String
-{
-	//aes
-	aes_intern()
-}
-
-fn aes_intern() -> String
-{
-	let test = "plaintext message";
-	let test2 = "plaintext message2";
-
-	let res = alg::sym::aes_gcm::generate_and_encrypt(test.as_ref());
-
-	let (output, encrypted) = match res {
-		Err(e) => return format!("Error for encrypt test 1: {:?}", e),
-		Ok(v) => v,
-	};
-
-	let res = alg::sym::aes_gcm::encrypt(&output.key, test2.as_ref());
-
-	let encrypted2 = match res {
-		Err(e) => return format!("Error for encrypt test 2: {:?}", e),
-		Ok(v) => v,
-	};
-
-	//decrypt
-	let res = alg::sym::aes_gcm::decrypt(&output.key, &encrypted);
-
-	let decrypted = match res {
-		Err(e) => return format!("Error for decrypt test 1: {:?}", e),
-		Ok(v) => v,
-	};
-
-	let res = alg::sym::aes_gcm::decrypt(&output.key, &encrypted2);
-
-	let decrypted2 = match res {
-		Err(e) => return format!("Error for decrypt test 2: {:?}", e),
-		Ok(v) => v,
-	};
-
-	assert_eq!(&decrypted, b"plaintext message");
-	assert_eq!(&decrypted2, b"plaintext message2");
-
-	let one = std::str::from_utf8(&decrypted).unwrap().to_owned();
-	let two = std::str::from_utf8(&decrypted2).unwrap();
-
-	one + " " + two
-}
-
-pub fn ecdh() -> String
-{
-	// Alice
-	//let (alice_secret, alice_pk) = alg::asym::ecies::generate_static_keypair();
-
-	// Bob
-	let bob_out = alg::asym::ecies::generate_static_keypair();
-
-	let bob_secret = bob_out.sk;
-	let bob_pk = bob_out.pk;
-
-	//Alice create a msg for Bob's public key
-	let alice_msg = "Hello Bob";
-	let alice_encrypted = alg::asym::ecies::encrypt(&bob_pk, alice_msg.as_ref()).unwrap();
-
-	//Bob decrypt it with his own private key
-	let bob_decrypt = alg::asym::ecies::decrypt(&bob_secret, &alice_encrypted).unwrap();
-	let bob_msg = std::str::from_utf8(&bob_decrypt).unwrap();
-
-	assert_eq!(bob_msg, alice_msg);
-
-	alice_msg.to_string() + " " + bob_msg
-}
-
-pub fn argon() -> String
-{
-	let master_key = alg::sym::aes_gcm::generate_key().unwrap();
-
-	let key = match master_key.key {
-		SymKey::Aes(k) => k,
-	};
-
-	let out = alg::pw_hash::argon2::derived_keys_from_password(b"abc", &key).unwrap();
-
-	let encrypted_master_key = out.master_key_info.encrypted_master_key;
-
-	Base64::encode_string(&encrypted_master_key)
-}
-
-pub fn argon_pw_encrypt() -> String
-{
-	let test = "plaintext message";
-
-	//encrypt a value with a password, in prod this might be the key of the content
-	let (aes_key_for_encrypt, salt) = alg::pw_hash::argon2::password_to_encrypt(b"my fancy password").unwrap();
-
-	let encrypted = alg::sym::aes_gcm::encrypt_with_generated_key(&aes_key_for_encrypt, test.as_ref()).unwrap();
-
-	//decrypt a value with password
-	let aes_key_for_decrypt = alg::pw_hash::argon2::password_to_decrypt(b"my fancy password", &salt).unwrap();
-
-	let decrypted = alg::sym::aes_gcm::decrypt_with_generated_key(&aes_key_for_decrypt, &encrypted).unwrap();
-
-	let str = std::str::from_utf8(&decrypted).unwrap();
-
-	assert_eq!(str, test);
-
-	str.to_owned()
-}
-
-pub fn sign() -> String
-{
-	let test = "plaintext message";
-
-	let out = alg::sign::ed25519::generate_key_pair();
-
-	let out = match out {
-		Err(_e) => return String::from("error"),
-		Ok(o) => o,
-	};
-
-	let data_with_sig = alg::sign::ed25519::sign(&out.sign_key, test.as_bytes()).unwrap();
-
-	let check = alg::sign::ed25519::verify(&out.verify_key, &data_with_sig).unwrap();
-
-	assert_eq!(check, true);
-
-	format!("check was: {}", check)
-}
-
-
-#[cfg(test)]
-mod test
-{
-	use super::*;
-
-	#[test]
-	fn test_aes()
-	{
-		let str = aes();
-
-		assert_eq!(str, "plaintext message plaintext message2");
-	}
-
-	#[test]
-	fn test_ecdh()
-	{
-		let str = ecdh();
-
-		assert_eq!(str, "Hello Bob Hello Bob");
-	}
-
-	#[test]
-	fn test_register()
-	{
-		let str = argon();
-
-		assert_ne!(str.len(), 0);
-	}
-
-	#[test]
-	fn test_pw_encrypt()
-	{
-		let str = argon_pw_encrypt();
-
-		assert_eq!(str, "plaintext message");
-	}
-
-	#[test]
-	fn test_sign()
-	{
-		let str = sign();
-
-		assert_eq!(str, "check was: true");
-	}
-
-	#[test]
-	fn test_register_full()
-	{
-		let str = register_test();
-
-		assert_eq!(str, "register sign result was: true and decrypted text was: Hello world üöäéèßê°");
-	}
-}
-*/

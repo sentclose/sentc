@@ -80,7 +80,7 @@ mod test
 	fn test_create_group()
 	{
 		//create a rust dummy user
-		let user = create_user();
+		let (user, _public_key, _verify_key) = create_user();
 
 		let group = prepare_create(&user.public_key).unwrap();
 		let group = CreateData::from_string(group.as_bytes()).unwrap();
@@ -93,7 +93,7 @@ mod test
 	{
 		//test here only basic functions, if function panics. the key test is done in crypto mod
 
-		let user = create_user();
+		let (user, _public_key, _verify_key) = create_user();
 
 		let group = prepare_create(&user.public_key).unwrap();
 		let group = CreateData::from_string(group.as_bytes()).unwrap();

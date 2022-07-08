@@ -38,6 +38,7 @@ pub enum Error
 	ImportingSignKeyFailed,
 	ImportSymmetricKeyFailed,
 	ImportPublicKeyFailed,
+	ImportVerifyKeyFailed,
 
 	ExportingPublicKeyFailed,
 	ImportingKeyFromPemFailed,
