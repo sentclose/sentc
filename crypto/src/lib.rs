@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-mod crypto;
+pub mod crypto;
 mod error;
 pub mod group;
 pub mod user;
@@ -150,10 +150,16 @@ pub fn register_test() -> String
 #[cfg(test)]
 mod test
 {
+	use alloc::vec;
+
 	use base64ct::{Base64, Encoding};
+	use sendclose_crypto_common::group::{CreateData, GroupKeyServerOutput, GroupServerData};
 	use sendclose_crypto_common::user::{DoneLoginServerKeysOutput, KeyDerivedData, PrepareLoginSaltServerOutput, RegisterData};
 
 	use super::*;
+	use crate::group::{get_group_data, prepare_create, GroupOutData};
+	use crate::user::{done_login, prepare_login, register};
+	use crate::util::KeyDataInt;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> PrepareLoginSaltServerOutput
 	{
@@ -195,6 +201,46 @@ mod test
 	pub(crate) fn simulate_server_done_login_as_string(data: RegisterData) -> String
 	{
 		simulate_server_done_login(data).to_string().unwrap()
+	}
+
+	pub(crate) fn create_user() -> KeyDataInt
+	{
+		let password = "12345";
+
+		let out = register(password).unwrap();
+
+		let out = RegisterData::from_string(out.as_bytes()).unwrap();
+		let server_output = simulate_server_prepare_login(&out.derived);
+		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
+
+		let server_output = simulate_server_done_login(out);
+
+		done_login(&master_key_encryption_key, &server_output).unwrap()
+	}
+
+	pub(crate) fn create_group(user: &KeyDataInt) -> GroupOutData
+	{
+		let group = prepare_create(&user.public_key).unwrap();
+		let group = CreateData::from_string(group.as_bytes()).unwrap();
+
+		let group_server_output = GroupKeyServerOutput {
+			encrypted_group_key: group.encrypted_group_key,
+			group_key_alg: group.group_key_alg,
+			group_key_id: "123".to_string(),
+			encrypted_private_group_key: group.encrypted_private_group_key,
+			public_group_key: group.public_group_key,
+			keypair_encrypt_alg: group.keypair_encrypt_alg,
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+		};
+
+		let group_server_output = GroupServerData {
+			group_id: "123".to_string(),
+			keys: vec![group_server_output],
+			keys_page: 0,
+		};
+
+		get_group_data(&user.private_key, &group_server_output).unwrap()
 	}
 
 	#[test]
