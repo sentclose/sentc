@@ -8,6 +8,8 @@ use sendclose_crypto_common::crypto::{EncryptedHead, SignHead};
 use sendclose_crypto_core::crypto::{decrypt_symmetric, encrypt_symmetric, sign, split_sig_and_data, verify};
 use sendclose_crypto_core::{Error, SignK, ED25519_OUTPUT};
 
+#[cfg(feature = "rust")]
+pub use self::crypto_rust::{decrypt_raw_symmetric, encrypt_raw_symmetric};
 use crate::util::{SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 
 fn encrypt_raw_symmetric_internally(
