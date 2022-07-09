@@ -37,13 +37,14 @@ pub use self::alg::pw_hash::{
 	DeriveMasterKeyForAuth,
 	HashedAuthenticationKey,
 	MasterKeyInfo,
+	PasswordEncryptOutput,
+	PasswordEncryptSalt,
 };
 pub use self::alg::sign::ed25519::ED25519_OUTPUT;
 pub(crate) use self::alg::sign::SignOutput;
 pub use self::alg::sign::{SignK, VerifyK};
 pub use self::alg::sym::aes_gcm::AES_GCM_OUTPUT;
-pub use self::alg::sym::SymKey;
-pub(crate) use self::alg::sym::SymKeyOutput;
+pub use self::alg::sym::{SymKey, SymKeyOutput};
 pub use self::error::Error;
 
 pub fn generate_salt(client_random_value: ClientRandomValue) -> Vec<u8>

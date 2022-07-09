@@ -15,6 +15,8 @@ use crate::{
 	DeriveMasterKeyForAuth,
 	HashedAuthenticationKey,
 	MasterKeyInfo,
+	PasswordEncryptOutput,
+	PasswordEncryptSalt,
 	SymKey,
 };
 
@@ -76,9 +78,17 @@ pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENG
 	Ok(SymKey::Aes(decrypted_master_key))
 }
 
-pub(crate) fn password_to_encrypt(password: &[u8]) -> Result<([u8; 32], [u8; 16]), Error>
+pub(crate) fn password_to_encrypt(password: &[u8]) -> Result<(PasswordEncryptOutput, SymKey), Error>
 {
-	derived_single_key(password, &mut OsRng)
+	let (aes_key_for_encrypt, salt) = derived_single_key(password, &mut OsRng)?;
+
+	Ok((
+		PasswordEncryptOutput {
+			salt: PasswordEncryptSalt::Argon2(salt),
+			alg: ARGON_2_OUTPUT,
+		},
+		SymKey::Aes(aes_key_for_encrypt),
+	))
 }
 
 pub(crate) fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Error>
@@ -305,7 +315,11 @@ mod test
 		let test = "plaintext message";
 
 		//encrypt a value with a password, in prod this might be the key of the content
-		let (aes_key_for_encrypt, salt) = password_to_encrypt(b"my fancy password").unwrap();
+		let (salt, aes_key_for_encrypt) = password_to_encrypt(b"my fancy password").unwrap();
+
+		let (salt, aes_key_for_encrypt) = match (salt.salt, aes_key_for_encrypt) {
+			(PasswordEncryptSalt::Argon2(s), SymKey::Aes(k)) => (s, k),
+		};
 
 		let encrypted = alg::sym::aes_gcm::encrypt_with_generated_key(&aes_key_for_encrypt, test.as_ref()).unwrap();
 

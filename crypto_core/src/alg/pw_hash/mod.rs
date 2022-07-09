@@ -41,3 +41,14 @@ pub struct DeriveKeysForAuthOutput
 	pub master_key_encryption_key: DeriveMasterKeyForAuth,
 	pub auth_key: DeriveAuthKeyForAuth,
 }
+
+pub enum PasswordEncryptSalt
+{
+	Argon2([u8; 16]),
+}
+
+pub struct PasswordEncryptOutput
+{
+	pub salt: PasswordEncryptSalt,
+	pub alg: &'static str,
+}
