@@ -17,6 +17,7 @@ getrandom = { version = "0.2", features = ["js"] }
 
 # wasm dep
 wasm-bindgen = "0.2.74"
+js-sys = "0.3.58"
 
 # sha2 with non std
 sha2 = { version = "0.10", default-features = false }
