@@ -69,8 +69,10 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &UserPublicK
 mod test
 {
 	use alloc::string::ToString;
+	use alloc::vec;
 
-	use sentc_crypto_common::group::CreateData;
+	use sentc_crypto_common::group::{CreateData, GroupKeysForNewMemberServerInput};
+	use sentc_crypto_core::SymKey;
 
 	use super::*;
 	use crate::group::test_fn::create_group;
@@ -98,5 +100,66 @@ mod test
 		let data = create_group(&user);
 
 		assert_eq!(data.group_id, "123".to_string());
+	}
+
+	#[test]
+	fn test_prepare_group_keys_for_new_member()
+	{
+		let (user, _public_key, _verify_key) = create_user();
+		let (user1, public_key1, _verify_key1) = create_user();
+
+		let group_create = prepare_create(&user.public_key).unwrap();
+		let group_create = CreateData::from_string(group_create.as_bytes()).unwrap();
+
+		let group_server_output_user_0 = GroupKeyServerOutput {
+			encrypted_group_key: group_create.encrypted_group_key.to_string(),
+			group_key_alg: group_create.group_key_alg.to_string(),
+			group_key_id: "123".to_string(),
+			encrypted_private_group_key: group_create.encrypted_private_group_key.to_string(),
+			public_group_key: group_create.public_group_key.to_string(),
+			keypair_encrypt_alg: group_create.keypair_encrypt_alg.to_string(),
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+		};
+
+		let group_server_output_user_0 = GroupServerData {
+			group_id: "123".to_string(),
+			keys: vec![group_server_output_user_0],
+			keys_page: 0,
+		};
+
+		let group_data_user_0 = get_group_data(&user.private_key, &group_server_output_user_0).unwrap();
+
+		//prepare the keys for user 1
+		let out = prepare_group_keys_for_new_member(&public_key1, &[&group_data_user_0.keys[0].group_key]).unwrap();
+		let out = GroupKeysForNewMemberServerInput::from_string(out.as_bytes()).unwrap();
+		let out_group_1 = &out.0[0]; //this group only got one key
+
+		let group_server_output_user_1 = GroupKeyServerOutput {
+			encrypted_group_key: out_group_1.encrypted_group_key.to_string(),
+			group_key_alg: out_group_1.alg.to_string(),
+			group_key_id: out_group_1.key_id.to_string(),
+			encrypted_private_group_key: group_create.encrypted_private_group_key,
+			public_group_key: group_create.public_group_key,
+			keypair_encrypt_alg: group_create.keypair_encrypt_alg,
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+		};
+
+		let group_server_output_user_1 = GroupServerData {
+			group_id: "123".to_string(),
+			keys: vec![group_server_output_user_1],
+			keys_page: 0,
+		};
+
+		let group_data_user_1 = get_group_data(&user1.private_key, &group_server_output_user_1).unwrap();
+
+		assert_eq!(group_data_user_0.keys[0].group_key.key_id, group_data_user_1.keys[0].group_key.key_id);
+
+		match (&group_data_user_0.keys[0].group_key.key, &group_data_user_1.keys[0].group_key.key) {
+			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
+				assert_eq!(*k0, *k1);
+			},
+		}
 	}
 }

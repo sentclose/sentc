@@ -199,7 +199,7 @@ fn prepare_group_keys_for_new_member_internally(
 	prepare_group_keys_for_new_member_internally_with_public_key(&public_key, requester_public_key_data.public_key_id.as_str(), group_keys)
 }
 
-pub(crate) fn prepare_group_keys_for_new_member_internally_with_public_key(
+fn prepare_group_keys_for_new_member_internally_with_public_key(
 	public_key: &Pk,
 	public_key_id: &str,
 	group_keys: &[&SymKeyFormatInt],
