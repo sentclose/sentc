@@ -32,6 +32,7 @@ pub(crate) use self::util_non_rust::{
 	import_public_key,
 	import_sign_key,
 	import_sym_key,
+	import_sym_key_from_format,
 };
 #[cfg(not(feature = "rust"))]
 pub use self::util_non_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};

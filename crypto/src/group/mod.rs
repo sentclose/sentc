@@ -41,6 +41,7 @@ pub use self::group::{
 	prepare_create,
 	prepare_group_keys_for_new_member,
 	GroupKeyData,
+	GroupKeys,
 	GroupOutData,
 };
 #[cfg(feature = "rust")]

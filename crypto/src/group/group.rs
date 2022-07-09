@@ -22,6 +22,7 @@ use crate::util::{
 	import_private_key,
 	import_public_key,
 	import_sym_key,
+	import_sym_key_from_format,
 	PrivateKeyFormat,
 	PrivateKeyFormatInt,
 	PublicKeyFormat,
@@ -58,6 +59,22 @@ pub struct GroupOutData
 }
 
 impl GroupOutData
+{
+	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	{
+		from_slice::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GroupKeys(Vec<SymKeyFormat>);
+
+impl GroupKeys
 {
 	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
 	{
@@ -180,18 +197,23 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> String
 	}
 }
 
-pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &[String]) -> String
+pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str) -> String
 {
 	let requester_public_key_data = match UserPublicKeyData::from_string(requester_public_key_data.as_bytes()) {
 		Ok(v) => v,
 		Err(_e) => return err_to_msg(Error::JsonParseFailed),
 	};
 
+	let group_keys = match GroupKeys::from_string(group_keys.as_bytes()).map_err(|_| Error::JsonParseFailed) {
+		Ok(v) => v.0,
+		Err(e) => return err_to_msg(e),
+	};
+
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 
 	//split group key and id
 	for group_key in group_keys {
-		let key = match import_sym_key(group_key) {
+		let key = match import_sym_key_from_format(&group_key) {
 			Ok(v) => v,
 			Err(e) => return err_to_msg(e),
 		};
@@ -294,12 +316,12 @@ mod test
 			group_server_output_user_0.to_string().unwrap().as_str(),
 		);
 		let group_data_user_0 = GroupOutData::from_string(group_data_user_0.as_bytes()).unwrap();
+		let group_key_user_0 = group_data_user_0.keys[0].group_key.to_string().unwrap();
+
+		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0.as_bytes()).unwrap()]);
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(
-			public_key1.to_string().unwrap().as_str(),
-			&[group_data_user_0.keys[0].group_key.to_string().unwrap()],
-		);
+		let out = prepare_group_keys_for_new_member(public_key1.to_string().unwrap().as_str(), group_keys.to_string().unwrap().as_str());
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_bytes()).unwrap();
 		let out_group_1 = &out.0[0]; //this group only got one key
 
