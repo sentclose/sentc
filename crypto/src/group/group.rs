@@ -220,3 +220,41 @@ fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>)
 
 	split_group_keys
 }
+
+#[cfg(test)]
+mod test
+{
+	use alloc::string::ToString;
+
+	use sentc_crypto_common::group::CreateData;
+
+	use super::*;
+	use crate::group::test_fn::create_group;
+	use crate::user::test_fn::create_user;
+
+	#[test]
+	fn test_create_group()
+	{
+		//create a rust dummy user
+		let (user, _public_key, _verify_key) = create_user();
+
+		let group = prepare_create(&user.public_key.to_string().unwrap().as_str());
+		let group = CreateData::from_string(group.as_bytes()).unwrap();
+
+		let pk = import_public_key(user.public_key.to_string().unwrap().as_str()).unwrap();
+
+		assert_eq!(group.creator_public_key_id, pk.key_id);
+	}
+
+	#[test]
+	fn test_create_and_get_group()
+	{
+		//test here only basic functions, if function panics. the key test is done in crypto mod
+
+		let (user, _public_key, _verify_key) = create_user();
+
+		let data = create_group(&user);
+
+		assert_eq!(data.group_id, "123".to_string());
+	}
+}

@@ -188,7 +188,8 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 mod test
 {
 	use super::*;
-	use crate::test::{create_group, create_user};
+	use crate::group::test_fn::create_group;
+	use crate::user::test_fn::create_user;
 
 	#[test]
 	fn test_encrypt_decrypt_sym_raw()

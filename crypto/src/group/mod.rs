@@ -242,3 +242,75 @@ pub(crate) fn prepare_group_keys_for_new_member_internally_with_public_key(
 		.to_string()
 		.map_err(|_| Error::JsonToStringFailed)?)
 }
+
+#[cfg(test)]
+pub(crate) mod test_fn
+{
+	use alloc::vec;
+
+	use sentc_crypto_common::group::GroupServerData;
+
+	use super::*;
+	use crate::util::KeyData;
+
+	#[cfg(feature = "rust")]
+	pub(crate) fn create_group(user: &KeyData) -> GroupOutData
+	{
+		#[cfg(feature = "rust")]
+		let group = prepare_create(&user.public_key).unwrap();
+		let group = CreateData::from_string(group.as_bytes()).unwrap();
+
+		let group_server_output = GroupKeyServerOutput {
+			encrypted_group_key: group.encrypted_group_key,
+			group_key_alg: group.group_key_alg,
+			group_key_id: "123".to_string(),
+			encrypted_private_group_key: group.encrypted_private_group_key,
+			public_group_key: group.public_group_key,
+			keypair_encrypt_alg: group.keypair_encrypt_alg,
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+		};
+
+		let group_server_output = GroupServerData {
+			group_id: "123".to_string(),
+			keys: vec![group_server_output],
+			keys_page: 0,
+		};
+
+		#[cfg(feature = "rust")]
+		get_group_data(&user.private_key, &group_server_output).unwrap()
+	}
+
+	#[cfg(not(feature = "rust"))]
+	pub(crate) fn create_group(user: &KeyData) -> GroupOutData
+	{
+		#[cfg(not(feature = "rust"))]
+		let group = prepare_create(user.public_key.to_string().unwrap().as_str());
+		let group = CreateData::from_string(group.as_bytes()).unwrap();
+
+		let group_server_output = GroupKeyServerOutput {
+			encrypted_group_key: group.encrypted_group_key,
+			group_key_alg: group.group_key_alg,
+			group_key_id: "123".to_string(),
+			encrypted_private_group_key: group.encrypted_private_group_key,
+			public_group_key: group.public_group_key,
+			keypair_encrypt_alg: group.keypair_encrypt_alg,
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+		};
+
+		let group_server_output = GroupServerData {
+			group_id: "123".to_string(),
+			keys: vec![group_server_output],
+			keys_page: 0,
+		};
+
+		#[cfg(not(feature = "rust"))]
+		let group_data_string = get_group_data(
+			user.private_key.to_string().unwrap().as_str(),
+			group_server_output.to_string().unwrap().as_str(),
+		);
+
+		GroupOutData::from_string(group_data_string.as_bytes()).unwrap()
+	}
+}

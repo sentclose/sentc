@@ -69,12 +69,12 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &UserPublicK
 mod test
 {
 	use alloc::string::ToString;
-	use alloc::vec;
 
 	use sentc_crypto_common::group::CreateData;
 
 	use super::*;
-	use crate::test::create_user;
+	use crate::group::test_fn::create_group;
+	use crate::user::test_fn::create_user;
 
 	#[test]
 	fn test_create_group()
@@ -95,27 +95,7 @@ mod test
 
 		let (user, _public_key, _verify_key) = create_user();
 
-		let group = prepare_create(&user.public_key).unwrap();
-		let group = CreateData::from_string(group.as_bytes()).unwrap();
-
-		let group_server_output = GroupKeyServerOutput {
-			encrypted_group_key: group.encrypted_group_key,
-			group_key_alg: group.group_key_alg,
-			group_key_id: "123".to_string(),
-			encrypted_private_group_key: group.encrypted_private_group_key,
-			public_group_key: group.public_group_key,
-			keypair_encrypt_alg: group.keypair_encrypt_alg,
-			key_pair_id: "123".to_string(),
-			user_public_key_id: "123".to_string(),
-		};
-
-		let group_server_output = GroupServerData {
-			group_id: "123".to_string(),
-			keys: vec![group_server_output],
-			keys_page: 0,
-		};
-
-		let data = get_group_data(&user.private_key, &group_server_output).unwrap();
+		let data = create_group(&user);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}

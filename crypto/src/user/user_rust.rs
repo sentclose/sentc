@@ -59,7 +59,7 @@ mod test
 	use sentc_crypto_core::Sk;
 
 	use super::*;
-	use crate::test::{simulate_server_done_login, simulate_server_prepare_login};
+	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
 
 	#[test]
 	fn test_register()

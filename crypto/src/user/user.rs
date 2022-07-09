@@ -232,7 +232,7 @@ mod test
 	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
 
 	use super::*;
-	use crate::test::{simulate_server_done_login_as_string, simulate_server_prepare_login};
+	use crate::user::test_fn::{simulate_server_done_login_as_string, simulate_server_prepare_login};
 	use crate::util::PrivateKeyFormat;
 
 	#[test]
