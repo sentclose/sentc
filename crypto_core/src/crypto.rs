@@ -2,10 +2,10 @@ use alloc::vec::Vec;
 
 use crate::{alg, Error, PasswordEncryptOutput, Pk, SignK, Sk, SymKey, SymKeyOutput, VerifyK};
 
-pub fn generate_and_encrypt_symmetric(data: &[u8]) -> Result<(SymKeyOutput, Vec<u8>), Error>
+pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 {
 	#[cfg(feature = "argon2_aes_ecies_ed25519")]
-	alg::sym::aes_gcm::generate_and_encrypt(data)
+	alg::sym::aes_gcm::generate_key()
 }
 
 pub fn encrypt_symmetric(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>

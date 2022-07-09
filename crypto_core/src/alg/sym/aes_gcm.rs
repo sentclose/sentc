@@ -24,16 +24,6 @@ pub(crate) fn generate_key() -> Result<SymKeyOutput, Error>
 	})
 }
 
-pub(crate) fn generate_and_encrypt(data: &[u8]) -> Result<(SymKeyOutput, Vec<u8>), Error>
-{
-	let key_out = generate_key()?;
-
-	match encrypt(&key_out.key, data) {
-		Ok(res) => Ok((key_out, res)),
-		Err(e) => Err(e),
-	}
-}
-
 pub(crate) fn encrypt(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
 {
 	let key = get_key_from_enum(key);
@@ -176,25 +166,6 @@ mod test
 		let encrypted = encrypt(&output.key, text.as_bytes()).unwrap();
 
 		let decrypted = decrypt(&output.key, &encrypted).unwrap();
-
-		assert_eq!(text.as_bytes(), decrypted);
-
-		let decrypted_text = from_utf8(&decrypted).unwrap();
-
-		assert_eq!(text, decrypted_text);
-	}
-
-	#[test]
-	fn test_generate_and_encrypt_decrypt()
-	{
-		let text = "Hello world üöäéèßê°";
-
-		let (out, encrypted) = generate_and_encrypt(text.as_bytes()).unwrap();
-
-		test_key_gen_output(&out);
-
-		//decrypt
-		let decrypted = decrypt(&out.key, &encrypted).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 
