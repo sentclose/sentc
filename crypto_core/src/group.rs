@@ -388,18 +388,10 @@ mod test
 		)
 		.unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			let previous_group_key = match &group_key {
-				SymKey::Aes(k) => k,
-			};
-
-			let new_key = match &new_group_key {
-				SymKey::Aes(k) => k,
-			};
-
-			//should not the same because this is a new group key
-			assert_ne!(previous_group_key, new_key);
+		match (&group_key, &new_group_key) {
+			(SymKey::Aes(previous_group_key), SymKey::Aes(new_key)) => {
+				assert_ne!(*previous_group_key, *new_key);
+			},
 		}
 
 		//do the server key rotation
@@ -431,22 +423,11 @@ mod test
 		)
 		.unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			let previous_group_key = match &group_key {
-				SymKey::Aes(k) => k,
-			};
-
-			let new_key = match &new_group_key {
-				SymKey::Aes(k) => k,
-			};
-
-			let new_key2 = match &new_group_key2 {
-				SymKey::Aes(k) => k,
-			};
-
-			assert_eq!(new_key, new_key2); //should be the same
-			assert_ne!(previous_group_key, new_key2); //should not the same because this is a new group key
+		match (&group_key, &new_group_key, &new_group_key2) {
+			(SymKey::Aes(previous_group_key), SymKey::Aes(new_key), SymKey::Aes(new_key2)) => {
+				assert_eq!(*new_key, *new_key2); //should be the same
+				assert_ne!(*previous_group_key, *new_key2); //should not the same because this is a new group key
+			},
 		}
 	}
 
@@ -516,18 +497,10 @@ mod test
 		)
 		.unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			//check if the keys are the same
-			let user_1_key_2 = match &new_group_key {
-				SymKey::Aes(k) => *k,
-			};
-
-			let user_2_key_2 = match new_user_group_key_2 {
-				SymKey::Aes(k) => k,
-			};
-
-			assert_eq!(user_1_key_2, user_2_key_2);
+		match (&new_group_key, &new_user_group_key_2) {
+			(SymKey::Aes(user_1_key_2), SymKey::Aes(user_2_key_2)) => {
+				assert_eq!(*user_1_key_2, *user_2_key_2);
+			},
 		}
 
 		let group_key_3 = &new_user_out[2];
@@ -541,17 +514,10 @@ mod test
 		)
 		.unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			let user_1_key_3 = match &new_group_key_1 {
-				SymKey::Aes(k) => *k,
-			};
-
-			let user_2_key_3 = match new_user_group_key_3 {
-				SymKey::Aes(k) => k,
-			};
-
-			assert_eq!(user_1_key_3, user_2_key_3);
+		match (&new_group_key_1, &new_user_group_key_3) {
+			(SymKey::Aes(user_1_key_3), SymKey::Aes(user_2_key_3)) => {
+				assert_eq!(*user_1_key_3, *user_2_key_3);
+			},
 		}
 	}
 }

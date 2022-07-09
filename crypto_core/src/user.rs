@@ -404,17 +404,10 @@ mod test
 		)
 		.unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			let client_random_value = match out.client_random_value {
-				ClientRandomValue::Argon2(v) => v,
-			};
-
-			let new_rand = match pw_change_out.client_random_value {
-				ClientRandomValue::Argon2(v) => v,
-			};
-
-			assert_ne!(client_random_value, new_rand);
+		match (&out.client_random_value, &pw_change_out.client_random_value) {
+			(ClientRandomValue::Argon2(client_random_value), ClientRandomValue::Argon2(new_rand)) => {
+				assert_ne!(*client_random_value, *new_rand);
+			},
 		}
 
 		//must be different because it is encrypted by a new password
@@ -431,25 +424,17 @@ mod test
 		let new_salt = generate_salt(pw_change_out.client_random_value);
 		let prep_login_new = prepare_login(new_password, &new_salt, pw_change_out.derived_alg).unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			let k = match &prep_login_old.master_key_encryption_key {
-				DeriveMasterKeyForAuth::Argon2(key) => key,
-			};
-			let old_master_key = pw_hash::argon2::get_master_key(k, &out.master_key_info.encrypted_master_key).unwrap();
-			let old_master_key = match old_master_key {
-				SymKey::Aes(k) => k,
-			};
+		match (&prep_login_old.master_key_encryption_key, &prep_login_new.master_key_encryption_key) {
+			(DeriveMasterKeyForAuth::Argon2(k1), DeriveMasterKeyForAuth::Argon2(k2)) => {
+				let old_master_key = pw_hash::argon2::get_master_key(k1, &out.master_key_info.encrypted_master_key).unwrap();
+				let new_master_key = pw_hash::argon2::get_master_key(k2, &pw_change_out.master_key_info.encrypted_master_key).unwrap();
 
-			let k = match &prep_login_new.master_key_encryption_key {
-				DeriveMasterKeyForAuth::Argon2(key) => key,
-			};
-			let new_master_key = pw_hash::argon2::get_master_key(k, &pw_change_out.master_key_info.encrypted_master_key).unwrap();
-			let new_master_key = match new_master_key {
-				SymKey::Aes(k) => k,
-			};
-
-			assert_eq!(old_master_key, new_master_key);
+				match (old_master_key, new_master_key) {
+					(SymKey::Aes(km1), SymKey::Aes(km2)) => {
+						assert_eq!(km1, km2);
+					},
+				}
+			},
 		}
 	}
 
@@ -500,17 +485,10 @@ mod test
 			password_reset_out.master_key_info.encrypted_master_key
 		);
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		{
-			let pk = match login_out.private_key {
-				Sk::Ecies(k) => k,
-			};
-
-			let pk2 = match login_out_pw_reset.private_key {
-				Sk::Ecies(k2) => k2,
-			};
-
-			assert_eq!(pk, pk2);
+		match (login_out.private_key, login_out_pw_reset.private_key) {
+			(Sk::Ecies(pk), Sk::Ecies(pk2)) => {
+				assert_eq!(pk, pk2);
+			},
 		}
 	}
 }
