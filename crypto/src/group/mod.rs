@@ -284,7 +284,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &KeyData) -> GroupOutData
+	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.to_string().unwrap().as_str());
@@ -313,6 +313,8 @@ pub(crate) mod test_fn
 			group_server_output.to_string().unwrap().as_str(),
 		);
 
-		GroupOutData::from_string(group_data_string.as_bytes()).unwrap()
+		let out = GroupOutData::from_string(group_data_string.as_bytes()).unwrap();
+
+		(out, group_server_output)
 	}
 }

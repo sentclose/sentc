@@ -255,7 +255,7 @@ mod test
 
 		let (user, _public_key, _verify_key) = create_user();
 
-		let data = create_group(&user);
+		let (data, _) = create_group(&user);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}

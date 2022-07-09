@@ -195,7 +195,7 @@ mod test
 	fn test_encrypt_decrypt_sym_raw()
 	{
 		let (user, _public_key, _verify_key) = create_user();
-		let group = create_group(&user);
+		let (group, _) = create_group(&user);
 		let group_key = &group.keys[0].group_key;
 
 		let text = "123*+^êéèüöß";
@@ -212,7 +212,7 @@ mod test
 	{
 		let (user, _public_key, verify_key) = create_user();
 
-		let group = create_group(&user);
+		let (group, _) = create_group(&user);
 		let group_key = &group.keys[0].group_key;
 
 		let text = "123*+^êéèüöß";
