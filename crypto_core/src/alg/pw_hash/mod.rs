@@ -44,7 +44,7 @@ pub struct DeriveKeysForAuthOutput
 
 pub enum PasswordEncryptSalt
 {
-	Argon2([u8; 16]),
+	Argon2([u8; 16]), //export salt as enum because we can't know the length for every alg
 }
 
 pub struct PasswordEncryptOutput

@@ -1,6 +1,12 @@
 use alloc::vec::Vec;
 
-use crate::{alg, Error, Pk, SignK, Sk, SymKey, VerifyK};
+use crate::{alg, Error, PasswordEncryptOutput, Pk, SignK, Sk, SymKey, SymKeyOutput, VerifyK};
+
+pub fn generate_and_encrypt_symmetric(data: &[u8]) -> Result<(SymKeyOutput, Vec<u8>), Error>
+{
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	alg::sym::aes_gcm::generate_and_encrypt(data)
+}
 
 pub fn encrypt_symmetric(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
 {
@@ -48,6 +54,24 @@ pub fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'
 {
 	match alg {
 		alg::sign::ed25519::ED25519_OUTPUT => alg::sign::ed25519::split_sig_and_data(data_with_sign),
+		_ => Err(Error::AlgNotFound),
+	}
+}
+
+pub fn prepare_password_encrypt(password: &str) -> Result<(PasswordEncryptOutput, SymKey), Error>
+{
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	alg::pw_hash::argon2::password_to_encrypt(password.as_bytes())
+}
+
+pub fn prepare_password_decrypt(password: &str, salt: &[u8], alg: &str) -> Result<SymKey, Error>
+{
+	match alg {
+		alg::pw_hash::argon2::ARGON_2_OUTPUT => {
+			let key = alg::pw_hash::argon2::password_to_decrypt(password.as_bytes(), salt)?;
+
+			Ok(SymKey::Aes(key))
+		},
 		_ => Err(Error::AlgNotFound),
 	}
 }
