@@ -254,7 +254,7 @@ pub(crate) mod test_fn
 	use crate::util::KeyData;
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &KeyData) -> GroupOutData
+	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -278,7 +278,9 @@ pub(crate) mod test_fn
 		};
 
 		#[cfg(feature = "rust")]
-		get_group_data(&user.private_key, &group_server_output).unwrap()
+		let out = get_group_data(&user.private_key, &group_server_output).unwrap();
+
+		(out, group_server_output)
 	}
 
 	#[cfg(not(feature = "rust"))]

@@ -58,7 +58,7 @@ mod test
 	{
 		let (user, _public_key, _verify_key) = create_user();
 
-		let group = create_group(&user);
+		let (group, _) = create_group(&user);
 		let group_key = &group.keys[0].group_key;
 
 		//now start encrypt and decrypt with the group master key
@@ -77,7 +77,7 @@ mod test
 		//create a rust dummy user
 		let (user, _public_key, verify_key) = create_user();
 
-		let group = create_group(&user);
+		let (group, _) = create_group(&user);
 		let group_key = &group.keys[0].group_key;
 
 		//now start encrypt and decrypt with the group master key

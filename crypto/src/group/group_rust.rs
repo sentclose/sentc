@@ -71,7 +71,9 @@ mod test
 	use alloc::string::ToString;
 	use alloc::vec;
 
-	use sentc_crypto_common::group::{CreateData, GroupKeysForNewMemberServerInput};
+	use base64ct::{Base64, Encoding};
+	use sentc_crypto_common::group::{CreateData, DoneKeyRotationData, GroupKeysForNewMemberServerInput, KeyRotationData};
+	use sentc_crypto_core::crypto::encrypt_asymmetric as encrypt_asymmetric_core;
 	use sentc_crypto_core::SymKey;
 
 	use super::*;
@@ -97,7 +99,7 @@ mod test
 
 		let (user, _public_key, _verify_key) = create_user();
 
-		let data = create_group(&user);
+		let (data, _) = create_group(&user);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -159,6 +161,73 @@ mod test
 		match (&group_data_user_0.keys[0].group_key.key, &group_data_user_1.keys[0].group_key.key) {
 			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
 				assert_eq!(*k0, *k1);
+			},
+		}
+	}
+
+	#[test]
+	fn test_key_rotation()
+	{
+		let (user, _public_key, _verify_key) = create_user();
+
+		let (data, group_server_out) = create_group(&user);
+
+		let rotation_out = key_rotation(&data.keys[0].group_key, &user.public_key).unwrap();
+		let rotation_out = KeyRotationData::from_string(rotation_out.as_bytes()).unwrap();
+
+		//get the new group key directly because for the invoker the key is already encrypted by the own public key
+		let server_key_output_direct = GroupKeyServerOutput {
+			encrypted_group_key: rotation_out.encrypted_group_key_by_user.to_string(),
+			group_key_alg: group_server_out.keys[0].group_key_alg.to_string(),
+			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
+			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
+			public_group_key: rotation_out.public_group_key.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
+			key_pair_id: "new_key_id_from_server".to_string(),
+			user_public_key_id: user.public_key.key_id.to_string(),
+		};
+
+		let new_group_key_direct = get_group_keys(&user.private_key, &server_key_output_direct).unwrap();
+
+		//simulate server key rotation encrypt. encrypt the ephemeral_key (encrypted by the previous room key) with the public keys of all users
+		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key = encrypt_asymmetric_core(&user.public_key.key, &encrypted_ephemeral_key).unwrap();
+
+		let server_output = KeyRotationInput {
+			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
+			encrypted_group_key_by_ephemeral: rotation_out.encrypted_group_key_by_ephemeral.to_string(),
+			ephemeral_alg: rotation_out.ephemeral_alg.to_string(),
+			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
+		};
+
+		let done_key_rotation = done_key_rotation(&user.private_key, &user.public_key, &data.keys[0].group_key, &server_output).unwrap();
+		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_bytes()).unwrap();
+
+		//get the new group keys
+		let server_key_output = GroupKeyServerOutput {
+			encrypted_group_key: done_key_rotation.encrypted_new_group_key.to_string(),
+			group_key_alg: group_server_out.keys[0].group_key_alg.to_string(),
+			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
+			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
+			public_group_key: rotation_out.public_group_key.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
+			key_pair_id: "new_key_id_from_server".to_string(),
+			user_public_key_id: done_key_rotation.public_key_id.to_string(),
+		};
+
+		let out = get_group_keys(&user.private_key, &server_key_output).unwrap();
+
+		//the new group key must be different after key rotation
+		match (&data.keys[0].group_key.key, &out.group_key.key) {
+			(SymKey::Aes(k_old), SymKey::Aes(k_new)) => {
+				assert_ne!(*k_old, *k_new);
+			},
+		}
+
+		match (&new_group_key_direct.group_key.key, &out.group_key.key) {
+			(SymKey::Aes(k_0), SymKey::Aes(k_1)) => {
+				//should be the same for all users
+				assert_eq!(*k_0, *k_1);
 			},
 		}
 	}
