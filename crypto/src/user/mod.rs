@@ -390,13 +390,13 @@ pub(crate) mod test_fn
 	{
 		let password = "12345";
 
-		let out_string = register(password);
+		let out_string = register(password).unwrap();
 
 		let out = RegisterData::from_string(out_string.as_bytes()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
 		let server_output_string = server_output.to_string().unwrap();
 		#[cfg(not(feature = "rust"))]
-		let prepare_login_string = prepare_login(password, server_output_string.as_str());
+		let prepare_login_string = prepare_login(password, server_output_string.as_str()).unwrap();
 
 		let PrepareLoginData {
 			master_key_encryption_key,
@@ -421,7 +421,8 @@ pub(crate) mod test_fn
 		let done_login_string = done_login(
 			master_key_encryption_key.to_string().unwrap().as_str(),
 			server_output.to_string().unwrap().as_str(),
-		);
+		)
+		.unwrap();
 
 		let done_login = KeyData::from_string(done_login_string.as_bytes()).unwrap();
 
