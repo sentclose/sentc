@@ -21,7 +21,7 @@ use crate::util::{export_private_key, export_public_key, export_sign_key, export
 #[derive(Serialize, Deserialize)]
 pub enum MasterKeyFormat
 {
-	Argon2(String),
+	Argon2(String), //Base64 encoded string from prepare login, is used in done_login
 }
 
 impl MasterKeyFormat
