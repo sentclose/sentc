@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{from_slice, to_string};
+use serde_json::{from_str, to_string};
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateData
@@ -18,9 +18,9 @@ pub struct CreateData
 
 impl CreateData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -47,9 +47,9 @@ pub struct KeyRotationData
 
 impl KeyRotationData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -69,9 +69,9 @@ pub struct KeyRotationInput
 
 impl KeyRotationInput
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -89,9 +89,9 @@ pub struct DoneKeyRotationData
 
 impl DoneKeyRotationData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -126,9 +126,9 @@ pub struct GroupKeyServerOutput
 
 impl GroupKeyServerOutput
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -152,9 +152,9 @@ pub struct GroupServerData
 
 impl GroupServerData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -177,9 +177,9 @@ pub struct GroupKeysForNewMemberServerInput(pub Vec<GroupKeysForNewMember>);
 
 impl GroupKeysForNewMemberServerInput
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>

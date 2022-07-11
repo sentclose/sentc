@@ -259,7 +259,7 @@ pub(crate) mod test_fn
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
-		let group = CreateData::from_string(group.as_bytes()).unwrap();
+		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
 			encrypted_group_key: group.encrypted_group_key,
@@ -289,7 +289,7 @@ pub(crate) mod test_fn
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.to_string().unwrap().as_str()).unwrap();
-		let group = CreateData::from_string(group.as_bytes()).unwrap();
+		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
 			encrypted_group_key: group.encrypted_group_key,
@@ -315,7 +315,7 @@ pub(crate) mod test_fn
 		)
 		.unwrap();
 
-		let out = GroupOutData::from_string(group_data_string.as_bytes()).unwrap();
+		let out = GroupOutData::from_string(group_data_string.as_str()).unwrap();
 
 		(out, group_server_output)
 	}

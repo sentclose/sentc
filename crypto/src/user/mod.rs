@@ -359,7 +359,7 @@ pub(crate) mod test_fn
 
 		let out_string = register(password).unwrap();
 
-		let out = RegisterData::from_string(out_string.as_bytes()).unwrap();
+		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
 		#[cfg(feature = "rust")]
 		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
@@ -392,7 +392,7 @@ pub(crate) mod test_fn
 
 		let out_string = register(password).unwrap();
 
-		let out = RegisterData::from_string(out_string.as_bytes()).unwrap();
+		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
 		let server_output_string = server_output.to_string().unwrap();
 		#[cfg(not(feature = "rust"))]
@@ -401,7 +401,7 @@ pub(crate) mod test_fn
 		let PrepareLoginData {
 			master_key_encryption_key,
 			..
-		} = PrepareLoginData::from_string(prepare_login_string.as_bytes()).unwrap();
+		} = PrepareLoginData::from_string(prepare_login_string.as_str()).unwrap();
 
 		let user_public_key_data = UserPublicKeyData {
 			public_key_pem: out.derived.public_key.to_string(),
@@ -424,7 +424,7 @@ pub(crate) mod test_fn
 		)
 		.unwrap();
 
-		let done_login = KeyData::from_string(done_login_string.as_bytes()).unwrap();
+		let done_login = KeyData::from_string(done_login_string.as_str()).unwrap();
 
 		#[cfg(not(feature = "rust"))]
 		(done_login, user_public_key_data, user_verify_key_data)

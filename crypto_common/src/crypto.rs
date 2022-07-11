@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{from_slice, to_string};
+use serde_json::{from_slice, from_str, to_string};
 
 #[derive(Serialize, Deserialize)]
 pub struct SignHead
@@ -19,7 +19,12 @@ pub struct EncryptedHead
 
 impl EncryptedHead
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
+	{
+		from_str::<Self>(v)
+	}
+
+	pub fn from_slice(v: &[u8]) -> serde_json::Result<Self>
 	{
 		from_slice::<Self>(v)
 	}

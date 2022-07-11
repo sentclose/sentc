@@ -31,7 +31,7 @@ pub fn register_test() -> String
 	#[cfg(feature = "rust")]
 	let out = register(password).unwrap();
 
-	let out = RegisterData::from_string(out.as_bytes()).unwrap();
+	let out = RegisterData::from_string(out.as_str()).unwrap();
 	let RegisterData {
 		derived,
 		master_key,
@@ -86,7 +86,7 @@ pub fn register_test() -> String
 	#[cfg(not(feature = "rust"))]
 	let out = register(password).unwrap();
 
-	let out = RegisterData::from_string(out.as_bytes()).unwrap();
+	let out = RegisterData::from_string(out.as_str()).unwrap();
 	let RegisterData {
 		derived,
 		master_key,
@@ -110,7 +110,7 @@ pub fn register_test() -> String
 	let prep_login_out = prepare_login(password, server_output.to_string().unwrap().as_str()).unwrap();
 
 	//and get the master_key_encryption_key for done login
-	let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
+	let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_str()).unwrap();
 	let master_key_encryption_key = prep_login_out.master_key_encryption_key;
 
 	//get the server output back
@@ -136,7 +136,7 @@ pub fn register_test() -> String
 	)
 	.unwrap();
 
-	let login_out = KeyData::from_string(&login_out.as_bytes()).unwrap();
+	let login_out = KeyData::from_string(&login_out.as_str()).unwrap();
 
 	let private_key = match login_out.private_key {
 		PrivateKeyFormat::Ecies {

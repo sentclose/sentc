@@ -3,7 +3,7 @@ use alloc::string::String;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_core::{Error, Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
-use serde_json::{from_slice, to_string};
+use serde_json::{from_str, to_string};
 
 use crate::util::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 
@@ -18,9 +18,9 @@ pub enum PrivateKeyFormat
 
 impl PrivateKeyFormat
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -40,9 +40,9 @@ pub enum PublicKeyFormat
 
 impl PublicKeyFormat
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -62,9 +62,9 @@ pub enum SignKeyFormat
 
 impl SignKeyFormat
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -84,9 +84,9 @@ pub enum VerifyKeyFormat
 
 impl VerifyKeyFormat
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -111,9 +111,9 @@ pub struct KeyData
 
 impl KeyData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -133,9 +133,9 @@ pub enum SymKeyFormat
 
 impl SymKeyFormat
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -146,7 +146,7 @@ impl SymKeyFormat
 
 pub(crate) fn import_private_key(private_key_string: &str) -> Result<PrivateKeyFormatInt, Error>
 {
-	let private_key_format = PrivateKeyFormat::from_string(private_key_string.as_bytes()).map_err(|_| Error::ImportingPrivateKeyFailed)?;
+	let private_key_format = PrivateKeyFormat::from_string(private_key_string).map_err(|_| Error::ImportingPrivateKeyFailed)?;
 
 	import_private_key_from_format(&private_key_format)
 }
@@ -175,7 +175,7 @@ pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<P
 
 pub(crate) fn import_public_key(public_key_string: &str) -> Result<PublicKeyFormatInt, Error>
 {
-	let public_key_format = PublicKeyFormat::from_string(public_key_string.as_bytes()).map_err(|_| Error::ImportPublicKeyFailed)?;
+	let public_key_format = PublicKeyFormat::from_string(public_key_string).map_err(|_| Error::ImportPublicKeyFailed)?;
 
 	import_public_key_from_format(&public_key_format)
 }
@@ -201,7 +201,7 @@ pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<Pub
 
 pub(crate) fn import_sign_key(sign_key_string: &str) -> Result<SignKeyFormatInt, Error>
 {
-	let sign_key_format = SignKeyFormat::from_string(sign_key_string.as_bytes()).map_err(|_| Error::ImportingSignKeyFailed)?;
+	let sign_key_format = SignKeyFormat::from_string(sign_key_string).map_err(|_| Error::ImportingSignKeyFailed)?;
 
 	import_sign_key_from_format(&sign_key_format)
 }
@@ -286,7 +286,7 @@ pub(crate) fn export_verify_key(verify_key: VerifyKeyFormatInt) -> VerifyKeyForm
 
 pub(crate) fn import_sym_key(key_string: &str) -> Result<SymKeyFormatInt, Error>
 {
-	let key_format = SymKeyFormat::from_string(key_string.as_bytes()).map_err(|_| Error::ImportSymmetricKeyFailed)?;
+	let key_format = SymKeyFormat::from_string(key_string).map_err(|_| Error::ImportSymmetricKeyFailed)?;
 
 	import_sym_key_from_format(&key_format)
 }

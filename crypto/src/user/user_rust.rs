@@ -78,7 +78,7 @@ mod test
 
 		let out = register(password).unwrap();
 
-		let out = RegisterData::from_string(out.as_bytes()).unwrap();
+		let out = RegisterData::from_string(out.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.derived);
 
@@ -111,7 +111,7 @@ mod test
 
 		let out = register(password).unwrap();
 
-		let out = RegisterData::from_string(out.as_bytes()).unwrap();
+		let out = RegisterData::from_string(out.as_str()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
 
@@ -124,7 +124,7 @@ mod test
 		)
 		.unwrap();
 
-		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_bytes()).unwrap();
+		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_str()).unwrap();
 
 		assert_ne!(pw_change_out.new_client_random_value, out.derived.client_random_value);
 

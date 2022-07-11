@@ -5,7 +5,7 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
 use sentc_crypto_core::{DeriveMasterKeyForAuth, Error};
 use serde::{Deserialize, Serialize};
-use serde_json::{from_slice, to_string};
+use serde_json::{from_str, to_string};
 
 use crate::err_to_msg;
 use crate::user::{
@@ -26,9 +26,9 @@ pub enum MasterKeyFormat
 
 impl MasterKeyFormat
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -46,9 +46,9 @@ pub struct PrepareLoginData
 
 impl PrepareLoginData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -64,7 +64,7 @@ pub fn register(password: &str) -> Result<String, String>
 
 pub fn prepare_login(password: &str, server_output: &str) -> Result<String, String>
 {
-	let server_output = PrepareLoginSaltServerOutput::from_string(server_output.as_bytes()).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let server_output = PrepareLoginSaltServerOutput::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
 	let (auth_key, master_key_encryption_key) = prepare_login_internally(password, &server_output).map_err(|e| err_to_msg(e))?;
 
@@ -92,7 +92,7 @@ pub fn done_login(
 	server_output: &str,
 ) -> Result<String, String>
 {
-	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption.as_bytes()).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
 	let master_key_encryption = match master_key_encryption {
 		MasterKeyFormat::Argon2(mk) => {
@@ -107,7 +107,7 @@ pub fn done_login(
 		},
 	};
 
-	let server_output = DoneLoginServerKeysOutput::from_string(server_output.as_bytes()).map_err(|_| err_to_msg(Error::LoginServerOutputWrong))?;
+	let server_output = DoneLoginServerKeysOutput::from_string(server_output).map_err(|_| err_to_msg(Error::LoginServerOutputWrong))?;
 
 	let result = done_login_internally(&master_key_encryption, &server_output).map_err(|e| err_to_msg(e))?;
 
@@ -151,7 +151,7 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 
 pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<String, String>
 {
-	let server_output = MultipleLoginServerOutput::from_string(server_output.as_bytes()).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
 	let out = prepare_update_user_keys_internally(password, &server_output).map_err(|e| err_to_msg(e))?;
 
@@ -208,7 +208,7 @@ mod test
 
 		let out = register(password).unwrap();
 
-		let out = RegisterData::from_string(out.as_bytes()).unwrap();
+		let out = RegisterData::from_string(out.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.derived)
 			.to_string()
@@ -218,7 +218,7 @@ mod test
 		let prep_login_out = prepare_login(password, server_output.as_str()).unwrap();
 
 		//and get the master_key_encryption_key for done login
-		let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_bytes()).unwrap();
+		let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_str()).unwrap();
 		let master_key_encryption_key = prep_login_out.master_key_encryption_key;
 
 		let server_output = simulate_server_done_login_as_string(out);
@@ -230,7 +230,7 @@ mod test
 		)
 		.unwrap();
 
-		let login_out = KeyData::from_string(&login_out.as_bytes()).unwrap();
+		let login_out = KeyData::from_string(&login_out.as_str()).unwrap();
 
 		let private_key = match login_out.private_key {
 			PrivateKeyFormat::Ecies {
@@ -250,7 +250,7 @@ mod test
 
 		let out = register(password).unwrap();
 
-		let out = RegisterData::from_string(out.as_bytes()).unwrap();
+		let out = RegisterData::from_string(out.as_str()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
 
@@ -263,7 +263,7 @@ mod test
 		)
 		.unwrap();
 
-		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_bytes()).unwrap();
+		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_str()).unwrap();
 
 		assert_ne!(pw_change_out.new_client_random_value, out.derived.client_random_value);
 

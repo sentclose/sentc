@@ -5,7 +5,7 @@ use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotat
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_core::Error;
 use serde::{Deserialize, Serialize};
-use serde_json::{from_slice, to_string};
+use serde_json::{from_str, to_string};
 
 use crate::err_to_msg;
 use crate::group::{
@@ -40,9 +40,9 @@ pub struct GroupKeyData
 
 impl GroupKeyData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -60,9 +60,9 @@ pub struct GroupOutData
 
 impl GroupOutData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -76,9 +76,9 @@ pub struct GroupKeys(Vec<SymKeyFormat>);
 
 impl GroupKeys
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -112,7 +112,7 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 
 	let public_key = import_public_key(public_key).map_err(|e| err_to_msg(e))?;
 
-	let server_output = KeyRotationInput::from_string(server_output.as_bytes()).map_err(|_| err_to_msg(Error::KeyRotationServerOutputWrong))?;
+	let server_output = KeyRotationInput::from_string(server_output).map_err(|_| err_to_msg(Error::KeyRotationServerOutputWrong))?;
 
 	done_key_rotation_internally(&private_key, &public_key, &previous_group_key, &server_output).map_err(|e| err_to_msg(e))
 }
@@ -134,7 +134,7 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 
 pub fn get_group_data(private_key: &str, server_output: &str) -> Result<String, String>
 {
-	let server_output = GroupServerData::from_string(server_output.as_bytes()).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let server_output = GroupServerData::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
 	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
 
@@ -158,10 +158,9 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> Result<String, 
 
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
 {
-	let requester_public_key_data =
-		UserPublicKeyData::from_string(requester_public_key_data.as_bytes()).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
-	let group_keys = GroupKeys::from_string(group_keys.as_bytes())
+	let group_keys = GroupKeys::from_string(group_keys)
 		.map_err(|_| err_to_msg(Error::JsonParseFailed))?
 		.0;
 
@@ -215,7 +214,7 @@ mod test
 		let (user, _public_key, _verify_key) = create_user();
 
 		let group = prepare_create(&user.public_key.to_string().unwrap().as_str()).unwrap();
-		let group = CreateData::from_string(group.as_bytes()).unwrap();
+		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let pk = import_public_key(user.public_key.to_string().unwrap().as_str()).unwrap();
 
@@ -242,7 +241,7 @@ mod test
 		let (user1, public_key1, _verify_key1) = create_user();
 
 		let group_create = prepare_create(user.public_key.to_string().unwrap().as_str()).unwrap();
-		let group_create = CreateData::from_string(group_create.as_bytes()).unwrap();
+		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
 			encrypted_group_key: group_create.encrypted_group_key.to_string(),
@@ -266,14 +265,14 @@ mod test
 			group_server_output_user_0.to_string().unwrap().as_str(),
 		)
 		.unwrap();
-		let group_data_user_0 = GroupOutData::from_string(group_data_user_0.as_bytes()).unwrap();
+		let group_data_user_0 = GroupOutData::from_string(group_data_user_0.as_str()).unwrap();
 		let group_key_user_0 = group_data_user_0.keys[0].group_key.to_string().unwrap();
 
-		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0.as_bytes()).unwrap()]);
+		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0.as_str()).unwrap()]);
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member(public_key1.to_string().unwrap().as_str(), group_keys.to_string().unwrap().as_str()).unwrap();
-		let out = GroupKeysForNewMemberServerInput::from_string(out.as_bytes()).unwrap();
+		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.0[0]; //this group only got one key
 
 		let group_server_output_user_1 = GroupKeyServerOutput {
@@ -298,7 +297,7 @@ mod test
 			group_server_output_user_1.to_string().unwrap().as_str(),
 		)
 		.unwrap();
-		let group_data_user_1 = GroupOutData::from_string(group_data_user_1.as_bytes()).unwrap();
+		let group_data_user_1 = GroupOutData::from_string(group_data_user_1.as_str()).unwrap();
 
 		let group_key_0 = import_sym_key(
 			group_data_user_0.keys[0]
@@ -338,7 +337,7 @@ mod test
 			user.public_key.to_string().unwrap().as_str(),
 		)
 		.unwrap();
-		let rotation_out = KeyRotationData::from_string(rotation_out.as_bytes()).unwrap();
+		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
 		let server_key_output_direct = GroupKeyServerOutput {
@@ -382,7 +381,7 @@ mod test
 			server_output.to_string().unwrap().as_str(),
 		)
 		.unwrap();
-		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_bytes()).unwrap();
+		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();
 
 		//get the new group keys
 		let server_key_output = GroupKeyServerOutput {

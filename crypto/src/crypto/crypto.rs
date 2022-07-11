@@ -33,7 +33,7 @@ fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>
 	let verify_key = match verify_key_data {
 		"" => None,
 		_ => {
-			let k = UserVerifyKeyData::from_string(verify_key_data.as_bytes()).map_err(|_| Error::JsonParseFailed)?;
+			let k = UserVerifyKeyData::from_string(verify_key_data).map_err(|_| Error::JsonParseFailed)?;
 
 			Some(k)
 		},
@@ -67,7 +67,7 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
 
-	let head = EncryptedHead::from_string(head.as_bytes()).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let head = EncryptedHead::from_string(head).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
 		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,
@@ -79,7 +79,7 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
 {
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data.as_bytes()).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
 
 	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
 
@@ -102,7 +102,7 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 
 	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
 
-	let head = EncryptedHead::from_string(head.as_bytes()).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+	let head = EncryptedHead::from_string(head).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
 		None => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,

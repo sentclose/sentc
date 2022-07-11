@@ -87,7 +87,7 @@ mod test
 		let (user, _public_key, _verify_key) = create_user();
 
 		let group = prepare_create(&user.public_key).unwrap();
-		let group = CreateData::from_string(group.as_bytes()).unwrap();
+		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		assert_eq!(group.creator_public_key_id, user.public_key.key_id);
 	}
@@ -111,7 +111,7 @@ mod test
 		let (user1, public_key1, _verify_key1) = create_user();
 
 		let group_create = prepare_create(&user.public_key).unwrap();
-		let group_create = CreateData::from_string(group_create.as_bytes()).unwrap();
+		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
 			encrypted_group_key: group_create.encrypted_group_key.to_string(),
@@ -134,7 +134,7 @@ mod test
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member(&public_key1, &[&group_data_user_0.keys[0].group_key]).unwrap();
-		let out = GroupKeysForNewMemberServerInput::from_string(out.as_bytes()).unwrap();
+		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.0[0]; //this group only got one key
 
 		let group_server_output_user_1 = GroupKeyServerOutput {
@@ -173,7 +173,7 @@ mod test
 		let (data, group_server_out) = create_group(&user);
 
 		let rotation_out = key_rotation(&data.keys[0].group_key, &user.public_key).unwrap();
-		let rotation_out = KeyRotationData::from_string(rotation_out.as_bytes()).unwrap();
+		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
 		let server_key_output_direct = GroupKeyServerOutput {
@@ -201,7 +201,7 @@ mod test
 		};
 
 		let done_key_rotation = done_key_rotation(&user.private_key, &user.public_key, &data.keys[0].group_key, &server_output).unwrap();
-		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_bytes()).unwrap();
+		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();
 
 		//get the new group keys
 		let server_key_output = GroupKeyServerOutput {

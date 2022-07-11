@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{from_slice, to_string};
+use serde_json::{from_str, to_string};
 
 #[derive(Serialize, Deserialize)]
 pub struct MasterKey
@@ -44,9 +44,9 @@ pub struct RegisterData
 
 impl RegisterData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -68,9 +68,9 @@ pub struct ChangePasswordData
 
 impl ChangePasswordData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -97,9 +97,9 @@ impl ResetPasswordData
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 }
 
@@ -113,9 +113,9 @@ pub struct UserPublicKeyData
 
 impl UserPublicKeyData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -134,9 +134,9 @@ pub struct UserVerifyKeyData
 
 impl UserVerifyKeyData
 {
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 
 	pub fn to_string(&self) -> serde_json::Result<String>
@@ -160,9 +160,9 @@ impl PrepareLoginSaltServerOutput
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 }
 
@@ -188,9 +188,9 @@ impl DoneLoginServerKeysOutput
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 }
 
@@ -209,9 +209,9 @@ impl PrepareLoginForKeyUpdateServerOutput
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 }
 
@@ -247,8 +247,8 @@ impl MultipleLoginServerOutput
 		to_string(self)
 	}
 
-	pub fn from_string(v: &[u8]) -> serde_json::Result<Self>
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
 	{
-		from_slice::<Self>(v)
+		from_str::<Self>(v)
 	}
 }
