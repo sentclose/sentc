@@ -27,3 +27,9 @@ interface RegisterData
 	master_key: MasterKey,
 	derived: KeyDerivedData,
 }
+
+interface CryptoRawOutput
+{
+	head: string,
+	data: Uint8Array
+}
