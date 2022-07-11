@@ -4,12 +4,25 @@ use alloc::vec::Vec;
 use sentc_crypto::crypto;
 use wasm_bindgen::prelude::*;
 
-#[allow(dead_code)]
 #[wasm_bindgen]
 pub struct CryptoRawOutput
 {
 	head: String,
 	data: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl CryptoRawOutput
+{
+	pub fn get_head(self) -> String
+	{
+		self.head
+	}
+
+	pub fn get_data(self) -> Vec<u8>
+	{
+		self.data
+	}
 }
 
 #[wasm_bindgen]
