@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use sentc_crypto::crypto;
 use wasm_bindgen::prelude::*;
 
+#[allow(dead_code)]
 #[wasm_bindgen]
 pub struct CryptoRawOutput
 {
