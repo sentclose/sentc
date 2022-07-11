@@ -44,70 +44,34 @@ fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>
 
 pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
 {
-	let key = match import_sym_key(key) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
 
-	let sign_key = match prepare_sign_key(sign_key) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
 
 	let (head, encrypted) = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => {
-			match encrypt_raw_symmetric_internally(&key, data, None) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
-		Some(k) => {
-			match encrypt_raw_symmetric_internally(&key, data, Some(&k)) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
+		None => encrypt_raw_symmetric_internally(&key, data, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => encrypt_raw_symmetric_internally(&key, data, Some(&k)).map_err(|e| err_to_msg(e))?,
 	};
 
-	let head = match head.to_string() {
-		Ok(v) => v,
-		Err(_e) => return Err(err_to_msg(Error::JsonToStringFailed)),
-	};
+	let head = head
+		.to_string()
+		.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?;
 
 	Ok((head, encrypted))
 }
 
 pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let key = match import_sym_key(key) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
 
-	let verify_key = match prepare_verify_key(verify_key_data) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
 
-	let head = match EncryptedHead::from_string(head.as_bytes()).map_err(|_| Error::JsonParseFailed) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let head = EncryptedHead::from_string(head.as_bytes()).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
-		None => {
-			match decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
-		Some(k) => {
-			match decrypt_raw_symmetric_internally(&key, encrypted_data, &head, Some(&k)) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
+		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, Some(&k)).map_err(|e| err_to_msg(e))?,
 	};
 
 	Ok(decrypted)
@@ -115,70 +79,34 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
 {
-	let reply_public_key_data = match UserPublicKeyData::from_string(reply_public_key_data.as_bytes()).map_err(|_| Error::JsonParseFailed) {
-		Ok(v) => v,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data.as_bytes()).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
 
-	let sign_key = match prepare_sign_key(sign_key) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
 
 	let (head, encrypted) = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => {
-			match encrypt_raw_asymmetric_internally(&reply_public_key_data, data, None) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
-		Some(k) => {
-			match encrypt_raw_asymmetric_internally(&reply_public_key_data, data, Some(&k)) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
+		None => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, Some(&k)).map_err(|e| err_to_msg(e))?,
 	};
 
-	let head = match head.to_string() {
-		Ok(v) => v,
-		Err(_e) => return Err(err_to_msg(Error::JsonToStringFailed)),
-	};
+	let head = head
+		.to_string()
+		.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?;
 
 	Ok((head, encrypted))
 }
 
 pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let private_key = match import_private_key(private_key) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
 
-	let verify_key = match prepare_verify_key(verify_key_data) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
 
-	let head = match EncryptedHead::from_string(head.as_bytes()).map_err(|_| Error::JsonParseFailed) {
-		Ok(k) => k,
-		Err(e) => return Err(err_to_msg(e)),
-	};
+	let head = EncryptedHead::from_string(head.as_bytes()).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
-		None => {
-			match decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
-		Some(k) => {
-			match decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, Some(&k)) {
-				Ok(v) => v,
-				Err(e) => return Err(err_to_msg(e)),
-			}
-		},
+		None => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, Some(&k)).map_err(|e| err_to_msg(e))?,
 	};
 
 	Ok(decrypted)
