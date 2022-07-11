@@ -33,6 +33,7 @@ pub enum Error
 
 	DecodePrivateKeyFailed,
 	DecodePublicKeyFailed,
+	DecodeEncryptedDataFailed,
 
 	ImportingPrivateKeyFailed,
 	ImportingSignKeyFailed,

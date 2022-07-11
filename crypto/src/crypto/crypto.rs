@@ -9,10 +9,14 @@ use crate::crypto::{
 	decrypt_asymmetric_internally,
 	decrypt_raw_asymmetric_internally,
 	decrypt_raw_symmetric_internally,
+	decrypt_string_asymmetric_internally,
+	decrypt_string_symmetric_internally,
 	decrypt_symmetric_internally,
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
+	encrypt_string_asymmetric_internally,
+	encrypt_string_symmetric_internally,
 	encrypt_symmetric_internally,
 };
 use crate::err_to_msg;
@@ -169,6 +173,64 @@ pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_d
 	let decrypted = match verify_key {
 		None => decrypt_asymmetric_internally(&private_key, encrypted_data, None).map_err(|e| err_to_msg(e))?,
 		Some(k) => decrypt_asymmetric_internally(&private_key, encrypted_data, Some(&k)).map_err(|e| err_to_msg(e))?,
+	};
+
+	Ok(decrypted)
+}
+
+pub fn encrypt_string_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<String, String>
+{
+	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+
+	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+
+	let encrypted = match sign_key {
+		//in match because we need a valid ref to the sign key format
+		None => encrypt_string_symmetric_internally(&key, data, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => encrypt_string_symmetric_internally(&key, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+	};
+
+	Ok(encrypted)
+}
+
+pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
+{
+	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+
+	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+
+	let decrypted = match verify_key {
+		None => decrypt_string_symmetric_internally(&key, encrypted_data, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => decrypt_string_symmetric_internally(&key, encrypted_data, Some(&k)).map_err(|e| err_to_msg(e))?,
+	};
+
+	Ok(decrypted)
+}
+
+pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<String, String>
+{
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+
+	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+
+	let encrypted = match sign_key {
+		//in match because we need a valid ref to the sign key format
+		None => encrypt_string_asymmetric_internally(&reply_public_key_data, data, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => encrypt_string_asymmetric_internally(&reply_public_key_data, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+	};
+
+	Ok(encrypted)
+}
+
+pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
+{
+	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+
+	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+
+	let decrypted = match verify_key {
+		None => decrypt_string_asymmetric_internally(&private_key, encrypted_data, None).map_err(|e| err_to_msg(e))?,
+		Some(k) => decrypt_string_asymmetric_internally(&private_key, encrypted_data, Some(&k)).map_err(|e| err_to_msg(e))?,
 	};
 
 	Ok(decrypted)
@@ -332,6 +394,85 @@ mod test
 		.unwrap();
 
 		let decrypted = decrypt_asymmetric(
+			user.private_key.to_string().unwrap().as_str(),
+			&encrypted,
+			verify_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_string_sym()
+	{
+		let (user, _public_key, _verify_key) = create_user();
+		let (group, _) = create_group(&user);
+		let group_key = &group.keys[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(group_key.to_string().unwrap().as_str(), text.as_bytes(), "").unwrap();
+
+		let decrypted = decrypt_string_symmetric(group_key.to_string().unwrap().as_str(), &encrypted, "").unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_string_sym_with_sig()
+	{
+		let (user, _public_key, verify_key) = create_user();
+
+		let (group, _) = create_group(&user);
+		let group_key = &group.keys[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(
+			group_key.to_string().unwrap().as_str(),
+			text.as_bytes(),
+			user.sign_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		let decrypted = decrypt_string_symmetric(
+			group_key.to_string().unwrap().as_str(),
+			&encrypted,
+			verify_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_string_asym()
+	{
+		let text = "123*+^êéèüöß@€&$";
+		let (user, public_key, _verify_key) = create_user();
+
+		let encrypted = encrypt_string_asymmetric(public_key.to_string().unwrap().as_str(), text.as_bytes(), "").unwrap();
+
+		let decrypted = decrypt_string_asymmetric(user.private_key.to_string().unwrap().as_str(), &encrypted, "").unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_string_asym_with_sig()
+	{
+		let text = "123*+^êéèüöß@€&$";
+		let (user, public_key, verify_key) = create_user();
+
+		let encrypted = encrypt_string_asymmetric(
+			public_key.to_string().unwrap().as_str(),
+			text.as_bytes(),
+			user.sign_key.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		let decrypted = decrypt_string_asymmetric(
 			user.private_key.to_string().unwrap().as_str(),
 			&encrypted,
 			verify_key.to_string().unwrap().as_str(),

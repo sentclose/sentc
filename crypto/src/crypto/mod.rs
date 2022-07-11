@@ -3,9 +3,10 @@ mod crypto;
 #[cfg(feature = "rust")]
 mod crypto_rust;
 
-use alloc::string::ToString;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
+use base64ct::{Base64, Encoding};
 use sentc_crypto_common::crypto::{EncryptedHead, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_core::crypto::{
@@ -24,10 +25,14 @@ pub use self::crypto::{
 	decrypt_asymmetric,
 	decrypt_raw_asymmetric,
 	decrypt_raw_symmetric,
+	decrypt_string_asymmetric,
+	decrypt_string_symmetric,
 	decrypt_symmetric,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
+	encrypt_string_asymmetric,
+	encrypt_string_symmetric,
 	encrypt_symmetric,
 };
 #[cfg(feature = "rust")]
@@ -35,10 +40,14 @@ pub use self::crypto_rust::{
 	decrypt_asymmetric,
 	decrypt_raw_asymmetric,
 	decrypt_raw_symmetric,
+	decrypt_string_asymmetric,
+	decrypt_string_symmetric,
 	decrypt_symmetric,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
+	encrypt_string_asymmetric,
+	encrypt_string_symmetric,
 	encrypt_symmetric,
 };
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
@@ -252,9 +261,48 @@ fn decrypt_asymmetric_internally(
 	Ok(decrypt_raw_asymmetric_internally(private_key, &encrypted_data, &head, verify_key)?)
 }
 
+fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<String, Error>
+{
+	let encrypted = encrypt_symmetric_internally(key, data, sign_key)?;
+
+	Ok(Base64::encode_string(&encrypted))
+}
+
+fn decrypt_string_symmetric_internally(
+	key: &SymKeyFormatInt,
+	encrypted_data_with_head: &str,
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<Vec<u8>, Error>
+{
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| Error::DecodeEncryptedDataFailed)?;
+
+	decrypt_symmetric_internally(key, &encrypted, verify_key)
+}
+
+fn encrypt_string_asymmetric_internally(
+	reply_public_key: &UserPublicKeyData,
+	data: &[u8],
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<String, Error>
+{
+	let encrypted = encrypt_asymmetric_internally(reply_public_key, data, sign_key)?;
+
+	Ok(Base64::encode_string(&encrypted))
+}
+
+fn decrypt_string_asymmetric_internally(
+	private_key: &PrivateKeyFormatInt,
+	encrypted_data_with_head: &str,
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<Vec<u8>, Error>
+{
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| Error::DecodeEncryptedDataFailed)?;
+
+	decrypt_asymmetric_internally(private_key, &encrypted, verify_key)
+}
+
 /*
 TODO
-	- encrypt / decrypt text (strings)
 	- generate sym key
 	- (maybe generate new key and encrypt)
 	-
