@@ -1,5 +1,6 @@
 #![no_std]
 
+pub mod crypto;
 pub mod group;
 pub mod user;
 

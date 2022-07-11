@@ -10,36 +10,31 @@ use sentc_crypto::group::{
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn prepare_create(creators_public_key: String) -> String
+pub fn prepare_create(creators_public_key: &str) -> String
 {
-	prepare_create_core(creators_public_key.as_str())
+	prepare_create_core(creators_public_key)
 }
 
 #[wasm_bindgen]
-pub fn key_rotation(previous_group_key: String, invoker_public_key: String) -> String
+pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> String
 {
-	key_rotation_core(previous_group_key.as_str(), invoker_public_key.as_str())
+	key_rotation_core(previous_group_key, invoker_public_key)
 }
 
 #[wasm_bindgen]
-pub fn done_key_rotation(private_key: String, public_key: String, previous_group_key: String, server_output: String) -> String
+pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key: &str, server_output: &str) -> String
 {
-	done_key_rotation_core(
-		private_key.as_str(),
-		public_key.as_str(),
-		previous_group_key.as_str(),
-		server_output.as_str(),
-	)
+	done_key_rotation_core(private_key, public_key, previous_group_key, server_output)
 }
 
 #[wasm_bindgen]
-pub fn get_group_data(private_key: String, server_output: String) -> String
+pub fn get_group_data(private_key: &str, server_output: &str) -> String
 {
-	get_group_data_core(private_key.as_str(), server_output.as_str())
+	get_group_data_core(private_key, server_output)
 }
 
 #[wasm_bindgen]
-pub fn prepare_group_keys_for_new_member(requester_public_key_data: String, group_keys: String) -> String
+pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str) -> String
 {
-	prepare_group_keys_for_new_member_core(requester_public_key_data.as_str(), group_keys.as_str())
+	prepare_group_keys_for_new_member_core(requester_public_key_data, group_keys)
 }

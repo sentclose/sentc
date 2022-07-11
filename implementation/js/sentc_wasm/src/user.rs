@@ -10,46 +10,35 @@ use sentc_crypto::user::{
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn register(password: String) -> String
+pub fn register(password: &str) -> String
 {
-	register_core(password.as_str())
+	register_core(password)
 }
 
 #[wasm_bindgen]
-pub fn prepare_login(password: String, server_output: String) -> String
+pub fn prepare_login(password: &str, server_output: &str) -> String
 {
-	prepare_login_core(password.as_str(), server_output.as_str())
+	prepare_login_core(password, server_output)
 }
 
 #[wasm_bindgen]
 pub fn done_login(
-	master_key_encryption: String, //from the prepare login as base64 for exporting
-	server_output: String,
+	master_key_encryption: &str, //from the prepare login as base64 for exporting
+	server_output: &str,
 ) -> String
 {
-	done_login_core(master_key_encryption.as_str(), server_output.as_str())
+	done_login_core(master_key_encryption, server_output)
 }
 
 #[wasm_bindgen]
-pub fn change_password(
-	old_password: String,
-	new_password: String,
-	old_salt: String,
-	encrypted_master_key: String,
-	derived_encryption_key_alg: String,
-) -> String
+pub fn change_password(old_password: &str, new_password: &str, old_salt: &str, encrypted_master_key: &str, derived_encryption_key_alg: &str)
+	-> String
 {
-	change_password_core(
-		old_password.as_str(),
-		new_password.as_str(),
-		old_salt.as_str(),
-		encrypted_master_key.as_str(),
-		derived_encryption_key_alg.as_str(),
-	)
+	change_password_core(old_password, new_password, old_salt, encrypted_master_key, derived_encryption_key_alg)
 }
 
 #[wasm_bindgen]
-pub fn reset_password(new_password: String, decrypted_private_key: String, decrypted_sign_key: String) -> String
+pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> String
 {
-	reset_password_core(new_password.as_str(), decrypted_private_key.as_str(), decrypted_sign_key.as_str())
+	reset_password_core(new_password, decrypted_private_key, decrypted_sign_key)
 }
