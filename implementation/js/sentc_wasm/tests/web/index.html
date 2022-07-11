@@ -53,34 +53,7 @@
 	</script>
 
 	<script type="module">
-		import init, { register_test_full, register } from './pkg/sentc_wasm.js';
-
-		async function run()
-		{
-			await init();
-
-			console.log("_________________________________");
-
-			console.log("register test");
-			let string5 = register_test_full();
-
-			console.log(string5);
-
-			console.log("_________________________________");
-			console.log("_________________________________");
-			console.log("real usage")
-
-			console.log("register user")
-			let real1 = register("hello");
-
-			console.log(real1);
-			console.log("real 1 json pretty");
-
-			/** @param {RegisterData} */
-			let register_out = JSON.parse(real1);
-
-			console.log(register_out)
-		}
+		import {run} from "./js.js";
 
 		run();
 	</script>

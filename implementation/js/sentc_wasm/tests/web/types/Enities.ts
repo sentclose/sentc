@@ -27,3 +27,36 @@ interface RegisterData
 	master_key: MasterKey,
 	derived: KeyDerivedData,
 }
+
+interface PrepareLoginData {
+	auth_key: string,
+	master_key_encryption_key: {[alg: string]: string}
+}
+
+interface KeyData
+{
+	private_key: {
+		[alg: string]: {
+			key: string,
+			key_id: "abc"
+		}
+	},
+	public_key: {
+		[alg: string]: {
+			key: "3S/9aOAYyL/IMzNvxUdqi2L5G79W+Z0j+YCXwleJQQ0=",
+			key_id: "abc"
+		}
+	},
+	sign_key: {
+		[alg: string]: {
+			key: "cF+UCmXdrcJX+ratF3l+ThCGl94hVJLdJ2u/QoSCh0Q=",
+			key_id: "dfg"
+		}
+	},
+	verify_key: {
+		[alg: string]: {
+			key: "Qrz/TApH37BgjQlskJ1XlXAMAv7GzlVxtT904WZz+as=",
+			key_id: "dfg"
+		}
+	}
+}
