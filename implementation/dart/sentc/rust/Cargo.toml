@@ -15,3 +15,5 @@ sentc-crypto = {version = "0.1.0", path = "../../../../crypto" }
 
 # flutter ffi
 flutter_rust_bridge = "1"
+
+anyhow="1.0.58"

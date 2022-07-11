@@ -10,13 +10,13 @@ use sentc_crypto::user::{
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn register(password: &str) -> String
+pub fn register(password: &str) -> Result<String, String>
 {
 	register_core(password)
 }
 
 #[wasm_bindgen]
-pub fn prepare_login(password: &str, server_output: &str) -> String
+pub fn prepare_login(password: &str, server_output: &str) -> Result<String, String>
 {
 	prepare_login_core(password, server_output)
 }
@@ -25,20 +25,25 @@ pub fn prepare_login(password: &str, server_output: &str) -> String
 pub fn done_login(
 	master_key_encryption: &str, //from the prepare login as base64 for exporting
 	server_output: &str,
-) -> String
+) -> Result<String, String>
 {
 	done_login_core(master_key_encryption, server_output)
 }
 
 #[wasm_bindgen]
-pub fn change_password(old_password: &str, new_password: &str, old_salt: &str, encrypted_master_key: &str, derived_encryption_key_alg: &str)
-	-> String
+pub fn change_password(
+	old_password: &str,
+	new_password: &str,
+	old_salt: &str,
+	encrypted_master_key: &str,
+	derived_encryption_key_alg: &str,
+) -> Result<String, String>
 {
 	change_password_core(old_password, new_password, old_salt, encrypted_master_key, derived_encryption_key_alg)
 }
 
 #[wasm_bindgen]
-pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> String
+pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
 {
 	reset_password_core(new_password, decrypted_private_key, decrypted_sign_key)
 }
