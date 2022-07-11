@@ -1,10 +1,10 @@
 use anyhow::{anyhow, Result};
-use sentc_crypto::register_test;
+use sentc_crypto::test_fn;
 use sentc_crypto::user::{done_login as done_login_core, prepare_login as prepare_login_core, register as register_core};
 
 pub fn register_test_full() -> String
 {
-	register_test()
+	test_fn::register_test_full()
 }
 
 //real usage
