@@ -15,9 +15,9 @@ use crate::user::{
 };
 use crate::util::{KeyData, PrivateKeyFormat, SignKeyFormat};
 
-pub fn register(password: &str) -> Result<String, Error>
+pub fn register(user_identifier: &str, password: &str) -> Result<String, Error>
 {
-	register_internally(password)
+	register_internally(user_identifier, password)
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, Error>
@@ -70,9 +70,10 @@ mod test
 	#[test]
 	fn test_register()
 	{
+		let username = "admin";
 		let password = "abc*èéöäüê";
 
-		let out = register(password).unwrap();
+		let out = register(username, password).unwrap();
 
 		std::println!("rust: {}", out);
 	}
@@ -80,9 +81,10 @@ mod test
 	#[test]
 	fn test_register_and_login()
 	{
+		let username = "admin";
 		let password = "abc*èéöäüê";
 
-		let out = register(password).unwrap();
+		let out = register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
@@ -112,10 +114,11 @@ mod test
 	#[test]
 	fn test_change_password()
 	{
+		let username = "admin";
 		let password = "abc*èéöäüê";
 		let new_password = "abcdfg";
 
-		let out = register(password).unwrap();
+		let out = register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 

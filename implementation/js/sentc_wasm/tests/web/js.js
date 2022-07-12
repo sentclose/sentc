@@ -18,7 +18,7 @@ export async function run()
 	let pw = "hello";
 
 	console.log("register user")
-	let register_out = register_test(pw);
+	let register_out = register_test("admin",pw);
 
 	console.log(register_out);
 	console.log("real 1 json pretty");

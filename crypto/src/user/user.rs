@@ -38,9 +38,9 @@ impl MasterKeyFormat
 	}
 }
 
-pub fn register(password: &str) -> Result<String, String>
+pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
 {
-	register_internally(password).map_err(|e| err_to_msg(e))
+	register_internally(user_identifier, password).map_err(|e| err_to_msg(e))
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, String>
@@ -179,9 +179,10 @@ mod test
 	#[test]
 	fn test_register()
 	{
+		let username = "admin";
 		let password = "abc*èéöäüê";
 
-		let out = register(password).unwrap();
+		let out = register(username, password).unwrap();
 
 		std::println!("{}", out);
 	}
@@ -189,9 +190,10 @@ mod test
 	#[test]
 	fn test_register_and_login()
 	{
+		let username = "admin";
 		let password = "abc*èéöäüê";
 
-		let out = register(password).unwrap();
+		let out = register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
@@ -226,10 +228,11 @@ mod test
 	#[test]
 	fn test_change_password()
 	{
+		let username = "admin";
 		let password = "abc*èéöäüê";
 		let new_password = "abcdfg";
 
-		let out = register(password).unwrap();
+		let out = register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 

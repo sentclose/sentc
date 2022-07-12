@@ -40,6 +40,7 @@ pub struct RegisterData
 {
 	pub master_key: MasterKey,
 	pub derived: KeyDerivedData,
+	pub user_identifier: String, //with this the user is called for login. can be username or an id, or an email
 }
 
 impl RegisterData

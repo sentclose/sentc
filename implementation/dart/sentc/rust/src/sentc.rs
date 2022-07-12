@@ -13,9 +13,9 @@ pub fn register_test_full() -> String
 }
 
 //real usage
-pub fn register(password: String) -> Result<String>
+pub fn register(username: String, password: String) -> Result<String>
 {
-	user::register(password.as_str()).map_err(|err| anyhow!(err))
+	user::register(username.as_str(), password.as_str()).map_err(|err| anyhow!(err))
 }
 
 pub fn prepare_login(password: String, server_output: String) -> Result<PrepareLoginOutput>

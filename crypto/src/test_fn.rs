@@ -14,15 +14,17 @@ use crate::{KeyData, PrivateKeyFormat};
 #[cfg(feature = "rust")]
 pub fn register_test_full() -> String
 {
+	let username = "admin";
 	let password = "abc*èéöäüê";
 
 	#[cfg(feature = "rust")]
-	let out = register(password).unwrap();
+	let out = register(username, password).unwrap();
 
 	let out = RegisterData::from_string(out.as_str()).unwrap();
 	let RegisterData {
 		derived,
 		master_key,
+		..
 	} = out;
 
 	//and now try to login
@@ -69,15 +71,17 @@ pub fn register_test_full() -> String
 #[cfg(not(feature = "rust"))]
 pub fn register_test_full() -> String
 {
+	let username = "admin";
 	let password = "abc*èéöäüê";
 
 	#[cfg(not(feature = "rust"))]
-	let out = register(password).unwrap();
+	let out = register(username, password).unwrap();
 
 	let out = RegisterData::from_string(out.as_str()).unwrap();
 	let RegisterData {
 		derived,
 		master_key,
+		..
 	} = out;
 
 	//and now try to login
@@ -160,6 +164,7 @@ pub fn simulate_server_done_login(register_data: &str) -> String
 	let RegisterData {
 		derived,
 		master_key,
+		..
 	} = RegisterData::from_string(register_data).unwrap();
 
 	let done_login_server_out = DoneLoginServerKeysOutput {
@@ -192,9 +197,10 @@ mod test
 	#[test]
 	fn test_register_fn()
 	{
+		let username = "admin";
 		let password = "12345";
 
-		let out_string = register(password).unwrap();
+		let out_string = register(username, password).unwrap();
 
 		let prep_login_in = simulate_server_prepare_login(out_string.as_str());
 		let (_auth_key, master_key_encryption_key) = prepare_login(password, prep_login_in.as_str()).unwrap();

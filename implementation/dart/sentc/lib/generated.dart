@@ -16,7 +16,8 @@ abstract class SentcFlutter {
 
   FlutterRustBridgeTaskConstMeta get kRegisterTestFullConstMeta;
 
-  Future<String> register({required String password, dynamic hint});
+  Future<String> register(
+      {required String username, required String password, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kRegisterConstMeta;
 
@@ -65,20 +66,21 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
         argNames: [],
       );
 
-  Future<String> register({required String password, dynamic hint}) =>
+  Future<String> register(
+          {required String username, required String password, dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
-        callFfi: (port_) =>
-            inner.wire_register(port_, _api2wire_String(password)),
+        callFfi: (port_) => inner.wire_register(
+            port_, _api2wire_String(username), _api2wire_String(password)),
         parseSuccessData: _wire2api_String,
         constMeta: kRegisterConstMeta,
-        argValues: [password],
+        argValues: [username, password],
         hint: hint,
       ));
 
   FlutterRustBridgeTaskConstMeta get kRegisterConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "register",
-        argNames: ["password"],
+        argNames: ["username", "password"],
       );
 
   Future<PrepareLoginOutput> prepareLogin(
@@ -201,20 +203,23 @@ class SentcFlutterWire implements FlutterRustBridgeWireBase {
 
   void wire_register(
     int port_,
+    ffi.Pointer<wire_uint_8_list> username,
     ffi.Pointer<wire_uint_8_list> password,
   ) {
     return _wire_register(
       port_,
+      username,
       password,
     );
   }
 
   late final _wire_registerPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(
-              ffi.Int64, ffi.Pointer<wire_uint_8_list>)>>('wire_register');
-  late final _wire_register = _wire_registerPtr
-      .asFunction<void Function(int, ffi.Pointer<wire_uint_8_list>)>();
+          ffi.Void Function(ffi.Int64, ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>)>>('wire_register');
+  late final _wire_register = _wire_registerPtr.asFunction<
+      void Function(
+          int, ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
 
   void wire_prepare_login(
     int port_,

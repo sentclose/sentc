@@ -68,7 +68,7 @@ pub use self::user::{
 #[cfg(feature = "rust")]
 pub use self::user_rust::{change_password, done_login, prepare_login, prepare_login_start, prepare_update_user_keys, register, reset_password};
 
-fn register_internally(password: &str) -> Result<String, Error>
+fn register_internally(user_identifier: &str, password: &str) -> Result<String, Error>
 {
 	let out = register_core(password)?;
 
@@ -112,6 +112,7 @@ fn register_internally(password: &str) -> Result<String, Error>
 	let register_out = RegisterData {
 		master_key,
 		derived,
+		user_identifier: user_identifier.to_string(),
 	};
 
 	//use always to string, even for rust feature enable because this data is for the server
@@ -351,6 +352,7 @@ pub(crate) mod test_fn
 		let RegisterData {
 			derived,
 			master_key,
+			..
 		} = data;
 
 		//get the server output back
@@ -376,9 +378,10 @@ pub(crate) mod test_fn
 	#[cfg(feature = "rust")]
 	pub(crate) fn create_user() -> (KeyData, UserPublicKeyData, UserVerifyKeyData)
 	{
+		let username = "admin";
 		let password = "12345";
 
-		let out_string = register(password).unwrap();
+		let out_string = register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
@@ -409,9 +412,10 @@ pub(crate) mod test_fn
 	#[cfg(not(feature = "rust"))]
 	pub(crate) fn create_user() -> (KeyData, UserPublicKeyData, UserVerifyKeyData)
 	{
+		let username = "admin";
 		let password = "12345";
 
-		let out_string = register(password).unwrap();
+		let out_string = register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);

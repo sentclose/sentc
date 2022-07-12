@@ -30,7 +30,7 @@ pub extern "C" fn wire_register_test_full(port_: i64) {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_register(port_: i64, password: *mut wire_uint_8_list) {
+pub extern "C" fn wire_register(port_: i64, username: *mut wire_uint_8_list, password: *mut wire_uint_8_list) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
 			debug_name: "register",
@@ -38,8 +38,9 @@ pub extern "C" fn wire_register(port_: i64, password: *mut wire_uint_8_list) {
 			mode: FfiCallMode::Normal,
 		},
 		move || {
+			let api_username = username.wire2api();
 			let api_password = password.wire2api();
-			move |task_callback| register(api_password)
+			move |task_callback| register(api_username, api_password)
 		},
 	)
 }

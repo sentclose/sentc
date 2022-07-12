@@ -44,9 +44,9 @@ impl PrepareLoginOutput
 }
 
 #[wasm_bindgen]
-pub fn register_test(password: &str) -> Result<String, String>
+pub fn register_test(username: &str, password: &str) -> Result<String, String>
 {
-	user::register(password)
+	user::register(username, password)
 }
 
 #[wasm_bindgen]
