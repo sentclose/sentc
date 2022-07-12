@@ -12,6 +12,7 @@ use crate::user::{
 	change_password_internally,
 	done_login_internally,
 	prepare_login_internally,
+	prepare_login_start_internally,
 	prepare_update_user_keys_internally,
 	register_internally,
 	reset_password_internally,
@@ -40,6 +41,11 @@ impl MasterKeyFormat
 pub fn register(password: &str) -> Result<String, String>
 {
 	register_internally(password).map_err(|e| err_to_msg(e))
+}
+
+pub fn prepare_login_start(user_id: &str) -> Result<String, String>
+{
+	prepare_login_start_internally(user_id).map_err(|e| err_to_msg(e))
 }
 
 pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, String), String>

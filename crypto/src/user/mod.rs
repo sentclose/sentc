@@ -16,6 +16,7 @@ use sentc_crypto_common::user::{
 	MasterKey,
 	MultipleLoginServerOutput,
 	PrepareLoginSaltServerOutput,
+	PrepareLoginServerInput,
 	RegisterData,
 	ResetPasswordData,
 };
@@ -52,10 +53,19 @@ mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
-pub use self::user::{change_password, done_login, prepare_login, prepare_update_user_keys, register, reset_password, MasterKeyFormat};
+pub use self::user::{
+	change_password,
+	done_login,
+	prepare_login,
+	prepare_login_start,
+	prepare_update_user_keys,
+	register,
+	reset_password,
+	MasterKeyFormat,
+};
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
-pub use self::user_rust::{change_password, done_login, prepare_login, prepare_update_user_keys, register, reset_password};
+pub use self::user_rust::{change_password, done_login, prepare_login, prepare_login_start, prepare_update_user_keys, register, reset_password};
 
 fn register_internally(password: &str) -> Result<String, Error>
 {
@@ -107,6 +117,19 @@ fn register_internally(password: &str) -> Result<String, Error>
 	Ok(register_out
 		.to_string()
 		.map_err(|_| Error::JsonToStringFailed)?)
+}
+
+/**
+# prepare the data for the server req
+
+*/
+fn prepare_login_start_internally(user_id: &str) -> Result<String, Error>
+{
+	PrepareLoginServerInput {
+		user_id: user_id.to_string(),
+	}
+	.to_string()
+	.map_err(|_| Error::JsonToStringFailed)
 }
 
 /**
