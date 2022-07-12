@@ -20,6 +20,7 @@ use sentc_crypto_common::user::{
 	PrepareLoginServerInput,
 	RegisterData,
 	ResetPasswordData,
+	UserIdentifierAvailableServerInput,
 };
 use sentc_crypto_core::user::{
 	change_password as change_password_core,
@@ -57,6 +58,7 @@ mod user;
 pub use self::user::{
 	change_password,
 	done_login,
+	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
 	prepare_update_user_keys,
@@ -66,8 +68,32 @@ pub use self::user::{
 };
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
-pub use self::user_rust::{change_password, done_login, prepare_login, prepare_login_start, prepare_update_user_keys, register, reset_password};
+pub use self::user_rust::{
+	change_password,
+	done_login,
+	prepare_check_user_identifier_available,
+	prepare_login,
+	prepare_login_start,
+	prepare_update_user_keys,
+	register,
+	reset_password,
+};
 
+/**
+# Prepare the server input for the check
+*/
+fn prepare_check_user_identifier_available_internally(user_identifier: &str) -> Result<String, Error>
+{
+	UserIdentifierAvailableServerInput {
+		user_identifier: user_identifier.to_string(),
+	}
+	.to_string()
+	.map_err(|_| Error::JsonToStringFailed)
+}
+
+/**
+# Prepare the register input incl. keys
+*/
 fn register_internally(user_identifier: &str, password: &str) -> Result<String, Error>
 {
 	let out = register_core(password)?;

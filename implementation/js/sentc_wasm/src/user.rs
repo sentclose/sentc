@@ -8,6 +8,26 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
 /**
+# Check if the identifier is available for this app
+*/
+#[wasm_bindgen]
+pub async fn check_user_identifier_available(base_url: String, auth_token: String, user_identifier: String) -> Result<String, JsValue>
+{
+	let server_input = user::prepare_check_user_identifier_available(user_identifier.as_str())?;
+
+	let url = format!("{}/api/v1/check_user_identifier", base_url);
+
+	let mut opts = RequestInit::new();
+	opts.method("POST");
+	opts.mode(RequestMode::NoCors);
+	opts.body(Some(&JsValue::from_str(server_input.as_str())));
+
+	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
+
+	Ok(res)
+}
+
+/**
 # Get the user input from the user client
 
 This is used when the register endpoint should only be called from the backend and not the clients.

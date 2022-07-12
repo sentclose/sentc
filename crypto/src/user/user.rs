@@ -11,6 +11,7 @@ use crate::err_to_msg;
 use crate::user::{
 	change_password_internally,
 	done_login_internally,
+	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
 	prepare_update_user_keys_internally,
@@ -36,6 +37,11 @@ impl MasterKeyFormat
 	{
 		to_string(self)
 	}
+}
+
+pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, String>
+{
+	prepare_check_user_identifier_available_internally(user_identifier).map_err(|e| err_to_msg(e))
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
