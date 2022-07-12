@@ -15,9 +15,9 @@ This is used when the register endpoint should only be called from the backend a
 For full register see register()
 */
 #[wasm_bindgen]
-pub fn prepare_register(username: &str, password: &str) -> Result<String, JsValue>
+pub fn prepare_register(user_identifier: &str, password: &str) -> Result<String, JsValue>
 {
-	Ok(user::register(username, password)?)
+	Ok(user::register(user_identifier, password)?)
 }
 
 /**
@@ -27,9 +27,9 @@ Do the full req incl. req.
 No checking about spamming and just return the user id.
 */
 #[wasm_bindgen]
-pub async fn register(base_url: String, auth_token: String, username: String, password: String) -> Result<String, JsValue>
+pub async fn register(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String, JsValue>
 {
-	let register_input = user::register(username.as_str(), password.as_str())?;
+	let register_input = user::register(user_identifier.as_str(), password.as_str())?;
 
 	let url = format!("{}/api/v1/register", base_url);
 

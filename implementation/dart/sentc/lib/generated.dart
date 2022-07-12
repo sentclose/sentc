@@ -17,7 +17,7 @@ abstract class SentcFlutter {
   FlutterRustBridgeTaskConstMeta get kRegisterTestFullConstMeta;
 
   Future<String> register(
-      {required String username, required String password, dynamic hint});
+      {required String userIdentifier, required String password, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kRegisterConstMeta;
 
@@ -67,20 +67,22 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
       );
 
   Future<String> register(
-          {required String username, required String password, dynamic hint}) =>
+          {required String userIdentifier,
+          required String password,
+          dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
-        callFfi: (port_) => inner.wire_register(
-            port_, _api2wire_String(username), _api2wire_String(password)),
+        callFfi: (port_) => inner.wire_register(port_,
+            _api2wire_String(userIdentifier), _api2wire_String(password)),
         parseSuccessData: _wire2api_String,
         constMeta: kRegisterConstMeta,
-        argValues: [username, password],
+        argValues: [userIdentifier, password],
         hint: hint,
       ));
 
   FlutterRustBridgeTaskConstMeta get kRegisterConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "register",
-        argNames: ["username", "password"],
+        argNames: ["userIdentifier", "password"],
       );
 
   Future<PrepareLoginOutput> prepareLogin(
@@ -203,12 +205,12 @@ class SentcFlutterWire implements FlutterRustBridgeWireBase {
 
   void wire_register(
     int port_,
-    ffi.Pointer<wire_uint_8_list> username,
+    ffi.Pointer<wire_uint_8_list> user_identifier,
     ffi.Pointer<wire_uint_8_list> password,
   ) {
     return _wire_register(
       port_,
-      username,
+      user_identifier,
       password,
     );
   }
