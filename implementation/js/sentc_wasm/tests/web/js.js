@@ -29,13 +29,10 @@ export async function run()
 	let prep_server_out = simulate_server_prepare_login(register_out)
 
 	let prep = prepare_login(pw,prep_server_out);
-	/** @param {PrepareLoginData} */
-	let prep_login_data = JSON.parse(prep);
-
-	console.log(prep_login_data);
 
 	let done_login_server_out = simulate_server_done_login(register_out);
-	let key_data = done_login(JSON.stringify(prep_login_data.master_key_encryption_key),done_login_server_out);
+
+	let key_data = done_login(prep.get_master_key_encryption_key(),done_login_server_out);
 
 	/** @param {KeyData} */
 	let keys = JSON.parse(key_data);

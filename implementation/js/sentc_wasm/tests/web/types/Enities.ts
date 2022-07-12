@@ -28,11 +28,6 @@ interface RegisterData
 	derived: KeyDerivedData,
 }
 
-interface PrepareLoginData {
-	auth_key: string,
-	master_key_encryption_key: {[alg: string]: string}
-}
-
 interface KeyData
 {
 	private_key: {

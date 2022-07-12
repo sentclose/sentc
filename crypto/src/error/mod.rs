@@ -16,6 +16,7 @@ pub fn err_to_msg(error: Error) -> String
 		Error::DecodeSaltFailed => out_error(4, "The salt has a wrong format"),
 
 		Error::JsonToStringFailed => out_error(100, "Cannot create a string from this object"),
+		Error::JsonParseFailed => out_error(101, "Cannot create an object from the input string"),
 		_ => out_error(0, "other"),
 	}
 }
