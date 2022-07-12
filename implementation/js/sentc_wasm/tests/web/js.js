@@ -1,4 +1,4 @@
-import init, { register_test_full, register,prepare_login,done_login,simulate_server_done_login,simulate_server_prepare_login } from './pkg/sentc_wasm.js';
+import init, { register_test_full,register_test,prepare_login_test,done_login_test,simulate_server_done_login,simulate_server_prepare_login } from './pkg/sentc_wasm.js';
 
 export async function run()
 {
@@ -18,7 +18,7 @@ export async function run()
 	let pw = "hello";
 
 	console.log("register user")
-	let register_out = register(pw);
+	let register_out = register_test(pw);
 
 	console.log(register_out);
 	console.log("real 1 json pretty");
@@ -28,11 +28,11 @@ export async function run()
 	console.log("prepare login")
 	let prep_server_out = simulate_server_prepare_login(register_out)
 
-	let prep = prepare_login(pw,prep_server_out);
+	let prep = prepare_login_test(pw,prep_server_out);
 
 	let done_login_server_out = simulate_server_done_login(register_out);
 
-	let key_data = done_login(prep.get_master_key_encryption_key(),done_login_server_out);
+	let key_data = done_login_test(prep.get_master_key_encryption_key(),done_login_server_out);
 
 	/** @param {KeyData} */
 	let keys = JSON.parse(key_data);
