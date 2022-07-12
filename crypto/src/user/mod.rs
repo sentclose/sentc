@@ -11,6 +11,7 @@ use alloc::vec::Vec;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{
 	ChangePasswordData,
+	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
 	KeyDerivedData,
 	MasterKey,
@@ -145,6 +146,12 @@ fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServ
 
 	//for the server
 	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
+
+	let auth_key = DoneLoginServerInput {
+		auth_key,
+	}
+	.to_string()
+	.map_err(|_| Error::JsonToStringFailed)?;
 
 	Ok((auth_key, result.master_key_encryption_key))
 }

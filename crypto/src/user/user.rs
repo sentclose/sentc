@@ -52,6 +52,7 @@ pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, Str
 {
 	let server_output = PrepareLoginSaltServerOutput::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
+	//the auth key is already in the right json format for the server
 	let (auth_key, master_key_encryption_key) = prepare_login_internally(password, &server_output).map_err(|e| err_to_msg(e))?;
 
 	//return the encryption key for the master key to the app and then use it for done login

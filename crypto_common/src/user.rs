@@ -185,6 +185,25 @@ impl PrepareLoginSaltServerOutput
 	}
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct DoneLoginServerInput
+{
+	pub auth_key: String,
+}
+
+impl DoneLoginServerInput
+{
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
+	{
+		from_str::<Self>(v)
+	}
+}
+
 //as base64 encoded string from the server
 #[derive(Serialize, Deserialize)]
 pub struct DoneLoginServerKeysOutput
