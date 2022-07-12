@@ -6,8 +6,6 @@ use sentc_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServe
 #[cfg(feature = "rust")]
 use sentc_crypto_core::Sk;
 
-#[cfg(not(feature = "rust"))]
-use crate::user::PrepareLoginData;
 use crate::user::{done_login, prepare_login, register};
 use crate::util::client_random_value_from_string;
 #[cfg(not(feature = "rust"))]
@@ -97,11 +95,7 @@ pub fn register_test_full() -> String
 
 	//back to the client, send prep login out string to the server if it is no err
 	#[cfg(not(feature = "rust"))]
-	let prep_login_out = prepare_login(password, server_output.to_string().unwrap().as_str()).unwrap();
-
-	//and get the master_key_encryption_key for done login
-	let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_str()).unwrap();
-	let master_key_encryption_key = prep_login_out.master_key_encryption_key;
+	let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.to_string().unwrap().as_str()).unwrap();
 
 	//get the server output back
 	let server_output = DoneLoginServerKeysOutput {
@@ -121,7 +115,7 @@ pub fn register_test_full() -> String
 	//now save the values
 	#[cfg(not(feature = "rust"))]
 	let login_out = done_login(
-		master_key_encryption_key.to_string().unwrap().as_str(), //the value comes from prepare login
+		master_key_encryption_key.as_str(), //the value comes from prepare login
 		server_output.as_str(),
 	)
 	.unwrap();
@@ -203,16 +197,11 @@ mod test
 		let out_string = register(password).unwrap();
 
 		let prep_login_in = simulate_server_prepare_login(out_string.as_str());
-		let prep_login_out = prepare_login(password, prep_login_in.as_str()).unwrap();
-
-		let PrepareLoginData {
-			master_key_encryption_key,
-			..
-		} = PrepareLoginData::from_string(prep_login_out.as_str()).unwrap();
+		let (_auth_key, master_key_encryption_key) = prepare_login(password, prep_login_in.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out_string.as_str());
 
-		let done_login_string = done_login(master_key_encryption_key.to_string().unwrap().as_str(), server_output.as_str()).unwrap();
+		let done_login_string = done_login(master_key_encryption_key.as_str(), server_output.as_str()).unwrap();
 
 		let _done_login = KeyData::from_string(done_login_string.as_str()).unwrap();
 	}

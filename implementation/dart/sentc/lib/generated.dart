@@ -20,7 +20,7 @@ abstract class SentcFlutter {
 
   FlutterRustBridgeTaskConstMeta get kRegisterConstMeta;
 
-  Future<String> prepareLogin(
+  Future<PrepareLoginOutput> prepareLogin(
       {required String password, required String serverOutput, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kPrepareLoginConstMeta;
@@ -31,6 +31,16 @@ abstract class SentcFlutter {
       dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kDoneLoginConstMeta;
+}
+
+class PrepareLoginOutput {
+  final String authKey;
+  final String masterKeyEncryptionKey;
+
+  PrepareLoginOutput({
+    required this.authKey,
+    required this.masterKeyEncryptionKey,
+  });
 }
 
 class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
@@ -71,14 +81,14 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
         argNames: ["password"],
       );
 
-  Future<String> prepareLogin(
+  Future<PrepareLoginOutput> prepareLogin(
           {required String password,
           required String serverOutput,
           dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
         callFfi: (port_) => inner.wire_prepare_login(
             port_, _api2wire_String(password), _api2wire_String(serverOutput)),
-        parseSuccessData: _wire2api_String,
+        parseSuccessData: _wire2api_prepare_login_output,
         constMeta: kPrepareLoginConstMeta,
         argValues: [password, serverOutput],
         hint: hint,
@@ -133,6 +143,16 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
 // Section: wire2api
 String _wire2api_String(dynamic raw) {
   return raw as String;
+}
+
+PrepareLoginOutput _wire2api_prepare_login_output(dynamic raw) {
+  final arr = raw as List<dynamic>;
+  if (arr.length != 2)
+    throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+  return PrepareLoginOutput(
+    authKey: _wire2api_String(arr[0]),
+    masterKeyEncryptionKey: _wire2api_String(arr[1]),
+  );
 }
 
 int _wire2api_u8(dynamic raw) {

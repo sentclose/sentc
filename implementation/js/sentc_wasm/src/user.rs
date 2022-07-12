@@ -10,15 +10,41 @@ use sentc_crypto::user::{
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+pub struct PrepareLoginOutput
+{
+	auth_key: String,
+	master_key_encryption_key: String,
+}
+
+#[wasm_bindgen]
+impl PrepareLoginOutput
+{
+	pub fn get_auth_key(self) -> String
+	{
+		self.auth_key
+	}
+
+	pub fn get_master_key_encryption_key(self) -> String
+	{
+		self.master_key_encryption_key
+	}
+}
+
+#[wasm_bindgen]
 pub fn register(password: &str) -> Result<String, String>
 {
 	register_core(password)
 }
 
 #[wasm_bindgen]
-pub fn prepare_login(password: &str, server_output: &str) -> Result<String, String>
+pub fn prepare_login(password: &str, server_output: &str) -> Result<PrepareLoginOutput, String>
 {
-	prepare_login_core(password, server_output)
+	let (auth_key, master_key_encryption_key) = prepare_login_core(password, server_output)?;
+
+	Ok(PrepareLoginOutput {
+		auth_key,
+		master_key_encryption_key,
+	})
 }
 
 #[wasm_bindgen]

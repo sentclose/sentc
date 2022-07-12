@@ -52,16 +52,7 @@ mod user;
 
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
-pub use self::user::{
-	change_password,
-	done_login,
-	prepare_login,
-	prepare_update_user_keys,
-	register,
-	reset_password,
-	MasterKeyFormat,
-	PrepareLoginData,
-};
+pub use self::user::{change_password, done_login, prepare_login, prepare_update_user_keys, register, reset_password, MasterKeyFormat};
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
 pub use self::user_rust::{change_password, done_login, prepare_login, prepare_update_user_keys, register, reset_password};
@@ -396,12 +387,7 @@ pub(crate) mod test_fn
 		let server_output = simulate_server_prepare_login(&out.derived);
 		let server_output_string = server_output.to_string().unwrap();
 		#[cfg(not(feature = "rust"))]
-		let prepare_login_string = prepare_login(password, server_output_string.as_str()).unwrap();
-
-		let PrepareLoginData {
-			master_key_encryption_key,
-			..
-		} = PrepareLoginData::from_string(prepare_login_string.as_str()).unwrap();
+		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output_string.as_str()).unwrap();
 
 		let user_public_key_data = UserPublicKeyData {
 			public_key_pem: out.derived.public_key.to_string(),
@@ -418,11 +404,7 @@ pub(crate) mod test_fn
 		let server_output = simulate_server_done_login(out);
 
 		#[cfg(not(feature = "rust"))]
-		let done_login_string = done_login(
-			master_key_encryption_key.to_string().unwrap().as_str(),
-			server_output.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		let done_login_string = done_login(master_key_encryption_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
 
 		let done_login = KeyData::from_string(done_login_string.as_str()).unwrap();
 

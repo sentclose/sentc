@@ -155,6 +155,13 @@ impl<T> NewWithNullPtr for *mut T {
 
 // Section: impl IntoDart
 
+impl support::IntoDart for PrepareLoginOutput {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.auth_key.into_dart(), self.master_key_encryption_key.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for PrepareLoginOutput {}
+
 // Section: executor
 
 support::lazy_static! {

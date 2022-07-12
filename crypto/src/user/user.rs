@@ -37,32 +37,12 @@ impl MasterKeyFormat
 	}
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct PrepareLoginData
-{
-	pub auth_key: String,
-	pub master_key_encryption_key: MasterKeyFormat,
-}
-
-impl PrepareLoginData
-{
-	pub fn from_string(v: &str) -> serde_json::Result<Self>
-	{
-		from_str::<Self>(v)
-	}
-
-	pub fn to_string(&self) -> serde_json::Result<String>
-	{
-		to_string(self)
-	}
-}
-
 pub fn register(password: &str) -> Result<String, String>
 {
 	register_internally(password).map_err(|e| err_to_msg(e))
 }
 
-pub fn prepare_login(password: &str, server_output: &str) -> Result<String, String>
+pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, String), String>
 {
 	let server_output = PrepareLoginSaltServerOutput::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
@@ -77,14 +57,12 @@ pub fn prepare_login(password: &str, server_output: &str) -> Result<String, Stri
 		},
 	};
 
-	let output = PrepareLoginData {
+	Ok((
 		auth_key,
-		master_key_encryption_key,
-	};
-
-	output
-		.to_string()
-		.map_err(|_e| err_to_msg(Error::JsonToStringFailed))
+		master_key_encryption_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+	))
 }
 
 pub fn done_login(
@@ -215,17 +193,13 @@ mod test
 			.unwrap();
 
 		//back to the client, send prep login out string to the server if it is no err
-		let prep_login_out = prepare_login(password, server_output.as_str()).unwrap();
-
-		//and get the master_key_encryption_key for done login
-		let prep_login_out = PrepareLoginData::from_string(&prep_login_out.as_str()).unwrap();
-		let master_key_encryption_key = prep_login_out.master_key_encryption_key;
+		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login_as_string(out);
 
 		//now save the values
 		let login_out = done_login(
-			master_key_encryption_key.to_string().unwrap().as_str(), //the value comes from prepare login
+			master_key_encryption_key.as_str(), //the value comes from prepare login
 			server_output.as_str(),
 		)
 		.unwrap();
