@@ -149,7 +149,7 @@ impl UserVerifyKeyData
 #[derive(Serialize, Deserialize)]
 pub struct PrepareLoginServerInput
 {
-	pub user_id: String,
+	pub user_identifier: String,
 }
 
 impl PrepareLoginServerInput

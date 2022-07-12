@@ -48,9 +48,9 @@ pub async fn register(base_url: String, auth_token: String, user_identifier: Str
 
 */
 #[wasm_bindgen]
-pub async fn login(base_url: String, auth_token: String, user_id: String, password: String) -> Result<String, JsValue>
+pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String, JsValue>
 {
-	let user_id_input = user::prepare_login_start(user_id.as_str())?;
+	let user_id_input = user::prepare_login_start(user_identifier.as_str())?;
 
 	let url = format!("{}/api/v1/pre_login", base_url);
 

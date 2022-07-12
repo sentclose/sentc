@@ -125,10 +125,10 @@ fn register_internally(user_identifier: &str, password: &str) -> Result<String, 
 # prepare the data for the server req
 
 */
-fn prepare_login_start_internally(user_id: &str) -> Result<String, Error>
+fn prepare_login_start_internally(user_identifier: &str) -> Result<String, Error>
 {
 	PrepareLoginServerInput {
-		user_id: user_id.to_string(),
+		user_identifier: user_identifier.to_string(),
 	}
 	.to_string()
 	.map_err(|_| Error::JsonToStringFailed)
