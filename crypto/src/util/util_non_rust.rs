@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
+use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::{Error, Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
@@ -12,7 +13,7 @@ pub enum PrivateKeyFormat
 {
 	Ecies
 	{
-		key: String, key_id: String
+		key: String, key_id: EncryptionKeyPairId
 	},
 }
 
@@ -34,7 +35,7 @@ pub enum PublicKeyFormat
 {
 	Ecies
 	{
-		key: String, key_id: String
+		key: String, key_id: EncryptionKeyPairId
 	},
 }
 
@@ -56,7 +57,7 @@ pub enum SignKeyFormat
 {
 	Ed25519
 	{
-		key: String, key_id: String
+		key: String, key_id: SignKeyPairId
 	},
 }
 
@@ -78,7 +79,7 @@ pub enum VerifyKeyFormat
 {
 	Ed25519
 	{
-		key: String, key_id: String
+		key: String, key_id: SignKeyPairId
 	},
 }
 
@@ -127,7 +128,7 @@ pub enum SymKeyFormat
 {
 	Aes
 	{
-		key: String, key_id: String
+		key: String, key_id: SymKeyId
 	},
 }
 
