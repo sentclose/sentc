@@ -66,6 +66,11 @@ pub async fn register(base_url: String, auth_token: String, user_identifier: Str
 /**
 # Login the user to this app
 
+Does the login requests. 1. for auth, 2nd to get the keys.
+
+If there are more data in the backend, then it is possible to call it via the jwt what is returned by the done login request.
+
+The other backend can validate the jwt
 */
 #[wasm_bindgen]
 pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String, JsValue>
