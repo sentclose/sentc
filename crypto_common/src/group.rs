@@ -119,7 +119,7 @@ pub struct GroupKeyServerOutput
 {
 	pub encrypted_group_key: String,
 	pub group_key_alg: String,
-	pub group_key_id: String,
+	pub group_key_id: SymKeyId,
 	pub encrypted_private_group_key: String,
 	pub public_group_key: String,
 	pub keypair_encrypt_alg: String,
@@ -149,6 +149,7 @@ save this in the sdk impl storage
 pub struct GroupServerData
 {
 	pub group_id: GroupId,
+	pub parent_group_id: Option<GroupId>,
 	pub keys: Vec<GroupKeyServerOutput>,
 	pub keys_page: i32, //when returning the keys as pagination
 }

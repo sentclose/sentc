@@ -257,6 +257,7 @@ mod test
 
 		let group_server_output_user_0 = GroupServerData {
 			group_id: "123".to_string(),
+			parent_group_id: None,
 			keys: vec![group_server_output_user_0],
 			keys_page: 0,
 		};
@@ -289,6 +290,7 @@ mod test
 
 		let group_server_output_user_1 = GroupServerData {
 			group_id: "123".to_string(),
+			parent_group_id: None,
 			keys: vec![group_server_output_user_1],
 			keys_page: 0,
 		};

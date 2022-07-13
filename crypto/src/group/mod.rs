@@ -276,6 +276,7 @@ pub(crate) mod test_fn
 
 		let group_server_output = GroupServerData {
 			group_id: "123".to_string(),
+			parent_group_id: None,
 			keys: vec![group_server_output],
 			keys_page: 0,
 		};
@@ -306,6 +307,7 @@ pub(crate) mod test_fn
 
 		let group_server_output = GroupServerData {
 			group_id: "123".to_string(),
+			parent_group_id: None,
 			keys: vec![group_server_output],
 			keys_page: 0,
 		};
