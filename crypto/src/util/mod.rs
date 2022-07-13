@@ -92,6 +92,7 @@ pub struct KeyDataInt
 	pub sign_key: SignKeyFormatInt,
 	pub public_key: PublicKeyFormatInt,
 	pub verify_key: VerifyKeyFormatInt,
+	pub jwt: String,
 }
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>

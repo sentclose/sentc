@@ -108,6 +108,7 @@ pub struct KeyData
 	pub public_key: PublicKeyFormat,
 	pub sign_key: SignKeyFormat,
 	pub verify_key: VerifyKeyFormat,
+	pub jwt: String,
 }
 
 impl KeyData

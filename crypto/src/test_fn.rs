@@ -54,6 +54,7 @@ pub fn register_test_full() -> String
 		keypair_sign_alg: derived.keypair_sign_alg,
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
+		jwt: "jwt".to_string(),
 	};
 
 	//now save the values
@@ -110,6 +111,7 @@ pub fn register_test_full() -> String
 		keypair_sign_alg: derived.keypair_sign_alg,
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
+		jwt: "jwt".to_string(),
 	};
 
 	let server_output = server_output.to_string().unwrap();
@@ -174,6 +176,7 @@ pub fn simulate_server_done_login(register_data: &str) -> String
 		keypair_sign_alg: derived.keypair_sign_alg,
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
+		jwt: "jwt".to_string(),
 	};
 
 	done_login_server_out.to_string().unwrap()

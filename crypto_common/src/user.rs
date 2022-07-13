@@ -238,6 +238,7 @@ pub struct DoneLoginServerKeysOutput
 	pub keypair_sign_alg: String,
 	pub keypair_encrypt_id: EncryptionKeyPairId,
 	pub keypair_sign_id: SignKeyPairId,
+	pub jwt: String,
 }
 
 impl DoneLoginServerKeysOutput

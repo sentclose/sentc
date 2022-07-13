@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
@@ -113,6 +113,7 @@ pub fn done_login(
 		sign_key,
 		public_key,
 		verify_key,
+		jwt: result.jwt,
 	};
 
 	output
@@ -162,6 +163,7 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 			sign_key,
 			public_key,
 			verify_key,
+			jwt: "".to_string(), //no jwt for the key rotation needed
 		};
 
 		output_arr.push(output);

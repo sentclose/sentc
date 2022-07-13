@@ -211,6 +211,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 	let verify_key = import_verify_key_from_pem_with_alg(server_output.verify_key_string.as_str(), server_output.keypair_sign_alg.as_str())?;
 
 	Ok(KeyDataInt {
+		jwt: server_output.jwt.to_string(),
 		private_key: PrivateKeyFormatInt {
 			key_id: server_output.keypair_encrypt_id.clone(),
 			key: out.private_key,
@@ -391,6 +392,7 @@ pub(crate) mod test_fn
 			keypair_sign_alg: derived.keypair_sign_alg,
 			keypair_encrypt_id: "abc".to_string(),
 			keypair_sign_id: "dfg".to_string(),
+			jwt: "jwt".to_string(),
 		}
 	}
 
