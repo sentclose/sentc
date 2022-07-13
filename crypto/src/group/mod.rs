@@ -16,6 +16,7 @@ use sentc_crypto_common::group::{
 	KeyRotationInput,
 };
 use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_common::GroupId;
 use sentc_crypto_core::group::{
 	done_key_rotation as done_key_rotation_core,
 	get_group as get_group_core,
@@ -56,7 +57,7 @@ pub struct DoneGettingGroupKeysOutput
 	pub public_group_key: PublicKeyFormatInt,
 }
 
-fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, Error>
+fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>) -> Result<String, Error>
 {
 	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
 	let out = prepare_create_core(&creators_public_key.key)?;
@@ -76,6 +77,7 @@ fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result
 		group_key_alg: out.group_key_alg.to_string(),
 		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
 		creator_public_key_id: creators_public_key.key_id.clone(),
+		parent_group_id,
 	};
 
 	Ok(create_out
@@ -258,7 +260,7 @@ pub(crate) mod test_fn
 	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
 	{
 		#[cfg(feature = "rust")]
-		let group = prepare_create(&user.public_key).unwrap();
+		let group = prepare_create(&user.public_key, None).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
@@ -288,7 +290,7 @@ pub(crate) mod test_fn
 	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
 	{
 		#[cfg(not(feature = "rust"))]
-		let group = prepare_create(user.public_key.to_string().unwrap().as_str()).unwrap();
+		let group = prepare_create(user.public_key.to_string().unwrap().as_str(), None).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {

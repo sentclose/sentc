@@ -4,6 +4,8 @@ use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
+use crate::{EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
+
 #[derive(Serialize, Deserialize)]
 pub struct MasterKey
 {
@@ -128,7 +130,7 @@ pub struct UserPublicKeyData
 {
 	pub public_key_pem: String,
 	pub public_key_alg: String,
-	pub public_key_id: String,
+	pub public_key_id: EncryptionKeyPairId,
 }
 
 impl UserPublicKeyData
@@ -149,7 +151,7 @@ pub struct UserVerifyKeyData
 {
 	pub verify_key_pem: String,
 	pub verify_key_alg: String,
-	pub verify_key_id: String,
+	pub verify_key_id: SignKeyPairId,
 }
 
 impl UserVerifyKeyData
@@ -189,7 +191,6 @@ pub struct PrepareLoginSaltServerOutput
 {
 	pub salt_string: String,
 	pub derived_encryption_key_alg: String,
-	pub key_id: String,
 }
 
 impl PrepareLoginSaltServerOutput
@@ -235,8 +236,8 @@ pub struct DoneLoginServerKeysOutput
 	pub encrypted_sign_key: String,
 	pub verify_key_string: String,
 	pub keypair_sign_alg: String,
-	pub keypair_encrypt_id: String,
-	pub keypair_sign_id: String,
+	pub keypair_encrypt_id: EncryptionKeyPairId,
+	pub keypair_sign_id: SignKeyPairId,
 }
 
 impl DoneLoginServerKeysOutput
@@ -257,7 +258,7 @@ pub struct PrepareLoginForKeyUpdateServerOutput
 {
 	pub client_random_value: String, //instead of prepare login (where the server creates the salt), for key update the client creates the salt for the old keys
 	pub derived_encryption_key_alg: String,
-	pub key_id: String,
+	pub key_id: SymKeyId,
 }
 
 impl PrepareLoginForKeyUpdateServerOutput
@@ -293,7 +294,7 @@ Don't return this for the first login try. For the first login try just return t
 #[derive(Serialize, Deserialize)]
 pub struct MultipleLoginServerOutput
 {
-	pub user_id: String,
+	pub user_id: UserId,
 	pub logins: Vec<PrepareLoginForKeyUpdateServerOutput>,
 	pub done_logins: Vec<DoneLoginServerKeysOutput>,
 }

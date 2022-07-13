@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 {
-	group::prepare_create(creators_public_key)
+	group::prepare_create(creators_public_key, None)
 }
 
 #[wasm_bindgen]

@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_common::GroupId;
 use sentc_crypto_core::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
@@ -87,11 +88,11 @@ impl GroupKeys
 	}
 }
 
-pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
+pub fn prepare_create(creators_public_key: &str, parent_group_id: Option<GroupId>) -> Result<String, String>
 {
 	let creators_public_key = import_public_key(creators_public_key).map_err(|e| err_to_msg(e))?;
 
-	prepare_create_internally(&creators_public_key).map_err(|e| err_to_msg(e))
+	prepare_create_internally(&creators_public_key, parent_group_id).map_err(|e| err_to_msg(e))
 }
 
 pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> Result<String, String>
@@ -213,7 +214,7 @@ mod test
 		//create a rust dummy user
 		let (user, _public_key, _verify_key) = create_user();
 
-		let group = prepare_create(&user.public_key.to_string().unwrap().as_str()).unwrap();
+		let group = prepare_create(&user.public_key.to_string().unwrap().as_str(), None).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let pk = import_public_key(user.public_key.to_string().unwrap().as_str()).unwrap();
@@ -240,7 +241,7 @@ mod test
 
 		let (user1, public_key1, _verify_key1) = create_user();
 
-		let group_create = prepare_create(user.public_key.to_string().unwrap().as_str()).unwrap();
+		let group_create = prepare_create(user.public_key.to_string().unwrap().as_str(), None).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {

@@ -4,6 +4,8 @@ use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
+use crate::{EncryptionKeyPairId, GroupId, SymKeyId};
+
 #[derive(Serialize, Deserialize)]
 pub struct CreateData
 {
@@ -13,7 +15,8 @@ pub struct CreateData
 	pub encrypted_private_group_key: String,
 	pub public_group_key: String,
 	pub keypair_encrypt_alg: String,
-	pub creator_public_key_id: String,
+	pub creator_public_key_id: EncryptionKeyPairId,
+	pub parent_group_id: Option<GroupId>,
 }
 
 impl CreateData
@@ -41,8 +44,8 @@ pub struct KeyRotationData
 	pub encrypted_group_key_by_ephemeral: String,
 	pub ephemeral_alg: String,
 	pub encrypted_ephemeral_key: String, //encrypted by the old group key. encrypt this key with every other member public key on the server
-	pub previous_group_key_id: String,
-	pub invoker_public_key_id: String,
+	pub previous_group_key_id: SymKeyId,
+	pub invoker_public_key_id: EncryptionKeyPairId,
 }
 
 impl KeyRotationData
@@ -64,7 +67,7 @@ pub struct KeyRotationInput
 	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
 	pub encrypted_group_key_by_ephemeral: String,
 	pub ephemeral_alg: String,
-	pub previous_group_key_id: String, //use this in the client sdk to load the right group key from the storage
+	pub previous_group_key_id: SymKeyId, //use this in the client sdk to load the right group key from the storage
 }
 
 impl KeyRotationInput
@@ -84,7 +87,7 @@ impl KeyRotationInput
 pub struct DoneKeyRotationData
 {
 	pub encrypted_new_group_key: String,
-	pub public_key_id: String,
+	pub public_key_id: EncryptionKeyPairId,
 }
 
 impl DoneKeyRotationData
@@ -120,8 +123,8 @@ pub struct GroupKeyServerOutput
 	pub encrypted_private_group_key: String,
 	pub public_group_key: String,
 	pub keypair_encrypt_alg: String,
-	pub key_pair_id: String,
-	pub user_public_key_id: String, //to know what private key we should use to decrypt
+	pub key_pair_id: EncryptionKeyPairId,
+	pub user_public_key_id: EncryptionKeyPairId, //to know what private key we should use to decrypt
 }
 
 impl GroupKeyServerOutput
@@ -145,7 +148,7 @@ save this in the sdk impl storage
 #[derive(Serialize, Deserialize)]
 pub struct GroupServerData
 {
-	pub group_id: String,
+	pub group_id: GroupId,
 	pub keys: Vec<GroupKeyServerOutput>,
 	pub keys_page: i32, //when returning the keys as pagination
 }
@@ -168,8 +171,8 @@ pub struct GroupKeysForNewMember
 {
 	pub encrypted_group_key: String, //base64 encoded
 	pub alg: String,                 //the group key alg
-	pub key_id: String,
-	pub user_public_key_id: String,
+	pub key_id: SymKeyId,
+	pub user_public_key_id: EncryptionKeyPairId,
 }
 
 #[derive(Serialize, Deserialize)]

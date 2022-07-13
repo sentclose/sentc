@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_common::GroupId;
 use sentc_crypto_core::Error;
 
 use crate::group::{
@@ -21,9 +22,9 @@ pub struct GroupOutData
 	pub group_id: String,
 }
 
-pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, Error>
+pub fn prepare_create(creators_public_key: &PublicKeyFormat, parent_group_id: Option<GroupId>) -> Result<String, Error>
 {
-	prepare_create_internally(&creators_public_key)
+	prepare_create_internally(&creators_public_key, parent_group_id)
 }
 
 pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat) -> Result<String, Error>
@@ -86,7 +87,7 @@ mod test
 		//create a rust dummy user
 		let (user, _public_key, _verify_key) = create_user();
 
-		let group = prepare_create(&user.public_key).unwrap();
+		let group = prepare_create(&user.public_key, None).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		assert_eq!(group.creator_public_key_id, user.public_key.key_id);
@@ -110,7 +111,7 @@ mod test
 		let (user, _public_key, _verify_key) = create_user();
 		let (user1, public_key1, _verify_key1) = create_user();
 
-		let group_create = prepare_create(&user.public_key).unwrap();
+		let group_create = prepare_create(&user.public_key, None).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {

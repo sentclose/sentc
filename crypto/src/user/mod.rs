@@ -369,7 +369,6 @@ pub(crate) mod test_fn
 		PrepareLoginSaltServerOutput {
 			salt_string,
 			derived_encryption_key_alg: derived.derived_alg.clone(),
-			key_id: "1234".to_string(),
 		}
 	}
 

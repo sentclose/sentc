@@ -37,7 +37,6 @@ pub fn register_test_full() -> String
 	let server_output = PrepareLoginSaltServerOutput {
 		salt_string: salt_from_rand_value,
 		derived_encryption_key_alg: derived.derived_alg.clone(),
-		key_id: "1234".to_string(),
 	};
 
 	//back to the client, send prep login out string to the server if it is no err
@@ -94,7 +93,6 @@ pub fn register_test_full() -> String
 	let server_output = PrepareLoginSaltServerOutput {
 		salt_string: salt_from_rand_value,
 		derived_encryption_key_alg: derived.derived_alg.clone(),
-		key_id: "1234".to_string(),
 	};
 
 	//back to the client, send prep login out string to the server if it is no err
@@ -152,7 +150,6 @@ pub fn simulate_server_prepare_login(register_data: &str) -> String
 	let prep = PrepareLoginSaltServerOutput {
 		salt_string,
 		derived_encryption_key_alg: derived.derived_alg.clone(),
-		key_id: "1234".to_string(),
 	};
 
 	prep.to_string().unwrap()

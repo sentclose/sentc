@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
+use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
@@ -50,31 +51,31 @@ pub use self::{
 pub struct SymKeyFormatInt
 {
 	pub key: SymKey,
-	pub key_id: String,
+	pub key_id: SymKeyId,
 }
 
 pub struct PrivateKeyFormatInt
 {
 	pub key: Sk,
-	pub key_id: String,
+	pub key_id: EncryptionKeyPairId,
 }
 
 pub struct PublicKeyFormatInt
 {
 	pub key: Pk,
-	pub key_id: String,
+	pub key_id: EncryptionKeyPairId,
 }
 
 pub struct SignKeyFormatInt
 {
 	pub key: SignK,
-	pub key_id: String,
+	pub key_id: SignKeyPairId,
 }
 
 pub struct VerifyKeyFormatInt
 {
 	pub key: VerifyK,
-	pub key_id: String,
+	pub key_id: SignKeyPairId,
 }
 
 /**

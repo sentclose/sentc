@@ -3,10 +3,12 @@ use alloc::string::String;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_slice, from_str, to_string};
 
+use crate::SignKeyPairId;
+
 #[derive(Serialize, Deserialize)]
 pub struct SignHead
 {
-	pub id: String,
+	pub id: SignKeyPairId,
 	pub alg: String, //in case at decrypt the user got no access to the verify key, but we still need to split data and sig
 }
 
