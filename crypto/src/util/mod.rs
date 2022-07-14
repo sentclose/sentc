@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
+use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::{
 	ClientRandomValue,
@@ -93,6 +94,8 @@ pub struct KeyDataInt
 	pub public_key: PublicKeyFormatInt,
 	pub verify_key: VerifyKeyFormatInt,
 	pub jwt: String,
+	pub exported_public_key: UserPublicKeyData,
+	pub exported_verify_key: UserVerifyKeyData,
 }
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>

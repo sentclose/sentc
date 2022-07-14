@@ -85,7 +85,7 @@ mod test
 	fn test_create_group()
 	{
 		//create a rust dummy user
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
 		let group = prepare_create(&user.public_key, None).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
@@ -98,7 +98,7 @@ mod test
 	{
 		//test here only basic functions, if function panics. the key test is done in crypto mod
 
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
 		let (data, _) = create_group(&user);
 
@@ -108,8 +108,8 @@ mod test
 	#[test]
 	fn test_prepare_group_keys_for_new_member()
 	{
-		let (user, _public_key, _verify_key) = create_user();
-		let (user1, public_key1, _verify_key1) = create_user();
+		let user = create_user();
+		let user1 = create_user();
 
 		let group_create = prepare_create(&user.public_key, None).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
@@ -135,7 +135,7 @@ mod test
 		let group_data_user_0 = get_group_data(&user.private_key, &group_server_output_user_0).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(&public_key1, &[&group_data_user_0.keys[0].group_key]).unwrap();
+		let out = prepare_group_keys_for_new_member(&user1.exported_public_key, &[&group_data_user_0.keys[0].group_key]).unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.0[0]; //this group only got one key
 
@@ -171,7 +171,7 @@ mod test
 	#[test]
 	fn test_key_rotation()
 	{
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
 		let (data, group_server_out) = create_group(&user);
 

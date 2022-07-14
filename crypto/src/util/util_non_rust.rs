@@ -109,6 +109,8 @@ pub struct KeyData
 	pub sign_key: String,
 	pub verify_key: String,
 	pub jwt: String,
+	pub exported_public_key: String,
+	pub exported_verify_key: String,
 }
 
 #[derive(Serialize, Deserialize)]

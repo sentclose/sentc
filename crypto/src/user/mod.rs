@@ -21,6 +21,8 @@ use sentc_crypto_common::user::{
 	RegisterData,
 	ResetPasswordData,
 	UserIdentifierAvailableServerInput,
+	UserPublicKeyData,
+	UserVerifyKeyData,
 };
 use sentc_crypto_core::user::{
 	change_password as change_password_core,
@@ -210,6 +212,19 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 
 	let verify_key = import_verify_key_from_pem_with_alg(server_output.verify_key_string.as_str(), server_output.keypair_sign_alg.as_str())?;
 
+	//export this too, so the user can verify the own data
+	let exported_public_key = UserPublicKeyData {
+		public_key_pem: server_output.public_key_string.to_string(),
+		public_key_alg: server_output.keypair_encrypt_alg.to_string(),
+		public_key_id: server_output.keypair_encrypt_id.clone(),
+	};
+
+	let exported_verify_key = UserVerifyKeyData {
+		verify_key_pem: server_output.verify_key_string.to_string(),
+		verify_key_alg: server_output.keypair_sign_alg.to_string(),
+		verify_key_id: server_output.keypair_sign_id.clone(),
+	};
+
 	Ok(KeyDataInt {
 		jwt: server_output.jwt.to_string(),
 		private_key: PrivateKeyFormatInt {
@@ -228,6 +243,8 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 			key_id: server_output.keypair_sign_id.clone(),
 			key: verify_key,
 		},
+		exported_public_key,
+		exported_verify_key,
 	})
 }
 
@@ -354,7 +371,7 @@ pub(crate) mod test_fn
 {
 	use alloc::string::ToString;
 
-	use sentc_crypto_common::user::{KeyDerivedData, RegisterData, UserPublicKeyData, UserVerifyKeyData};
+	use sentc_crypto_common::user::{KeyDerivedData, RegisterData};
 
 	use super::*;
 	use crate::util::{client_random_value_from_string, KeyData};
@@ -403,7 +420,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_user() -> (KeyData, UserPublicKeyData, UserVerifyKeyData)
+	pub(crate) fn create_user() -> KeyData
 	{
 		let username = "admin";
 		let password = "12345";
@@ -415,29 +432,17 @@ pub(crate) mod test_fn
 		#[cfg(feature = "rust")]
 		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
 
-		let user_public_key_data = UserPublicKeyData {
-			public_key_pem: out.derived.public_key.to_string(),
-			public_key_alg: out.derived.keypair_encrypt_alg.to_string(),
-			public_key_id: "abc".to_string(),
-		};
-
-		let user_verify_key_data = UserVerifyKeyData {
-			verify_key_pem: out.derived.verify_key.to_string(),
-			verify_key_alg: out.derived.keypair_sign_alg.to_string(),
-			verify_key_id: "dfg".to_string(),
-		};
-
 		let server_output = simulate_server_done_login(out);
 
 		#[cfg(feature = "rust")]
 		let done_login = done_login(&master_key_encryption_key, &server_output).unwrap();
 
 		#[cfg(feature = "rust")]
-		(done_login, user_public_key_data, user_verify_key_data)
+		done_login
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_user() -> (KeyData, UserPublicKeyData, UserVerifyKeyData)
+	pub(crate) fn create_user() -> KeyData
 	{
 		let username = "admin";
 		let password = "12345";
@@ -450,24 +455,12 @@ pub(crate) mod test_fn
 		#[cfg(not(feature = "rust"))]
 		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output_string.as_str()).unwrap();
 
-		let user_public_key_data = UserPublicKeyData {
-			public_key_pem: out.derived.public_key.to_string(),
-			public_key_alg: out.derived.keypair_encrypt_alg.to_string(),
-			public_key_id: "abc".to_string(),
-		};
-
-		let user_verify_key_data = UserVerifyKeyData {
-			verify_key_pem: out.derived.verify_key.to_string(),
-			verify_key_alg: out.derived.keypair_sign_alg.to_string(),
-			verify_key_id: "dfg".to_string(),
-		};
-
 		let server_output = simulate_server_done_login(out);
 
 		#[cfg(not(feature = "rust"))]
 		let done_login = done_login(master_key_encryption_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
 
 		#[cfg(not(feature = "rust"))]
-		(done_login, user_public_key_data, user_verify_key_data)
+		done_login
 	}
 }

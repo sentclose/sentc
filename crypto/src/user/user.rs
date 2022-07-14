@@ -122,6 +122,14 @@ pub fn done_login(
 			.to_string()
 			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
 		jwt: result.jwt,
+		exported_public_key: result
+			.exported_public_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+		exported_verify_key: result
+			.exported_verify_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
 	})
 }
 
@@ -176,6 +184,14 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 				.to_string()
 				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
 			jwt: result.jwt,
+			exported_public_key: result
+				.exported_public_key
+				.to_string()
+				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			exported_verify_key: result
+				.exported_verify_key
+				.to_string()
+				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
 		};
 
 		output_arr.push(output);
