@@ -24,9 +24,7 @@ use crate::util::{
 	import_public_key,
 	import_sym_key,
 	import_sym_key_from_format,
-	PrivateKeyFormat,
 	PrivateKeyFormatInt,
-	PublicKeyFormat,
 	SymKeyFormat,
 	SymKeyFormatInt,
 };
@@ -34,22 +32,9 @@ use crate::util::{
 #[derive(Serialize, Deserialize)]
 pub struct GroupKeyData
 {
-	pub private_group_key: PrivateKeyFormat,
-	pub public_group_key: PublicKeyFormat,
-	pub group_key: SymKeyFormat,
-}
-
-impl GroupKeyData
-{
-	pub fn from_string(v: &str) -> serde_json::Result<Self>
-	{
-		from_str::<Self>(v)
-	}
-
-	pub fn to_string(&self) -> serde_json::Result<String>
-	{
-		to_string(self)
-	}
+	pub private_group_key: String,
+	pub public_group_key: String,
+	pub group_key: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -127,13 +112,19 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 	let group_key = export_sym_key(result.group_key);
 
 	Ok(GroupKeyData {
-		private_group_key,
-		public_group_key,
-		group_key,
+		private_group_key: private_group_key
+			.to_string()
+			.map_err(|_e| Error::JsonToStringFailed)?,
+		public_group_key: public_group_key
+			.to_string()
+			.map_err(|_e| Error::JsonToStringFailed)?,
+		group_key: group_key
+			.to_string()
+			.map_err(|_e| Error::JsonToStringFailed)?,
 	})
 }
 
-pub fn get_group_data(private_key: &str, server_output: &str) -> Result<String, String>
+pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, String>
 {
 	let server_output = GroupServerData::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
@@ -148,13 +139,10 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> Result<String, 
 		keys.push(value);
 	}
 
-	let data = GroupOutData {
+	Ok(GroupOutData {
 		group_id: server_output.group_id,
 		keys,
-	};
-
-	data.to_string()
-		.map_err(|_e| err_to_msg(Error::JsonToStringFailed))
+	})
 }
 
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
@@ -212,7 +200,7 @@ mod test
 	fn test_create_group()
 	{
 		//create a rust dummy user
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
 		let group = prepare_create(&user.public_key.as_str(), None).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
@@ -227,7 +215,7 @@ mod test
 	{
 		//test here only basic functions, if function panics. the key test is done in crypto mod
 
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
 		let (data, _) = create_group(&user);
 
@@ -237,9 +225,9 @@ mod test
 	#[test]
 	fn test_prepare_group_keys_for_new_member()
 	{
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
-		let (user1, public_key1, _verify_key1) = create_user();
+		let user1 = create_user();
 
 		let group_create = prepare_create(user.public_key.as_str(), None).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
@@ -263,13 +251,12 @@ mod test
 		};
 
 		let group_data_user_0 = get_group_data(user.private_key.as_str(), group_server_output_user_0.to_string().unwrap().as_str()).unwrap();
-		let group_data_user_0 = GroupOutData::from_string(group_data_user_0.as_str()).unwrap();
-		let group_key_user_0 = group_data_user_0.keys[0].group_key.to_string().unwrap();
+		let group_key_user_0 = group_data_user_0.keys[0].group_key.as_str();
 
-		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0.as_str()).unwrap()]);
+		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0).unwrap()]);
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(public_key1.to_string().unwrap().as_str(), group_keys.to_string().unwrap().as_str()).unwrap();
+		let out = prepare_group_keys_for_new_member(user1.exported_public_key.as_str(), group_keys.to_string().unwrap().as_str()).unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.0[0]; //this group only got one key
 
@@ -292,24 +279,9 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(user1.private_key.as_str(), group_server_output_user_1.to_string().unwrap().as_str()).unwrap();
-		let group_data_user_1 = GroupOutData::from_string(group_data_user_1.as_str()).unwrap();
 
-		let group_key_0 = import_sym_key(
-			group_data_user_0.keys[0]
-				.group_key
-				.to_string()
-				.unwrap()
-				.as_str(),
-		)
-		.unwrap();
-		let group_key_1 = import_sym_key(
-			group_data_user_1.keys[0]
-				.group_key
-				.to_string()
-				.unwrap()
-				.as_str(),
-		)
-		.unwrap();
+		let group_key_0 = import_sym_key(group_data_user_0.keys[0].group_key.as_str()).unwrap();
+		let group_key_1 = import_sym_key(group_data_user_1.keys[0].group_key.as_str()).unwrap();
 
 		assert_eq!(group_key_0.key_id, group_key_1.key_id);
 
@@ -323,11 +295,11 @@ mod test
 	#[test]
 	fn test_key_rotation()
 	{
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
 		let (data, group_server_out) = create_group(&user);
 
-		let rotation_out = key_rotation(data.keys[0].group_key.to_string().unwrap().as_str(), user.public_key.as_str()).unwrap();
+		let rotation_out = key_rotation(data.keys[0].group_key.as_str(), user.public_key.as_str()).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -359,7 +331,7 @@ mod test
 		let done_key_rotation = done_key_rotation(
 			user.private_key.as_str(),
 			user.public_key.as_str(),
-			data.keys[0].group_key.to_string().unwrap().as_str(),
+			data.keys[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
 		)
 		.unwrap();
@@ -379,11 +351,11 @@ mod test
 
 		let out = get_group_keys(&import_private_key(user.private_key.as_str()).unwrap(), &server_key_output).unwrap();
 
-		let old_group_key = import_sym_key(data.keys[0].group_key.to_string().unwrap().as_str()).unwrap();
+		let old_group_key = import_sym_key(data.keys[0].group_key.to_string().as_str()).unwrap();
 
-		let new_group_key_direct = import_sym_key(new_group_key_direct.group_key.to_string().unwrap().as_str()).unwrap();
+		let new_group_key_direct = import_sym_key(new_group_key_direct.group_key.as_str()).unwrap();
 
-		let new_group_key = import_sym_key(out.group_key.to_string().unwrap().as_str()).unwrap();
+		let new_group_key = import_sym_key(out.group_key.as_str()).unwrap();
 
 		//the new group key must be different after key rotation
 		match (&old_group_key.key, &new_group_key.key) {

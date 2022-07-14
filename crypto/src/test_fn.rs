@@ -214,9 +214,8 @@ pub fn simulate_server_create_group(group_create_data: &str) -> String
 mod test
 {
 	use super::*;
-	use crate::group::get_group_data;
 	#[cfg(not(feature = "rust"))]
-	use crate::group::{prepare_create, GroupOutData};
+	use crate::group::{get_group_data, prepare_create};
 	#[cfg(not(feature = "rust"))]
 	use crate::user::test_fn::create_user;
 
@@ -247,14 +246,12 @@ mod test
 	#[test]
 	fn test_group_server()
 	{
-		let (user, _public_key, _verify_key) = create_user();
+		let user = create_user();
 
 		let group = prepare_create(user.public_key.as_str(), None).unwrap();
 
 		let server_out = simulate_server_create_group(group.as_str());
 
-		let group_out = get_group_data(user.private_key.as_str(), server_out.as_str()).unwrap();
-
-		let _out = GroupOutData::from_string(group_out.as_str()).unwrap();
+		let _group_out = get_group_data(user.private_key.as_str(), server_out.as_str()).unwrap();
 	}
 }
