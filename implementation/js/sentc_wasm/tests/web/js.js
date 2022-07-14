@@ -9,7 +9,9 @@ import init, {
 	simulate_server_create_group,
 	get_group_data,
 	encrypt_symmetric,
-	decrypt_symmetric
+	decrypt_symmetric,
+	encrypt_string_symmetric,
+	decrypt_string_symmetric
 } from './../../pkg/sentc_wasm.js';
 
 export async function run()
@@ -94,6 +96,16 @@ export async function run()
 	let decrypted = decrypt_symmetric(group_keys.keys[0].group_key,encrypted,keys.exported_verify_key);
 
 	console.log(byteArrayToString(decrypted));
+
+	console.log("sym encrypt test with string");
+
+	let encrypted_string = encrypt_string_symmetric(group_keys.keys[0].group_key, text_view, keys.sign_key);
+
+	console.log(encrypted_string);
+
+	let decrypted_string = decrypt_string_symmetric(group_keys.keys[0].group_key,encrypted_string,keys.exported_verify_key);
+
+	console.log(byteArrayToString(decrypted_string));
 }
 
 /**
