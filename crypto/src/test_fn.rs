@@ -1,7 +1,11 @@
 use alloc::format;
 use alloc::string::{String, ToString};
+#[cfg(not(feature = "rust"))]
+use alloc::vec;
 
 use base64ct::{Base64, Encoding};
+#[cfg(not(feature = "rust"))]
+use sentc_crypto_common::group::{CreateData, GroupKeyServerOutput, GroupServerData};
 use sentc_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
 #[cfg(feature = "rust")]
 use sentc_crypto_core::Sk;
@@ -180,10 +184,41 @@ pub fn simulate_server_done_login(register_data: &str) -> String
 	done_login_server_out.to_string().unwrap()
 }
 
+#[cfg(not(feature = "rust"))]
+pub fn simulate_server_create_group(group_create_data: &str) -> String
+{
+	let group_create_data = CreateData::from_string(group_create_data).unwrap();
+
+	let group_server_output = GroupKeyServerOutput {
+		encrypted_group_key: group_create_data.encrypted_group_key,
+		group_key_alg: group_create_data.group_key_alg,
+		group_key_id: "123".to_string(),
+		encrypted_private_group_key: group_create_data.encrypted_private_group_key,
+		public_group_key: group_create_data.public_group_key,
+		keypair_encrypt_alg: group_create_data.keypair_encrypt_alg,
+		key_pair_id: "123".to_string(),
+		user_public_key_id: "123".to_string(),
+	};
+
+	let group_server_output = GroupServerData {
+		group_id: "123".to_string(),
+		parent_group_id: None,
+		keys: vec![group_server_output],
+		keys_page: 0,
+	};
+
+	group_server_output.to_string().unwrap()
+}
+
 #[cfg(test)]
 mod test
 {
 	use super::*;
+	use crate::group::get_group_data;
+	#[cfg(not(feature = "rust"))]
+	use crate::group::{prepare_create, GroupOutData};
+	#[cfg(not(feature = "rust"))]
+	use crate::user::test_fn::create_user;
 
 	#[test]
 	fn test_register_test()
@@ -206,5 +241,20 @@ mod test
 		let server_output = simulate_server_done_login(out_string.as_str());
 
 		let _done_login = done_login(master_key_encryption_key.as_str(), server_output.as_str()).unwrap();
+	}
+
+	#[cfg(not(feature = "rust"))]
+	#[test]
+	fn test_group_server()
+	{
+		let (user, _public_key, _verify_key) = create_user();
+
+		let group = prepare_create(user.public_key.as_str(), None).unwrap();
+
+		let server_out = simulate_server_create_group(group.as_str());
+
+		let group_out = get_group_data(user.private_key.as_str(), server_out.as_str()).unwrap();
+
+		let _out = GroupOutData::from_string(group_out.as_str()).unwrap();
 	}
 }
