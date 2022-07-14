@@ -164,6 +164,8 @@ impl support::IntoDart for KeyData {
 			self.sign_key.into_dart(),
 			self.verify_key.into_dart(),
 			self.jwt.into_dart(),
+			self.exported_public_key.into_dart(),
+			self.exported_verify_key.into_dart(),
 		]
 		.into_dart()
 	}

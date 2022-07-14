@@ -15,6 +15,8 @@ pub struct DoneLoginData
 	sign_key: String,
 	verify_key: String,
 	jwt: String,
+	exported_public_key: String,
+	exported_verify_key: String,
 }
 
 #[wasm_bindgen]
@@ -43,6 +45,16 @@ impl DoneLoginData
 	pub fn get_jwt(&self) -> String
 	{
 		self.jwt.clone()
+	}
+
+	pub fn get_exported_public_key(&self) -> String
+	{
+		self.exported_public_key.clone()
+	}
+
+	pub fn get_exported_verify_key(&self) -> String
+	{
+		self.exported_verify_key.clone()
 	}
 }
 
@@ -147,6 +159,8 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 		sign_key: keys.sign_key,
 		verify_key: keys.verify_key,
 		jwt: keys.jwt,
+		exported_public_key: keys.exported_public_key,
+		exported_verify_key: keys.exported_verify_key,
 	})
 }
 

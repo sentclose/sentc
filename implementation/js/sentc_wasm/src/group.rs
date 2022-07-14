@@ -22,12 +22,6 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 }
 
 #[wasm_bindgen]
-pub fn get_group_data(private_key: &str, server_output: &str) -> Result<String, String>
-{
-	group::get_group_data(private_key, server_output)
-}
-
-#[wasm_bindgen]
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
 {
 	group::prepare_group_keys_for_new_member(requester_public_key_data, group_keys)

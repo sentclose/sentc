@@ -40,6 +40,8 @@ class KeyData {
   final String signKey;
   final String verifyKey;
   final String jwt;
+  final String exportedPublicKey;
+  final String exportedVerifyKey;
 
   KeyData({
     required this.privateKey,
@@ -47,6 +49,8 @@ class KeyData {
     required this.signKey,
     required this.verifyKey,
     required this.jwt,
+    required this.exportedPublicKey,
+    required this.exportedVerifyKey,
   });
 }
 
@@ -167,14 +171,16 @@ String _wire2api_String(dynamic raw) {
 
 KeyData _wire2api_key_data(dynamic raw) {
   final arr = raw as List<dynamic>;
-  if (arr.length != 5)
-    throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+  if (arr.length != 7)
+    throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
   return KeyData(
     privateKey: _wire2api_String(arr[0]),
     publicKey: _wire2api_String(arr[1]),
     signKey: _wire2api_String(arr[2]),
     verifyKey: _wire2api_String(arr[3]),
     jwt: _wire2api_String(arr[4]),
+    exportedPublicKey: _wire2api_String(arr[5]),
+    exportedVerifyKey: _wire2api_String(arr[6]),
   );
 }
 

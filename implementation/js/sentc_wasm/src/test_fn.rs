@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use sentc_crypto::{test_fn, user};
+use sentc_crypto::{group, test_fn, user};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -58,6 +58,8 @@ pub struct DoneLoginData1
 	sign_key: String,
 	verify_key: String,
 	jwt: String,
+	exported_public_key: String,
+	exported_verify_key: String,
 }
 
 #[wasm_bindgen]
@@ -86,6 +88,16 @@ impl DoneLoginData1
 	pub fn get_jwt(&self) -> String
 	{
 		self.jwt.clone()
+	}
+
+	pub fn get_exported_public_key(&self) -> String
+	{
+		self.exported_public_key.clone()
+	}
+
+	pub fn get_exported_verify_key(&self) -> String
+	{
+		self.exported_verify_key.clone()
 	}
 }
 
@@ -120,6 +132,8 @@ pub fn done_login_test(
 		sign_key: keys.sign_key,
 		verify_key: keys.verify_key,
 		jwt: keys.jwt,
+		exported_public_key: keys.exported_public_key,
+		exported_verify_key: keys.exported_verify_key,
 	})
 }
 
@@ -139,4 +153,15 @@ pub fn change_password_test(
 pub fn reset_password_test(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
 {
 	user::reset_password(new_password, decrypted_private_key, decrypted_sign_key)
+}
+
+//group tests
+
+#[wasm_bindgen]
+pub fn get_group_data(private_key: &str, server_output: &str) -> Result<String, String>
+{
+	let out = group::get_group_data(private_key, server_output)?;
+
+	//return it as json string because rust wasm has problems with Vec<T> to convert to js array.
+	Ok(out.to_string().map_err(|_| "Json to string failed")?)
 }

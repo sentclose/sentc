@@ -34,4 +34,17 @@ interface KeyData
 	public_key: string,
 	sign_key: string,
 	verify_key: string,
+	exported_public_key: string,
+	exported_verify_key: string
 }
+
+interface GroupData
+{
+	group_id: string,
+	keys: {
+		private_group_key: string,
+		public_group_key: string,
+		group_key: string
+	}[]
+}
+

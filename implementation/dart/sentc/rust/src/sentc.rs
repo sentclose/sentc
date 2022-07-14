@@ -14,6 +14,8 @@ pub struct KeyData
 	pub sign_key: String,
 	pub verify_key: String,
 	pub jwt: String,
+	pub exported_public_key: String,
+	pub exported_verify_key: String,
 }
 
 pub fn register_test_full() -> String
@@ -50,5 +52,7 @@ pub fn done_login(
 		sign_key: data.sign_key,
 		verify_key: data.verify_key,
 		jwt: data.jwt,
+		exported_public_key: data.exported_public_key,
+		exported_verify_key: data.exported_verify_key,
 	})
 }

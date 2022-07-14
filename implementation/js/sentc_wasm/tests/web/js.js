@@ -7,7 +7,9 @@ import init, {
 	simulate_server_prepare_login,
 	prepare_create,
 	simulate_server_create_group,
-	get_group_data
+	get_group_data,
+	encrypt_symmetric,
+	decrypt_symmetric
 } from './../../pkg/sentc_wasm.js';
 
 export async function run()
@@ -50,6 +52,8 @@ export async function run()
 		public_key: key_data.get_public_key(),
 		sign_key: key_data.get_sign_key(),
 		verify_key: key_data.get_verify_key(),
+		exported_public_key: key_data.get_exported_public_key(),
+		exported_verify_key: key_data.get_exported_verify_key()
 	};
 
 	let jwt = key_data.get_jwt();
@@ -66,10 +70,45 @@ export async function run()
 	console.log("get group");
 	let group_server_out = simulate_server_create_group(group_create_out);
 
-	console.log(group_server_out)
+	console.log(group_server_out);
 
 	let group_data = get_group_data(keys.private_key,group_server_out);
 
-	console.log(group_data)
-	console.log(JSON.parse(group_data))
+	console.log(group_data);
+
+	/** @param {GroupData} */
+	let group_keys = JSON.parse(group_data);
+
+	console.log(group_keys);
+
+	console.log(group_keys.keys[0].group_key);
+
+	console.log("sym encrypt test");
+	let text = "abc";
+	let text_view = stringToByteArray(text);
+
+	let encrypted = encrypt_symmetric(group_keys.keys[0].group_key, text_view, keys.sign_key);
+
+	console.log(encrypted);
+
+	let decrypted = decrypt_symmetric(group_keys.keys[0].group_key,encrypted,keys.exported_verify_key);
+
+	console.log(byteArrayToString(decrypted));
+}
+
+/**
+ * Uses this function to transform a random string into array
+ *
+ * @param {string} string
+ * @returns {Uint8Array}
+ */
+export function stringToByteArray(string)
+{
+	//@ts-ignore
+	return new TextEncoder("utf-8").encode(string);
+}
+
+export function byteArrayToString(b)
+{
+	return new TextDecoder().decode(b);
 }
