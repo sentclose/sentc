@@ -21,6 +21,12 @@ pub fn simulate_server_done_login(register_data: &str) -> String
 	test_fn::simulate_server_done_login(register_data)
 }
 
+#[wasm_bindgen]
+pub fn simulate_server_create_group(group_create_data: &str) -> String
+{
+	test_fn::simulate_server_create_group(group_create_data)
+}
+
 //user tests
 #[wasm_bindgen]
 pub struct PrepareLoginOutput

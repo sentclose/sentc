@@ -1,4 +1,14 @@
-import init, { register_test_full,register_test,prepare_login_test,done_login_test,simulate_server_done_login,simulate_server_prepare_login } from './pkg/sentc_wasm.js';
+import init, {
+	register_test_full,
+	register_test,
+	prepare_login_test,
+	done_login_test,
+	simulate_server_done_login,
+	simulate_server_prepare_login,
+	prepare_create,
+	simulate_server_create_group,
+	get_group_data
+} from './../../pkg/sentc_wasm.js';
 
 export async function run()
 {
@@ -46,4 +56,20 @@ export async function run()
 
 	console.log(keys);
 	console.log(jwt);
+
+	console.log("_________________________________");
+	console.log("create group");
+
+	let group_create_out = prepare_create(keys.public_key);
+	console.log(group_create_out);
+
+	console.log("get group");
+	let group_server_out = simulate_server_create_group(group_create_out);
+
+	console.log(group_server_out)
+
+	let group_data = get_group_data(keys.private_key,group_server_out);
+
+	console.log(group_data)
+	console.log(JSON.parse(group_data))
 }
