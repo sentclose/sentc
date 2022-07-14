@@ -35,6 +35,15 @@ export async function run()
 	let key_data = done_login_test(prep.get_master_key_encryption_key(),done_login_server_out);
 
 	/** @param {KeyData} */
-	let keys = JSON.parse(key_data);
+	let keys = {
+		private_key: key_data.get_private_key(),
+		public_key: key_data.get_public_key(),
+		sign_key: key_data.get_sign_key(),
+		verify_key: key_data.get_verify_key(),
+	};
+
+	let jwt = key_data.get_jwt();
+
 	console.log(keys);
+	console.log(jwt);
 }

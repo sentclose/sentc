@@ -32,14 +32,54 @@ pub struct PrepareLoginOutput
 #[wasm_bindgen]
 impl PrepareLoginOutput
 {
-	pub fn get_auth_key(self) -> String
+	pub fn get_auth_key(&self) -> String
 	{
-		self.auth_key
+		self.auth_key.clone()
 	}
 
-	pub fn get_master_key_encryption_key(self) -> String
+	pub fn get_master_key_encryption_key(&self) -> String
 	{
-		self.master_key_encryption_key
+		self.master_key_encryption_key.clone()
+	}
+}
+
+//define it here again because the filed must be private, so it can't be init from other mod
+#[wasm_bindgen]
+pub struct DoneLoginData1
+{
+	private_key: String, //Base64 exported keys
+	public_key: String,
+	sign_key: String,
+	verify_key: String,
+	jwt: String,
+}
+
+#[wasm_bindgen]
+impl DoneLoginData1
+{
+	pub fn get_private_key(&self) -> String
+	{
+		self.private_key.clone()
+	}
+
+	pub fn get_public_key(&self) -> String
+	{
+		self.public_key.clone()
+	}
+
+	pub fn get_sign_key(&self) -> String
+	{
+		self.sign_key.clone()
+	}
+
+	pub fn get_verify_key(&self) -> String
+	{
+		self.verify_key.clone()
+	}
+
+	pub fn get_jwt(&self) -> String
+	{
+		self.jwt.clone()
 	}
 }
 
@@ -64,9 +104,17 @@ pub fn prepare_login_test(password: &str, server_output: &str) -> Result<Prepare
 pub fn done_login_test(
 	master_key_encryption: &str, //from the prepare login as base64 for exporting
 	server_output: &str,
-) -> Result<String, String>
+) -> Result<DoneLoginData1, String>
 {
-	user::done_login(master_key_encryption, server_output)
+	let keys = user::done_login(master_key_encryption, server_output)?;
+
+	Ok(DoneLoginData1 {
+		private_key: keys.private_key,
+		public_key: keys.public_key,
+		sign_key: keys.sign_key,
+		verify_key: keys.verify_key,
+		jwt: keys.jwt,
+	})
 }
 
 #[wasm_bindgen]

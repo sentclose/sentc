@@ -26,12 +26,28 @@ abstract class SentcFlutter {
 
   FlutterRustBridgeTaskConstMeta get kPrepareLoginConstMeta;
 
-  Future<String> doneLogin(
+  Future<KeyData> doneLogin(
       {required String masterKeyEncryption,
       required String serverOutput,
       dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kDoneLoginConstMeta;
+}
+
+class KeyData {
+  final String privateKey;
+  final String publicKey;
+  final String signKey;
+  final String verifyKey;
+  final String jwt;
+
+  KeyData({
+    required this.privateKey,
+    required this.publicKey,
+    required this.signKey,
+    required this.verifyKey,
+    required this.jwt,
+  });
 }
 
 class PrepareLoginOutput {
@@ -104,7 +120,7 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
         argNames: ["password", "serverOutput"],
       );
 
-  Future<String> doneLogin(
+  Future<KeyData> doneLogin(
           {required String masterKeyEncryption,
           required String serverOutput,
           dynamic hint}) =>
@@ -113,7 +129,7 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
             port_,
             _api2wire_String(masterKeyEncryption),
             _api2wire_String(serverOutput)),
-        parseSuccessData: _wire2api_String,
+        parseSuccessData: _wire2api_key_data,
         constMeta: kDoneLoginConstMeta,
         argValues: [masterKeyEncryption, serverOutput],
         hint: hint,
@@ -147,6 +163,19 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
 // Section: wire2api
 String _wire2api_String(dynamic raw) {
   return raw as String;
+}
+
+KeyData _wire2api_key_data(dynamic raw) {
+  final arr = raw as List<dynamic>;
+  if (arr.length != 5)
+    throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+  return KeyData(
+    privateKey: _wire2api_String(arr[0]),
+    publicKey: _wire2api_String(arr[1]),
+    signKey: _wire2api_String(arr[2]),
+    verifyKey: _wire2api_String(arr[3]),
+    jwt: _wire2api_String(arr[4]),
+  );
 }
 
 PrepareLoginOutput _wire2api_prepare_login_output(dynamic raw) {

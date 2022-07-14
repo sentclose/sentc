@@ -7,6 +7,45 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
+#[wasm_bindgen]
+pub struct DoneLoginData
+{
+	private_key: String, //Base64 exported keys
+	public_key: String,
+	sign_key: String,
+	verify_key: String,
+	jwt: String,
+}
+
+#[wasm_bindgen]
+impl DoneLoginData
+{
+	pub fn get_private_key(&self) -> String
+	{
+		self.private_key.clone()
+	}
+
+	pub fn get_public_key(&self) -> String
+	{
+		self.public_key.clone()
+	}
+
+	pub fn get_sign_key(&self) -> String
+	{
+		self.sign_key.clone()
+	}
+
+	pub fn get_verify_key(&self) -> String
+	{
+		self.verify_key.clone()
+	}
+
+	pub fn get_jwt(&self) -> String
+	{
+		self.jwt.clone()
+	}
+}
+
 /**
 # Check if the identifier is available for this app
 */
@@ -73,7 +112,7 @@ If there are more data in the backend, then it is possible to call it via the jw
 The other backend can validate the jwt
 */
 #[wasm_bindgen]
-pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String, JsValue>
+pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<DoneLoginData, JsValue>
 {
 	let user_id_input = user::prepare_login_start(user_identifier.as_str())?;
 
@@ -102,7 +141,13 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 
 	let keys = user::done_login(master_key_encryption_key.as_str(), server_output.as_str())?;
 
-	Ok(keys)
+	Ok(DoneLoginData {
+		private_key: keys.private_key,
+		public_key: keys.public_key,
+		sign_key: keys.sign_key,
+		verify_key: keys.verify_key,
+		jwt: keys.jwt,
+	})
 }
 
 async fn make_req(url: &str, bearer_header: &str, req_opts: &RequestInit) -> Result<String, JsValue>

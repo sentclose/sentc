@@ -30,28 +30,8 @@ interface RegisterData
 
 interface KeyData
 {
-	private_key: {
-		[alg: string]: {
-			key: string,
-			key_id: "abc"
-		}
-	},
-	public_key: {
-		[alg: string]: {
-			key: "3S/9aOAYyL/IMzNvxUdqi2L5G79W+Z0j+YCXwleJQQ0=",
-			key_id: "abc"
-		}
-	},
-	sign_key: {
-		[alg: string]: {
-			key: "cF+UCmXdrcJX+ratF3l+ThCGl94hVJLdJ2u/QoSCh0Q=",
-			key_id: "dfg"
-		}
-	},
-	verify_key: {
-		[alg: string]: {
-			key: "Qrz/TApH37BgjQlskJ1XlXAMAv7GzlVxtT904WZz+as=",
-			key_id: "dfg"
-		}
-	}
+	private_key:string,
+	public_key: string,
+	sign_key: string,
+	verify_key: string,
 }

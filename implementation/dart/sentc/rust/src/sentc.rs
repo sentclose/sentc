@@ -7,6 +7,15 @@ pub struct PrepareLoginOutput
 	pub master_key_encryption_key: String,
 }
 
+pub struct KeyData
+{
+	pub private_key: String, //Base64 exported keys
+	pub public_key: String,
+	pub sign_key: String,
+	pub verify_key: String,
+	pub jwt: String,
+}
+
 pub fn register_test_full() -> String
 {
 	test_fn::register_test_full()
@@ -31,7 +40,15 @@ pub fn prepare_login(password: String, server_output: String) -> Result<PrepareL
 pub fn done_login(
 	master_key_encryption: String, //from the prepare login as base64 for exporting
 	server_output: String,
-) -> Result<String>
+) -> Result<KeyData>
 {
-	user::done_login(master_key_encryption.as_str(), server_output.as_str()).map_err(|err| anyhow!(err))
+	let data = user::done_login(master_key_encryption.as_str(), server_output.as_str()).map_err(|err| anyhow!(err))?;
+
+	Ok(KeyData {
+		private_key: data.private_key,
+		public_key: data.public_key,
+		sign_key: data.sign_key,
+		verify_key: data.verify_key,
+		jwt: data.jwt,
+	})
 }

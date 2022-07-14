@@ -156,6 +156,20 @@ impl<T> NewWithNullPtr for *mut T {
 
 // Section: impl IntoDart
 
+impl support::IntoDart for KeyData {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.private_key.into_dart(),
+			self.public_key.into_dart(),
+			self.sign_key.into_dart(),
+			self.verify_key.into_dart(),
+			self.jwt.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for KeyData {}
+
 impl support::IntoDart for PrepareLoginOutput {
 	fn into_dart(self) -> support::DartCObject {
 		vec![self.auth_key.into_dart(), self.master_key_encryption_key.into_dart()].into_dart()
