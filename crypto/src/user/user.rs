@@ -1,4 +1,4 @@
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
@@ -81,7 +81,7 @@ pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, Str
 pub fn done_login(
 	master_key_encryption: &str, //from the prepare login as base64 for exporting
 	server_output: &str,
-) -> Result<String, String>
+) -> Result<KeyData, String>
 {
 	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
 
@@ -108,17 +108,21 @@ pub fn done_login(
 	let sign_key = export_sign_key(result.sign_key);
 	let verify_key = export_verify_key(result.verify_key);
 
-	let output = KeyData {
-		private_key,
-		sign_key,
-		public_key,
-		verify_key,
+	Ok(KeyData {
+		private_key: private_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+		public_key: public_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+		sign_key: sign_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+		verify_key: verify_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
 		jwt: result.jwt,
-	};
-
-	output
-		.to_string()
-		.map_err(|_e| err_to_msg(Error::JsonToStringFailed))
+	})
 }
 
 pub fn change_password(
@@ -159,11 +163,19 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 		let verify_key = export_verify_key(result.verify_key);
 
 		let output = KeyData {
-			private_key,
-			sign_key,
-			public_key,
-			verify_key,
-			jwt: "".to_string(), //no jwt for the key rotation needed
+			private_key: private_key
+				.to_string()
+				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			public_key: public_key
+				.to_string()
+				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			sign_key: sign_key
+				.to_string()
+				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			verify_key: verify_key
+				.to_string()
+				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			jwt: result.jwt,
 		};
 
 		output_arr.push(output);
@@ -221,9 +233,7 @@ mod test
 		)
 		.unwrap();
 
-		let login_out = KeyData::from_string(&login_out.as_str()).unwrap();
-
-		let private_key = match login_out.private_key {
+		let private_key = match PrivateKeyFormat::from_string(login_out.private_key.as_str()).unwrap() {
 			PrivateKeyFormat::Ecies {
 				key_id: _,
 				key,

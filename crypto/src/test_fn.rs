@@ -9,7 +9,7 @@ use sentc_crypto_core::Sk;
 use crate::user::{done_login, prepare_login, register};
 use crate::util::client_random_value_from_string;
 #[cfg(not(feature = "rust"))]
-use crate::{KeyData, PrivateKeyFormat};
+use crate::PrivateKeyFormat;
 
 #[cfg(feature = "rust")]
 pub fn register_test_full() -> String
@@ -124,9 +124,7 @@ pub fn register_test_full() -> String
 	)
 	.unwrap();
 
-	let login_out = KeyData::from_string(&login_out.as_str()).unwrap();
-
-	let private_key = match login_out.private_key {
+	let private_key = match PrivateKeyFormat::from_string(login_out.private_key.as_str()).unwrap() {
 		PrivateKeyFormat::Ecies {
 			key_id: _key_id,
 			key,
@@ -207,8 +205,6 @@ mod test
 
 		let server_output = simulate_server_done_login(out_string.as_str());
 
-		let done_login_string = done_login(master_key_encryption_key.as_str(), server_output.as_str()).unwrap();
-
-		let _done_login = KeyData::from_string(done_login_string.as_str()).unwrap();
+		let _done_login = done_login(master_key_encryption_key.as_str(), server_output.as_str()).unwrap();
 	}
 }

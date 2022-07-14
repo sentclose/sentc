@@ -465,9 +465,7 @@ pub(crate) mod test_fn
 		let server_output = simulate_server_done_login(out);
 
 		#[cfg(not(feature = "rust"))]
-		let done_login_string = done_login(master_key_encryption_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
-
-		let done_login = KeyData::from_string(done_login_string.as_str()).unwrap();
+		let done_login = done_login(master_key_encryption_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
 
 		#[cfg(not(feature = "rust"))]
 		(done_login, user_public_key_data, user_verify_key_data)

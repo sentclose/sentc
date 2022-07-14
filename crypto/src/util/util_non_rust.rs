@@ -104,10 +104,10 @@ This data must be serialized for exporting and deserialized for import
 #[derive(Serialize, Deserialize)]
 pub struct KeyData
 {
-	pub private_key: PrivateKeyFormat,
-	pub public_key: PublicKeyFormat,
-	pub sign_key: SignKeyFormat,
-	pub verify_key: VerifyKeyFormat,
+	pub private_key: String, //Base64 exported keys
+	pub public_key: String,
+	pub sign_key: String,
+	pub verify_key: String,
 	pub jwt: String,
 }
 

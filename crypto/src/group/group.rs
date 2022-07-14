@@ -214,10 +214,10 @@ mod test
 		//create a rust dummy user
 		let (user, _public_key, _verify_key) = create_user();
 
-		let group = prepare_create(&user.public_key.to_string().unwrap().as_str(), None).unwrap();
+		let group = prepare_create(&user.public_key.as_str(), None).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
-		let pk = import_public_key(user.public_key.to_string().unwrap().as_str()).unwrap();
+		let pk = import_public_key(user.public_key.as_str()).unwrap();
 
 		assert_eq!(group.creator_public_key_id, pk.key_id);
 	}
@@ -241,7 +241,7 @@ mod test
 
 		let (user1, public_key1, _verify_key1) = create_user();
 
-		let group_create = prepare_create(user.public_key.to_string().unwrap().as_str(), None).unwrap();
+		let group_create = prepare_create(user.public_key.as_str(), None).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -262,11 +262,7 @@ mod test
 			keys_page: 0,
 		};
 
-		let group_data_user_0 = get_group_data(
-			user.private_key.to_string().unwrap().as_str(),
-			group_server_output_user_0.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		let group_data_user_0 = get_group_data(user.private_key.as_str(), group_server_output_user_0.to_string().unwrap().as_str()).unwrap();
 		let group_data_user_0 = GroupOutData::from_string(group_data_user_0.as_str()).unwrap();
 		let group_key_user_0 = group_data_user_0.keys[0].group_key.to_string().unwrap();
 
@@ -295,11 +291,7 @@ mod test
 			keys_page: 0,
 		};
 
-		let group_data_user_1 = get_group_data(
-			user1.private_key.to_string().unwrap().as_str(),
-			group_server_output_user_1.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		let group_data_user_1 = get_group_data(user1.private_key.as_str(), group_server_output_user_1.to_string().unwrap().as_str()).unwrap();
 		let group_data_user_1 = GroupOutData::from_string(group_data_user_1.as_str()).unwrap();
 
 		let group_key_0 = import_sym_key(
@@ -335,11 +327,7 @@ mod test
 
 		let (data, group_server_out) = create_group(&user);
 
-		let rotation_out = key_rotation(
-			data.keys[0].group_key.to_string().unwrap().as_str(),
-			user.public_key.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		let rotation_out = key_rotation(data.keys[0].group_key.to_string().unwrap().as_str(), user.public_key.as_str()).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -354,21 +342,12 @@ mod test
 			user_public_key_id: "abc".to_string(),
 		};
 
-		let new_group_key_direct = get_group_keys(
-			&import_private_key(user.private_key.to_string().unwrap().as_str()).unwrap(),
-			&server_key_output_direct,
-		)
-		.unwrap();
+		let new_group_key_direct = get_group_keys(&import_private_key(user.private_key.as_str()).unwrap(), &server_key_output_direct).unwrap();
 
 		//simulate server key rotation encrypt. encrypt the ephemeral_key (encrypted by the previous room key) with the public keys of all users
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
-		let encrypted_ephemeral_key_by_group_key_and_public_key = encrypt_asymmetric_core(
-			&import_public_key(user.public_key.to_string().unwrap().as_str())
-				.unwrap()
-				.key,
-			&encrypted_ephemeral_key,
-		)
-		.unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key =
+			encrypt_asymmetric_core(&import_public_key(user.public_key.as_str()).unwrap().key, &encrypted_ephemeral_key).unwrap();
 
 		let server_output = KeyRotationInput {
 			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
@@ -378,8 +357,8 @@ mod test
 		};
 
 		let done_key_rotation = done_key_rotation(
-			user.private_key.to_string().unwrap().as_str(),
-			user.public_key.to_string().unwrap().as_str(),
+			user.private_key.as_str(),
+			user.public_key.as_str(),
 			data.keys[0].group_key.to_string().unwrap().as_str(),
 			server_output.to_string().unwrap().as_str(),
 		)
@@ -398,11 +377,7 @@ mod test
 			user_public_key_id: done_key_rotation.public_key_id.to_string(),
 		};
 
-		let out = get_group_keys(
-			&import_private_key(user.private_key.to_string().unwrap().as_str()).unwrap(),
-			&server_key_output,
-		)
-		.unwrap();
+		let out = get_group_keys(&import_private_key(user.private_key.as_str()).unwrap(), &server_key_output).unwrap();
 
 		let old_group_key = import_sym_key(data.keys[0].group_key.to_string().unwrap().as_str()).unwrap();
 
