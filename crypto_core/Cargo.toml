@@ -17,5 +17,10 @@ hkdf = { version = "0.12.3", default-features = false }
 argon2 = "0.3"
 
 [features]
-default = ["argon2_aes_ecies_ed25519"]
+default = ["argon2_aes_ecies_ed25519", "default_env"]
+
+# Descibe the used alg for encryption and signing
 argon2_aes_ecies_ed25519 = []
+
+# Descibe the used env for the crng
+default_env = []

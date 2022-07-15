@@ -3,10 +3,10 @@ use alloc::vec::Vec;
 use aes_gcm::aead::generic_array::GenericArray;
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key};
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 
 use crate::error::Error;
-use crate::{SymKey, SymKeyOutput};
+use crate::{get_rand, SymKey, SymKeyOutput};
 
 const AES_IV_LENGTH: usize = 12;
 
@@ -16,7 +16,7 @@ pub(crate) type AesKey = [u8; 32];
 
 pub(crate) fn generate_key() -> Result<SymKeyOutput, Error>
 {
-	let key = generate_key_internally(&mut OsRng)?;
+	let key = generate_key_internally(&mut get_rand())?;
 
 	Ok(SymKeyOutput {
 		alg: AES_GCM_OUTPUT,
@@ -33,7 +33,7 @@ pub(crate) fn encrypt(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
 
 pub(crate) fn encrypt_with_generated_key(key: &AesKey, data: &[u8]) -> Result<Vec<u8>, Error>
 {
-	encrypt_internally(key, data, &mut OsRng)
+	encrypt_internally(key, data, &mut get_rand())
 }
 
 pub(crate) fn decrypt(key: &SymKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>

@@ -25,6 +25,8 @@ pub mod user;
 
 use alloc::vec::Vec;
 
+use rand_core::{CryptoRng, OsRng, RngCore};
+
 pub use self::alg::asym::ecies::ECIES_OUTPUT;
 pub(crate) use self::alg::asym::AsymKeyOutput;
 pub use self::alg::asym::{Pk, Sk};
@@ -52,4 +54,10 @@ pub fn generate_salt(client_random_value: ClientRandomValue) -> Vec<u8>
 	match client_random_value {
 		ClientRandomValue::Argon2(v) => alg::pw_hash::argon2::generate_salt(v),
 	}
+}
+
+fn get_rand() -> impl CryptoRng + RngCore
+{
+	#[cfg(feature = "default_env")]
+	OsRng
 }

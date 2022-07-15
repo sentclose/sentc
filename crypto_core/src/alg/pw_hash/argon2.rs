@@ -2,12 +2,13 @@ use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use argon2::{Algorithm, Argon2, Params, Version};
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha256};
 
 use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AES_GCM_OUTPUT};
 use crate::error::Error;
 use crate::{
+	get_rand,
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	DeriveKeyOutput,
@@ -38,7 +39,7 @@ pub const ARGON_2_OUTPUT: &'static str = "ARGON-2-SHA256";
 */
 pub(crate) fn derived_keys_from_password(password: &[u8], master_key: &[u8]) -> Result<DeriveKeyOutput, Error>
 {
-	derive_key_with_pw_internally(password, master_key, &mut OsRng)
+	derive_key_with_pw_internally(password, master_key, &mut get_rand())
 }
 
 /**
@@ -80,7 +81,7 @@ pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENG
 
 pub(crate) fn password_to_encrypt(password: &[u8]) -> Result<(PasswordEncryptOutput, SymKey), Error>
 {
-	let (aes_key_for_encrypt, salt) = derived_single_key(password, &mut OsRng)?;
+	let (aes_key_for_encrypt, salt) = derived_single_key(password, &mut get_rand())?;
 
 	Ok((
 		PasswordEncryptOutput {

@@ -1,13 +1,13 @@
 use alloc::vec::Vec;
 
 use hkdf::Hkdf;
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 use sha2::Sha256;
 use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
 use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey};
 use crate::error::Error;
-use crate::{AsymKeyOutput, Pk, Sk};
+use crate::{get_rand, AsymKeyOutput, Pk, Sk};
 
 pub const ECIES_OUTPUT: &'static str = "ECIES-ed25519";
 
@@ -17,7 +17,7 @@ const PUBLIC_KEY_LENGTH: usize = 32;
 
 pub(crate) fn generate_static_keypair() -> AsymKeyOutput
 {
-	let (sk, pk) = generate_static_keypair_internally(&mut OsRng);
+	let (sk, pk) = generate_static_keypair_internally(&mut get_rand());
 
 	AsymKeyOutput {
 		alg: ECIES_OUTPUT,
@@ -32,7 +32,7 @@ pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
 		Pk::Ecies(pk) => PublicKey::from(pk.clone()),
 	};
 
-	encrypt_internally(&receiver_pub, data, &mut OsRng)
+	encrypt_internally(&receiver_pub, data, &mut get_rand())
 }
 
 pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, Error>

@@ -1,10 +1,10 @@
 use alloc::vec::Vec;
 
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 
 use crate::error::Error;
-use crate::{SignK, SignOutput, VerifyK};
+use crate::{get_rand, SignK, SignOutput, VerifyK};
 
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
@@ -13,7 +13,7 @@ pub const ED25519_OUTPUT: &'static str = "ED25519";
 
 pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
 {
-	let keypair = generate_key_pair_internally(&mut OsRng)?;
+	let keypair = generate_key_pair_internally(&mut get_rand())?;
 
 	Ok(SignOutput {
 		sign_key: SignK::Ed25519(keypair.secret.to_bytes()),
