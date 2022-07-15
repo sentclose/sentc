@@ -233,6 +233,13 @@ pub(crate) fn export_private_key(private_key: PrivateKeyFormatInt) -> PrivateKey
 	}
 }
 
+pub(crate) fn export_private_key_to_string(key: PrivateKeyFormatInt) -> Result<String, Error>
+{
+	let key = export_private_key(key);
+
+	key.to_string().map_err(|_e| Error::JsonToStringFailed)
+}
+
 pub(crate) fn export_public_key(public_key: PublicKeyFormatInt) -> PublicKeyFormat
 {
 	match public_key.key {
@@ -245,6 +252,13 @@ pub(crate) fn export_public_key(public_key: PublicKeyFormatInt) -> PublicKeyForm
 			}
 		},
 	}
+}
+
+pub(crate) fn export_public_key_to_string(key: PublicKeyFormatInt) -> Result<String, Error>
+{
+	let key = export_public_key(key);
+
+	key.to_string().map_err(|_e| Error::JsonToStringFailed)
 }
 
 pub(crate) fn export_sign_key(sign_key: SignKeyFormatInt) -> SignKeyFormat
@@ -261,6 +275,13 @@ pub(crate) fn export_sign_key(sign_key: SignKeyFormatInt) -> SignKeyFormat
 	}
 }
 
+pub(crate) fn export_sign_key_to_string(key: SignKeyFormatInt) -> Result<String, Error>
+{
+	let key = export_sign_key(key);
+
+	key.to_string().map_err(|_e| Error::JsonToStringFailed)
+}
+
 pub(crate) fn export_verify_key(verify_key: VerifyKeyFormatInt) -> VerifyKeyFormat
 {
 	match verify_key.key {
@@ -273,6 +294,13 @@ pub(crate) fn export_verify_key(verify_key: VerifyKeyFormatInt) -> VerifyKeyForm
 			}
 		},
 	}
+}
+
+pub(crate) fn export_verify_key_to_string(key: VerifyKeyFormatInt) -> Result<String, Error>
+{
+	let key = export_verify_key(key);
+
+	key.to_string().map_err(|_e| Error::JsonToStringFailed)
 }
 
 pub(crate) fn import_sym_key(key_string: &str) -> Result<SymKeyFormatInt, Error>
@@ -316,4 +344,11 @@ pub(crate) fn export_sym_key(key: SymKeyFormatInt) -> SymKeyFormat
 			}
 		},
 	}
+}
+
+pub(crate) fn export_sym_key_to_string(key: SymKeyFormatInt) -> Result<String, Error>
+{
+	let key = export_sym_key(key);
+
+	key.to_string().map_err(|_e| Error::JsonToStringFailed)
 }

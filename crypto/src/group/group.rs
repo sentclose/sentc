@@ -17,9 +17,9 @@ use crate::group::{
 	prepare_group_keys_for_new_member_internally,
 };
 use crate::util::{
-	export_private_key,
-	export_public_key,
-	export_sym_key,
+	export_private_key_to_string,
+	export_public_key_to_string,
+	export_sym_key_to_string,
 	import_private_key,
 	import_public_key,
 	import_sym_key,
@@ -107,20 +107,14 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 {
 	let result = get_group_keys_internally(&private_key, &server_output)?;
 
-	let private_group_key = export_private_key(result.private_group_key);
-	let public_group_key = export_public_key(result.public_group_key);
-	let group_key = export_sym_key(result.group_key);
+	let private_group_key = export_private_key_to_string(result.private_group_key)?;
+	let public_group_key = export_public_key_to_string(result.public_group_key)?;
+	let group_key = export_sym_key_to_string(result.group_key)?;
 
 	Ok(GroupKeyData {
-		private_group_key: private_group_key
-			.to_string()
-			.map_err(|_e| Error::JsonToStringFailed)?,
-		public_group_key: public_group_key
-			.to_string()
-			.map_err(|_e| Error::JsonToStringFailed)?,
-		group_key: group_key
-			.to_string()
-			.map_err(|_e| Error::JsonToStringFailed)?,
+		private_group_key,
+		public_group_key,
+		group_key,
 	})
 }
 
