@@ -26,6 +26,7 @@ pub use self::crypto::{
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric,
+	generate_non_register_sym_key,
 	prepare_register_sym_key,
 };
 #[cfg(feature = "rust")]
@@ -43,6 +44,7 @@ pub use self::crypto_rust::{
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric,
+	generate_non_register_sym_key,
 	prepare_register_sym_key,
 };
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
@@ -341,4 +343,31 @@ fn decrypt_sym_key_internally(
 		key,
 		key_id: encrypted_symmetric_key_info.key_id.to_string(),
 	})
+}
+
+/**
+# Simulates the server key output
+
+This is used when the keys are not managed by the sentclose server.
+
+First call prepare_register_sym_key_internally to encrypt the key, then decrypt_sym_key_internally to get the raw key.
+
+Return both, the decrypted to use it, the encrypted to save it and use it for the next time with decrypt_sym_key_internally
+*/
+fn generate_non_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<(SymKeyFormatInt, GeneratedSymKeyHeadServerOutput), Error>
+{
+	let pre_out = prepare_register_sym_key_internally(master_key)?;
+
+	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(|_| Error::JsonParseFailed)?;
+
+	let server_output = GeneratedSymKeyHeadServerOutput {
+		alg: server_input.alg,
+		encrypted_key_string: server_input.encrypted_key_string,
+		master_key_id: server_input.master_key_id,
+		key_id: "non_registered".to_string(),
+	};
+
+	let decrypt_out = decrypt_sym_key_internally(master_key, &server_output)?;
+
+	Ok((decrypt_out, server_output))
 }
