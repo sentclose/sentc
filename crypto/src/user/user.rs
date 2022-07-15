@@ -26,6 +26,7 @@ use crate::util::{
 	import_private_key,
 	import_sign_key,
 	KeyData,
+	KeyDataInt,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -110,27 +111,7 @@ pub fn done_login(
 
 	let result = done_login_internally(&master_key_encryption, &server_output).map_err(|e| err_to_msg(e))?;
 
-	let private_key = export_private_key_to_string(result.private_key).map_err(|e| err_to_msg(e))?;
-	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
-	let public_key = export_public_key_to_string(result.public_key).map_err(|e| err_to_msg(e))?;
-	let sign_key = export_sign_key_to_string(result.sign_key).map_err(|e| err_to_msg(e))?;
-	let verify_key = export_verify_key_to_string(result.verify_key).map_err(|e| err_to_msg(e))?;
-
-	Ok(KeyData {
-		private_key,
-		public_key,
-		sign_key,
-		verify_key,
-		jwt: result.jwt,
-		exported_public_key: result
-			.exported_public_key
-			.to_string()
-			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
-		exported_verify_key: result
-			.exported_verify_key
-			.to_string()
-			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
-	})
+	export_key_data(result)
 }
 
 pub fn change_password(
@@ -163,34 +144,38 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 
 	for result in out {
 		//like done login but for all keys
-
-		let private_key = export_private_key_to_string(result.private_key).map_err(|e| err_to_msg(e))?;
-		//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
-		let public_key = export_public_key_to_string(result.public_key).map_err(|e| err_to_msg(e))?;
-		let sign_key = export_sign_key_to_string(result.sign_key).map_err(|e| err_to_msg(e))?;
-		let verify_key = export_verify_key_to_string(result.verify_key).map_err(|e| err_to_msg(e))?;
-
-		let output = KeyData {
-			private_key,
-			public_key,
-			sign_key,
-			verify_key,
-			jwt: result.jwt,
-			exported_public_key: result
-				.exported_public_key
-				.to_string()
-				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
-			exported_verify_key: result
-				.exported_verify_key
-				.to_string()
-				.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
-		};
+		let output = export_key_data(result)?;
 
 		output_arr.push(output);
 	}
 
 	//now this keys can be used to new encrypt the old content
 	to_string(&output_arr).map_err(|_e| err_to_msg(Error::JsonToStringFailed))
+}
+
+fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
+{
+	let private_key = export_private_key_to_string(key_data.private_key).map_err(|e| err_to_msg(e))?;
+	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
+	let public_key = export_public_key_to_string(key_data.public_key).map_err(|e| err_to_msg(e))?;
+	let sign_key = export_sign_key_to_string(key_data.sign_key).map_err(|e| err_to_msg(e))?;
+	let verify_key = export_verify_key_to_string(key_data.verify_key).map_err(|e| err_to_msg(e))?;
+
+	Ok(KeyData {
+		private_key,
+		public_key,
+		sign_key,
+		verify_key,
+		jwt: key_data.jwt,
+		exported_public_key: key_data
+			.exported_public_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+		exported_verify_key: key_data
+			.exported_verify_key
+			.to_string()
+			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+	})
 }
 
 #[cfg(test)]
