@@ -36,3 +36,46 @@ impl EncryptedHead
 		to_string(self)
 	}
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct GeneratedSymKeyHeadServerInput
+{
+	pub alg: String,
+	pub encrypted_key_string: String,
+	pub master_key_id: String,
+}
+
+impl GeneratedSymKeyHeadServerInput
+{
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
+	{
+		from_str::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GeneratedSymKeyHeadServerOutput
+{
+	pub alg: String,
+	pub encrypted_key_string: String,
+	pub master_key_id: String,
+	pub key_id: String,
+}
+
+impl GeneratedSymKeyHeadServerOutput
+{
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
+	{
+		from_str::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}

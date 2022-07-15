@@ -8,6 +8,35 @@ pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 	alg::sym::aes_gcm::generate_key()
 }
 
+pub fn generate_symmetric_with_master_key(master_key: &SymKey) -> Result<(Vec<u8>, &str), Error>
+{
+	let out = generate_symmetric()?;
+
+	let encrypted_sym_key = match out.key {
+		SymKey::Aes(k) => encrypt_symmetric(master_key, &k)?,
+	};
+
+	Ok((encrypted_sym_key, out.alg))
+}
+
+pub fn get_symmetric_key_from_master_key(master_key: &SymKey, encrypted_symmetric_key: &[u8], alg: &str) -> Result<SymKey, Error>
+{
+	let decrypted_symmetric_key = decrypt_symmetric(master_key, encrypted_symmetric_key)?;
+
+	let key = match alg {
+		alg::sym::aes_gcm::AES_GCM_OUTPUT => {
+			SymKey::Aes(
+				decrypted_symmetric_key
+					.try_into()
+					.map_err(|_| Error::KeyDecryptFailed)?,
+			)
+		},
+		_ => return Err(Error::AlgNotFound),
+	};
+
+	Ok(key)
+}
+
 pub fn encrypt_symmetric(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
 {
 	match key {

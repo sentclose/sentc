@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::crypto::EncryptedHead;
+use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerOutput};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_core::Error;
 
@@ -11,6 +11,7 @@ use crate::crypto::{
 	decrypt_raw_symmetric_internally,
 	decrypt_string_asymmetric_internally,
 	decrypt_string_symmetric_internally,
+	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
@@ -18,9 +19,10 @@ use crate::crypto::{
 	encrypt_string_asymmetric_internally,
 	encrypt_string_symmetric_internally,
 	encrypt_symmetric_internally,
+	prepare_register_sym_key_internally,
 };
 use crate::err_to_msg;
-use crate::util::{import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
+use crate::util::{export_sym_key_to_string, import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
 
 fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, Error>
 {
@@ -236,9 +238,33 @@ pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify
 	Ok(decrypted)
 }
 
+pub fn prepare_register_sym_key(master_key: &str) -> Result<String, String>
+{
+	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
+
+	let out = prepare_register_sym_key_internally(&master_key).map_err(|e| err_to_msg(e))?;
+
+	Ok(out)
+}
+
+pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
+{
+	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
+	let encrypted_symmetric_key_info =
+		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+
+	let out = decrypt_sym_key_internally(&master_key, &encrypted_symmetric_key_info).map_err(|e| err_to_msg(e))?;
+
+	export_sym_key_to_string(out).map_err(|e| err_to_msg(e))
+}
+
 #[cfg(test)]
 mod test
 {
+	use alloc::string::ToString;
+
+	use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
+
 	use super::*;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
@@ -418,5 +444,37 @@ mod test
 		let decrypted = decrypt_string_asymmetric(user.private_key.as_str(), &encrypted, user.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_sym_key()
+	{
+		let user = create_user();
+		let (group, _) = create_group(&user);
+		let master_key = &group.keys[0].group_key;
+
+		let server_in = prepare_register_sym_key(master_key).unwrap();
+
+		//get the server output
+		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
+
+		let server_out = GeneratedSymKeyHeadServerOutput {
+			alg: server_in.alg,
+			encrypted_key_string: server_in.encrypted_key_string,
+			master_key_id: server_in.master_key_id,
+			key_id: "123".to_string(),
+		};
+
+		//get the key
+		let decrypted_key = decrypt_sym_key(master_key, server_out.to_string().unwrap().as_str()).unwrap();
+
+		//test the encrypt / decrypt
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text.as_bytes(), user.sign_key.as_str()).unwrap();
+
+		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.exported_verify_key.as_str()).unwrap();
+
+		assert_eq!(decrypted, text.as_bytes())
 	}
 }

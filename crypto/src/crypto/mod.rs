@@ -7,7 +7,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::crypto::{EncryptedHead, SignHead};
+use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerOutput, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_core::{crypto as crypto_core, Error, SignK, ED25519_OUTPUT};
 
@@ -18,6 +18,7 @@ pub use self::crypto::{
 	decrypt_raw_symmetric,
 	decrypt_string_asymmetric,
 	decrypt_string_symmetric,
+	decrypt_sym_key,
 	decrypt_symmetric,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
@@ -25,6 +26,7 @@ pub use self::crypto::{
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric,
+	prepare_register_sym_key,
 };
 #[cfg(feature = "rust")]
 pub use self::crypto_rust::{
@@ -33,6 +35,7 @@ pub use self::crypto_rust::{
 	decrypt_raw_symmetric,
 	decrypt_string_asymmetric,
 	decrypt_string_symmetric,
+	decrypt_sym_key,
 	decrypt_symmetric,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
@@ -40,6 +43,7 @@ pub use self::crypto_rust::{
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric,
+	prepare_register_sym_key,
 };
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 
@@ -292,8 +296,49 @@ fn decrypt_string_asymmetric_internally(
 	decrypt_asymmetric_internally(private_key, &encrypted, verify_key)
 }
 
-/*
-TODO
-	- (maybe generate new key and encrypt)
-	-
- */
+/**
+# Prepare key registration on the server
+
+1. create a new symmetric key
+2. export the symmetric key in base64
+3. encrypt the symmetric key with the master key
+4. return the server input
+*/
+fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<String, Error>
+{
+	let (encrypted_key, sym_key_alg) = crypto_core::generate_symmetric_with_master_key(&master_key.key)?;
+
+	let encrypted_key_string = Base64::encode_string(&encrypted_key);
+
+	Ok(GeneratedSymKeyHeadServerInput {
+		encrypted_key_string,
+		alg: sym_key_alg.to_string(),
+		master_key_id: master_key.key_id.to_string(),
+	}
+	.to_string()
+	.map_err(|_| Error::JsonToStringFailed)?)
+}
+
+/**
+# Get a symmetric key which was encrypted by a master key
+
+Backwards the process in prepare_register_sym_key.
+
+1. get the bytes of the encrypted symmetric key
+2. get the sym internal format by decrypting it with the master key
+4. return the key incl. key id in the right format
+*/
+fn decrypt_sym_key_internally(
+	master_key: &SymKeyFormatInt,
+	encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput,
+) -> Result<SymKeyFormatInt, Error>
+{
+	let encrypted_sym_key = Base64::decode_vec(&encrypted_symmetric_key_info.encrypted_key_string).map_err(|_| Error::KeyDecryptFailed)?;
+
+	let key = crypto_core::get_symmetric_key_from_master_key(&master_key.key, &encrypted_sym_key, encrypted_symmetric_key_info.alg.as_str())?;
+
+	Ok(SymKeyFormatInt {
+		key,
+		key_id: encrypted_symmetric_key_info.key_id.to_string(),
+	})
+}
