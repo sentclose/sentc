@@ -152,6 +152,7 @@ pub struct GroupServerData
 	pub parent_group_id: Option<GroupId>,
 	pub keys: Vec<GroupKeyServerOutput>,
 	pub keys_page: i32, //when returning the keys as pagination
+	pub key_update: bool,
 }
 
 impl GroupServerData

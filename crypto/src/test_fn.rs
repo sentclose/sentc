@@ -205,6 +205,7 @@ pub fn simulate_server_create_group(group_create_data: &str) -> String
 		parent_group_id: None,
 		keys: vec![group_server_output],
 		keys_page: 0,
+		key_update: false,
 	};
 
 	group_server_output.to_string().unwrap()

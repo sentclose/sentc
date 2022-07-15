@@ -242,6 +242,7 @@ mod test
 			parent_group_id: None,
 			keys: vec![group_server_output_user_0],
 			keys_page: 0,
+			key_update: false,
 		};
 
 		let group_data_user_0 = get_group_data(user.private_key.as_str(), group_server_output_user_0.to_string().unwrap().as_str()).unwrap();
@@ -270,6 +271,7 @@ mod test
 			parent_group_id: None,
 			keys: vec![group_server_output_user_1],
 			keys_page: 0,
+			key_update: false,
 		};
 
 		let group_data_user_1 = get_group_data(user1.private_key.as_str(), group_server_output_user_1.to_string().unwrap().as_str()).unwrap();
