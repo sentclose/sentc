@@ -9,16 +9,7 @@ use alloc::vec::Vec;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::crypto::{EncryptedHead, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_core::crypto::{
-	decrypt_asymmetric as decrypt_asymmetric_core,
-	decrypt_symmetric as decrypt_symmetric_core,
-	encrypt_asymmetric as encrypt_asymmetric_core,
-	encrypt_symmetric as encrypt_symmetric_core,
-	sign,
-	split_sig_and_data,
-	verify,
-};
-use sentc_crypto_core::{Error, SignK, ED25519_OUTPUT};
+use sentc_crypto_core::{crypto as crypto_core, Error, SignK, ED25519_OUTPUT};
 
 #[cfg(not(feature = "rust"))]
 pub use self::crypto::{
@@ -54,7 +45,7 @@ use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pe
 
 fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHead>, Vec<u8>), Error>
 {
-	let signed_data = sign(&key.key, data)?;
+	let signed_data = crypto_core::sign(&key.key, data)?;
 
 	let alg = match &key.key {
 		SignK::Ed25519(_) => ED25519_OUTPUT.to_string(),
@@ -78,7 +69,7 @@ fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8]
 	}
 
 	//verify the data with the right key
-	let (encrypted_data_without_sig, check) = verify(&verify_k, data_with_sig)?;
+	let (encrypted_data_without_sig, check) = crypto_core::verify(&verify_k, data_with_sig)?;
 
 	if check == false {
 		return Err(Error::VerifyFailed);
@@ -130,7 +121,7 @@ fn encrypt_raw_symmetric_internally(
 		sign: None,
 	};
 
-	let mut encrypted = encrypt_symmetric_core(&key.key, data)?;
+	let mut encrypted = crypto_core::encrypt_symmetric(&key.key, data)?;
 
 	//sign the data
 	match sign_key {
@@ -156,17 +147,17 @@ fn decrypt_raw_symmetric_internally(
 
 	//check if sig was set
 	match &head.sign {
-		None => decrypt_symmetric_core(&key.key, encrypted_data), //no sig used, go ahead
+		None => crypto_core::decrypt_symmetric(&key.key, encrypted_data), //no sig used, go ahead
 		Some(h) => {
 			match verify_key {
 				None => {
 					//just split the data, use the alg here
-					let (_, encrypted_data_without_sig) = split_sig_and_data(h.alg.as_str(), encrypted_data)?;
-					decrypt_symmetric_core(&key.key, encrypted_data_without_sig)
+					let (_, encrypted_data_without_sig) = crypto_core::split_sig_and_data(h.alg.as_str(), encrypted_data)?;
+					crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)
 				},
 				Some(vk) => {
 					let encrypted_data_without_sig = verify_internally(&vk, encrypted_data, h)?;
-					decrypt_symmetric_core(&key.key, encrypted_data_without_sig)
+					crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)
 				},
 			}
 		},
@@ -186,7 +177,7 @@ fn encrypt_raw_asymmetric_internally(
 		sign: None,
 	};
 
-	let mut encrypted = encrypt_asymmetric_core(&public_key, data)?;
+	let mut encrypted = crypto_core::encrypt_asymmetric(&public_key, data)?;
 
 	//sign the data
 	match sign_key {
@@ -209,16 +200,16 @@ fn decrypt_raw_asymmetric_internally(
 ) -> Result<Vec<u8>, Error>
 {
 	match &head.sign {
-		None => decrypt_asymmetric_core(&private_key.key, encrypted_data),
+		None => crypto_core::decrypt_asymmetric(&private_key.key, encrypted_data),
 		Some(h) => {
 			match verify_key {
 				None => {
-					let (_, encrypted_data_without_sig) = split_sig_and_data(h.alg.as_str(), encrypted_data)?;
-					decrypt_asymmetric_core(&private_key.key, encrypted_data_without_sig)
+					let (_, encrypted_data_without_sig) = crypto_core::split_sig_and_data(h.alg.as_str(), encrypted_data)?;
+					crypto_core::decrypt_asymmetric(&private_key.key, encrypted_data_without_sig)
 				},
 				Some(vk) => {
 					let encrypted_data_without_sig = verify_internally(&vk, encrypted_data, h)?;
-					decrypt_asymmetric_core(&private_key.key, encrypted_data_without_sig)
+					crypto_core::decrypt_asymmetric(&private_key.key, encrypted_data_without_sig)
 				},
 			}
 		},
@@ -303,7 +294,6 @@ fn decrypt_string_asymmetric_internally(
 
 /*
 TODO
-	- generate sym key
 	- (maybe generate new key and encrypt)
 	-
  */
