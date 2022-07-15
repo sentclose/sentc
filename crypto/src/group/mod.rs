@@ -279,6 +279,7 @@ pub(crate) mod test_fn
 			parent_group_id: None,
 			keys: vec![group_server_output],
 			keys_page: 0,
+			key_update: false,
 		};
 
 		#[cfg(feature = "rust")]
@@ -310,6 +311,7 @@ pub(crate) mod test_fn
 			parent_group_id: None,
 			keys: vec![group_server_output],
 			keys_page: 0,
+			key_update: false,
 		};
 
 		#[cfg(not(feature = "rust"))]
