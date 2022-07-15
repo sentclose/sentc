@@ -11,7 +11,9 @@ import init, {
 	encrypt_symmetric,
 	decrypt_symmetric,
 	encrypt_string_symmetric,
-	decrypt_string_symmetric
+	decrypt_string_symmetric,
+	generate_non_register_sym_key,
+	decrypt_sym_key
 } from './../../pkg/sentc_wasm.js';
 
 export async function run()
@@ -106,6 +108,31 @@ export async function run()
 	let decrypted_string = decrypt_string_symmetric(group_keys.keys[0].group_key,encrypted_string,keys.exported_verify_key);
 
 	console.log(byteArrayToString(decrypted_string));
+
+	console.log("_________________________________");
+	console.log("key generate")
+
+	let generated_key_out = generate_non_register_sym_key(group_keys.keys[0].group_key);
+	let generated_key = generated_key_out.get_key();
+	let encrypted_generated_key = generated_key_out.get_encrypted_key();
+
+	let encrypted_string1 = encrypt_string_symmetric(generated_key, text_view, keys.sign_key);
+
+	console.log(encrypted_string1);
+
+	let decrypted_string1 = decrypt_string_symmetric(generated_key,encrypted_string1,keys.exported_verify_key);
+
+	console.log(byteArrayToString(decrypted_string1));
+
+	let decrypted_generated_key = decrypt_sym_key(group_keys.keys[0].group_key,encrypted_generated_key);
+
+	let encrypted_string2 = encrypt_string_symmetric(decrypted_generated_key, text_view, keys.sign_key);
+
+	console.log(encrypted_string2);
+
+	let decrypted_string2 = decrypt_string_symmetric(decrypted_generated_key,encrypted_string2,keys.exported_verify_key);
+
+	console.log(byteArrayToString(decrypted_string2));
 }
 
 /**

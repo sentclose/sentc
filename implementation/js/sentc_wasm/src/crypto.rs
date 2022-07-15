@@ -18,14 +18,35 @@ pub struct CryptoRawOutput
 #[wasm_bindgen]
 impl CryptoRawOutput
 {
-	pub fn get_head(self) -> String
+	pub fn get_head(&self) -> String
 	{
-		self.head
+		self.head.clone()
 	}
 
-	pub fn get_data(self) -> Vec<u8>
+	pub fn get_data(&self) -> Vec<u8>
 	{
-		self.data
+		self.data.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub struct NonRegisteredKeyOutput
+{
+	key: String,
+	encrypted_key: String,
+}
+
+#[wasm_bindgen]
+impl NonRegisteredKeyOutput
+{
+	pub fn get_key(&self) -> String
+	{
+		self.key.clone()
+	}
+
+	pub fn get_encrypted_key(&self) -> String
+	{
+		self.encrypted_key.clone()
 	}
 }
 
@@ -109,6 +130,17 @@ pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &[u8], sign_
 pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
 {
 	crypto::decrypt_string_asymmetric(private_key, encrypted_data, verify_key_data)
+}
+
+#[wasm_bindgen]
+pub fn generate_non_register_sym_key(master_key: &str) -> Result<NonRegisteredKeyOutput, String>
+{
+	let (key, encrypted_key) = crypto::generate_non_register_sym_key(master_key)?;
+
+	Ok(NonRegisteredKeyOutput {
+		key,
+		encrypted_key,
+	})
 }
 
 #[wasm_bindgen]
