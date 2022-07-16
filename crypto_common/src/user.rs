@@ -51,6 +51,26 @@ impl UserIdentifierAvailableServerInput
 	}
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct UserIdentifierAvailableServerOutput
+{
+	pub user_identifier: String,
+	pub available: bool,
+}
+
+impl UserIdentifierAvailableServerOutput
+{
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
+	{
+		from_str::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
 /**
 # Register Data for the server api
 

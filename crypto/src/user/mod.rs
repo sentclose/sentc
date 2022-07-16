@@ -21,6 +21,7 @@ use sentc_crypto_common::user::{
 	RegisterData,
 	ResetPasswordData,
 	UserIdentifierAvailableServerInput,
+	UserIdentifierAvailableServerOutput,
 	UserPublicKeyData,
 	UserVerifyKeyData,
 };
@@ -59,6 +60,7 @@ mod user;
 #[cfg(not(feature = "rust"))]
 pub use self::user::{
 	change_password,
+	done_check_user_identifier_available,
 	done_login,
 	prepare_check_user_identifier_available,
 	prepare_login,
@@ -72,6 +74,7 @@ pub use self::user::{
 #[cfg(feature = "rust")]
 pub use self::user_rust::{
 	change_password,
+	done_check_user_identifier_available,
 	done_login,
 	prepare_check_user_identifier_available,
 	prepare_login,
@@ -91,6 +94,13 @@ fn prepare_check_user_identifier_available_internally(user_identifier: &str) -> 
 	}
 	.to_string()
 	.map_err(|_| Error::JsonToStringFailed)
+}
+
+fn done_check_user_identifier_available_internally(server_output: &str) -> Result<bool, Error>
+{
+	let server_output = UserIdentifierAvailableServerOutput::from_string(server_output).map_err(|_| Error::JsonParseFailed)?;
+
+	Ok(server_output.available)
 }
 
 /**

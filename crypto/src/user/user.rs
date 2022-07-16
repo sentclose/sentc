@@ -10,6 +10,7 @@ use serde_json::{from_str, to_string};
 use crate::err_to_msg;
 use crate::user::{
 	change_password_internally,
+	done_check_user_identifier_available_internally,
 	done_login_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
@@ -51,6 +52,11 @@ impl MasterKeyFormat
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, String>
 {
 	prepare_check_user_identifier_available_internally(user_identifier).map_err(|e| err_to_msg(e))
+}
+
+pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, String>
+{
+	done_check_user_identifier_available_internally(server_output).map_err(|e| err_to_msg(e))
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, String>

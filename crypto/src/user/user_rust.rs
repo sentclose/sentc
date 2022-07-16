@@ -6,6 +6,7 @@ use sentc_crypto_core::{DeriveMasterKeyForAuth, Error};
 
 use crate::user::{
 	change_password_internally,
+	done_check_user_identifier_available_internally,
 	done_login_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
@@ -19,6 +20,11 @@ use crate::util::{KeyData, PrivateKeyFormat, SignKeyFormat};
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, Error>
 {
 	prepare_check_user_identifier_available_internally(user_identifier)
+}
+
+pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, Error>
+{
+	done_check_user_identifier_available_internally(server_output)
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, Error>
