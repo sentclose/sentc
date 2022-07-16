@@ -19,8 +19,10 @@ Available in:
 #### Requirements:
 - Rust MRV 1.6.0
 - For flutter:
+  - flutter_rust_bridge_codegen (`cargo install flutter_rust_bridge_codegen`)
   - cargo-ndk
   - llvm
+  - flutter ffi (`dart pub global activate ffigen`)
 - For Javascript:
   - wasm-pack
   - node js min. version 14 lts
@@ -39,7 +41,9 @@ cargo build --release
 
 ````shell
 cd ./implementation/js/sentc_wasm
+````
 
+````shell
 wasm-pack build --target web 
 ````
 
@@ -47,7 +51,9 @@ wasm-pack build --target web
 
 ````shell
 cd ./implementation/js/sentc_wasm
+````
 
+````shell
 npm run build
 ````
 
@@ -65,6 +71,8 @@ flutter_rust_bridge_codegen --rust-input implementation/dart/sentc/rust/src/sent
 
 ````shell
 cd ./implementation/dart/sentc/rust
+````
 
+````shell
 cargo ndk -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 -o ../android/src/main/jniLibs build --release
 ````
