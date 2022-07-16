@@ -1,3 +1,7 @@
+//! # Sentc common to communicate with the backend api
+//!
+//! The input and output for and from the server
+
 #![no_std]
 
 extern crate alloc;
