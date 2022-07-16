@@ -136,7 +136,7 @@ export class Sentc
 		//save user data in indexeddb
 		const storage = await Sentc.getStore();
 		
-		await storage.set(USER_KEY_STORAGE_NAMES.userData + "id" + userIdentifier, userData);
+		await storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, userData);
 
 		return userData;
 	}
@@ -145,7 +145,7 @@ export class Sentc
 	{
 		const storage = await Sentc.getStore();
 
-		const user = await storage.getItem(USER_KEY_STORAGE_NAMES.userData + "id" + userIdentifier);
+		const user = await storage.getItem(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier);
 
 		if (!user) {
 			return false;
@@ -172,7 +172,7 @@ export class Sentc
 
 		const storage = await Sentc.getStore();
 
-		await storage.set(USER_KEY_STORAGE_NAMES.userData + "id" + userIdentifier, userData);
+		await storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, userData);
 
 		return userData;
 	}

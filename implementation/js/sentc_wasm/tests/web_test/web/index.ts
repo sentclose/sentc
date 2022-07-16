@@ -49,6 +49,10 @@ export async function run()
 
 	console.log(keys);
 
+	console.log("getting user");
+	const user = await sentc.getUser("admin");
+	console.log(user);
+
 	console.log("_________________________________");
 	console.log("create group");
 
