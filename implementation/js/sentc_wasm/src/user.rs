@@ -62,7 +62,7 @@ impl DoneLoginData
 # Check if the identifier is available for this app
 */
 #[wasm_bindgen]
-pub async fn check_user_identifier_available(base_url: String, auth_token: String, user_identifier: String) -> Result<String, JsValue>
+pub async fn check_user_identifier_available(base_url: String, auth_token: String, user_identifier: String) -> Result<bool, JsValue>
 {
 	let server_input = user::prepare_check_user_identifier_available(user_identifier.as_str())?;
 
@@ -75,7 +75,7 @@ pub async fn check_user_identifier_available(base_url: String, auth_token: Strin
 
 	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
 
-	Ok(res)
+	Ok(user::done_check_user_identifier_available(res.as_str())?)
 }
 
 /**

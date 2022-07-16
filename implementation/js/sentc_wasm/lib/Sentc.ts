@@ -90,16 +90,13 @@ export class Sentc
 		return this.sentc;
 	}
 
-	public async checkUserIdentifierAvailable(userIdentifier: string)
+	public checkUserIdentifierAvailable(userIdentifier: string)
 	{
 		if (userIdentifier === "") {
 			return false;
 		}
 
-		const out = await check_user_identifier_available(this.options.base_url, this.options.app_token, userIdentifier);
-
-		//TODO handle checkUserIdentifierAvailable server output
-		const out_json = JSON.parse(out);
+		return check_user_identifier_available(this.options.base_url, this.options.app_token, userIdentifier);
 	}
 
 	public prepareRegister(userIdentifier: string, password: string)
