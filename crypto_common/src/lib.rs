@@ -3,6 +3,8 @@
 //! The input and output for and from the server
 //!
 //! Contains type def for the ids.
+//!
+//! Non std with alloc
 
 #![no_std]
 
