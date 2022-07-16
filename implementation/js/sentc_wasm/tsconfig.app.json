@@ -8,6 +8,6 @@
 		"lib/**/*"
 	],
 	"exclude": [
-		"test/**/*"
+		"tests/**/*"
 	]
 }
