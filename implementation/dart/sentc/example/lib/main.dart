@@ -23,7 +23,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    register = _sentcPlugin.register("abc");
+    register = _sentcPlugin.register("abc", "def");
     register_test = _sentcPlugin.registerTest();
   }
 

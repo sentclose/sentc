@@ -28,9 +28,9 @@ class Sentc {
     return Sentc._(api);
   }
 
-  Future<String> register(String password)
+  Future<String> register(String userIdentifier, String password)
   {
-    return api.register(password: password);
+    return api.register(password: password, userIdentifier: userIdentifier);
   }
 
   Future<String> registerTest()
