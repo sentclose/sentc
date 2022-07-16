@@ -1,8 +1,5 @@
-import init, {
+import {
 	register_test_full,
-	register_test,
-	prepare_login_test,
-	done_login_test,
 	simulate_server_done_login,
 	simulate_server_prepare_login,
 	prepare_create,
@@ -15,11 +12,14 @@ import init, {
 	generate_non_register_sym_key,
 	decrypt_sym_key
 } from "../../../pkg";
-import {GroupData, KeyData} from "../../../lib/Enities";
+import {GroupData} from "../../../lib/Enities";
+import {Sentc} from "../../../lib";
 
 export async function run()
 {
-	await init();
+	const sentc = await Sentc.init({
+		app_token: "123"
+	});
 
 	console.log("_________________________________");
 
@@ -35,35 +35,19 @@ export async function run()
 	const pw = "hello";
 
 	console.log("register user");
-	const register_out = register_test("admin", pw);
+	const register_out = sentc.prepareRegister("admin", pw);
 
 	console.log(register_out);
-	console.log("real 1 json pretty");
 
 	console.log("_________________________________");
 	console.log("login");
 	console.log("prepare login");
 	const prep_server_out = simulate_server_prepare_login(register_out);
-
-	const prep = prepare_login_test(pw, prep_server_out);
-
 	const done_login_server_out = simulate_server_done_login(register_out);
 
-	const key_data = done_login_test(prep.get_master_key_encryption_key(), done_login_server_out);
-
-	const keys: KeyData = {
-		private_key: key_data.get_private_key(),
-		public_key: key_data.get_public_key(),
-		sign_key: key_data.get_sign_key(),
-		verify_key: key_data.get_verify_key(),
-		exported_public_key: key_data.get_exported_public_key(),
-		exported_verify_key: key_data.get_exported_verify_key()
-	};
-
-	const jwt = key_data.get_jwt();
+	const keys = await sentc.loginTest( prep_server_out, done_login_server_out, "admin", pw);
 
 	console.log(keys);
-	console.log(jwt);
 
 	console.log("_________________________________");
 	console.log("create group");

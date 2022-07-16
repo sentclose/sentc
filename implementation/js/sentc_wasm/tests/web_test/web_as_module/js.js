@@ -50,20 +50,18 @@ export async function run()
 
 	const key_data = done_login_test(prep.get_master_key_encryption_key(), done_login_server_out);
 
-	/** @param {KeyData} */
+	/** @param {UserData} */
 	const keys = {
 		private_key: key_data.get_private_key(),
 		public_key: key_data.get_public_key(),
 		sign_key: key_data.get_sign_key(),
 		verify_key: key_data.get_verify_key(),
 		exported_public_key: key_data.get_exported_public_key(),
-		exported_verify_key: key_data.get_exported_verify_key()
+		exported_verify_key: key_data.get_exported_verify_key(),
+		jwt: key_data.get_jwt()
 	};
 
-	const jwt = key_data.get_jwt();
-
 	console.log(keys);
-	console.log(jwt);
 
 	console.log("_________________________________");
 	console.log("create group");

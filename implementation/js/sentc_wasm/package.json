@@ -27,6 +27,9 @@
     "webpack": "webpack",
     "webpack-watch": "webpack --watch"
   },
+  "dependencies": {
+    "idb": "^6.1.4"
+  },
   "devDependencies": {
     "@joernheinemann/eslint-config-typescript": "git+https://gitlab+gitlab+deploy-token-721488:57myipLxDruvdHLZQccB@gitlab.com/joern.heinemann/eslint-config-typescript.git",
     "@typescript-eslint/eslint-plugin": "^4.22.1",
