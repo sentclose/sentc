@@ -1,0 +1,3 @@
+[submodule "sdk-common"]
+	path = sdk-common
+	url = git@gitlab.com:sentclose/sentc/sdk-common.git
