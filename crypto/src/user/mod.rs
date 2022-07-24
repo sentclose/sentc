@@ -218,9 +218,15 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 	)?;
 
 	//now prepare the public and verify key for use
-	let public_key = import_public_key_from_pem_with_alg(server_output.public_key_string.as_str(), server_output.keypair_encrypt_alg.as_str())?;
+	let public_key = import_public_key_from_pem_with_alg(
+		server_output.public_key_string.as_str(),
+		server_output.keypair_encrypt_alg.as_str(),
+	)?;
 
-	let verify_key = import_verify_key_from_pem_with_alg(server_output.verify_key_string.as_str(), server_output.keypair_sign_alg.as_str())?;
+	let verify_key = import_verify_key_from_pem_with_alg(
+		server_output.verify_key_string.as_str(),
+		server_output.keypair_sign_alg.as_str(),
+	)?;
 
 	//export this too, so the user can verify the own data
 	let exported_public_key = UserPublicKeyData {
@@ -269,7 +275,13 @@ fn change_password_internally(
 	let encrypted_master_key = Base64::decode_vec(encrypted_master_key).map_err(|_| Error::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(old_salt).map_err(|_| Error::DecodeSaltFailed)?;
 
-	let output = change_password_core(old_pw, new_pw, &old_salt, &encrypted_master_key, derived_encryption_key_alg)?;
+	let output = change_password_core(
+		old_pw,
+		new_pw,
+		&old_salt,
+		&encrypted_master_key,
+		derived_encryption_key_alg,
+	)?;
 
 	//prepare for the server
 	let new_encrypted_master_key = Base64::encode_string(&output.master_key_info.encrypted_master_key);
@@ -354,7 +366,10 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 	for out in &server_output.logins {
 		//get the derived key from the password
 		//creat the salt in the client for the old keys. it is ok because the user is already auth
-		let client_random_value = client_random_value_from_string(out.client_random_value.as_str(), out.derived_encryption_key_alg.as_str())?;
+		let client_random_value = client_random_value_from_string(
+			out.client_random_value.as_str(),
+			out.derived_encryption_key_alg.as_str(),
+		)?;
 		let salt = generate_salt(client_random_value);
 
 		let result = prepare_login_core(password, &salt, out.derived_encryption_key_alg.as_str())?;
@@ -468,7 +483,11 @@ pub(crate) mod test_fn
 		let server_output = simulate_server_done_login(out);
 
 		#[cfg(not(feature = "rust"))]
-		let done_login = done_login(master_key_encryption_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
+		let done_login = done_login(
+			master_key_encryption_key.as_str(),
+			server_output.to_string().unwrap().as_str(),
+		)
+		.unwrap();
 
 		#[cfg(not(feature = "rust"))]
 		done_login
