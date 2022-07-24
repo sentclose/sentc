@@ -14,6 +14,7 @@ use crate::group::{
 	GroupKeyData,
 };
 use crate::util::{PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
+use crate::util_pub::handle_server_response;
 use crate::SdkError;
 
 pub struct GroupOutData
@@ -47,8 +48,10 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 	get_group_keys_internally(private_key, server_output)
 }
 
-pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &GroupServerData) -> Result<GroupOutData, SdkError>
+pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &str) -> Result<GroupOutData, SdkError>
 {
+	let server_output: GroupServerData = handle_server_response(server_output)?;
+
 	let mut keys = Vec::with_capacity(server_output.keys.len());
 
 	for key in &server_output.keys {
@@ -74,6 +77,7 @@ mod test
 
 	use base64ct::{Base64, Encoding};
 	use sentc_crypto_common::group::{CreateData, DoneKeyRotationData, GroupKeysForNewMemberServerInput, KeyRotationData};
+	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::crypto::encrypt_asymmetric as encrypt_asymmetric_core;
 	use sentc_crypto_core::SymKey;
 
@@ -133,7 +137,14 @@ mod test
 			key_update: false,
 		};
 
-		let group_data_user_0 = get_group_data(&user.private_key, &group_server_output_user_0).unwrap();
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output_user_0),
+		};
+
+		let group_data_user_0 = get_group_data(&user.private_key, server_output.to_string().unwrap().as_str()).unwrap();
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member(&user1.exported_public_key, &[&group_data_user_0.keys[0].group_key]).unwrap();
@@ -159,7 +170,14 @@ mod test
 			key_update: false,
 		};
 
-		let group_data_user_1 = get_group_data(&user1.private_key, &group_server_output_user_1).unwrap();
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output_user_1),
+		};
+
+		let group_data_user_1 = get_group_data(&user1.private_key, server_output.to_string().unwrap().as_str()).unwrap();
 
 		assert_eq!(
 			group_data_user_0.keys[0].group_key.key_id,

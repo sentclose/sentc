@@ -26,6 +26,7 @@ use crate::util::{
 	SymKeyFormat,
 	SymKeyFormatInt,
 };
+use crate::util_pub::handle_server_response;
 use crate::{err_to_msg, SdkError};
 
 #[derive(Serialize, Deserialize)]
@@ -119,7 +120,7 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 
 pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, String>
 {
-	let server_output = GroupServerData::from_string(server_output).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let server_output: GroupServerData = handle_server_response(server_output).map_err(|e| err_to_msg(e))?;
 
 	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
 
@@ -182,6 +183,7 @@ mod test
 
 	use base64ct::{Base64, Encoding};
 	use sentc_crypto_common::group::{CreateData, DoneKeyRotationData, GroupKeysForNewMemberServerInput, KeyRotationData};
+	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::crypto::encrypt_asymmetric as encrypt_asymmetric_core;
 	use sentc_crypto_core::SymKey;
 
@@ -244,11 +246,15 @@ mod test
 			key_update: false,
 		};
 
-		let group_data_user_0 = get_group_data(
-			user.private_key.as_str(),
-			group_server_output_user_0.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output_user_0),
+		};
+
+		let group_data_user_0 = get_group_data(user.private_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
+
 		let group_key_user_0 = group_data_user_0.keys[0].group_key.as_str();
 
 		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0).unwrap()]);
@@ -281,9 +287,16 @@ mod test
 			key_update: false,
 		};
 
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output_user_1),
+		};
+
 		let group_data_user_1 = get_group_data(
 			user1.private_key.as_str(),
-			group_server_output_user_1.to_string().unwrap().as_str(),
+			server_output.to_string().unwrap().as_str(),
 		)
 		.unwrap();
 

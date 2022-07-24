@@ -262,6 +262,7 @@ pub(crate) mod test_fn
 	use alloc::vec;
 
 	use sentc_crypto_common::group::GroupServerData;
+	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
 	use crate::util::KeyData;
@@ -292,10 +293,20 @@ pub(crate) mod test_fn
 			key_update: false,
 		};
 
-		#[cfg(feature = "rust")]
-		let out = get_group_data(&user.private_key, &group_server_output).unwrap();
+		//to avoid the clone trait on the real type
+		let group_ser_str = group_server_output.to_string().unwrap();
 
-		(out, group_server_output)
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output),
+		};
+
+		#[cfg(feature = "rust")]
+		let out = get_group_data(&user.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+
+		(out, GroupServerData::from_string(group_ser_str.as_str()).unwrap())
 	}
 
 	#[cfg(not(feature = "rust"))]
@@ -324,13 +335,22 @@ pub(crate) mod test_fn
 			key_update: false,
 		};
 
-		#[cfg(not(feature = "rust"))]
-		let group_data = get_group_data(
-			user.private_key.as_str(),
-			group_server_output.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		//to avoid the clone trait on the real type
+		let group_ser_str = group_server_output.to_string().unwrap();
 
-		(group_data, group_server_output)
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output),
+		};
+
+		#[cfg(not(feature = "rust"))]
+		let group_data = get_group_data(user.private_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
+
+		(
+			group_data,
+			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
+		)
 	}
 }
