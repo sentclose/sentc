@@ -74,8 +74,9 @@ pub async fn check_user_identifier_available(base_url: String, auth_token: Strin
 	opts.body(Some(&JsValue::from_str(server_input.as_str())));
 
 	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
+	let out = user::done_check_user_identifier_available(res.as_str())?;
 
-	Ok(user::done_check_user_identifier_available(res.as_str())?)
+	Ok(out)
 }
 
 /**
@@ -110,8 +111,9 @@ pub async fn register(base_url: String, auth_token: String, user_identifier: Str
 	opts.body(Some(&JsValue::from_str(register_input.as_str())));
 
 	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
+	let out = user::done_register(res.as_str())?;
 
-	Ok(res)
+	Ok(out)
 }
 
 /**

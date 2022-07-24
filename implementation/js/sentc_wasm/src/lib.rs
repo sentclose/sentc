@@ -26,17 +26,12 @@ async fn make_req(url: &str, bearer_header: &str, req_opts: &RequestInit) -> Res
 
 	let window = web_sys::window().unwrap();
 	let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+
 	let resp: Response = resp_value.dyn_into().unwrap();
 	let text = JsFuture::from(resp.text()?).await?;
-	let server_output = match text.as_string() {
-		Some(v) => v,
+
+	match text.as_string() {
+		Some(v) => Ok(v),
 		None => return Err(JsValue::from_str("String parsing failed")),
-	};
-
-	if resp.status() >= 400 {
-		//handle server errs
-		return Err(JsValue::from_str(server_output.as_str()));
 	}
-
-	Ok(server_output)
 }
