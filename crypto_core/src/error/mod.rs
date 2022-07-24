@@ -22,31 +22,6 @@ pub enum Error
 	InitVerifyFailed,
 
 	AlgNotFound,
-	DecodeSaltFailed,
-	DecodeRandomValueFailed,
-	DerivedKeyWrongFormat,
-
-	LoginServerOutputWrong,
-	KeyRotationServerOutputWrong,
-
-	GettingGroupDataFailed,
 
 	DecodePrivateKeyFailed,
-	DecodePublicKeyFailed,
-	DecodeEncryptedDataFailed,
-
-	ImportingPrivateKeyFailed,
-	ImportingSignKeyFailed,
-	ImportSymmetricKeyFailed,
-	ImportPublicKeyFailed,
-	ImportVerifyKeyFailed,
-
-	ExportingPublicKeyFailed,
-	ImportingKeyFromPemFailed,
-
-	JsonToStringFailed,
-	JsonParseFailed,
-
-	SigFoundNotKey,
-	VerifyFailed,
 }
