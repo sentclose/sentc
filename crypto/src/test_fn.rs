@@ -7,6 +7,7 @@ use base64ct::{Base64, Encoding};
 #[cfg(not(feature = "rust"))]
 use sentc_crypto_common::group::{CreateData, GroupKeyServerOutput, GroupServerData};
 use sentc_crypto_common::user::{DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
+use sentc_crypto_common::ServerOutput;
 #[cfg(feature = "rust")]
 use sentc_crypto_core::Sk;
 
@@ -43,9 +44,16 @@ pub fn register_test_full() -> String
 		derived_encryption_key_alg: derived.derived_alg.clone(),
 	};
 
+	let server_output = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(server_output),
+	};
+
 	//back to the client, send prep login out string to the server if it is no err
 	#[cfg(feature = "rust")]
-	let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
+	let (_, master_key_encryption_key) = prepare_login(password, server_output.to_string().unwrap().as_str()).unwrap();
 
 	//get the server output back
 	let server_output = DoneLoginServerKeysOutput {
@@ -95,9 +103,14 @@ pub fn register_test_full() -> String
 	let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
-	let server_output = PrepareLoginSaltServerOutput {
-		salt_string: salt_from_rand_value,
-		derived_encryption_key_alg: derived.derived_alg.clone(),
+	let server_output = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(PrepareLoginSaltServerOutput {
+			salt_string: salt_from_rand_value,
+			derived_encryption_key_alg: derived.derived_alg.clone(),
+		}),
 	};
 
 	//back to the client, send prep login out string to the server if it is no err
@@ -151,12 +164,17 @@ pub fn simulate_server_prepare_login(register_data: &str) -> String
 	let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
 	let salt_string = Base64::encode_string(&salt_from_rand_value);
 
-	let prep = PrepareLoginSaltServerOutput {
-		salt_string,
-		derived_encryption_key_alg: derived.derived_alg.clone(),
+	let server_output = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(PrepareLoginSaltServerOutput {
+			salt_string,
+			derived_encryption_key_alg: derived.derived_alg.clone(),
+		}),
 	};
 
-	prep.to_string().unwrap()
+	server_output.to_string().unwrap()
 }
 
 #[cfg(not(feature = "rust"))]
@@ -208,7 +226,14 @@ pub fn simulate_server_create_group(group_create_data: &str) -> String
 		key_update: false,
 	};
 
-	group_server_output.to_string().unwrap()
+	let server_output = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(group_server_output),
+	};
+
+	server_output.to_string().unwrap()
 }
 
 #[cfg(test)]
