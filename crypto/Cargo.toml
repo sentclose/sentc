@@ -15,8 +15,8 @@ pem-rfc7468 = {version = "0.3.1", features = ["alloc"]}
 
 # json handling
 serde_json = {version = "1.0.81", default-features = false, features = ["alloc"], optional = true}
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
 
 [features]
-default = ["serde_json","serde"]
+default = ["serde_json"]
 rust = []

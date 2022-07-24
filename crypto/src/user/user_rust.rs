@@ -2,12 +2,14 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
+use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
 	done_login_internally,
+	done_register_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
@@ -31,6 +33,11 @@ pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool,
 pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
 {
 	register_internally(user_identifier, password)
+}
+
+pub fn done_register(server_output: &str) -> Result<UserId, SdkError>
+{
+	done_register_internally(server_output)
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, SdkError>

@@ -19,12 +19,14 @@ use sentc_crypto_common::user::{
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	RegisterData,
+	RegisterServerOutput,
 	ResetPasswordData,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserPublicKeyData,
 	UserVerifyKeyData,
 };
+use sentc_crypto_common::UserId;
 use sentc_crypto_core::user::{
 	change_password as change_password_core,
 	done_login as done_login_core,
@@ -49,6 +51,7 @@ use crate::util::{
 	SignKeyFormatInt,
 	VerifyKeyFormatInt,
 };
+use crate::util_pub::handle_server_response;
 use crate::SdkError;
 
 #[cfg(feature = "rust")]
@@ -63,6 +66,7 @@ pub use self::user::{
 	change_password,
 	done_check_user_identifier_available,
 	done_login,
+	done_register,
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
@@ -77,6 +81,7 @@ pub use self::user_rust::{
 	change_password,
 	done_check_user_identifier_available,
 	done_login,
+	done_register,
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
@@ -99,7 +104,7 @@ fn prepare_check_user_identifier_available_internally(user_identifier: &str) -> 
 
 fn done_check_user_identifier_available_internally(server_output: &str) -> Result<bool, SdkError>
 {
-	let server_output = UserIdentifierAvailableServerOutput::from_string(server_output).map_err(|_| SdkError::JsonParseFailed)?;
+	let server_output: UserIdentifierAvailableServerOutput = handle_server_response(server_output)?;
 
 	Ok(server_output.available)
 }
@@ -158,6 +163,13 @@ fn register_internally(user_identifier: &str, password: &str) -> Result<String, 
 	Ok(register_out
 		.to_string()
 		.map_err(|_| SdkError::JsonToStringFailed)?)
+}
+
+fn done_register_internally(server_output: &str) -> Result<UserId, SdkError>
+{
+	let out: RegisterServerOutput = handle_server_response(server_output)?;
+
+	Ok(out.user_id)
 }
 
 /**

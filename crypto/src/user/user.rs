@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
+use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
@@ -11,6 +12,7 @@ use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
 	done_login_internally,
+	done_register_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
@@ -62,6 +64,11 @@ pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool,
 pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
 {
 	register_internally(user_identifier, password).map_err(|e| err_to_msg(e))
+}
+
+pub fn done_register(server_output: &str) -> Result<UserId, String>
+{
+	done_register_internally(server_output).map_err(|e| err_to_msg(e))
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, String>
