@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
+use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
@@ -45,7 +45,7 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, SdkError>
 	prepare_login_start_internally(user_id)
 }
 
-pub fn prepare_login(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
+pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
 {
 	prepare_login_internally(password, server_output)
 }
@@ -87,11 +87,12 @@ mod test
 {
 	extern crate std;
 
-	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
+	use sentc_crypto_common::user::{ChangePasswordData, PrepareLoginSaltServerOutput, RegisterData};
 	use sentc_crypto_core::Sk;
 
 	use super::*;
 	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
+	use crate::util_pub::handle_server_response;
 
 	#[test]
 	fn test_register()
@@ -149,11 +150,12 @@ mod test
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
+		let server_out: PrepareLoginSaltServerOutput = handle_server_response(salt_from_rand_value.as_str()).unwrap();
 
 		let pw_change_out = change_password(
 			password,
 			new_password,
-			salt_from_rand_value.salt_string.as_str(),
+			server_out.salt_string.as_str(),
 			out.master_key.encrypted_master_key.as_str(),
 			out.derived.derived_alg.as_str(),
 		)

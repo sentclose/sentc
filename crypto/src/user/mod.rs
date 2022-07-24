@@ -191,8 +191,10 @@ fn prepare_login_start_internally(user_identifier: &str) -> Result<String, SdkEr
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
+fn prepare_login_internally(password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
 {
+	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
+
 	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
 	let result = prepare_login_core(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
@@ -410,11 +412,12 @@ pub(crate) mod test_fn
 	use alloc::string::ToString;
 
 	use sentc_crypto_common::user::{KeyDerivedData, RegisterData};
+	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
 	use crate::util::{client_random_value_from_string, KeyData};
 
-	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> PrepareLoginSaltServerOutput
+	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
 		//and now try to login
 		//normally the salt gets calc by the api
@@ -422,10 +425,17 @@ pub(crate) mod test_fn
 		let salt_from_rand_value = generate_salt(client_random_value);
 		let salt_string = Base64::encode_string(&salt_from_rand_value);
 
-		PrepareLoginSaltServerOutput {
-			salt_string,
-			derived_encryption_key_alg: derived.derived_alg.clone(),
+		ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(PrepareLoginSaltServerOutput {
+				salt_string,
+				derived_encryption_key_alg: derived.derived_alg.clone(),
+			}),
 		}
+		.to_string()
+		.unwrap()
 	}
 
 	pub(crate) fn simulate_server_done_login(data: RegisterData) -> DoneLoginServerKeysOutput
@@ -489,9 +499,8 @@ pub(crate) mod test_fn
 
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
-		let server_output_string = server_output.to_string().unwrap();
 		#[cfg(not(feature = "rust"))]
-		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output_string.as_str()).unwrap();
+		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 

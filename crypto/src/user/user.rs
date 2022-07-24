@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
+use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
@@ -78,10 +78,8 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 
 pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, String), String>
 {
-	let server_output = PrepareLoginSaltServerOutput::from_string(server_output).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
-
 	//the auth key is already in the right json format for the server
-	let (auth_key, master_key_encryption_key) = prepare_login_internally(password, &server_output).map_err(|e| err_to_msg(e))?;
+	let (auth_key, master_key_encryption_key) = prepare_login_internally(password, server_output).map_err(|e| err_to_msg(e))?;
 
 	//return the encryption key for the master key to the app and then use it for done login
 	let master_key_encryption_key = match master_key_encryption_key {
@@ -203,11 +201,12 @@ mod test
 {
 	extern crate std;
 
-	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
+	use sentc_crypto_common::user::{ChangePasswordData, PrepareLoginSaltServerOutput, RegisterData};
 
 	use super::*;
 	use crate::user::test_fn::{simulate_server_done_login_as_string, simulate_server_prepare_login};
 	use crate::util::PrivateKeyFormat;
+	use crate::util_pub::handle_server_response;
 
 	#[test]
 	fn test_register()
@@ -230,9 +229,7 @@ mod test
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
-		let server_output = simulate_server_prepare_login(&out.derived)
-			.to_string()
-			.unwrap();
+		let server_output = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
 		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.as_str()).unwrap();
@@ -268,11 +265,12 @@ mod test
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
 		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
+		let server_out: PrepareLoginSaltServerOutput = handle_server_response(salt_from_rand_value.as_str()).unwrap();
 
 		let pw_change_out = change_password(
 			password,
 			new_password,
-			salt_from_rand_value.salt_string.as_str(),
+			server_out.salt_string.as_str(),
 			out.master_key.encrypted_master_key.as_str(),
 			out.derived.derived_alg.as_str(),
 		)
