@@ -69,9 +69,20 @@ pub fn register_test_full() -> String
 		jwt: "jwt".to_string(),
 	};
 
+	let server_output = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(server_output),
+	};
+
 	//now save the values
 	#[cfg(feature = "rust")]
-	let login_out = done_login(&master_key_encryption_key, &server_output).unwrap();
+	let login_out = done_login(
+		&master_key_encryption_key,
+		server_output.to_string().unwrap().as_str(),
+	)
+	.unwrap();
 
 	let private_key = match login_out.private_key.key {
 		Sk::Ecies(k) => k,
@@ -131,13 +142,18 @@ pub fn register_test_full() -> String
 		jwt: "jwt".to_string(),
 	};
 
-	let server_output = server_output.to_string().unwrap();
+	let server_output = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(server_output),
+	};
 
 	//now save the values
 	#[cfg(not(feature = "rust"))]
 	let login_out = done_login(
 		master_key_encryption_key.as_str(), //the value comes from prepare login
-		server_output.as_str(),
+		server_output.to_string().unwrap().as_str(),
 	)
 	.unwrap();
 
@@ -199,7 +215,14 @@ pub fn simulate_server_done_login(register_data: &str) -> String
 		jwt: "jwt".to_string(),
 	};
 
-	done_login_server_out.to_string().unwrap()
+	ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(done_login_server_out),
+	}
+	.to_string()
+	.unwrap()
 }
 
 #[cfg(not(feature = "rust"))]

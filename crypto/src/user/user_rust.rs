@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput};
+use sentc_crypto_common::user::MultipleLoginServerOutput;
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
@@ -50,7 +50,7 @@ pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, Der
 	prepare_login_internally(password, server_output)
 }
 
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyData, SdkError>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<KeyData, SdkError>
 {
 	done_login_internally(&master_key_encryption, server_output)
 }

@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput};
+use sentc_crypto_common::user::MultipleLoginServerOutput;
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
@@ -118,9 +118,7 @@ pub fn done_login(
 		},
 	};
 
-	let server_output = DoneLoginServerKeysOutput::from_string(server_output).map_err(|_| err_to_msg(SdkError::LoginServerOutputWrong))?;
-
-	let result = done_login_internally(&master_key_encryption, &server_output).map_err(|e| err_to_msg(e))?;
+	let result = done_login_internally(&master_key_encryption, server_output).map_err(|e| err_to_msg(e))?;
 
 	export_key_data(result)
 }
@@ -204,7 +202,7 @@ mod test
 	use sentc_crypto_common::user::{ChangePasswordData, PrepareLoginSaltServerOutput, RegisterData};
 
 	use super::*;
-	use crate::user::test_fn::{simulate_server_done_login_as_string, simulate_server_prepare_login};
+	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
 	use crate::util::PrivateKeyFormat;
 	use crate::util_pub::handle_server_response;
 
@@ -234,7 +232,7 @@ mod test
 		//back to the client, send prep login out string to the server if it is no err
 		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.as_str()).unwrap();
 
-		let server_output = simulate_server_done_login_as_string(out);
+		let server_output = simulate_server_done_login(out);
 
 		//now save the values
 		let login_out = done_login(

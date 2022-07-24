@@ -217,7 +217,17 @@ fn prepare_login_internally(password: &str, server_output: &str) -> Result<(Stri
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyDataInt, SdkError>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<KeyDataInt, SdkError>
+{
+	let server_output: DoneLoginServerKeysOutput = handle_server_response(server_output)?;
+
+	done_login_internally_with_server_out(master_key_encryption, &server_output)
+}
+
+fn done_login_internally_with_server_out(
+	master_key_encryption: &DeriveMasterKeyForAuth,
+	server_output: &DoneLoginServerKeysOutput,
+) -> Result<KeyDataInt, SdkError>
 {
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
@@ -397,7 +407,7 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 			None => return Err(SdkError::KeyDecryptFailed),
 		};
 
-		let done_login = done_login_internally(&derived_key, done_login_server_output)?;
+		let done_login = done_login_internally_with_server_out(&derived_key, done_login_server_output)?;
 		encrypted_output.push(done_login);
 
 		i += 1;
@@ -438,7 +448,7 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	pub(crate) fn simulate_server_done_login(data: RegisterData) -> DoneLoginServerKeysOutput
+	pub(crate) fn simulate_server_done_login(data: RegisterData) -> String
 	{
 		let RegisterData {
 			derived,
@@ -447,7 +457,7 @@ pub(crate) mod test_fn
 		} = data;
 
 		//get the server output back
-		DoneLoginServerKeysOutput {
+		let out = DoneLoginServerKeysOutput {
 			encrypted_master_key: master_key.encrypted_master_key,
 			encrypted_private_key: derived.encrypted_private_key,
 			encrypted_sign_key: derived.encrypted_sign_key,
@@ -458,13 +468,16 @@ pub(crate) mod test_fn
 			keypair_encrypt_id: "abc".to_string(),
 			keypair_sign_id: "dfg".to_string(),
 			jwt: "jwt".to_string(),
-		}
-	}
+		};
 
-	#[cfg(not(feature = "rust"))]
-	pub(crate) fn simulate_server_done_login_as_string(data: RegisterData) -> String
-	{
-		simulate_server_done_login(data).to_string().unwrap()
+		ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(out),
+		}
+		.to_string()
+		.unwrap()
 	}
 
 	#[cfg(feature = "rust")]
@@ -505,11 +518,7 @@ pub(crate) mod test_fn
 		let server_output = simulate_server_done_login(out);
 
 		#[cfg(not(feature = "rust"))]
-		let done_login = done_login(
-			master_key_encryption_key.as_str(),
-			server_output.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		let done_login = done_login(master_key_encryption_key.as_str(), server_output.as_str()).unwrap();
 
 		#[cfg(not(feature = "rust"))]
 		done_login
