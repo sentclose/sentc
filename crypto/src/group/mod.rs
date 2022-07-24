@@ -24,9 +24,10 @@ use sentc_crypto_core::group::{
 	prepare_create as prepare_create_core,
 	prepare_group_keys_for_new_member as prepare_group_keys_for_new_member_core,
 };
-use sentc_crypto_core::{Error, Pk};
+use sentc_crypto_core::Pk;
 
 use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
+use crate::SdkError;
 
 #[cfg(not(feature = "rust"))]
 mod group;
@@ -57,7 +58,7 @@ pub struct DoneGettingGroupKeysOutput
 	pub public_group_key: PublicKeyFormatInt,
 }
 
-fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>) -> Result<String, Error>
+fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>) -> Result<String, SdkError>
 {
 	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
 	let out = prepare_create_core(&creators_public_key.key)?;
@@ -82,10 +83,10 @@ fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_gr
 
 	Ok(create_out
 		.to_string()
-		.map_err(|_| Error::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
-fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_key: &PublicKeyFormatInt) -> Result<String, Error>
+fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
 {
 	let out = key_rotation_core(&previous_group_key.key, &invoker_public_key.key)?;
 
@@ -114,7 +115,7 @@ fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_
 
 	Ok(rotation_out
 		.to_string()
-		.map_err(|_| Error::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
 fn done_key_rotation_internally(
@@ -122,7 +123,7 @@ fn done_key_rotation_internally(
 	public_key: &PublicKeyFormatInt,
 	previous_group_key: &SymKeyFormatInt,
 	server_output: &KeyRotationInput,
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
 	//the id of the previous group key was returned by the server too so the sdk impl knows which key it used
 
@@ -132,9 +133,9 @@ fn done_key_rotation_internally(
 			.encrypted_ephemeral_key_by_group_key_and_public_key
 			.as_str(),
 	)
-	.map_err(|_| Error::KeyRotationServerOutputWrong)?;
+	.map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
 	let encrypted_group_key_by_ephemeral =
-		Base64::decode_vec(server_output.encrypted_group_key_by_ephemeral.as_str()).map_err(|_| Error::KeyRotationServerOutputWrong)?;
+		Base64::decode_vec(server_output.encrypted_group_key_by_ephemeral.as_str()).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
 
 	let out = done_key_rotation_core(
 		&private_key.key,
@@ -154,14 +155,16 @@ fn done_key_rotation_internally(
 
 	Ok(done_rotation_out
 		.to_string()
-		.map_err(|_| Error::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
-fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<DoneGettingGroupKeysOutput, Error>
+fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput)
+	-> Result<DoneGettingGroupKeysOutput, SdkError>
 {
 	//the user_public_key_id is used to get the right private key
-	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
-	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_private_key =
+		Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
 	let (group_key, private_group_key) = get_group_core(
 		&private_key.key,
@@ -171,7 +174,10 @@ fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &
 		server_output.keypair_encrypt_alg.as_str(),
 	)?;
 
-	let public_group_key = import_public_key_from_pem_with_alg(&server_output.public_group_key, server_output.keypair_encrypt_alg.as_str())?;
+	let public_group_key = import_public_key_from_pem_with_alg(
+		&server_output.public_group_key,
+		server_output.keypair_encrypt_alg.as_str(),
+	)?;
 
 	Ok(DoneGettingGroupKeysOutput {
 		group_key: SymKeyFormatInt {
@@ -192,21 +198,25 @@ fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &
 fn prepare_group_keys_for_new_member_internally(
 	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormatInt],
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
 	let public_key = import_public_key_from_pem_with_alg(
 		requester_public_key_data.public_key_pem.as_str(),
 		requester_public_key_data.public_key_alg.as_str(),
 	)?;
 
-	prepare_group_keys_for_new_member_internally_with_public_key(&public_key, requester_public_key_data.public_key_id.as_str(), group_keys)
+	prepare_group_keys_for_new_member_internally_with_public_key(
+		&public_key,
+		requester_public_key_data.public_key_id.as_str(),
+		group_keys,
+	)
 }
 
 fn prepare_group_keys_for_new_member_internally_with_public_key(
 	public_key: &Pk,
 	public_key_id: &str,
 	group_keys: &[&SymKeyFormatInt],
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
 	//split group keys and their ids
 	let mut split_group_keys = Vec::with_capacity(group_keys.len());
@@ -243,7 +253,7 @@ fn prepare_group_keys_for_new_member_internally_with_public_key(
 
 	Ok(server_input
 		.to_string()
-		.map_err(|_| Error::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
 #[cfg(test)]
@@ -315,7 +325,11 @@ pub(crate) mod test_fn
 		};
 
 		#[cfg(not(feature = "rust"))]
-		let group_data = get_group_data(user.private_key.as_str(), group_server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data = get_group_data(
+			user.private_key.as_str(),
+			group_server_output.to_string().unwrap().as_str(),
+		)
+		.unwrap();
 
 		(group_data, group_server_output)
 	}

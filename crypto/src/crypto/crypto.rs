@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerOutput};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_core::Error;
 
 use crate::crypto::{
 	decrypt_asymmetric_internally,
@@ -22,10 +21,10 @@ use crate::crypto::{
 	generate_non_register_sym_key_internally,
 	prepare_register_sym_key_internally,
 };
-use crate::err_to_msg;
 use crate::util::{export_sym_key_to_string, import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
+use crate::{err_to_msg, SdkError};
 
-fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, Error>
+fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, SdkError>
 {
 	let sign_key = match sign_key {
 		"" => None,
@@ -39,12 +38,12 @@ fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, Error>
 	Ok(sign_key)
 }
 
-fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>, Error>
+fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>, SdkError>
 {
 	let verify_key = match verify_key_data {
 		"" => None,
 		_ => {
-			let k = UserVerifyKeyData::from_string(verify_key_data).map_err(|_| Error::JsonParseFailed)?;
+			let k = UserVerifyKeyData::from_string(verify_key_data).map_err(|_| SdkError::JsonParseFailed)?;
 
 			Some(k)
 		},
@@ -67,7 +66,7 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(
 
 	let head = head
 		.to_string()
-		.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?;
+		.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?;
 
 	Ok((head, encrypted))
 }
@@ -78,7 +77,7 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
 
-	let head = EncryptedHead::from_string(head).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let head = EncryptedHead::from_string(head).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
 		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,
@@ -90,7 +89,7 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
 {
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
 
@@ -102,7 +101,7 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 
 	let head = head
 		.to_string()
-		.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?;
+		.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?;
 
 	Ok((head, encrypted))
 }
@@ -113,7 +112,7 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 
 	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
 
-	let head = EncryptedHead::from_string(head).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+	let head = EncryptedHead::from_string(head).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
 		None => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,
@@ -154,7 +153,7 @@ pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: &str
 
 pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<Vec<u8>, String>
 {
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
 
@@ -212,7 +211,7 @@ pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data
 
 pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<String, String>
 {
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
 
@@ -252,7 +251,7 @@ pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> 
 {
 	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
 	let encrypted_symmetric_key_info =
-		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|_| err_to_msg(Error::JsonParseFailed))?;
+		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let out = decrypt_sym_key_internally(&master_key, &encrypted_symmetric_key_info).map_err(|e| err_to_msg(e))?;
 
@@ -269,7 +268,7 @@ pub fn generate_non_register_sym_key(master_key: &str) -> Result<(String, String
 
 	let exported_encrypted_key = encrypted_key
 		.to_string()
-		.map_err(|_| err_to_msg(Error::JsonToStringFailed))?;
+		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?;
 
 	Ok((exported_key, exported_encrypted_key))
 }
@@ -338,9 +337,20 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let (head, encrypted) = encrypt_raw_asymmetric(user.exported_public_key.as_str(), text.as_bytes(), user.sign_key.as_str()).unwrap();
+		let (head, encrypted) = encrypt_raw_asymmetric(
+			user.exported_public_key.as_str(),
+			text.as_bytes(),
+			user.sign_key.as_str(),
+		)
+		.unwrap();
 
-		let decrypted = decrypt_raw_asymmetric(user.private_key.as_str(), &encrypted, &head, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_raw_asymmetric(
+			user.private_key.as_str(),
+			&encrypted,
+			&head,
+			user.exported_verify_key.as_str(),
+		)
+		.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -397,9 +407,19 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let encrypted = encrypt_asymmetric(user.exported_public_key.as_str(), text.as_bytes(), user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_asymmetric(
+			user.exported_public_key.as_str(),
+			text.as_bytes(),
+			user.sign_key.as_str(),
+		)
+		.unwrap();
 
-		let decrypted = decrypt_asymmetric(user.private_key.as_str(), &encrypted, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_asymmetric(
+			user.private_key.as_str(),
+			&encrypted,
+			user.exported_verify_key.as_str(),
+		)
+		.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -456,9 +476,19 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let encrypted = encrypt_string_asymmetric(user.exported_public_key.as_str(), text.as_bytes(), user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_asymmetric(
+			user.exported_public_key.as_str(),
+			text.as_bytes(),
+			user.sign_key.as_str(),
+		)
+		.unwrap();
 
-		let decrypted = decrypt_string_asymmetric(user.private_key.as_str(), &encrypted, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_asymmetric(
+			user.private_key.as_str(),
+			&encrypted,
+			user.exported_verify_key.as_str(),
+		)
+		.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}

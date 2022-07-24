@@ -11,7 +11,6 @@ use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
-	Error,
 	HashedAuthenticationKey,
 	Pk,
 	SignK,
@@ -48,6 +47,7 @@ pub use self::{
 	SymKeyFormatInt as SymKeyFormat,
 	VerifyKeyFormatInt as VerifyKeyFormat,
 };
+use crate::SdkError;
 
 pub struct SymKeyFormatInt
 {
@@ -98,22 +98,22 @@ pub struct KeyDataInt
 	pub exported_verify_key: UserVerifyKeyData,
 }
 
-pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, Error>
+pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, SdkError>
 {
 	//export should not panic because we are creating the keys
-	let key = pem_rfc7468::encode_string("PUBLIC KEY", LineEnding::default(), key).map_err(|_| Error::ExportingPublicKeyFailed)?;
+	let key = pem_rfc7468::encode_string("PUBLIC KEY", LineEnding::default(), key).map_err(|_| SdkError::ExportingPublicKeyFailed)?;
 
 	Ok(key)
 }
 
-pub(crate) fn import_key_from_pem(pem: &str) -> Result<Vec<u8>, Error>
+pub(crate) fn import_key_from_pem(pem: &str) -> Result<Vec<u8>, SdkError>
 {
-	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| Error::ImportingKeyFromPemFailed)?;
+	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| SdkError::ImportingKeyFromPemFailed)?;
 
 	Ok(data)
 }
 
-pub(crate) fn export_raw_public_key_to_pem(key: &Pk) -> Result<String, Error>
+pub(crate) fn export_raw_public_key_to_pem(key: &Pk) -> Result<String, SdkError>
 {
 	match key {
 		//match against the public key variants
@@ -121,7 +121,7 @@ pub(crate) fn export_raw_public_key_to_pem(key: &Pk) -> Result<String, Error>
 	}
 }
 
-pub(crate) fn export_raw_verify_key_to_pem(key: &VerifyK) -> Result<String, Error>
+pub(crate) fn export_raw_verify_key_to_pem(key: &VerifyK) -> Result<String, SdkError>
 {
 	match key {
 		VerifyK::Ed25519(k) => export_key_to_pem(k),
@@ -135,17 +135,19 @@ pub(crate) fn client_random_value_to_string(client_random_value: &ClientRandomVa
 	}
 }
 
-pub(crate) fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<ClientRandomValue, Error>
+pub(crate) fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<ClientRandomValue, SdkError>
 {
 	//normally not needed only when the client needs to create the rand value, e.g- for key update.
 	match alg {
 		ARGON_2_OUTPUT => {
-			let v = Base64::decode_vec(client_random_value).map_err(|_| Error::DecodeRandomValueFailed)?;
-			let v = v.try_into().map_err(|_| Error::DecodeRandomValueFailed)?;
+			let v = Base64::decode_vec(client_random_value).map_err(|_| SdkError::DecodeRandomValueFailed)?;
+			let v = v
+				.try_into()
+				.map_err(|_| SdkError::DecodeRandomValueFailed)?;
 
 			Ok(ClientRandomValue::Argon2(v))
 		},
-		_ => Err(Error::AlgNotFound),
+		_ => Err(SdkError::AlgNotFound),
 	}
 }
 
@@ -163,7 +165,7 @@ pub(crate) fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &Deri
 	}
 }
 
-pub(crate) fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<Pk, Error>
+pub(crate) fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<Pk, SdkError>
 {
 	let public_key = import_key_from_pem(public_key)?;
 
@@ -171,14 +173,14 @@ pub(crate) fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -
 		ECIES_OUTPUT => {
 			let public_key = public_key
 				.try_into()
-				.map_err(|_| Error::DecodePublicKeyFailed)?;
+				.map_err(|_| SdkError::DecodePublicKeyFailed)?;
 			Ok(Pk::Ecies(public_key))
 		},
-		_ => Err(Error::AlgNotFound),
+		_ => Err(SdkError::AlgNotFound),
 	}
 }
 
-pub(crate) fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -> Result<VerifyK, Error>
+pub(crate) fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -> Result<VerifyK, SdkError>
 {
 	let verify_key = import_key_from_pem(verify_key)?;
 
@@ -186,9 +188,9 @@ pub(crate) fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -
 		ED25519_OUTPUT => {
 			let verify_key = verify_key
 				.try_into()
-				.map_err(|_| Error::DecodePublicKeyFailed)?;
+				.map_err(|_| SdkError::DecodePublicKeyFailed)?;
 			Ok(VerifyK::Ed25519(verify_key))
 		},
-		_ => Err(Error::AlgNotFound),
+		_ => Err(SdkError::AlgNotFound),
 	}
 }

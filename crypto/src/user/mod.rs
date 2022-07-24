@@ -32,7 +32,7 @@ use sentc_crypto_core::user::{
 	prepare_login as prepare_login_core,
 	register as register_core,
 };
-use sentc_crypto_core::{generate_salt, DeriveMasterKeyForAuth, Error};
+use sentc_crypto_core::{generate_salt, DeriveMasterKeyForAuth};
 
 use crate::util::{
 	client_random_value_from_string,
@@ -49,6 +49,7 @@ use crate::util::{
 	SignKeyFormatInt,
 	VerifyKeyFormatInt,
 };
+use crate::SdkError;
 
 #[cfg(feature = "rust")]
 mod user_rust;
@@ -87,18 +88,18 @@ pub use self::user_rust::{
 /**
 # Prepare the server input for the check
 */
-fn prepare_check_user_identifier_available_internally(user_identifier: &str) -> Result<String, Error>
+fn prepare_check_user_identifier_available_internally(user_identifier: &str) -> Result<String, SdkError>
 {
 	UserIdentifierAvailableServerInput {
 		user_identifier: user_identifier.to_string(),
 	}
 	.to_string()
-	.map_err(|_| Error::JsonToStringFailed)
+	.map_err(|_| SdkError::JsonToStringFailed)
 }
 
-fn done_check_user_identifier_available_internally(server_output: &str) -> Result<bool, Error>
+fn done_check_user_identifier_available_internally(server_output: &str) -> Result<bool, SdkError>
 {
-	let server_output = UserIdentifierAvailableServerOutput::from_string(server_output).map_err(|_| Error::JsonParseFailed)?;
+	let server_output = UserIdentifierAvailableServerOutput::from_string(server_output).map_err(|_| SdkError::JsonParseFailed)?;
 
 	Ok(server_output.available)
 }
@@ -106,7 +107,7 @@ fn done_check_user_identifier_available_internally(server_output: &str) -> Resul
 /**
 # Prepare the register input incl. keys
 */
-fn register_internally(user_identifier: &str, password: &str) -> Result<String, Error>
+fn register_internally(user_identifier: &str, password: &str) -> Result<String, SdkError>
 {
 	let out = register_core(password)?;
 
@@ -156,20 +157,20 @@ fn register_internally(user_identifier: &str, password: &str) -> Result<String, 
 	//use always to string, even for rust feature enable because this data is for the server
 	Ok(register_out
 		.to_string()
-		.map_err(|_| Error::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
 /**
 # prepare the data for the server req
 
 */
-fn prepare_login_start_internally(user_identifier: &str) -> Result<String, Error>
+fn prepare_login_start_internally(user_identifier: &str) -> Result<String, SdkError>
 {
 	PrepareLoginServerInput {
 		user_identifier: user_identifier.to_string(),
 	}
 	.to_string()
-	.map_err(|_| Error::JsonToStringFailed)
+	.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 /**
@@ -178,9 +179,9 @@ fn prepare_login_start_internally(user_identifier: &str) -> Result<String, Error
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), Error>
+fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
 {
-	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| Error::DecodeSaltFailed)?;
+	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
 	let result = prepare_login_core(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
@@ -190,7 +191,7 @@ fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServ
 		auth_key,
 	}
 	.to_string()
-	.map_err(|_| Error::JsonToStringFailed)?;
+	.map_err(|_| SdkError::JsonToStringFailed)?;
 
 	Ok((auth_key, result.master_key_encryption_key))
 }
@@ -202,11 +203,11 @@ fn prepare_login_internally(password: &str, server_output: &PrepareLoginSaltServ
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyDataInt, Error>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyDataInt, SdkError>
 {
-	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
-	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
-	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| Error::DerivedKeyWrongFormat)?;
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
 	let out = done_login_core(
 		&master_key_encryption,
@@ -270,10 +271,10 @@ fn change_password_internally(
 	old_salt: &str,
 	encrypted_master_key: &str,
 	derived_encryption_key_alg: &str,
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
-	let encrypted_master_key = Base64::decode_vec(encrypted_master_key).map_err(|_| Error::DerivedKeyWrongFormat)?;
-	let old_salt = Base64::decode_vec(old_salt).map_err(|_| Error::DecodeSaltFailed)?;
+	let encrypted_master_key = Base64::decode_vec(encrypted_master_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let old_salt = Base64::decode_vec(old_salt).map_err(|_| SdkError::DecodeSaltFailed)?;
 
 	let output = change_password_core(
 		old_pw,
@@ -304,14 +305,14 @@ fn change_password_internally(
 
 	Ok(pw_change_out
 		.to_string()
-		.map_err(|_| Error::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
 fn reset_password_internally(
 	new_password: &str,
 	decrypted_private_key: &PrivateKeyFormatInt,
 	decrypted_sign_key: &SignKeyFormatInt,
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
 	let out = password_reset_core(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)?;
 
@@ -338,7 +339,7 @@ fn reset_password_internally(
 		encrypted_private_key,
 	};
 
-	Ok(data.to_string().map_err(|_| Error::JsonToStringFailed)?)
+	Ok(data.to_string().map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
 /**
@@ -355,7 +356,7 @@ When the user will start new encrypt the next chunks, this function is needed to
 
 Password change or reset is not possible during the key update.
 */
-fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyDataInt>, Error>
+fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyDataInt>, SdkError>
 {
 	let mut encrypted_output = Vec::with_capacity(server_output.logins.len());
 
@@ -379,7 +380,7 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 		//should everytime the same len
 		let done_login_server_output = match server_output.done_logins.get(i) {
 			Some(v) => v,
-			None => return Err(Error::KeyDecryptFailed),
+			None => return Err(SdkError::KeyDecryptFailed),
 		};
 
 		let done_login = done_login_internally(&derived_key, done_login_server_output)?;

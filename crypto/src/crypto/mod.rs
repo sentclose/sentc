@@ -9,7 +9,7 @@ use alloc::vec::Vec;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerOutput, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_core::{crypto as crypto_core, Error, SignK, ED25519_OUTPUT};
+use sentc_crypto_core::{crypto as crypto_core, SignK, ED25519_OUTPUT};
 
 #[cfg(not(feature = "rust"))]
 pub use self::crypto::{
@@ -48,8 +48,9 @@ pub use self::crypto_rust::{
 	prepare_register_sym_key,
 };
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
+use crate::SdkError;
 
-fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHead>, Vec<u8>), Error>
+fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHead>, Vec<u8>), SdkError>
 {
 	let signed_data = crypto_core::sign(&key.key, data)?;
 
@@ -65,26 +66,26 @@ fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHe
 	Ok((head, signed_data))
 }
 
-fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], Error>
+fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkError>
 {
 	let verify_k = import_verify_key_from_pem_with_alg(verify_key.verify_key_pem.as_str(), verify_key.verify_key_alg.as_str())?;
 
 	//check if the verify key is the right key id
 	if verify_key.verify_key_id != sign_head.id {
-		return Err(Error::SigFoundNotKey);
+		return Err(SdkError::SigFoundNotKey);
 	}
 
 	//verify the data with the right key
 	let (encrypted_data_without_sig, check) = crypto_core::verify(&verify_k, data_with_sig)?;
 
 	if check == false {
-		return Err(Error::VerifyFailed);
+		return Err(SdkError::VerifyFailed);
 	}
 
 	Ok(encrypted_data_without_sig)
 }
 
-fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), Error>
+fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>
 {
 	let mut i = 0usize;
 	for data_itr in data_with_head {
@@ -97,15 +98,15 @@ fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(En
 		i += 1;
 	}
 
-	let head = EncryptedHead::from_slice(&data_with_head[..i]).map_err(|_| Error::JsonParseFailed)?;
+	let head = EncryptedHead::from_slice(&data_with_head[..i]).map_err(|_| SdkError::JsonParseFailed)?;
 
 	//ignore the zero byte
 	Ok((head, &data_with_head[i + 1..]))
 }
 
-fn put_head_and_encrypted_data_internally(head: &EncryptedHead, encrypted: &[u8]) -> Result<Vec<u8>, Error>
+fn put_head_and_encrypted_data_internally(head: &EncryptedHead, encrypted: &[u8]) -> Result<Vec<u8>, SdkError>
 {
-	let head = head.to_string().map_err(|_| Error::JsonToStringFailed)?;
+	let head = head.to_string().map_err(|_| SdkError::JsonToStringFailed)?;
 
 	let mut out = Vec::with_capacity(head.len() + 1 + encrypted.len());
 
@@ -120,7 +121,7 @@ fn encrypt_raw_symmetric_internally(
 	key: &SymKeyFormatInt,
 	data: &[u8],
 	sign_key: Option<&SignKeyFormatInt>,
-) -> Result<(EncryptedHead, Vec<u8>), Error>
+) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
 	let mut encrypt_head = EncryptedHead {
 		id: key.key_id.to_string(),
@@ -147,23 +148,23 @@ fn decrypt_raw_symmetric_internally(
 	encrypted_data: &[u8],
 	head: &EncryptedHead,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, Error>
+) -> Result<Vec<u8>, SdkError>
 {
 	//the head needs to be checked before to know which key should be used here and if there is a sig and what verify key should be used
 
 	//check if sig was set
 	match &head.sign {
-		None => crypto_core::decrypt_symmetric(&key.key, encrypted_data), //no sig used, go ahead
+		None => Ok(crypto_core::decrypt_symmetric(&key.key, encrypted_data)?), //no sig used, go ahead
 		Some(h) => {
 			match verify_key {
 				None => {
 					//just split the data, use the alg here
 					let (_, encrypted_data_without_sig) = crypto_core::split_sig_and_data(h.alg.as_str(), encrypted_data)?;
-					crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)
+					Ok(crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)?)
 				},
 				Some(vk) => {
 					let encrypted_data_without_sig = verify_internally(&vk, encrypted_data, h)?;
-					crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)
+					Ok(crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)?)
 				},
 			}
 		},
@@ -174,9 +175,12 @@ fn encrypt_raw_asymmetric_internally(
 	reply_public_key: &UserPublicKeyData,
 	data: &[u8],
 	sign_key: Option<&SignKeyFormatInt>,
-) -> Result<(EncryptedHead, Vec<u8>), Error>
+) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
-	let public_key = import_public_key_from_pem_with_alg(reply_public_key.public_key_pem.as_str(), reply_public_key.public_key_alg.as_str())?;
+	let public_key = import_public_key_from_pem_with_alg(
+		reply_public_key.public_key_pem.as_str(),
+		reply_public_key.public_key_alg.as_str(),
+	)?;
 
 	let mut encrypt_head = EncryptedHead {
 		id: reply_public_key.public_key_id.to_string(),
@@ -203,26 +207,32 @@ fn decrypt_raw_asymmetric_internally(
 	encrypted_data: &[u8],
 	head: &EncryptedHead,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, Error>
+) -> Result<Vec<u8>, SdkError>
 {
 	match &head.sign {
-		None => crypto_core::decrypt_asymmetric(&private_key.key, encrypted_data),
+		None => Ok(crypto_core::decrypt_asymmetric(&private_key.key, encrypted_data)?),
 		Some(h) => {
 			match verify_key {
 				None => {
 					let (_, encrypted_data_without_sig) = crypto_core::split_sig_and_data(h.alg.as_str(), encrypted_data)?;
-					crypto_core::decrypt_asymmetric(&private_key.key, encrypted_data_without_sig)
+					Ok(crypto_core::decrypt_asymmetric(
+						&private_key.key,
+						encrypted_data_without_sig,
+					)?)
 				},
 				Some(vk) => {
 					let encrypted_data_without_sig = verify_internally(&vk, encrypted_data, h)?;
-					crypto_core::decrypt_asymmetric(&private_key.key, encrypted_data_without_sig)
+					Ok(crypto_core::decrypt_asymmetric(
+						&private_key.key,
+						encrypted_data_without_sig,
+					)?)
 				},
 			}
 		},
 	}
 }
 
-fn encrypt_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, Error>
+fn encrypt_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, SdkError>
 {
 	let (head, encrypted) = encrypt_raw_symmetric_internally(key, data, sign_key)?;
 
@@ -233,14 +243,20 @@ fn decrypt_symmetric_internally(
 	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, Error>
+) -> Result<Vec<u8>, SdkError>
 {
 	let (head, encrypted_data) = split_head_and_encrypted_data_internally(encrypted_data_with_head)?;
 
-	Ok(decrypt_raw_symmetric_internally(key, encrypted_data, &head, verify_key)?)
+	Ok(decrypt_raw_symmetric_internally(
+		key,
+		encrypted_data,
+		&head,
+		verify_key,
+	)?)
 }
 
-fn encrypt_asymmetric_internally(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, Error>
+fn encrypt_asymmetric_internally(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormatInt>)
+	-> Result<Vec<u8>, SdkError>
 {
 	let (head, encrypted_data) = encrypt_raw_asymmetric_internally(reply_public_key, data, sign_key)?;
 
@@ -251,14 +267,19 @@ fn decrypt_asymmetric_internally(
 	private_key: &PrivateKeyFormatInt,
 	encrypted_data_with_head: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, Error>
+) -> Result<Vec<u8>, SdkError>
 {
 	let (head, encrypted_data) = split_head_and_encrypted_data_internally(encrypted_data_with_head)?;
 
-	Ok(decrypt_raw_asymmetric_internally(private_key, &encrypted_data, &head, verify_key)?)
+	Ok(decrypt_raw_asymmetric_internally(
+		private_key,
+		&encrypted_data,
+		&head,
+		verify_key,
+	)?)
 }
 
-fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<String, Error>
+fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
 {
 	let encrypted = encrypt_symmetric_internally(key, data, sign_key)?;
 
@@ -269,18 +290,18 @@ fn decrypt_string_symmetric_internally(
 	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, Error>
+) -> Result<Vec<u8>, SdkError>
 {
-	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| Error::DecodeEncryptedDataFailed)?;
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	decrypt_symmetric_internally(key, &encrypted, verify_key)
+	Ok(decrypt_symmetric_internally(key, &encrypted, verify_key)?)
 }
 
 fn encrypt_string_asymmetric_internally(
 	reply_public_key: &UserPublicKeyData,
 	data: &[u8],
 	sign_key: Option<&SignKeyFormatInt>,
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
 	let encrypted = encrypt_asymmetric_internally(reply_public_key, data, sign_key)?;
 
@@ -291,11 +312,11 @@ fn decrypt_string_asymmetric_internally(
 	private_key: &PrivateKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, Error>
+) -> Result<Vec<u8>, SdkError>
 {
-	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| Error::DecodeEncryptedDataFailed)?;
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	decrypt_asymmetric_internally(private_key, &encrypted, verify_key)
+	Ok(decrypt_asymmetric_internally(private_key, &encrypted, verify_key)?)
 }
 
 /**
@@ -306,7 +327,7 @@ fn decrypt_string_asymmetric_internally(
 3. encrypt the symmetric key with the master key
 4. return the server input
 */
-fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<String, Error>
+fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<String, SdkError>
 {
 	let (encrypted_key, sym_key_alg) = crypto_core::generate_symmetric_with_master_key(&master_key.key)?;
 
@@ -318,7 +339,7 @@ fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<S
 		master_key_id: master_key.key_id.to_string(),
 	}
 	.to_string()
-	.map_err(|_| Error::JsonToStringFailed)?)
+	.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
 /**
@@ -333,11 +354,15 @@ Backwards the process in prepare_register_sym_key.
 fn decrypt_sym_key_internally(
 	master_key: &SymKeyFormatInt,
 	encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput,
-) -> Result<SymKeyFormatInt, Error>
+) -> Result<SymKeyFormatInt, SdkError>
 {
-	let encrypted_sym_key = Base64::decode_vec(&encrypted_symmetric_key_info.encrypted_key_string).map_err(|_| Error::KeyDecryptFailed)?;
+	let encrypted_sym_key = Base64::decode_vec(&encrypted_symmetric_key_info.encrypted_key_string).map_err(|_| SdkError::KeyDecryptFailed)?;
 
-	let key = crypto_core::get_symmetric_key_from_master_key(&master_key.key, &encrypted_sym_key, encrypted_symmetric_key_info.alg.as_str())?;
+	let key = crypto_core::get_symmetric_key_from_master_key(
+		&master_key.key,
+		&encrypted_sym_key,
+		encrypted_symmetric_key_info.alg.as_str(),
+	)?;
 
 	Ok(SymKeyFormatInt {
 		key,
@@ -354,11 +379,11 @@ First call prepare_register_sym_key_internally to encrypt the key, then decrypt_
 
 Return both, the decrypted to use it, the encrypted to save it and use it for the next time with decrypt_sym_key_internally
 */
-fn generate_non_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<(SymKeyFormatInt, GeneratedSymKeyHeadServerOutput), Error>
+fn generate_non_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<(SymKeyFormatInt, GeneratedSymKeyHeadServerOutput), SdkError>
 {
 	let pre_out = prepare_register_sym_key_internally(master_key)?;
 
-	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(|_| Error::JsonParseFailed)?;
+	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(|_| SdkError::JsonParseFailed)?;
 
 	let server_output = GeneratedSymKeyHeadServerOutput {
 		alg: server_input.alg,

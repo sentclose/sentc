@@ -4,7 +4,6 @@ use alloc::vec::Vec;
 use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
-use sentc_crypto_core::Error;
 
 use crate::group::{
 	done_key_rotation_internally,
@@ -15,6 +14,7 @@ use crate::group::{
 	GroupKeyData,
 };
 use crate::util::{PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
+use crate::SdkError;
 
 pub struct GroupOutData
 {
@@ -22,12 +22,12 @@ pub struct GroupOutData
 	pub group_id: String,
 }
 
-pub fn prepare_create(creators_public_key: &PublicKeyFormat, parent_group_id: Option<GroupId>) -> Result<String, Error>
+pub fn prepare_create(creators_public_key: &PublicKeyFormat, parent_group_id: Option<GroupId>) -> Result<String, SdkError>
 {
 	prepare_create_internally(&creators_public_key, parent_group_id)
 }
 
-pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat) -> Result<String, Error>
+pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat) -> Result<String, SdkError>
 {
 	key_rotation_internally(&previous_group_key, &invoker_public_key)
 }
@@ -37,17 +37,17 @@ pub fn done_key_rotation(
 	public_key: &PublicKeyFormat,
 	previous_group_key: &SymKeyFormat,
 	server_output: &KeyRotationInput,
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
 	done_key_rotation_internally(&private_key, &public_key, &previous_group_key, server_output)
 }
 
-fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, Error>
+fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
 {
 	get_group_keys_internally(private_key, server_output)
 }
 
-pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &GroupServerData) -> Result<GroupOutData, Error>
+pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &GroupServerData) -> Result<GroupOutData, SdkError>
 {
 	let mut keys = Vec::with_capacity(server_output.keys.len());
 
@@ -61,7 +61,7 @@ pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &GroupServe
 	})
 }
 
-pub fn prepare_group_keys_for_new_member(requester_public_key_data: &UserPublicKeyData, group_keys: &[&SymKeyFormat]) -> Result<String, Error>
+pub fn prepare_group_keys_for_new_member(requester_public_key_data: &UserPublicKeyData, group_keys: &[&SymKeyFormat]) -> Result<String, SdkError>
 {
 	prepare_group_keys_for_new_member_internally(requester_public_key_data, group_keys)
 }
@@ -161,9 +161,15 @@ mod test
 
 		let group_data_user_1 = get_group_data(&user1.private_key, &group_server_output_user_1).unwrap();
 
-		assert_eq!(group_data_user_0.keys[0].group_key.key_id, group_data_user_1.keys[0].group_key.key_id);
+		assert_eq!(
+			group_data_user_0.keys[0].group_key.key_id,
+			group_data_user_1.keys[0].group_key.key_id
+		);
 
-		match (&group_data_user_0.keys[0].group_key.key, &group_data_user_1.keys[0].group_key.key) {
+		match (
+			&group_data_user_0.keys[0].group_key.key,
+			&group_data_user_1.keys[0].group_key.key,
+		) {
 			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
 				assert_eq!(*k0, *k1);
 			},
@@ -205,7 +211,13 @@ mod test
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 		};
 
-		let done_key_rotation = done_key_rotation(&user.private_key, &user.public_key, &data.keys[0].group_key, &server_output).unwrap();
+		let done_key_rotation = done_key_rotation(
+			&user.private_key,
+			&user.public_key,
+			&data.keys[0].group_key,
+			&server_output,
+		)
+		.unwrap();
 		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();
 
 		//get the new group keys

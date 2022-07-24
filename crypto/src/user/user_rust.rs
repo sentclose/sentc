@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
-use sentc_crypto_core::{DeriveMasterKeyForAuth, Error};
+use sentc_crypto_core::DeriveMasterKeyForAuth;
 
 use crate::user::{
 	change_password_internally,
@@ -16,33 +16,34 @@ use crate::user::{
 	reset_password_internally,
 };
 use crate::util::{KeyData, PrivateKeyFormat, SignKeyFormat};
+use crate::SdkError;
 
-pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, Error>
+pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
 {
 	prepare_check_user_identifier_available_internally(user_identifier)
 }
 
-pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, Error>
+pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, SdkError>
 {
 	done_check_user_identifier_available_internally(server_output)
 }
 
-pub fn register(user_identifier: &str, password: &str) -> Result<String, Error>
+pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
 {
 	register_internally(user_identifier, password)
 }
 
-pub fn prepare_login_start(user_id: &str) -> Result<String, Error>
+pub fn prepare_login_start(user_id: &str) -> Result<String, SdkError>
 {
 	prepare_login_start_internally(user_id)
 }
 
-pub fn prepare_login(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), Error>
+pub fn prepare_login(password: &str, server_output: &PrepareLoginSaltServerOutput) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
 {
 	prepare_login_internally(password, server_output)
 }
 
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyData, Error>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &DoneLoginServerKeysOutput) -> Result<KeyData, SdkError>
 {
 	done_login_internally(&master_key_encryption, server_output)
 }
@@ -53,17 +54,23 @@ pub fn change_password(
 	old_salt: &str,
 	encrypted_master_key: &str,
 	derived_encryption_key_alg: &str,
-) -> Result<String, Error>
+) -> Result<String, SdkError>
 {
-	change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg)
+	change_password_internally(
+		old_pw,
+		new_pw,
+		old_salt,
+		encrypted_master_key,
+		derived_encryption_key_alg,
+	)
 }
 
-pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, Error>
+pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, SdkError>
 {
 	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
 }
 
-pub fn prepare_update_user_keys(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyData>, Error>
+pub fn prepare_update_user_keys(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyData>, SdkError>
 {
 	prepare_update_user_keys_internally(password, server_output)
 }
@@ -149,6 +156,9 @@ mod test
 
 		assert_ne!(pw_change_out.new_client_random_value, out.derived.client_random_value);
 
-		assert_ne!(pw_change_out.new_encrypted_master_key, out.master_key.encrypted_master_key);
+		assert_ne!(
+			pw_change_out.new_encrypted_master_key,
+			out.master_key.encrypted_master_key
+		);
 	}
 }

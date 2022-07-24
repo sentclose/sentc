@@ -2,11 +2,12 @@ use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
-use sentc_crypto_core::{Error, Pk, SignK, Sk, SymKey, VerifyK};
+use sentc_crypto_core::{Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
 use crate::util::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+use crate::SdkError;
 
 #[derive(Serialize, Deserialize)]
 pub enum PrivateKeyFormat
@@ -135,14 +136,14 @@ impl SymKeyFormat
 	}
 }
 
-pub(crate) fn import_private_key(private_key_string: &str) -> Result<PrivateKeyFormatInt, Error>
+pub(crate) fn import_private_key(private_key_string: &str) -> Result<PrivateKeyFormatInt, SdkError>
 {
-	let private_key_format = PrivateKeyFormat::from_string(private_key_string).map_err(|_| Error::ImportingPrivateKeyFailed)?;
+	let private_key_format = PrivateKeyFormat::from_string(private_key_string).map_err(|_| SdkError::ImportingPrivateKeyFailed)?;
 
 	import_private_key_from_format(&private_key_format)
 }
 
-pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<PrivateKeyFormatInt, Error>
+pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<PrivateKeyFormatInt, SdkError>
 {
 	match key {
 		PrivateKeyFormat::Ecies {
@@ -150,11 +151,11 @@ pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<P
 			key,
 		} => {
 			//to bytes via base64
-			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportingPrivateKeyFailed)?;
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| SdkError::ImportingPrivateKeyFailed)?;
 
 			let private_key: [u8; 32] = bytes
 				.try_into()
-				.map_err(|_| Error::ImportingPrivateKeyFailed)?;
+				.map_err(|_| SdkError::ImportingPrivateKeyFailed)?;
 
 			Ok(PrivateKeyFormatInt {
 				key_id: key_id.clone(),
@@ -164,23 +165,25 @@ pub(crate) fn import_private_key_from_format(key: &PrivateKeyFormat) -> Result<P
 	}
 }
 
-pub(crate) fn import_public_key(public_key_string: &str) -> Result<PublicKeyFormatInt, Error>
+pub(crate) fn import_public_key(public_key_string: &str) -> Result<PublicKeyFormatInt, SdkError>
 {
-	let public_key_format = PublicKeyFormat::from_string(public_key_string).map_err(|_| Error::ImportPublicKeyFailed)?;
+	let public_key_format = PublicKeyFormat::from_string(public_key_string).map_err(|_| SdkError::ImportPublicKeyFailed)?;
 
 	import_public_key_from_format(&public_key_format)
 }
 
-pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<PublicKeyFormatInt, Error>
+pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<PublicKeyFormatInt, SdkError>
 {
 	match key {
 		PublicKeyFormat::Ecies {
 			key_id,
 			key,
 		} => {
-			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportPublicKeyFailed)?;
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| SdkError::ImportPublicKeyFailed)?;
 
-			let key = bytes.try_into().map_err(|_| Error::ImportPublicKeyFailed)?;
+			let key = bytes
+				.try_into()
+				.map_err(|_| SdkError::ImportPublicKeyFailed)?;
 
 			Ok(PublicKeyFormatInt {
 				key_id: key_id.clone(),
@@ -190,14 +193,14 @@ pub(crate) fn import_public_key_from_format(key: &PublicKeyFormat) -> Result<Pub
 	}
 }
 
-pub(crate) fn import_sign_key(sign_key_string: &str) -> Result<SignKeyFormatInt, Error>
+pub(crate) fn import_sign_key(sign_key_string: &str) -> Result<SignKeyFormatInt, SdkError>
 {
-	let sign_key_format = SignKeyFormat::from_string(sign_key_string).map_err(|_| Error::ImportingSignKeyFailed)?;
+	let sign_key_format = SignKeyFormat::from_string(sign_key_string).map_err(|_| SdkError::ImportingSignKeyFailed)?;
 
 	import_sign_key_from_format(&sign_key_format)
 }
 
-pub(crate) fn import_sign_key_from_format(key: &SignKeyFormat) -> Result<SignKeyFormatInt, Error>
+pub(crate) fn import_sign_key_from_format(key: &SignKeyFormat) -> Result<SignKeyFormatInt, SdkError>
 {
 	match key {
 		SignKeyFormat::Ed25519 {
@@ -205,11 +208,11 @@ pub(crate) fn import_sign_key_from_format(key: &SignKeyFormat) -> Result<SignKey
 			key,
 		} => {
 			//to bytes via base64
-			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportingSignKeyFailed)?;
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| SdkError::ImportingSignKeyFailed)?;
 
 			let sign_key: [u8; 32] = bytes
 				.try_into()
-				.map_err(|_| Error::ImportingSignKeyFailed)?;
+				.map_err(|_| SdkError::ImportingSignKeyFailed)?;
 
 			Ok(SignKeyFormatInt {
 				key_id: key_id.clone(),
@@ -233,11 +236,11 @@ pub(crate) fn export_private_key(private_key: PrivateKeyFormatInt) -> PrivateKey
 	}
 }
 
-pub(crate) fn export_private_key_to_string(key: PrivateKeyFormatInt) -> Result<String, Error>
+pub(crate) fn export_private_key_to_string(key: PrivateKeyFormatInt) -> Result<String, SdkError>
 {
 	let key = export_private_key(key);
 
-	key.to_string().map_err(|_e| Error::JsonToStringFailed)
+	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
 }
 
 pub(crate) fn export_public_key(public_key: PublicKeyFormatInt) -> PublicKeyFormat
@@ -254,11 +257,11 @@ pub(crate) fn export_public_key(public_key: PublicKeyFormatInt) -> PublicKeyForm
 	}
 }
 
-pub(crate) fn export_public_key_to_string(key: PublicKeyFormatInt) -> Result<String, Error>
+pub(crate) fn export_public_key_to_string(key: PublicKeyFormatInt) -> Result<String, SdkError>
 {
 	let key = export_public_key(key);
 
-	key.to_string().map_err(|_e| Error::JsonToStringFailed)
+	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
 }
 
 pub(crate) fn export_sign_key(sign_key: SignKeyFormatInt) -> SignKeyFormat
@@ -275,11 +278,11 @@ pub(crate) fn export_sign_key(sign_key: SignKeyFormatInt) -> SignKeyFormat
 	}
 }
 
-pub(crate) fn export_sign_key_to_string(key: SignKeyFormatInt) -> Result<String, Error>
+pub(crate) fn export_sign_key_to_string(key: SignKeyFormatInt) -> Result<String, SdkError>
 {
 	let key = export_sign_key(key);
 
-	key.to_string().map_err(|_e| Error::JsonToStringFailed)
+	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
 }
 
 pub(crate) fn export_verify_key(verify_key: VerifyKeyFormatInt) -> VerifyKeyFormat
@@ -296,21 +299,21 @@ pub(crate) fn export_verify_key(verify_key: VerifyKeyFormatInt) -> VerifyKeyForm
 	}
 }
 
-pub(crate) fn export_verify_key_to_string(key: VerifyKeyFormatInt) -> Result<String, Error>
+pub(crate) fn export_verify_key_to_string(key: VerifyKeyFormatInt) -> Result<String, SdkError>
 {
 	let key = export_verify_key(key);
 
-	key.to_string().map_err(|_e| Error::JsonToStringFailed)
+	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
 }
 
-pub(crate) fn import_sym_key(key_string: &str) -> Result<SymKeyFormatInt, Error>
+pub(crate) fn import_sym_key(key_string: &str) -> Result<SymKeyFormatInt, SdkError>
 {
-	let key_format = SymKeyFormat::from_string(key_string).map_err(|_| Error::ImportSymmetricKeyFailed)?;
+	let key_format = SymKeyFormat::from_string(key_string).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
 
 	import_sym_key_from_format(&key_format)
 }
 
-pub(crate) fn import_sym_key_from_format(key: &SymKeyFormat) -> Result<SymKeyFormatInt, Error>
+pub(crate) fn import_sym_key_from_format(key: &SymKeyFormat) -> Result<SymKeyFormatInt, SdkError>
 {
 	match key {
 		SymKeyFormat::Aes {
@@ -318,11 +321,11 @@ pub(crate) fn import_sym_key_from_format(key: &SymKeyFormat) -> Result<SymKeyFor
 			key_id,
 		} => {
 			//to bytes via base64
-			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| Error::ImportSymmetricKeyFailed)?;
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
 
 			let key = bytes
 				.try_into()
-				.map_err(|_| Error::ImportSymmetricKeyFailed)?;
+				.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
 
 			Ok(SymKeyFormatInt {
 				key_id: key_id.clone(),
@@ -346,9 +349,9 @@ pub(crate) fn export_sym_key(key: SymKeyFormatInt) -> SymKeyFormat
 	}
 }
 
-pub(crate) fn export_sym_key_to_string(key: SymKeyFormatInt) -> Result<String, Error>
+pub(crate) fn export_sym_key_to_string(key: SymKeyFormatInt) -> Result<String, SdkError>
 {
 	let key = export_sym_key(key);
 
-	key.to_string().map_err(|_e| Error::JsonToStringFailed)
+	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
 }

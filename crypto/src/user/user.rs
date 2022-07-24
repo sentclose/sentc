@@ -3,11 +3,10 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{DoneLoginServerKeysOutput, MultipleLoginServerOutput, PrepareLoginSaltServerOutput};
-use sentc_crypto_core::{DeriveMasterKeyForAuth, Error};
+use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::err_to_msg;
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
@@ -29,6 +28,7 @@ use crate::util::{
 	KeyData,
 	KeyDataInt,
 };
+use crate::{err_to_msg, SdkError};
 
 #[derive(Serialize, Deserialize)]
 pub enum MasterKeyFormat
@@ -71,7 +71,7 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 
 pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, String), String>
 {
-	let server_output = PrepareLoginSaltServerOutput::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let server_output = PrepareLoginSaltServerOutput::from_string(server_output).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
 	//the auth key is already in the right json format for the server
 	let (auth_key, master_key_encryption_key) = prepare_login_internally(password, &server_output).map_err(|e| err_to_msg(e))?;
@@ -89,7 +89,7 @@ pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, Str
 		auth_key,
 		master_key_encryption_key
 			.to_string()
-			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?,
 	))
 }
 
@@ -98,22 +98,22 @@ pub fn done_login(
 	server_output: &str,
 ) -> Result<KeyData, String>
 {
-	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let master_key_encryption = match master_key_encryption {
 		MasterKeyFormat::Argon2(mk) => {
-			let mk = Base64::decode_vec(mk.as_str()).map_err(|_e| err_to_msg(Error::KeyDecryptFailed))?;
+			let mk = Base64::decode_vec(mk.as_str()).map_err(|_e| err_to_msg(SdkError::KeyDecryptFailed))?;
 
 			//if it was encrypted by a key which was derived by argon
 			let master_key_encryption_key: [u8; 32] = mk
 				.try_into()
-				.map_err(|_e| err_to_msg(Error::KeyDecryptFailed))?;
+				.map_err(|_e| err_to_msg(SdkError::KeyDecryptFailed))?;
 
 			DeriveMasterKeyForAuth::Argon2(master_key_encryption_key)
 		},
 	};
 
-	let server_output = DoneLoginServerKeysOutput::from_string(server_output).map_err(|_| err_to_msg(Error::LoginServerOutputWrong))?;
+	let server_output = DoneLoginServerKeysOutput::from_string(server_output).map_err(|_| err_to_msg(SdkError::LoginServerOutputWrong))?;
 
 	let result = done_login_internally(&master_key_encryption, &server_output).map_err(|e| err_to_msg(e))?;
 
@@ -128,7 +128,14 @@ pub fn change_password(
 	derived_encryption_key_alg: &str,
 ) -> Result<String, String>
 {
-	change_password_internally(old_pw, new_pw, old_salt, encrypted_master_key, derived_encryption_key_alg).map_err(|e| err_to_msg(e))
+	change_password_internally(
+		old_pw,
+		new_pw,
+		old_salt,
+		encrypted_master_key,
+		derived_encryption_key_alg,
+	)
+	.map_err(|e| err_to_msg(e))
 }
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
@@ -142,7 +149,7 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 
 pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<String, String>
 {
-	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|_e| err_to_msg(Error::JsonParseFailed))?;
+	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let out = prepare_update_user_keys_internally(password, &server_output).map_err(|e| err_to_msg(e))?;
 
@@ -156,7 +163,7 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 	}
 
 	//now this keys can be used to new encrypt the old content
-	to_string(&output_arr).map_err(|_e| err_to_msg(Error::JsonToStringFailed))
+	to_string(&output_arr).map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))
 }
 
 fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
@@ -176,11 +183,11 @@ fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 		exported_public_key: key_data
 			.exported_public_key
 			.to_string()
-			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?,
 		exported_verify_key: key_data
 			.exported_verify_key
 			.to_string()
-			.map_err(|_e| err_to_msg(Error::JsonToStringFailed))?,
+			.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?,
 	})
 }
 
@@ -268,6 +275,9 @@ mod test
 
 		assert_ne!(pw_change_out.new_client_random_value, out.derived.client_random_value);
 
-		assert_ne!(pw_change_out.new_encrypted_master_key, out.master_key.encrypted_master_key);
+		assert_ne!(
+			pw_change_out.new_encrypted_master_key,
+			out.master_key.encrypted_master_key
+		);
 	}
 }
