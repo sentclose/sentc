@@ -62,3 +62,10 @@ pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: 
 
 	Ok(generate_salt(client_random_value, add_str))
 }
+
+pub fn generate_salt_from_base64_to_string(client_random_value: &str, alg: &str, add_str: &str) -> Result<String, SdkError>
+{
+	let salt = generate_salt_from_base64(client_random_value, alg, add_str)?;
+
+	Ok(Base64::encode_string(&salt))
+}

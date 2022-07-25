@@ -424,13 +424,13 @@ pub(crate) mod test_fn
 
 	use super::*;
 	use crate::util::KeyData;
+	use crate::util_pub::generate_salt_from_base64_to_string;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
 		//and now try to login
 		//normally the salt gets calc by the api
-		let salt_from_rand_value = generate_salt_from_base64(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
-		let salt_string = Base64::encode_string(&salt_from_rand_value);
+		let salt_string = generate_salt_from_base64_to_string(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
 
 		ServerOutput {
 			status: true,
