@@ -49,10 +49,10 @@ pub use self::alg::sym::aes_gcm::AES_GCM_OUTPUT;
 pub use self::alg::sym::{SymKey, SymKeyOutput};
 pub use self::error::Error;
 
-pub fn generate_salt(client_random_value: ClientRandomValue) -> Vec<u8>
+pub fn generate_salt(client_random_value: ClientRandomValue, add_str: &str) -> Vec<u8>
 {
 	match client_random_value {
-		ClientRandomValue::Argon2(v) => alg::pw_hash::argon2::generate_salt(v),
+		ClientRandomValue::Argon2(v) => alg::pw_hash::argon2::generate_salt(v, add_str),
 	}
 }
 

@@ -298,7 +298,7 @@ mod test
 
 		//and now try to login
 		//normally the salt gets calc by the api
-		let salt_from_rand_value = generate_salt(register_out.client_random_value);
+		let salt_from_rand_value = generate_salt(register_out.client_random_value, "");
 
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, register_out.derived_alg).unwrap();
 

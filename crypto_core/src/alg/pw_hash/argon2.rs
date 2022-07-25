@@ -106,7 +106,7 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 
 	let client_random_value = generate_random_value(rng);
 
-	let salt = generate_salt(client_random_value);
+	let salt = generate_salt(client_random_value, "");
 
 	let (derived_encryption_key_bytes, derived_authentication_key_bytes) = derived_keys(password, &salt)?;
 
@@ -171,9 +171,10 @@ fn derived_keys(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; HALF_DERIVED
 }
 
 //this is pub crate because we need this function in later tests
-pub(crate) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH]) -> Vec<u8>
+pub(crate) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH], add_str: &str) -> Vec<u8>
 {
-	let mut salt_string = "sentc".to_owned();
+	//on server side, put the user identifier as add str to get unique checking time
+	let mut salt_string = "sentc".to_owned() + add_str;
 
 	//pad the salt string to 200 chars with the letter P
 	for _i in salt_string.len()..SALT_STRING_MAX_LENGTH {
@@ -223,7 +224,13 @@ fn derived_single_key<R: CryptoRng + RngCore>(password: &[u8], rng: &mut R) -> R
 fn get_derived_single_key(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Error>
 {
 	//aes 256 key
-	let params = Params::new(Params::DEFAULT_M_COST, Params::DEFAULT_T_COST, Params::DEFAULT_P_COST, Some(32)).map_err(|_| Error::PwHashFailed)?;
+	let params = Params::new(
+		Params::DEFAULT_M_COST,
+		Params::DEFAULT_T_COST,
+		Params::DEFAULT_P_COST,
+		Some(32),
+	)
+	.map_err(|_| Error::PwHashFailed)?;
 
 	let argon2 = Argon2::new(Algorithm::default(), Version::default(), params);
 
@@ -281,7 +288,7 @@ mod test
 		};
 
 		//create fake salt. this will be created on the server with the client random value
-		let salt = generate_salt(out_random_value);
+		let salt = generate_salt(out_random_value, "");
 
 		let derived_out = derive_keys_for_auth(b"abc", &salt).unwrap();
 

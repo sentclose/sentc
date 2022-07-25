@@ -345,7 +345,7 @@ mod test
 
 		//and now try to login
 		//normally the salt gets calc by the api
-		let salt_from_rand_value = generate_salt(out.client_random_value);
+		let salt_from_rand_value = generate_salt(out.client_random_value, "");
 
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
@@ -392,7 +392,7 @@ mod test
 		let salt_from_rand_value = match out.client_random_value {
 			//for all different random value alg
 			//classic way here because when generating salt we will move the value, but we need the old salt for pw change and after for comparing the output
-			ClientRandomValue::Argon2(v) => pw_hash::argon2::generate_salt(v),
+			ClientRandomValue::Argon2(v) => pw_hash::argon2::generate_salt(v, ""),
 		};
 
 		let pw_change_out = change_password(
@@ -421,10 +421,13 @@ mod test
 		let prep_login_old = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
 		//2nd get the master key which was encrypted by the new password
-		let new_salt = generate_salt(pw_change_out.client_random_value);
+		let new_salt = generate_salt(pw_change_out.client_random_value, "");
 		let prep_login_new = prepare_login(new_password, &new_salt, pw_change_out.derived_alg).unwrap();
 
-		match (&prep_login_old.master_key_encryption_key, &prep_login_new.master_key_encryption_key) {
+		match (
+			&prep_login_old.master_key_encryption_key,
+			&prep_login_new.master_key_encryption_key,
+		) {
 			(DeriveMasterKeyForAuth::Argon2(k1), DeriveMasterKeyForAuth::Argon2(k2)) => {
 				let old_master_key = pw_hash::argon2::get_master_key(k1, &out.master_key_info.encrypted_master_key).unwrap();
 				let new_master_key = pw_hash::argon2::get_master_key(k2, &pw_change_out.master_key_info.encrypted_master_key).unwrap();
@@ -444,7 +447,7 @@ mod test
 		let password = "abc*èéöäüê";
 		let out = register(password).unwrap();
 
-		let salt_from_rand_value = generate_salt(out.client_random_value);
+		let salt_from_rand_value = generate_salt(out.client_random_value, "");
 
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
@@ -465,7 +468,7 @@ mod test
 		let password_reset_out = password_reset(new_password, &login_out.private_key, &login_out.sign_key).unwrap();
 
 		//test if we can login with the new password
-		let salt_from_rand_value = generate_salt(password_reset_out.client_random_value);
+		let salt_from_rand_value = generate_salt(password_reset_out.client_random_value, "");
 
 		let prep_login_out_pw_reset = prepare_login(new_password, &salt_from_rand_value, password_reset_out.derived_alg).unwrap();
 
