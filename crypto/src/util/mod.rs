@@ -8,7 +8,19 @@ use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
-use sentc_crypto_core::{DeriveAuthKeyForAuth, HashedAuthenticationKey, Pk, SignK, Sk, SymKey, VerifyK, ECIES_OUTPUT, ED25519_OUTPUT};
+use sentc_crypto_core::{
+	ClientRandomValue,
+	DeriveAuthKeyForAuth,
+	HashedAuthenticationKey,
+	Pk,
+	SignK,
+	Sk,
+	SymKey,
+	VerifyK,
+	ARGON_2_OUTPUT,
+	ECIES_OUTPUT,
+	ED25519_OUTPUT,
+};
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::util_non_rust::{
@@ -123,10 +135,59 @@ pub(crate) fn hashed_authentication_key_to_string(hashed_authentication_key_byte
 	}
 }
 
+pub(crate) fn hashed_authentication_key_from_base64(hashed_key: &str, alg: &str) -> Result<HashedAuthenticationKey, SdkError>
+{
+	match alg {
+		ARGON_2_OUTPUT => {
+			let v = Base64::decode_vec(hashed_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
+			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
+
+			Ok(HashedAuthenticationKey::Argon2(v))
+		},
+		_ => Err(SdkError::AlgNotFound),
+	}
+}
+
 pub(crate) fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &DeriveAuthKeyForAuth) -> String
 {
 	match derive_auth_key_for_auth {
 		DeriveAuthKeyForAuth::Argon2(h) => Base64::encode_string(h),
+	}
+}
+
+pub(crate) fn derive_auth_key_from_base64(auth_key: &str, alg: &str) -> Result<DeriveAuthKeyForAuth, SdkError>
+{
+	match alg {
+		ARGON_2_OUTPUT => {
+			let v = Base64::decode_vec(auth_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
+			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
+
+			Ok(DeriveAuthKeyForAuth::Argon2(v))
+		},
+		_ => Err(SdkError::AlgNotFound),
+	}
+}
+
+pub(crate) fn client_random_value_to_string(client_random_value: &ClientRandomValue) -> String
+{
+	match client_random_value {
+		ClientRandomValue::Argon2(v) => Base64::encode_string(v),
+	}
+}
+
+pub(crate) fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<ClientRandomValue, SdkError>
+{
+	//normally not needed only when the client needs to create the rand value, e.g- for key update.
+	match alg {
+		ARGON_2_OUTPUT => {
+			let v = Base64::decode_vec(client_random_value).map_err(|_| SdkError::DecodeRandomValueFailed)?;
+			let v = v
+				.try_into()
+				.map_err(|_| SdkError::DecodeRandomValueFailed)?;
+
+			Ok(ClientRandomValue::Argon2(v))
+		},
+		_ => Err(SdkError::AlgNotFound),
 	}
 }
 

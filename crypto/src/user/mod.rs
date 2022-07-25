@@ -37,6 +37,7 @@ use sentc_crypto_core::user::{
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
 use crate::util::{
+	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
 	export_raw_public_key_to_pem,
 	export_raw_verify_key_to_pem,
@@ -49,7 +50,7 @@ use crate::util::{
 	SignKeyFormatInt,
 	VerifyKeyFormatInt,
 };
-use crate::util_pub::{client_random_value_to_string, generate_salt_from_base64, handle_server_response};
+use crate::util_pub::{generate_salt_from_base64, handle_server_response};
 use crate::SdkError;
 
 #[cfg(feature = "rust")]
