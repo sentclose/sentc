@@ -3,8 +3,8 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::ServerOutput;
-pub use sentc_crypto_core::HashedAuthenticationKey;
 use sentc_crypto_core::{generate_salt, hash_auth_key};
+pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkError;
