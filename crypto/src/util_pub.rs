@@ -3,11 +3,12 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::ServerOutput;
-pub use sentc_crypto_core::ARGON_2_OUTPUT;
-use sentc_crypto_core::{generate_salt, ClientRandomValue};
+pub use sentc_crypto_core::HashedAuthenticationKey;
+use sentc_crypto_core::{generate_salt, hash_auth_key};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkError;
+use crate::util::{client_random_value_from_string, derive_auth_key_from_base64, hashed_authentication_key_from_base64};
 
 pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de str) -> Result<T, SdkError>
 {
@@ -33,29 +34,6 @@ pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de st
 	}
 }
 
-pub fn client_random_value_to_string(client_random_value: &ClientRandomValue) -> String
-{
-	match client_random_value {
-		ClientRandomValue::Argon2(v) => Base64::encode_string(v),
-	}
-}
-
-pub fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<ClientRandomValue, SdkError>
-{
-	//normally not needed only when the client needs to create the rand value, e.g- for key update.
-	match alg {
-		ARGON_2_OUTPUT => {
-			let v = Base64::decode_vec(client_random_value).map_err(|_| SdkError::DecodeRandomValueFailed)?;
-			let v = v
-				.try_into()
-				.map_err(|_| SdkError::DecodeRandomValueFailed)?;
-
-			Ok(ClientRandomValue::Argon2(v))
-		},
-		_ => Err(SdkError::AlgNotFound),
-	}
-}
-
 pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Result<Vec<u8>, SdkError>
 {
 	let client_random_value = client_random_value_from_string(client_random_value, alg)?;
@@ -63,9 +41,39 @@ pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: 
 	Ok(generate_salt(client_random_value, add_str))
 }
 
+/**
+# Generates a salt
+
+from a base64 encoded client random value
+
+returns the salt as base64 encoded
+*/
 pub fn generate_salt_from_base64_to_string(client_random_value: &str, alg: &str, add_str: &str) -> Result<String, SdkError>
 {
 	let salt = generate_salt_from_base64(client_random_value, alg, add_str)?;
 
 	Ok(Base64::encode_string(&salt))
+}
+
+/**
+# Get the client and server hashed auth keys in the internal format
+
+1. hash the client auth key (which comes from the client to the server)
+2. import both hashed auth keys into the internal format and return them to compare them
+
+This is used on the server in done login
+*/
+pub fn get_auth_keys_from_base64(
+	client_auth_key: &str,
+	server_hashed_auth_key: &str,
+	alg: &str,
+) -> Result<(HashedAuthenticationKey, HashedAuthenticationKey), SdkError>
+{
+	let client_auth_key = derive_auth_key_from_base64(client_auth_key, alg)?;
+	let server_hashed_auth_key = hashed_authentication_key_from_base64(server_hashed_auth_key, alg)?;
+
+	//hash the client key
+	let hashed_client_key = hash_auth_key(&client_auth_key)?;
+
+	Ok((server_hashed_auth_key, hashed_client_key))
 }

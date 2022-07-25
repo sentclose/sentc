@@ -12,6 +12,8 @@ pub enum SdkError
 
 	DecodeSaltFailed,
 	DecodeRandomValueFailed,
+	DecodeHashedAuthKey,
+	DecodeAuthKey,
 	DecodeEncryptedDataFailed,
 	DecodePublicKeyFailed,
 
