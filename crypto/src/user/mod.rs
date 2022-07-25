@@ -34,11 +34,9 @@ use sentc_crypto_core::user::{
 	prepare_login as prepare_login_core,
 	register as register_core,
 };
-use sentc_crypto_core::{generate_salt, DeriveMasterKeyForAuth};
+use sentc_crypto_core::DeriveMasterKeyForAuth;
 
 use crate::util::{
-	client_random_value_from_string,
-	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
 	export_raw_public_key_to_pem,
 	export_raw_verify_key_to_pem,
@@ -51,7 +49,7 @@ use crate::util::{
 	SignKeyFormatInt,
 	VerifyKeyFormatInt,
 };
-use crate::util_pub::handle_server_response;
+use crate::util_pub::{client_random_value_to_string, generate_salt_from_base64, handle_server_response};
 use crate::SdkError;
 
 #[cfg(feature = "rust")]
@@ -391,11 +389,11 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 	for out in &server_output.logins {
 		//get the derived key from the password
 		//creat the salt in the client for the old keys. it is ok because the user is already auth
-		let client_random_value = client_random_value_from_string(
+		let salt = generate_salt_from_base64(
 			out.client_random_value.as_str(),
 			out.derived_encryption_key_alg.as_str(),
+			"",
 		)?;
-		let salt = generate_salt(client_random_value);
 
 		let result = prepare_login_core(password, &salt, out.derived_encryption_key_alg.as_str())?;
 		let derived_key = result.master_key_encryption_key;
@@ -425,14 +423,13 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
-	use crate::util::{client_random_value_from_string, KeyData};
+	use crate::util::KeyData;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
 		//and now try to login
 		//normally the salt gets calc by the api
-		let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
-		let salt_from_rand_value = generate_salt(client_random_value);
+		let salt_from_rand_value = generate_salt_from_base64(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
 		let salt_string = Base64::encode_string(&salt_from_rand_value);
 
 		ServerOutput {

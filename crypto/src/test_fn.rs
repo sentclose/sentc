@@ -12,7 +12,7 @@ use sentc_crypto_common::ServerOutput;
 use sentc_crypto_core::Sk;
 
 use crate::user::{done_login, prepare_login, register};
-use crate::util::client_random_value_from_string;
+use crate::util_pub::generate_salt_from_base64;
 #[cfg(not(feature = "rust"))]
 use crate::PrivateKeyFormat;
 
@@ -34,9 +34,7 @@ pub fn register_test_full() -> String
 
 	//and now try to login
 	//normally the salt gets calc by the api
-	let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
-
-	let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
+	let salt_from_rand_value = generate_salt_from_base64(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
 	let server_output = PrepareLoginSaltServerOutput {
@@ -109,9 +107,7 @@ pub fn register_test_full() -> String
 
 	//and now try to login
 	//normally the salt gets calc by the api
-	let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
-
-	let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
+	let salt_from_rand_value = generate_salt_from_base64(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
 	let salt_from_rand_value = Base64::encode_string(&salt_from_rand_value);
 
 	let server_output = ServerOutput {
@@ -176,8 +172,7 @@ pub fn simulate_server_prepare_login(register_data: &str) -> String
 
 	//and now try to login
 	//normally the salt gets calc by the api
-	let client_random_value = client_random_value_from_string(derived.client_random_value.as_str(), derived.derived_alg.as_str()).unwrap();
-	let salt_from_rand_value = sentc_crypto_core::generate_salt(client_random_value);
+	let salt_from_rand_value = generate_salt_from_base64(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
 	let salt_string = Base64::encode_string(&salt_from_rand_value);
 
 	let server_output = ServerOutput {
