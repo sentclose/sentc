@@ -45,9 +45,9 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, SdkError>
 	prepare_login_start_internally(user_id)
 }
 
-pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
+pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
 {
-	prepare_login_internally(password, server_output)
+	prepare_login_internally(user_identifier, password, server_output)
 }
 
 pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<KeyData, SdkError>
@@ -118,7 +118,7 @@ mod test
 		let server_output = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
+		let (_, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 

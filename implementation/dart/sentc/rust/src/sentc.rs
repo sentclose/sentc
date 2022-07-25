@@ -29,9 +29,10 @@ pub fn register(user_identifier: String, password: String) -> Result<String>
 	user::register(user_identifier.as_str(), password.as_str()).map_err(|err| anyhow!(err))
 }
 
-pub fn prepare_login(password: String, server_output: String) -> Result<PrepareLoginOutput>
+pub fn prepare_login(user_identifier: String, password: String, server_output: String) -> Result<PrepareLoginOutput>
 {
-	let (auth_key, master_key_encryption_key) = user::prepare_login(password.as_str(), server_output.as_str()).map_err(|err| anyhow!(err))?;
+	let (auth_key, master_key_encryption_key) =
+		user::prepare_login(user_identifier.as_str(), password.as_str(), server_output.as_str()).map_err(|err| anyhow!(err))?;
 
 	Ok(PrepareLoginOutput {
 		auth_key,

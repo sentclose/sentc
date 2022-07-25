@@ -49,7 +49,7 @@ pub fn register_test_full() -> String
 
 	//back to the client, send prep login out string to the server if it is no err
 	#[cfg(feature = "rust")]
-	let (_, master_key_encryption_key) = prepare_login(password, server_output.to_string().unwrap().as_str()).unwrap();
+	let (_, master_key_encryption_key) = prepare_login(username, password, server_output.to_string().unwrap().as_str()).unwrap();
 
 	//get the server output back
 	let server_output = DoneLoginServerKeysOutput {
@@ -63,6 +63,7 @@ pub fn register_test_full() -> String
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
 		jwt: "jwt".to_string(),
+		user_id: "abc".to_string(),
 	};
 
 	let server_output = ServerOutput {
@@ -119,7 +120,7 @@ pub fn register_test_full() -> String
 
 	//back to the client, send prep login out string to the server if it is no err
 	#[cfg(not(feature = "rust"))]
-	let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.to_string().unwrap().as_str()).unwrap();
+	let (_auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.to_string().unwrap().as_str()).unwrap();
 
 	//get the server output back
 	let server_output = DoneLoginServerKeysOutput {
@@ -133,6 +134,7 @@ pub fn register_test_full() -> String
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
 		jwt: "jwt".to_string(),
+		user_id: "abc".to_string(),
 	};
 
 	let server_output = ServerOutput {
@@ -204,6 +206,7 @@ pub fn simulate_server_done_login(register_data: &str) -> String
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
 		jwt: "jwt".to_string(),
+		user_id: "abc".to_string(),
 	};
 
 	ServerOutput {
@@ -275,7 +278,7 @@ mod test
 		let out_string = register(username, password).unwrap();
 
 		let prep_login_in = simulate_server_prepare_login(out_string.as_str());
-		let (_auth_key, master_key_encryption_key) = prepare_login(password, prep_login_in.as_str()).unwrap();
+		let (_auth_key, master_key_encryption_key) = prepare_login(username, password, prep_login_in.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out_string.as_str());
 

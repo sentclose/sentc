@@ -58,6 +58,7 @@ pub struct DoneLoginData1
 	sign_key: String,
 	verify_key: String,
 	jwt: String,
+	user_id: String,
 	exported_public_key: String,
 	exported_verify_key: String,
 }
@@ -90,6 +91,11 @@ impl DoneLoginData1
 		self.jwt.clone()
 	}
 
+	pub fn get_id(&self) -> String
+	{
+		self.user_id.clone()
+	}
+
 	pub fn get_exported_public_key(&self) -> String
 	{
 		self.exported_public_key.clone()
@@ -108,9 +114,9 @@ pub fn register_test(username: &str, password: &str) -> Result<String, String>
 }
 
 #[wasm_bindgen]
-pub fn prepare_login_test(password: &str, server_output: &str) -> Result<PrepareLoginOutput, String>
+pub fn prepare_login_test(username: &str, password: &str, server_output: &str) -> Result<PrepareLoginOutput, String>
 {
-	let (auth_key, master_key_encryption_key) = user::prepare_login(password, server_output)?;
+	let (auth_key, master_key_encryption_key) = user::prepare_login(username, password, server_output)?;
 
 	Ok(PrepareLoginOutput {
 		auth_key,
@@ -132,6 +138,7 @@ pub fn done_login_test(
 		sign_key: keys.sign_key,
 		verify_key: keys.verify_key,
 		jwt: keys.jwt,
+		user_id: keys.user_id,
 		exported_public_key: keys.exported_public_key,
 		exported_verify_key: keys.exported_verify_key,
 	})
@@ -146,7 +153,13 @@ pub fn change_password_test(
 	derived_encryption_key_alg: &str,
 ) -> Result<String, String>
 {
-	user::change_password(old_password, new_password, old_salt, encrypted_master_key, derived_encryption_key_alg)
+	user::change_password(
+		old_password,
+		new_password,
+		old_salt,
+		encrypted_master_key,
+		derived_encryption_key_alg,
+	)
 }
 
 #[wasm_bindgen]

@@ -76,10 +76,10 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 	prepare_login_start_internally(user_id).map_err(|e| err_to_msg(e))
 }
 
-pub fn prepare_login(password: &str, server_output: &str) -> Result<(String, String), String>
+pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String), String>
 {
 	//the auth key is already in the right json format for the server
-	let (auth_key, master_key_encryption_key) = prepare_login_internally(password, server_output).map_err(|e| err_to_msg(e))?;
+	let (auth_key, master_key_encryption_key) = prepare_login_internally(user_identifier, password, server_output).map_err(|e| err_to_msg(e))?;
 
 	//return the encryption key for the master key to the app and then use it for done login
 	let master_key_encryption_key = match master_key_encryption_key {
@@ -183,6 +183,7 @@ fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 		sign_key,
 		verify_key,
 		jwt: key_data.jwt,
+		user_id: key_data.user_id,
 		exported_public_key: key_data
 			.exported_public_key
 			.to_string()
@@ -230,7 +231,7 @@ mod test
 		let server_output = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.as_str()).unwrap();
+		let (_auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 

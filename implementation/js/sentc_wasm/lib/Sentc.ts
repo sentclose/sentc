@@ -127,7 +127,8 @@ export class Sentc
 			verify_key: out.get_verify_key(),
 			exported_public_key: out.get_exported_public_key(),
 			exported_verify_key: out.get_exported_verify_key(),
-			jwt: out.get_jwt()
+			jwt: out.get_jwt(),
+			user_id: out.get_id()
 		};
 
 		//save user data in indexeddb
@@ -151,9 +152,9 @@ export class Sentc
 		return user;
 	}
 
-	public async loginTest(prep_server_out: string, done_login_server_out: string, userIdentifier: string, password: string)
+	public async loginTest(username: string, prep_server_out: string, done_login_server_out: string, userIdentifier: string, password: string)
 	{
-		const prep = prepare_login_test(password, prep_server_out);
+		const prep = prepare_login_test(username, password, prep_server_out);
 
 		const out = done_login_test(prep.get_master_key_encryption_key(), done_login_server_out);
 
@@ -164,7 +165,8 @@ export class Sentc
 			verify_key: out.get_verify_key(),
 			exported_public_key: out.get_exported_public_key(),
 			exported_verify_key: out.get_exported_verify_key(),
-			jwt: out.get_jwt()
+			jwt: out.get_jwt(),
+			user_id: out.get_id()
 		};
 
 		const storage = await Sentc.getStore();

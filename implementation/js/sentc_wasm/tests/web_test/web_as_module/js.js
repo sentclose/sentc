@@ -44,7 +44,7 @@ export async function run()
 	console.log("prepare login");
 	const prep_server_out = simulate_server_prepare_login(register_out);
 
-	const prep = prepare_login_test(pw, prep_server_out);
+	const prep = prepare_login_test("admin", pw, prep_server_out);
 
 	const done_login_server_out = simulate_server_done_login(register_out);
 

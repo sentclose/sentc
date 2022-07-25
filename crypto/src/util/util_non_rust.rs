@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
+use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
 use sentc_crypto_core::{Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
@@ -110,6 +110,7 @@ pub struct KeyData
 	pub sign_key: String,
 	pub verify_key: String,
 	pub jwt: String,
+	pub user_id: UserId,
 	pub exported_public_key: String,
 	pub exported_verify_key: String,
 }

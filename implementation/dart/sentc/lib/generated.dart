@@ -22,7 +22,10 @@ abstract class SentcFlutter {
   FlutterRustBridgeTaskConstMeta get kRegisterConstMeta;
 
   Future<PrepareLoginOutput> prepareLogin(
-      {required String password, required String serverOutput, dynamic hint});
+      {required String userIdentifier,
+      required String password,
+      required String serverOutput,
+      dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kPrepareLoginConstMeta;
 
@@ -106,22 +109,26 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
       );
 
   Future<PrepareLoginOutput> prepareLogin(
-          {required String password,
+          {required String userIdentifier,
+          required String password,
           required String serverOutput,
           dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
         callFfi: (port_) => inner.wire_prepare_login(
-            port_, _api2wire_String(password), _api2wire_String(serverOutput)),
+            port_,
+            _api2wire_String(userIdentifier),
+            _api2wire_String(password),
+            _api2wire_String(serverOutput)),
         parseSuccessData: _wire2api_prepare_login_output,
         constMeta: kPrepareLoginConstMeta,
-        argValues: [password, serverOutput],
+        argValues: [userIdentifier, password, serverOutput],
         hint: hint,
       ));
 
   FlutterRustBridgeTaskConstMeta get kPrepareLoginConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "prepare_login",
-        argNames: ["password", "serverOutput"],
+        argNames: ["userIdentifier", "password", "serverOutput"],
       );
 
   Future<KeyData> doneLogin(
@@ -260,11 +267,13 @@ class SentcFlutterWire implements FlutterRustBridgeWireBase {
 
   void wire_prepare_login(
     int port_,
+    ffi.Pointer<wire_uint_8_list> user_identifier,
     ffi.Pointer<wire_uint_8_list> password,
     ffi.Pointer<wire_uint_8_list> server_output,
   ) {
     return _wire_prepare_login(
       port_,
+      user_identifier,
       password,
       server_output,
     );
@@ -272,11 +281,14 @@ class SentcFlutterWire implements FlutterRustBridgeWireBase {
 
   late final _wire_prepare_loginPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Int64, ffi.Pointer<wire_uint_8_list>,
+          ffi.Void Function(
+              ffi.Int64,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
               ffi.Pointer<wire_uint_8_list>)>>('wire_prepare_login');
   late final _wire_prepare_login = _wire_prepare_loginPtr.asFunction<
-      void Function(
-          int, ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
+      void Function(int, ffi.Pointer<wire_uint_8_list>,
+          ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
 
   void wire_done_login(
     int port_,

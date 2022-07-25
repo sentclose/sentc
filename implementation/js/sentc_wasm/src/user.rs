@@ -15,6 +15,7 @@ pub struct DoneLoginData
 	sign_key: String,
 	verify_key: String,
 	jwt: String,
+	user_id: String,
 	exported_public_key: String,
 	exported_verify_key: String,
 }
@@ -45,6 +46,11 @@ impl DoneLoginData
 	pub fn get_jwt(&self) -> String
 	{
 		self.jwt.clone()
+	}
+
+	pub fn get_id(&self) -> String
+	{
+		self.user_id.clone()
 	}
 
 	pub fn get_exported_public_key(&self) -> String
@@ -140,7 +146,7 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
 
 	//prepare the login, the auth key is already in the right json format for the server
-	let (auth_key, master_key_encryption_key) = user::prepare_login(password.as_str(), res.as_str())?;
+	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier.as_str(), password.as_str(), res.as_str())?;
 
 	let url = format!("{}/api/v1/login", base_url);
 
@@ -161,6 +167,7 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 		sign_key: keys.sign_key,
 		verify_key: keys.verify_key,
 		jwt: keys.jwt,
+		user_id: keys.user_id,
 		exported_public_key: keys.exported_public_key,
 		exported_verify_key: keys.exported_verify_key,
 	})

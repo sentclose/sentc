@@ -45,7 +45,7 @@ export async function run()
 	const prep_server_out = simulate_server_prepare_login(register_out);
 	const done_login_server_out = simulate_server_done_login(register_out);
 
-	const keys = await sentc.loginTest( prep_server_out, done_login_server_out, "admin", pw);
+	const keys = await sentc.loginTest("admin", prep_server_out, done_login_server_out, "admin", pw);
 
 	console.log(keys);
 

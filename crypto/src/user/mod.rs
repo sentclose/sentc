@@ -190,7 +190,7 @@ fn prepare_login_start_internally(user_identifier: &str) -> Result<String, SdkEr
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-fn prepare_login_internally(password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
+fn prepare_login_internally(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
 {
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
@@ -202,6 +202,7 @@ fn prepare_login_internally(password: &str, server_output: &str) -> Result<(Stri
 
 	let auth_key = DoneLoginServerInput {
 		auth_key,
+		user_identifier: user_identifier.to_string(),
 	}
 	.to_string()
 	.map_err(|_| SdkError::JsonToStringFailed)?;
@@ -267,6 +268,7 @@ fn done_login_internally_with_server_out(
 
 	Ok(KeyDataInt {
 		jwt: server_output.jwt.to_string(),
+		user_id: server_output.user_id.to_string(),
 		private_key: PrivateKeyFormatInt {
 			key_id: server_output.keypair_encrypt_id.clone(),
 			key: out.private_key,
@@ -466,6 +468,7 @@ pub(crate) mod test_fn
 			keypair_encrypt_id: "abc".to_string(),
 			keypair_sign_id: "dfg".to_string(),
 			jwt: "jwt".to_string(),
+			user_id: "abc".to_string(),
 		};
 
 		ServerOutput {
@@ -489,7 +492,7 @@ pub(crate) mod test_fn
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
 		#[cfg(feature = "rust")]
-		let (_, master_key_encryption_key) = prepare_login(password, &server_output).unwrap();
+		let (_, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
@@ -511,7 +514,7 @@ pub(crate) mod test_fn
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.derived);
 		#[cfg(not(feature = "rust"))]
-		let (_auth_key, master_key_encryption_key) = prepare_login(password, server_output.as_str()).unwrap();
+		let (_auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 

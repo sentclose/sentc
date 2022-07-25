@@ -15,7 +15,8 @@ export interface UserData
 	verify_key: string,
 	exported_public_key: string,
 	exported_verify_key: string,
-	jwt: string
+	jwt: string,
+	user_id: string
 }
 
 export interface GroupData
