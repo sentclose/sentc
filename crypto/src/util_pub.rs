@@ -3,7 +3,8 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::ServerOutput;
-use sentc_crypto_core::{generate_salt, ClientRandomValue, ARGON_2_OUTPUT};
+pub use sentc_crypto_core::ARGON_2_OUTPUT;
+use sentc_crypto_core::{generate_salt, ClientRandomValue};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkError;
