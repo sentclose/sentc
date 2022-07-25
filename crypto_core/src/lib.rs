@@ -56,6 +56,13 @@ pub fn generate_salt(client_random_value: ClientRandomValue, add_str: &str) -> V
 	}
 }
 
+pub fn hash_auth_key(auth_key: &DeriveAuthKeyForAuth) -> Result<HashedAuthenticationKey, Error>
+{
+	match auth_key {
+		DeriveAuthKeyForAuth::Argon2(k) => alg::pw_hash::argon2::get_hashed_auth_key(k),
+	}
+}
+
 fn get_rand() -> impl CryptoRng + RngCore
 {
 	#[cfg(feature = "default_env")]

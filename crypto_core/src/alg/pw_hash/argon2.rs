@@ -97,6 +97,18 @@ pub(crate) fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<[u8; 3
 	get_derived_single_key(password, salt)
 }
 
+/**
+# Hash the auth key
+
+and keep only the first 16 bytes. This is used for registration and done login on the server.
+*/
+pub(crate) fn get_hashed_auth_key(derived_authentication_key_bytes: &[u8]) -> Result<HashedAuthenticationKey, Error>
+{
+	let hashed_authentication_key_16bytes = hash_auth_key(derived_authentication_key_bytes)?;
+
+	Ok(HashedAuthenticationKey::Argon2(hashed_authentication_key_16bytes))
+}
+
 //__________________________________________________________________________________________________
 //internally function
 
@@ -110,18 +122,7 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 
 	let (derived_encryption_key_bytes, derived_authentication_key_bytes) = derived_keys(password, &salt)?;
 
-	// Get a hash of the Authentication Key which the API will use for authentication at login time
-	let mut hasher = Sha256::new();
-
-	hasher.update(derived_authentication_key_bytes);
-
-	let result = hasher.finalize();
-
-	// Keep only the first 128 bits (16 bytes) of the Hashed Authentication Key
-	let hashed_authentication_key_16bytes: [u8; 16] = match result[..16].as_ref().try_into() {
-		Err(_e) => return Err(Error::HashAuthKeyFailed),
-		Ok(bytes) => bytes,
-	};
+	let hashed_authentication_key_16bytes = hash_auth_key(&derived_authentication_key_bytes)?;
 
 	let encrypted_master_key = aes_encrypt(&derived_encryption_key_bytes, master_key)?;
 
@@ -134,6 +135,23 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 			alg: AES_GCM_OUTPUT,
 		},
 	})
+}
+
+fn hash_auth_key(derived_authentication_key_bytes: &[u8]) -> Result<[u8; 16], Error>
+{
+	// Get a hash of the Authentication Key which the API will use for authentication at login time
+	let mut hasher = Sha256::new();
+	hasher.update(derived_authentication_key_bytes);
+
+	let result = hasher.finalize();
+
+	// Keep only the first 128 bits (16 bytes) of the Hashed Authentication Key
+	let hashed_authentication_key_16bytes: [u8; 16] = match result[..16].as_ref().try_into() {
+		Err(_e) => return Err(Error::HashAuthKeyFailed),
+		Ok(bytes) => bytes,
+	};
+
+	Ok(hashed_authentication_key_16bytes)
 }
 
 fn derived_keys(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; HALF_DERIVED_KEY_LENGTH], [u8; HALF_DERIVED_KEY_LENGTH]), Error>
