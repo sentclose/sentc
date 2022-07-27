@@ -27,14 +27,7 @@ use sentc_crypto_common::user::{
 	UserVerifyKeyData,
 };
 use sentc_crypto_common::UserId;
-use sentc_crypto_core::user::{
-	change_password as change_password_core,
-	done_login as done_login_core,
-	password_reset as password_reset_core,
-	prepare_login as prepare_login_core,
-	register as register_core,
-};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth};
 
 use crate::util::{
 	client_random_value_to_string,
@@ -113,7 +106,7 @@ fn done_check_user_identifier_available_internally(server_output: &str) -> Resul
 */
 fn register_internally(user_identifier: &str, password: &str) -> Result<String, SdkError>
 {
-	let out = register_core(password)?;
+	let out = core_user::register(password)?;
 
 	//transform the register output into json
 
@@ -195,7 +188,7 @@ fn prepare_login_internally(user_identifier: &str, password: &str, server_output
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
 	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
-	let result = prepare_login_core(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
+	let result = core_user::prepare_login(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
 	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
@@ -233,7 +226,7 @@ fn done_login_internally_with_server_out(
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
-	let out = done_login_core(
+	let out = core_user::done_login(
 		&master_key_encryption,
 		&encrypted_master_key,
 		&encrypted_private_key,
@@ -301,7 +294,7 @@ fn change_password_internally(
 	let encrypted_master_key = Base64::decode_vec(encrypted_master_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(old_salt).map_err(|_| SdkError::DecodeSaltFailed)?;
 
-	let output = change_password_core(
+	let output = core_user::change_password(
 		old_pw,
 		new_pw,
 		&old_salt,
@@ -339,7 +332,7 @@ fn reset_password_internally(
 	decrypted_sign_key: &SignKeyFormatInt,
 ) -> Result<String, SdkError>
 {
-	let out = password_reset_core(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)?;
+	let out = core_user::password_reset(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)?;
 
 	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
@@ -398,7 +391,7 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 			"",
 		)?;
 
-		let result = prepare_login_core(password, &salt, out.derived_encryption_key_alg.as_str())?;
+		let result = core_user::prepare_login(password, &salt, out.derived_encryption_key_alg.as_str())?;
 		let derived_key = result.master_key_encryption_key;
 
 		//now done login
