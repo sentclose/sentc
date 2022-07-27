@@ -283,23 +283,28 @@ fn done_login_internally_with_server_out(
 	})
 }
 
-fn change_password_internally(
-	old_pw: &str,
-	new_pw: &str,
-	old_salt: &str,
-	encrypted_master_key: &str,
-	derived_encryption_key_alg: &str,
-) -> Result<String, SdkError>
+/**
+Make the prepare and done login req.
+
+- prep login to get the salt
+- done login to get the encrypted master key, because this key is never stored on the device
+*/
+fn change_password_internally(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str)
+	-> Result<String, SdkError>
 {
-	let encrypted_master_key = Base64::decode_vec(encrypted_master_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
-	let old_salt = Base64::decode_vec(old_salt).map_err(|_| SdkError::DecodeSaltFailed)?;
+	let server_output_prep_login: PrepareLoginSaltServerOutput = handle_server_response(server_output_prep_login)?;
+	let server_output_done_login: DoneLoginServerKeysOutput = handle_server_response(server_output_done_login)?;
+
+	let encrypted_master_key =
+		Base64::decode_vec(server_output_done_login.encrypted_master_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
 
 	let output = core_user::change_password(
 		old_pw,
 		new_pw,
 		&old_salt,
 		&encrypted_master_key,
-		derived_encryption_key_alg,
+		server_output_prep_login.derived_encryption_key_alg.as_str(),
 	)?;
 
 	//prepare for the server

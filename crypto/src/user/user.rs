@@ -123,22 +123,9 @@ pub fn done_login(
 	export_key_data(result)
 }
 
-pub fn change_password(
-	old_pw: &str,
-	new_pw: &str,
-	old_salt: &str,
-	encrypted_master_key: &str,
-	derived_encryption_key_alg: &str,
-) -> Result<String, String>
+pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, String>
 {
-	change_password_internally(
-		old_pw,
-		new_pw,
-		old_salt,
-		encrypted_master_key,
-		derived_encryption_key_alg,
-	)
-	.map_err(|e| err_to_msg(e))
+	change_password_internally(old_pw, new_pw, server_output_prep_login, server_output_done_login).map_err(|e| err_to_msg(e))
 }
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
@@ -200,12 +187,11 @@ mod test
 {
 	extern crate std;
 
-	use sentc_crypto_common::user::{ChangePasswordData, PrepareLoginSaltServerOutput, RegisterData};
+	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
 
 	use super::*;
 	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
 	use crate::util::PrivateKeyFormat;
-	use crate::util_pub::handle_server_response;
 
 	#[test]
 	fn test_register()
@@ -261,27 +247,30 @@ mod test
 
 		let out = register(username, password).unwrap();
 
-		let out = RegisterData::from_string(out.as_str()).unwrap();
+		let out_new = RegisterData::from_string(out.as_str()).unwrap();
+		let out_old = RegisterData::from_string(out.as_str()).unwrap();
 
-		let salt_from_rand_value = simulate_server_prepare_login(&out.derived);
-		let server_out: PrepareLoginSaltServerOutput = handle_server_response(salt_from_rand_value.as_str()).unwrap();
+		let prep_server_output = simulate_server_prepare_login(&out_new.derived);
+		let done_server_output = simulate_server_done_login(out_new);
 
 		let pw_change_out = change_password(
 			password,
 			new_password,
-			server_out.salt_string.as_str(),
-			out.master_key.encrypted_master_key.as_str(),
-			out.derived.derived_alg.as_str(),
+			prep_server_output.as_str(),
+			done_server_output.as_str(),
 		)
 		.unwrap();
 
 		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_str()).unwrap();
 
-		assert_ne!(pw_change_out.new_client_random_value, out.derived.client_random_value);
+		assert_ne!(
+			pw_change_out.new_client_random_value,
+			out_old.derived.client_random_value
+		);
 
 		assert_ne!(
 			pw_change_out.new_encrypted_master_key,
-			out.master_key.encrypted_master_key
+			out_old.master_key.encrypted_master_key
 		);
 	}
 }
