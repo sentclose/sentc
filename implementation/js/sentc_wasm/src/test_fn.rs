@@ -148,17 +148,15 @@ pub fn done_login_test(
 pub fn change_password_test(
 	old_password: &str,
 	new_password: &str,
-	old_salt: &str,
-	encrypted_master_key: &str,
-	derived_encryption_key_alg: &str,
+	server_output_prep_login: &str,
+	server_output_done_login: &str,
 ) -> Result<String, String>
 {
 	user::change_password(
 		old_password,
 		new_password,
-		old_salt,
-		encrypted_master_key,
-		derived_encryption_key_alg,
+		server_output_prep_login,
+		server_output_done_login,
 	)
 }
 
