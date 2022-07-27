@@ -17,14 +17,7 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
-use sentc_crypto_core::group::{
-	done_key_rotation as done_key_rotation_core,
-	get_group as get_group_core,
-	key_rotation as key_rotation_core,
-	prepare_create as prepare_create_core,
-	prepare_group_keys_for_new_member as prepare_group_keys_for_new_member_core,
-};
-use sentc_crypto_core::Pk;
+use sentc_crypto_core::{group as core_group, Pk};
 
 use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
@@ -61,7 +54,7 @@ pub struct DoneGettingGroupKeysOutput
 fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>) -> Result<String, SdkError>
 {
 	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
-	let out = prepare_create_core(&creators_public_key.key)?;
+	let out = core_group::prepare_create(&creators_public_key.key)?;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
@@ -88,7 +81,7 @@ fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_gr
 
 fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
 {
-	let out = key_rotation_core(&previous_group_key.key, &invoker_public_key.key)?;
+	let out = core_group::key_rotation(&previous_group_key.key, &invoker_public_key.key)?;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key_by_user = Base64::encode_string(&out.encrypted_group_key_by_user);
@@ -137,7 +130,7 @@ fn done_key_rotation_internally(
 	let encrypted_group_key_by_ephemeral =
 		Base64::decode_vec(server_output.encrypted_group_key_by_ephemeral.as_str()).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
 
-	let out = done_key_rotation_core(
+	let out = core_group::done_key_rotation(
 		&private_key.key,
 		&public_key.key,
 		&previous_group_key.key,
@@ -166,7 +159,7 @@ fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &
 	let encrypted_private_key =
 		Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
-	let (group_key, private_group_key) = get_group_core(
+	let (group_key, private_group_key) = core_group::get_group(
 		&private_key.key,
 		&encrypted_master_key,
 		&encrypted_private_key,
@@ -228,7 +221,7 @@ fn prepare_group_keys_for_new_member_internally_with_public_key(
 	}
 
 	//get all the group keys from the server and use get group for all (if not already on the device)
-	let out = prepare_group_keys_for_new_member_core(public_key, &split_group_keys)?;
+	let out = core_group::prepare_group_keys_for_new_member(public_key, &split_group_keys)?;
 
 	//transform this vec to the server input by encode each encrypted key to base64
 	let mut encrypted_group_keys: Vec<GroupKeysForNewMember> = Vec::with_capacity(out.len());
