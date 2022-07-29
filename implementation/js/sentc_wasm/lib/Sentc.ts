@@ -4,7 +4,7 @@
  */
 
 import init, {register, check_user_identifier_available, prepare_register, login, prepare_login_test, done_login_test} from "../pkg";
-import {USER_KEY_STORAGE_NAMES, UserData} from "./Enities";
+import {USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 
 export interface StaticOptions {
@@ -104,16 +104,13 @@ export class Sentc
 		return prepare_register(userIdentifier, password);
 	}
 
-	public async register(userIdentifier: string, password: string)
+	public register(userIdentifier: string, password: string): Promise<UserId> | false
 	{
 		if (userIdentifier === "" || password === "") {
 			return false;
 		}
 
-		const out = await register(this.options.base_url, this.options.app_token, userIdentifier, password);
-
-		//TODO handle register server output
-		const out_json = JSON.parse(out);
+		return register(this.options.base_url, this.options.app_token, userIdentifier, password);
 	}
 
 	public async login(userIdentifier: string, password: string)

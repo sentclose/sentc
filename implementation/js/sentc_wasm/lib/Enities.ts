@@ -1,3 +1,6 @@
+type GeneralIdFormat = string;
+export type UserId = GeneralIdFormat;
+
 export const enum USER_KEY_STORAGE_NAMES
 {
 	userData = "user_data",
