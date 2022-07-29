@@ -239,8 +239,10 @@ pub fn simulate_server_create_group(group_create_data: &str) -> String
 		group_id: "123".to_string(),
 		parent_group_id: None,
 		keys: vec![group_server_output],
-		keys_page: 0,
 		key_update: false,
+		rank: 0,
+		created_time: 0,
+		joined_time: 0,
 	};
 
 	let server_output = ServerOutput {

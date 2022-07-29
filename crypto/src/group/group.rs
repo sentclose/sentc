@@ -29,6 +29,9 @@ use crate::util::{
 use crate::util_pub::handle_server_response;
 use crate::{err_to_msg, SdkError};
 
+/**
+The decrypted and exported values
+*/
 #[derive(Serialize, Deserialize)]
 pub struct GroupKeyData
 {
@@ -37,10 +40,17 @@ pub struct GroupKeyData
 	pub group_key: String,
 }
 
+/**
+First fetch of the group data
+*/
 #[derive(Serialize, Deserialize)]
 pub struct GroupOutData
 {
-	pub group_id: String,
+	pub group_id: GroupId,
+	pub parent_group_id: GroupId,
+	pub rank: i32,
+	pub created_time: u128,
+	pub joined_time: u128,
 	pub keys: Vec<GroupKeyData>,
 }
 
@@ -118,6 +128,22 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 	})
 }
 
+pub fn get_group_keys_from_pagination(private_key: &str, server_output: &str) -> Result<Vec<GroupKeyData>, String>
+{
+	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output).map_err(|e| err_to_msg(e))?;
+	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+
+	let mut keys = Vec::with_capacity(server_output.len());
+
+	for key in server_output {
+		let value = get_group_keys(&private_key, &key).map_err(|e| err_to_msg(e))?;
+
+		keys.push(value);
+	}
+
+	Ok(keys)
+}
+
 pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, String>
 {
 	let server_output: GroupServerData = handle_server_response(server_output).map_err(|e| err_to_msg(e))?;
@@ -133,8 +159,17 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOut
 		keys.push(value);
 	}
 
+	let parent_group_id = match server_output.parent_group_id {
+		Some(v) => v,
+		None => String::from(""),
+	};
+
 	Ok(GroupOutData {
 		group_id: server_output.group_id,
+		parent_group_id,
+		rank: server_output.rank,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
 		keys,
 	})
 }
@@ -218,6 +253,33 @@ mod test
 	}
 
 	#[test]
+	fn test_get_group_data_and_keys()
+	{
+		let user = create_user();
+
+		let (data, group_server_out) = create_group(&user);
+
+		let keys = group_server_out.keys;
+
+		let server_key_out = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(keys),
+		};
+
+		let server_key_out = server_key_out.to_string().unwrap();
+
+		let group_keys_from_server_out = get_group_keys_from_pagination(user.private_key.as_str(), server_key_out.as_str()).unwrap();
+
+		//only one key
+		assert_eq!(
+			data.keys[0].group_key.to_string(),
+			group_keys_from_server_out[0].group_key.to_string()
+		);
+	}
+
+	#[test]
 	fn test_prepare_group_keys_for_new_member()
 	{
 		let user = create_user();
@@ -242,8 +304,10 @@ mod test
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output_user_0],
-			keys_page: 0,
 			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
 		};
 
 		let server_output = ServerOutput {
@@ -283,8 +347,10 @@ mod test
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output_user_1],
-			keys_page: 0,
 			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
 		};
 
 		let server_output = ServerOutput {

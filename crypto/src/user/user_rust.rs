@@ -75,12 +75,11 @@ mod test
 {
 	extern crate std;
 
-	use sentc_crypto_common::user::{ChangePasswordData, PrepareLoginSaltServerOutput, RegisterData};
+	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
 	use sentc_crypto_core::Sk;
 
 	use super::*;
 	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
-	use crate::util_pub::handle_server_response;
 
 	#[test]
 	fn test_register()

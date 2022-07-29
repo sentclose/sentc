@@ -32,6 +32,7 @@ mod group_rust;
 pub use self::group::{
 	done_key_rotation,
 	get_group_data,
+	get_group_keys_from_pagination,
 	key_rotation,
 	prepare_create,
 	prepare_group_keys_for_new_member,
@@ -40,7 +41,15 @@ pub use self::group::{
 	GroupOutData,
 };
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, get_group_data, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupOutData};
+pub use self::group_rust::{
+	done_key_rotation,
+	get_group_data,
+	get_group_keys_from_pagination,
+	key_rotation,
+	prepare_create,
+	prepare_group_keys_for_new_member,
+	GroupOutData,
+};
 #[cfg(feature = "rust")]
 pub use self::DoneGettingGroupKeysOutput as GroupKeyData;
 
@@ -282,8 +291,10 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
-			keys_page: 0,
 			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
 		};
 
 		//to avoid the clone trait on the real type
@@ -324,8 +335,10 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
-			keys_page: 0,
 			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
 		};
 
 		//to avoid the clone trait on the real type
