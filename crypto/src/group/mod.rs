@@ -282,8 +282,10 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
-			keys_page: 0,
 			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
 		};
 
 		//to avoid the clone trait on the real type
@@ -324,8 +326,10 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
-			keys_page: 0,
 			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
 		};
 
 		//to avoid the clone trait on the real type
