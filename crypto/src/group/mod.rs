@@ -32,6 +32,7 @@ mod group_rust;
 pub use self::group::{
 	done_key_rotation,
 	get_group_data,
+	get_group_keys_from_pagination,
 	key_rotation,
 	prepare_create,
 	prepare_group_keys_for_new_member,
@@ -40,7 +41,15 @@ pub use self::group::{
 	GroupOutData,
 };
 #[cfg(feature = "rust")]
-pub use self::group_rust::{done_key_rotation, get_group_data, key_rotation, prepare_create, prepare_group_keys_for_new_member, GroupOutData};
+pub use self::group_rust::{
+	done_key_rotation,
+	get_group_data,
+	get_group_keys_from_pagination,
+	key_rotation,
+	prepare_create,
+	prepare_group_keys_for_new_member,
+	GroupOutData,
+};
 #[cfg(feature = "rust")]
 pub use self::DoneGettingGroupKeysOutput as GroupKeyData;
 

@@ -11,6 +11,7 @@ use crate::group::{
 	key_rotation_internally,
 	prepare_create_internally,
 	prepare_group_keys_for_new_member_internally,
+	DoneGettingGroupKeysOutput,
 	GroupKeyData,
 };
 use crate::util::{PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
@@ -20,7 +21,11 @@ use crate::SdkError;
 pub struct GroupOutData
 {
 	pub keys: Vec<GroupKeyData>,
-	pub group_id: String,
+	pub parent_group_id: Option<GroupId>,
+	pub created_time: u128,
+	pub joined_time: u128,
+	pub rank: i32,
+	pub group_id: GroupId,
 }
 
 pub fn prepare_create(creators_public_key: &PublicKeyFormat, parent_group_id: Option<GroupId>) -> Result<String, SdkError>
@@ -48,6 +53,19 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 	get_group_keys_internally(private_key, server_output)
 }
 
+pub fn get_group_keys_from_pagination(private_key: &PrivateKeyFormat, server_output: &str) -> Result<Vec<DoneGettingGroupKeysOutput>, SdkError>
+{
+	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
+
+	let mut keys = Vec::with_capacity(server_output.len());
+
+	for key in &server_output {
+		keys.push(get_group_keys(private_key, key)?);
+	}
+
+	Ok(keys)
+}
+
 pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &str) -> Result<GroupOutData, SdkError>
 {
 	let server_output: GroupServerData = handle_server_response(server_output)?;
@@ -60,6 +78,10 @@ pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &str) -> Re
 
 	Ok(GroupOutData {
 		keys,
+		parent_group_id: server_output.parent_group_id,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
+		rank: server_output.rank,
 		group_id: server_output.group_id.clone(),
 	})
 }
@@ -107,6 +129,36 @@ mod test
 		let (data, _) = create_group(&user);
 
 		assert_eq!(data.group_id, "123".to_string());
+	}
+
+	#[test]
+	fn test_get_group_data_and_keys()
+	{
+		let user = create_user();
+
+		let (data, group_server_out) = create_group(&user);
+
+		let keys = group_server_out.keys;
+
+		let server_key_out = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(keys),
+		};
+
+		let server_key_out = server_key_out.to_string().unwrap();
+
+		let group_keys_from_server_out = get_group_keys_from_pagination(&user.private_key, server_key_out.as_str()).unwrap();
+
+		match (
+			&data.keys[0].group_key.key,
+			&group_keys_from_server_out[0].group_key.key,
+		) {
+			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
+				assert_eq!(*k1, *k2);
+			},
+		}
 	}
 
 	#[test]
