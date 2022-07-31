@@ -9,6 +9,8 @@ pub mod test_fn;
 pub mod user;
 mod util;
 pub mod util_pub;
+#[cfg(feature = "server")]
+pub mod util_server;
 
 pub use self::error::{err_to_msg, SdkError};
 pub use self::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
