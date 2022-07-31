@@ -418,7 +418,9 @@ mod test
 			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
 			encrypted_group_key_by_ephemeral: rotation_out.encrypted_group_key_by_ephemeral.to_string(),
 			ephemeral_alg: rotation_out.ephemeral_alg.to_string(),
+			encrypted_eph_key_key_id: "".to_string(),
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
+			time: 0,
 		};
 
 		let done_key_rotation = done_key_rotation(
