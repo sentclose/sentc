@@ -16,6 +16,7 @@ pub enum SdkError
 	DecodeAuthKey,
 	DecodeEncryptedDataFailed,
 	DecodePublicKeyFailed,
+	DecodeSymKeyFailed,
 
 	ImportingSignKeyFailed,
 	ImportingPrivateKeyFailed,
