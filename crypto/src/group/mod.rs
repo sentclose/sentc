@@ -17,7 +17,7 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
-use sentc_crypto_core::{group as core_group, Pk};
+use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
 use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
@@ -150,9 +150,12 @@ fn done_key_rotation_internally(
 
 	let encrypted_new_group_key = Base64::encode_string(&out);
 
+	let encrypted_alg = getting_alg_from_public_key(&public_key.key).to_string();
+
 	let done_rotation_out = DoneKeyRotationData {
 		encrypted_new_group_key,
 		public_key_id: public_key.key_id.clone(),
+		encrypted_alg,
 	};
 
 	Ok(done_rotation_out
