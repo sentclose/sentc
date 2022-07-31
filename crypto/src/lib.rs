@@ -5,6 +5,7 @@ extern crate alloc;
 pub mod crypto;
 mod error;
 pub mod group;
+#[cfg(feature = "server")]
 pub mod test_fn;
 pub mod user;
 mod util;
