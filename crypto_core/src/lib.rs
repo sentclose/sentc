@@ -29,7 +29,7 @@ use rand_core::{CryptoRng, OsRng, RngCore};
 
 pub use self::alg::asym::ecies::ECIES_OUTPUT;
 pub(crate) use self::alg::asym::AsymKeyOutput;
-pub use self::alg::asym::{Pk, Sk};
+pub use self::alg::asym::{getting_alg_from_private_key, getting_alg_from_public_key, Pk, Sk};
 pub use self::alg::pw_hash::argon2::ARGON_2_OUTPUT;
 pub use self::alg::pw_hash::{
 	ClientRandomValue,
@@ -44,9 +44,9 @@ pub use self::alg::pw_hash::{
 };
 pub use self::alg::sign::ed25519::ED25519_OUTPUT;
 pub(crate) use self::alg::sign::SignOutput;
-pub use self::alg::sign::{SignK, VerifyK};
+pub use self::alg::sign::{get_alg_from_sign_key, get_alg_from_verify_key, SignK, VerifyK};
 pub use self::alg::sym::aes_gcm::AES_GCM_OUTPUT;
-pub use self::alg::sym::{SymKey, SymKeyOutput};
+pub use self::alg::sym::{getting_alg_from_sym_key, SymKey, SymKeyOutput};
 pub use self::error::Error;
 
 pub fn generate_salt(client_random_value: ClientRandomValue, add_str: &str) -> Vec<u8>

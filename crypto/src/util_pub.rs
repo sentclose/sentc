@@ -2,6 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
 use sentc_crypto_core::{generate_salt, hash_auth_key};
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
@@ -32,6 +33,16 @@ pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de st
 		Some(r) => Ok(r),
 		None => Err(SdkError::JsonParseFailed),
 	}
+}
+
+/**
+Getting the result of a simple server response.
+*/
+pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
+{
+	handle_server_response::<ServerSuccessOutput>(res)?;
+
+	Ok(())
 }
 
 pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Result<Vec<u8>, SdkError>
