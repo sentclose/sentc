@@ -11,7 +11,7 @@ crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 # own crypto lib
-sentc-crypto = {version = "0.1.0", path = "../../../../crypto" }
+sentc-crypto = {version = "0.1.0", path = "../../../../crypto", features = ["server"] }
 
 # flutter ffi
 flutter_rust_bridge = "1"
