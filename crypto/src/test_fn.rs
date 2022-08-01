@@ -233,6 +233,7 @@ pub fn simulate_server_create_group(group_create_data: &str) -> String
 		keypair_encrypt_alg: group_create_data.keypair_encrypt_alg,
 		key_pair_id: "123".to_string(),
 		user_public_key_id: "123".to_string(),
+		time: 0,
 	};
 
 	let group_server_output = GroupServerData {

@@ -58,6 +58,7 @@ pub struct DoneGettingGroupKeysOutput
 	pub group_key: SymKeyFormatInt,
 	pub private_group_key: PrivateKeyFormatInt,
 	pub public_group_key: PublicKeyFormatInt,
+	pub time: u128,
 }
 
 fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>) -> Result<String, SdkError>
@@ -197,6 +198,7 @@ fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &
 			key_id: server_output.key_pair_id.clone(),
 			key: public_group_key,
 		},
+		time: server_output.time,
 	})
 }
 
@@ -289,6 +291,7 @@ pub(crate) mod test_fn
 			keypair_encrypt_alg: group.keypair_encrypt_alg,
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
+			time: 0,
 		};
 
 		let group_server_output = GroupServerData {
@@ -333,6 +336,7 @@ pub(crate) mod test_fn
 			keypair_encrypt_alg: group.keypair_encrypt_alg,
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
+			time: 0,
 		};
 
 		let group_server_output = GroupServerData {
