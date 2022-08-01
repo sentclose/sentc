@@ -421,6 +421,7 @@ mod test
 			encrypted_eph_key_key_id: "".to_string(),
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 			time: 0,
+			new_group_key_id: "abc".to_string(),
 		};
 
 		let done_key_rotation = done_key_rotation(
