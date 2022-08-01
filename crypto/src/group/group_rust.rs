@@ -11,7 +11,6 @@ use crate::group::{
 	key_rotation_internally,
 	prepare_create_internally,
 	prepare_group_keys_for_new_member_internally,
-	DoneGettingGroupKeysOutput,
 	GroupKeyData,
 };
 use crate::util::{PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
@@ -54,7 +53,7 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 	get_group_keys_internally(private_key, server_output)
 }
 
-pub fn get_group_keys_from_pagination(private_key: &PrivateKeyFormat, server_output: &str) -> Result<Vec<DoneGettingGroupKeysOutput>, SdkError>
+pub fn get_group_keys_from_pagination(private_key: &PrivateKeyFormat, server_output: &str) -> Result<Vec<GroupKeyData>, SdkError>
 {
 	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
 
@@ -181,6 +180,7 @@ mod test
 			keypair_encrypt_alg: group_create.keypair_encrypt_alg.to_string(),
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
+			time: 0,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -216,6 +216,7 @@ mod test
 			keypair_encrypt_alg: group_create.keypair_encrypt_alg,
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
+			time: 0,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -272,6 +273,7 @@ mod test
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: user.public_key.key_id.to_string(),
+			time: 0,
 		};
 
 		let new_group_key_direct = get_group_keys(&user.private_key, &server_key_output_direct).unwrap();
@@ -309,6 +311,7 @@ mod test
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: done_key_rotation.public_key_id.to_string(),
+			time: 0,
 		};
 
 		let out = get_group_keys(&user.private_key, &server_key_output).unwrap();

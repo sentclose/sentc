@@ -38,6 +38,7 @@ pub struct GroupKeyData
 	pub private_group_key: String,
 	pub public_group_key: String,
 	pub group_key: String,
+	pub time: u128,
 }
 
 /**
@@ -126,6 +127,7 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 		private_group_key,
 		public_group_key,
 		group_key,
+		time: result.time,
 	})
 }
 
@@ -300,6 +302,7 @@ mod test
 			keypair_encrypt_alg: group_create.keypair_encrypt_alg.to_string(),
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
+			time: 0,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -343,6 +346,7 @@ mod test
 			keypair_encrypt_alg: group_create.keypair_encrypt_alg,
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
+			time: 0,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -400,6 +404,7 @@ mod test
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: "abc".to_string(),
+			time: 0,
 		};
 
 		let new_group_key_direct = get_group_keys(
@@ -445,6 +450,7 @@ mod test
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: done_key_rotation.public_key_id.to_string(),
+			time: 0,
 		};
 
 		let out = get_group_keys(
