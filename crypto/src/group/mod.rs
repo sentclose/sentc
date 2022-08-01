@@ -249,6 +249,7 @@ fn prepare_group_keys_for_new_member_internally_with_public_key(
 			alg: key_out.alg.to_string(),
 			user_public_key_id: public_key_id.to_string(),
 			key_id, //support multiple groups at once (important for user key update)
+			encrypted_alg: key_out.encrypted_group_key_alg.to_string(),
 		});
 
 		i += 1;
