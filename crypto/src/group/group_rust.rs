@@ -22,6 +22,7 @@ pub struct GroupOutData
 {
 	pub keys: Vec<GroupKeyData>,
 	pub parent_group_id: Option<GroupId>,
+	pub key_update: bool,
 	pub created_time: u128,
 	pub joined_time: u128,
 	pub rank: i32,
@@ -78,6 +79,7 @@ pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &str) -> Re
 
 	Ok(GroupOutData {
 		keys,
+		key_update: server_output.key_update,
 		parent_group_id: server_output.parent_group_id,
 		created_time: server_output.created_time,
 		joined_time: server_output.joined_time,
