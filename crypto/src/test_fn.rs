@@ -294,7 +294,7 @@ mod test
 	{
 		let user = create_user();
 
-		let group = prepare_create(user.public_key.as_str(), None).unwrap();
+		let group = prepare_create(user.public_key.as_str()).unwrap();
 
 		let server_out = simulate_server_create_group(group.as_str());
 

@@ -16,7 +16,6 @@ use sentc_crypto_common::group::{
 	KeyRotationInput,
 };
 use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::GroupId;
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
 use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
@@ -63,7 +62,12 @@ pub struct DoneGettingGroupKeysOutput
 	pub time: u128,
 }
 
-fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>) -> Result<String, SdkError>
+/**
+Prepare the server input for the group creation.
+
+Use the public key of the group for creating a child group.
+*/
+fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
 {
 	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
 	let out = core_group::prepare_create(&creators_public_key.key)?;
@@ -83,7 +87,6 @@ fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt, parent_gr
 		group_key_alg: out.group_key_alg.to_string(),
 		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
 		creator_public_key_id: creators_public_key.key_id.clone(),
-		parent_group_id,
 	};
 
 	Ok(create_out
@@ -309,7 +312,7 @@ pub(crate) mod test_fn
 	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
 	{
 		#[cfg(feature = "rust")]
-		let group = prepare_create(&user.public_key, None).unwrap();
+		let group = prepare_create(&user.public_key).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
@@ -354,7 +357,7 @@ pub(crate) mod test_fn
 	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
 	{
 		#[cfg(not(feature = "rust"))]
-		let group = prepare_create(user.public_key.as_str(), None).unwrap();
+		let group = prepare_create(user.public_key.as_str()).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
