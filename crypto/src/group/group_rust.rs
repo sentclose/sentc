@@ -11,6 +11,7 @@ use crate::group::{
 	key_rotation_internally,
 	prepare_create_internally,
 	prepare_group_keys_for_new_member_internally,
+	prepare_group_keys_for_new_member_via_session_internally,
 	GroupKeyData,
 };
 use crate::util::{PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
@@ -96,6 +97,14 @@ pub fn prepare_group_keys_for_new_member(
 	prepare_group_keys_for_new_member_internally(requester_public_key_data, group_keys, key_session)
 }
 
+pub fn prepare_group_keys_for_new_member_via_session(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormat],
+) -> Result<String, SdkError>
+{
+	prepare_group_keys_for_new_member_via_session_internally(requester_public_key_data, group_keys)
+}
+
 #[cfg(test)]
 mod test
 {
@@ -103,7 +112,7 @@ mod test
 	use alloc::vec;
 
 	use base64ct::{Base64, Encoding};
-	use sentc_crypto_common::group::{CreateData, DoneKeyRotationData, GroupKeysForNewMemberServerInput, KeyRotationData};
+	use sentc_crypto_common::group::{CreateData, DoneKeyRotationData, GroupKeysForNewMember, GroupKeysForNewMemberServerInput, KeyRotationData};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::crypto::encrypt_asymmetric as encrypt_asymmetric_core;
 	use sentc_crypto_core::SymKey;
@@ -215,6 +224,101 @@ mod test
 		.unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.keys[0]; //this group only got one key
+
+		let group_server_output_user_1 = GroupKeyServerOutput {
+			encrypted_group_key: out_group_1.encrypted_group_key.to_string(),
+			group_key_alg: out_group_1.alg.to_string(),
+			group_key_id: out_group_1.key_id.to_string(),
+			encrypted_private_group_key: group_create.encrypted_private_group_key,
+			public_group_key: group_create.public_group_key,
+			keypair_encrypt_alg: group_create.keypair_encrypt_alg,
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+			time: 0,
+		};
+
+		let group_server_output_user_1 = GroupServerData {
+			group_id: "123".to_string(),
+			parent_group_id: None,
+			keys: vec![group_server_output_user_1],
+			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
+		};
+
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output_user_1),
+		};
+
+		let group_data_user_1 = get_group_data(&user1.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+
+		assert_eq!(
+			group_data_user_0.keys[0].group_key.key_id,
+			group_data_user_1.keys[0].group_key.key_id
+		);
+
+		match (
+			&group_data_user_0.keys[0].group_key.key,
+			&group_data_user_1.keys[0].group_key.key,
+		) {
+			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
+				assert_eq!(*k0, *k1);
+			},
+		}
+	}
+
+	/**
+	The same test as before but this time with prepare_group_keys_for_new_member_via_session
+	*/
+	#[test]
+	fn test_prepare_group_keys_for_new_member_via_session()
+	{
+		let user = create_user();
+		let user1 = create_user();
+
+		let group_create = prepare_create(&user.public_key, None).unwrap();
+		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
+
+		let group_server_output_user_0 = GroupKeyServerOutput {
+			encrypted_group_key: group_create.encrypted_group_key.to_string(),
+			group_key_alg: group_create.group_key_alg.to_string(),
+			group_key_id: "123".to_string(),
+			encrypted_private_group_key: group_create.encrypted_private_group_key.to_string(),
+			public_group_key: group_create.public_group_key.to_string(),
+			keypair_encrypt_alg: group_create.keypair_encrypt_alg.to_string(),
+			key_pair_id: "123".to_string(),
+			user_public_key_id: "123".to_string(),
+			time: 0,
+		};
+
+		let group_server_output_user_0 = GroupServerData {
+			group_id: "123".to_string(),
+			parent_group_id: None,
+			keys: vec![group_server_output_user_0],
+			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
+		};
+
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(group_server_output_user_0),
+		};
+
+		let group_data_user_0 = get_group_data(&user.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+
+		//prepare the keys for user 1
+		let out = prepare_group_keys_for_new_member_via_session(&user1.exported_public_key, &[&group_data_user_0.keys[0].group_key]).unwrap();
+
+		let out: Vec<GroupKeysForNewMember> = serde_json::from_str(out.as_str()).unwrap();
+		let out_group_1 = &out[0]; //this group only got one key
 
 		let group_server_output_user_1 = GroupKeyServerOutput {
 			encrypted_group_key: out_group_1.encrypted_group_key.to_string(),
