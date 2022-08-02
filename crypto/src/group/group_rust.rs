@@ -87,9 +87,13 @@ pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &str) -> Re
 	})
 }
 
-pub fn prepare_group_keys_for_new_member(requester_public_key_data: &UserPublicKeyData, group_keys: &[&SymKeyFormat]) -> Result<String, SdkError>
+pub fn prepare_group_keys_for_new_member(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormat],
+	key_session: bool,
+) -> Result<String, SdkError>
 {
-	prepare_group_keys_for_new_member_internally(requester_public_key_data, group_keys)
+	prepare_group_keys_for_new_member_internally(requester_public_key_data, group_keys, key_session)
 }
 
 #[cfg(test)]
@@ -203,9 +207,14 @@ mod test
 		let group_data_user_0 = get_group_data(&user.private_key, server_output.to_string().unwrap().as_str()).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(&user1.exported_public_key, &[&group_data_user_0.keys[0].group_key]).unwrap();
+		let out = prepare_group_keys_for_new_member(
+			&user1.exported_public_key,
+			&[&group_data_user_0.keys[0].group_key],
+			false,
+		)
+		.unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
-		let out_group_1 = &out.0[0]; //this group only got one key
+		let out_group_1 = &out.keys[0]; //this group only got one key
 
 		let group_server_output_user_1 = GroupKeyServerOutput {
 			encrypted_group_key: out_group_1.encrypted_group_key.to_string(),

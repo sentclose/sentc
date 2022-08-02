@@ -19,6 +19,6 @@ serde = { version = "1.0", default-features = false, features = ["derive", "allo
 
 [features]
 default = ["serde_json"]
+rust = []
 server = []
 server_test = []
-rust = []

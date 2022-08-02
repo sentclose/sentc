@@ -178,7 +178,7 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOut
 	})
 }
 
-pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
+pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str, key_session: bool) -> Result<String, String>
 {
 	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
@@ -197,7 +197,7 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	prepare_group_keys_for_new_member_internally(&requester_public_key_data, &split_group_keys).map_err(|e| err_to_msg(e))
+	prepare_group_keys_for_new_member_internally(&requester_public_key_data, &split_group_keys, key_session).map_err(|e| err_to_msg(e))
 }
 
 fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>) -> Vec<&SymKeyFormatInt>
@@ -332,10 +332,11 @@ mod test
 		let out = prepare_group_keys_for_new_member(
 			user1.exported_public_key.as_str(),
 			group_keys.to_string().unwrap().as_str(),
+			false,
 		)
 		.unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
-		let out_group_1 = &out.0[0]; //this group only got one key
+		let out_group_1 = &out.keys[0]; //this group only got one key
 
 		let group_server_output_user_1 = GroupKeyServerOutput {
 			encrypted_group_key: out_group_1.encrypted_group_key.to_string(),

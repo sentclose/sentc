@@ -24,5 +24,6 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 #[wasm_bindgen]
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
 {
-	group::prepare_group_keys_for_new_member(requester_public_key_data, group_keys)
+	//TODO get this from the js sdk
+	group::prepare_group_keys_for_new_member(requester_public_key_data, group_keys, false)
 }
