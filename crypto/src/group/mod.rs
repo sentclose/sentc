@@ -36,6 +36,7 @@ pub use self::group::{
 	key_rotation,
 	prepare_create,
 	prepare_group_keys_for_new_member,
+	prepare_group_keys_for_new_member_via_session,
 	GroupKeyData,
 	GroupKeys,
 	GroupOutData,
@@ -48,6 +49,7 @@ pub use self::group_rust::{
 	key_rotation,
 	prepare_create,
 	prepare_group_keys_for_new_member,
+	prepare_group_keys_for_new_member_via_session,
 	GroupOutData,
 };
 #[cfg(feature = "rust")]
@@ -205,6 +207,7 @@ fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &
 fn prepare_group_keys_for_new_member_internally(
 	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormatInt],
+	key_session: bool, //this value must be set form each sdk impl from key storage when more than 100 keys are used
 ) -> Result<String, SdkError>
 {
 	let public_key = import_public_key_from_pem_with_alg(
@@ -212,18 +215,49 @@ fn prepare_group_keys_for_new_member_internally(
 		requester_public_key_data.public_key_alg.as_str(),
 	)?;
 
-	prepare_group_keys_for_new_member_internally_with_public_key(
+	let keys = prepare_group_keys_for_new_member_internally_with_public_key(
 		&public_key,
 		requester_public_key_data.public_key_id.as_str(),
 		group_keys,
-	)
+	)?;
+
+	let server_input = GroupKeysForNewMemberServerInput {
+		keys,
+		key_session,
+	};
+
+	Ok(server_input
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)?)
+}
+
+/**
+When there are mor than 100 keys used in this group, upload the rest of the keys via a session
+*/
+fn prepare_group_keys_for_new_member_via_session_internally(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormatInt],
+) -> Result<String, SdkError>
+{
+	let public_key = import_public_key_from_pem_with_alg(
+		requester_public_key_data.public_key_pem.as_str(),
+		requester_public_key_data.public_key_alg.as_str(),
+	)?;
+
+	let keys = prepare_group_keys_for_new_member_internally_with_public_key(
+		&public_key,
+		requester_public_key_data.public_key_id.as_str(),
+		group_keys,
+	)?;
+
+	Ok(serde_json::to_string(&keys).map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
 fn prepare_group_keys_for_new_member_internally_with_public_key(
 	public_key: &Pk,
 	public_key_id: &str,
 	group_keys: &[&SymKeyFormatInt],
-) -> Result<String, SdkError>
+) -> Result<Vec<GroupKeysForNewMember>, SdkError>
 {
 	//split group keys and their ids
 	let mut split_group_keys = Vec::with_capacity(group_keys.len());
@@ -257,11 +291,7 @@ fn prepare_group_keys_for_new_member_internally_with_public_key(
 		i += 1;
 	}
 
-	let server_input = GroupKeysForNewMemberServerInput(encrypted_group_keys);
-
-	Ok(server_input
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+	Ok(encrypted_group_keys)
 }
 
 #[cfg(test)]
