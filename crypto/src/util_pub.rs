@@ -1,3 +1,5 @@
+#[cfg(not(feature = "rust"))]
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::server_default::ServerSuccessOutput;
@@ -6,6 +8,8 @@ use sentc_crypto_core::generate_salt;
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(feature = "rust"))]
+use crate::err_to_msg;
 use crate::error::SdkError;
 use crate::util::client_random_value_from_string;
 
@@ -36,9 +40,18 @@ pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de st
 /**
 Getting the result of a simple server response.
 */
+#[cfg(feature = "rust")]
 pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
 {
 	handle_server_response::<ServerSuccessOutput>(res)?;
+
+	Ok(())
+}
+
+#[cfg(not(feature = "rust"))]
+pub fn handle_general_server_response(res: &str) -> Result<(), String>
+{
+	handle_server_response::<ServerSuccessOutput>(res).map_err(|e| err_to_msg(e))?;
 
 	Ok(())
 }
