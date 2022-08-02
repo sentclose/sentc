@@ -86,11 +86,11 @@ impl GroupKeys
 	}
 }
 
-pub fn prepare_create(creators_public_key: &str, parent_group_id: Option<GroupId>) -> Result<String, String>
+pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 {
 	let creators_public_key = import_public_key(creators_public_key).map_err(|e| err_to_msg(e))?;
 
-	prepare_create_internally(&creators_public_key, parent_group_id).map_err(|e| err_to_msg(e))
+	prepare_create_internally(&creators_public_key).map_err(|e| err_to_msg(e))
 }
 
 pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> Result<String, String>
@@ -259,7 +259,7 @@ mod test
 		//create a rust dummy user
 		let user = create_user();
 
-		let group = prepare_create(&user.public_key.as_str(), None).unwrap();
+		let group = prepare_create(&user.public_key.as_str()).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let pk = import_public_key(user.public_key.as_str()).unwrap();
@@ -313,7 +313,7 @@ mod test
 
 		let user1 = create_user();
 
-		let group_create = prepare_create(user.public_key.as_str(), None).unwrap();
+		let group_create = prepare_create(user.public_key.as_str()).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -415,7 +415,7 @@ mod test
 
 		let user1 = create_user();
 
-		let group_create = prepare_create(user.public_key.as_str(), None).unwrap();
+		let group_create = prepare_create(user.public_key.as_str()).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
