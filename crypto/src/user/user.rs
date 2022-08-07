@@ -170,6 +170,7 @@ fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 		sign_key,
 		verify_key,
 		jwt: key_data.jwt,
+		refresh_token: key_data.refresh_token,
 		user_id: key_data.user_id,
 		exported_public_key: key_data
 			.exported_public_key

@@ -261,6 +261,7 @@ fn done_login_internally_with_server_out(
 
 	Ok(KeyDataInt {
 		jwt: server_output.jwt.to_string(),
+		refresh_token: server_output.refresh_token.to_string(),
 		user_id: server_output.user_id.to_string(),
 		private_key: PrivateKeyFormatInt {
 			key_id: server_output.keypair_encrypt_id.clone(),
@@ -467,6 +468,7 @@ pub(crate) mod test_fn
 			keypair_sign_id: "dfg".to_string(),
 			jwt: "jwt".to_string(),
 			user_id: "abc".to_string(),
+			refresh_token: "abc".to_string(),
 		};
 
 		ServerOutput {
