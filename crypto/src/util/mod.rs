@@ -1,3 +1,4 @@
+pub mod public;
 #[cfg(feature = "server")]
 pub mod server;
 #[cfg(not(feature = "rust"))]

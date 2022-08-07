@@ -40,7 +40,7 @@ pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de st
 
 /**
 Getting the result of a simple server response.
-*/
+ */
 #[cfg(feature = "rust")]
 pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
 {

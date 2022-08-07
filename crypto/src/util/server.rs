@@ -3,8 +3,8 @@ use alloc::string::String;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_core::{crypto as crypto_core, hash_auth_key, HashedAuthenticationKey};
 
+use crate::util::public::generate_salt_from_base64;
 use crate::util::{derive_auth_key_from_base64, hashed_authentication_key_from_base64, import_public_key_from_pem_with_alg};
-use crate::util_pub::generate_salt_from_base64;
 use crate::SdkError;
 
 /**

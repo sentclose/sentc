@@ -9,7 +9,6 @@ pub mod group;
 pub mod test_fn;
 pub mod user;
 pub mod util;
-pub mod util_pub;
 
 /**
 For server testing export every common
