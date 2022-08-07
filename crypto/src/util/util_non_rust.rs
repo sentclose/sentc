@@ -110,6 +110,7 @@ pub struct KeyData
 	pub sign_key: String,
 	pub verify_key: String,
 	pub jwt: String,
+	pub refresh_token: String,
 	pub user_id: UserId,
 	pub exported_public_key: String,
 	pub exported_verify_key: String,

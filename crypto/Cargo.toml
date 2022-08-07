@@ -20,5 +20,6 @@ serde = { version = "1.0", default-features = false, features = ["derive", "allo
 [features]
 default = []
 rust = []
+
 server = []
 server_test = []

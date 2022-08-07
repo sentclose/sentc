@@ -97,6 +97,7 @@ pub struct KeyDataInt
 	pub public_key: PublicKeyFormatInt,
 	pub verify_key: VerifyKeyFormatInt,
 	pub jwt: String,
+	pub refresh_token: String,
 	pub user_id: UserId,
 	pub exported_public_key: UserPublicKeyData,
 	pub exported_verify_key: UserVerifyKeyData,

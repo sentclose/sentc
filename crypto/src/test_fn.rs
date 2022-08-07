@@ -63,6 +63,7 @@ pub fn register_test_full() -> String
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
 		jwt: "jwt".to_string(),
+		refresh_token: "abc".to_string(),
 		user_id: "abc".to_string(),
 	};
 
@@ -134,6 +135,7 @@ pub fn register_test_full() -> String
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
 		jwt: "jwt".to_string(),
+		refresh_token: "abc".to_string(),
 		user_id: "abc".to_string(),
 	};
 
@@ -206,6 +208,7 @@ pub fn simulate_server_done_login(register_data: &str) -> String
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "dfg".to_string(),
 		jwt: "jwt".to_string(),
+		refresh_token: "abc".to_string(),
 		user_id: "abc".to_string(),
 	};
 
