@@ -1,3 +1,5 @@
+#[cfg(feature = "server")]
+pub mod server;
 #[cfg(not(feature = "rust"))]
 mod util_non_rust;
 

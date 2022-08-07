@@ -424,8 +424,8 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
+	use crate::util::server::generate_salt_from_base64_to_string;
 	use crate::util::KeyData;
-	use crate::util_server::generate_salt_from_base64_to_string;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
