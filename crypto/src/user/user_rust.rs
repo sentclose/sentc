@@ -13,6 +13,7 @@ use crate::user::{
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
+	prepare_refresh_jwt_internally,
 	prepare_update_user_keys_internally,
 	register_internally,
 	reset_password_internally,
@@ -58,6 +59,11 @@ pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output:
 pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, SdkError>
 {
 	change_password_internally(old_pw, new_pw, server_output_prep_login, server_output_done_login)
+}
+
+pub fn prepare_refresh_jwt(refresh_token: &str) -> Result<String, SdkError>
+{
+	prepare_refresh_jwt_internally(refresh_token)
 }
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, SdkError>

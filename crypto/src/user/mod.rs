@@ -13,6 +13,7 @@ use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
+	JwtRefreshInput,
 	KeyDerivedData,
 	MasterKey,
 	MultipleLoginServerOutput,
@@ -62,6 +63,7 @@ pub use self::user::{
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
+	prepare_refresh_jwt,
 	prepare_update_user_keys,
 	register,
 	reset_password,
@@ -77,6 +79,7 @@ pub use self::user_rust::{
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
+	prepare_refresh_jwt,
 	prepare_update_user_keys,
 	register,
 	reset_password,
@@ -282,6 +285,15 @@ fn done_login_internally_with_server_out(
 		exported_public_key,
 		exported_verify_key,
 	})
+}
+
+fn prepare_refresh_jwt_internally(refresh_token: &str) -> Result<String, SdkError>
+{
+	JwtRefreshInput {
+		refresh_token: refresh_token.to_string(),
+	}
+	.to_string()
+	.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 /**
