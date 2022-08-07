@@ -29,6 +29,7 @@ use sentc_crypto_common::user::{
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth};
 
+use crate::util::public::{generate_salt_from_base64, handle_server_response};
 use crate::util::{
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
@@ -43,7 +44,6 @@ use crate::util::{
 	SignKeyFormatInt,
 	VerifyKeyFormatInt,
 };
-use crate::util_pub::{generate_salt_from_base64, handle_server_response};
 use crate::SdkError;
 
 #[cfg(feature = "rust")]
@@ -424,8 +424,8 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
+	use crate::util::server::generate_salt_from_base64_to_string;
 	use crate::util::KeyData;
-	use crate::util_server::generate_salt_from_base64_to_string;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{

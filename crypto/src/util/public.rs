@@ -40,7 +40,7 @@ pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de st
 
 /**
 Getting the result of a simple server response.
-*/
+ */
 #[cfg(feature = "rust")]
 pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
 {
@@ -108,4 +108,39 @@ pub fn import_verify_key_from_string_into_format(verify_key: &str) -> Result<Use
 	};
 
 	Ok(verify_key)
+}
+
+#[cfg(not(feature = "rust"))]
+pub fn import_public_data_from_string_into_export_string(public_data: &str) -> Result<(String, String), String>
+{
+	let (public_key, verify_key) = import_public_data_from_string_into_format(public_data).map_err(|e| err_to_msg(e))?;
+
+	Ok((
+		public_key
+			.to_string()
+			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+		verify_key
+			.to_string()
+			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+	))
+}
+
+#[cfg(not(feature = "rust"))]
+pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<String, String>
+{
+	let public_key = import_public_key_from_string_into_format(public_key).map_err(|e| err_to_msg(e))?;
+
+	Ok(public_key
+		.to_string()
+		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?)
+}
+
+#[cfg(not(feature = "rust"))]
+pub fn import_verify_key_from_string_into_export_string(verify_key: &str) -> Result<String, String>
+{
+	let public_key = import_verify_key_from_string_into_format(verify_key).map_err(|e| err_to_msg(e))?;
+
+	Ok(public_key
+		.to_string()
+		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?)
 }

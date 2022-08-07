@@ -8,10 +8,7 @@ pub mod group;
 #[cfg(feature = "server")]
 pub mod test_fn;
 pub mod user;
-mod util;
-pub mod util_pub;
-#[cfg(feature = "server")]
-pub mod util_server;
+pub mod util;
 
 /**
 For server testing export every common

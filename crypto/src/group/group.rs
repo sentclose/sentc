@@ -15,6 +15,7 @@ use crate::group::{
 	prepare_group_keys_for_new_member_internally,
 	prepare_group_keys_for_new_member_via_session_internally,
 };
+use crate::util::public::handle_server_response;
 use crate::util::{
 	export_private_key_to_string,
 	export_public_key_to_string,
@@ -27,7 +28,6 @@ use crate::util::{
 	SymKeyFormat,
 	SymKeyFormatInt,
 };
-use crate::util_pub::handle_server_response;
 use crate::{err_to_msg, SdkError};
 
 /**

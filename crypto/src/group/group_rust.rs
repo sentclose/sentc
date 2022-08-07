@@ -14,8 +14,8 @@ use crate::group::{
 	prepare_group_keys_for_new_member_via_session_internally,
 	GroupKeyData,
 };
+use crate::util::public::handle_server_response;
 use crate::util::{PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
-use crate::util_pub::handle_server_response;
 use crate::SdkError;
 
 pub struct GroupOutData
