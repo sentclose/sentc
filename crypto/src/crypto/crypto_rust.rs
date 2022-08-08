@@ -12,6 +12,7 @@ use crate::crypto::{
 	decrypt_string_symmetric_internally,
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
+	done_fetch_sym_key_internally,
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
@@ -115,6 +116,11 @@ pub fn prepare_register_sym_key(master_key: &SymKeyFormat) -> Result<String, Sdk
 	prepare_register_sym_key_internally(master_key)
 }
 
+pub fn done_fetch_sym_key(master_key: &SymKeyFormat, server_out: &str) -> Result<SymKeyFormat, SdkError>
+{
+	done_fetch_sym_key_internally(master_key, server_out)
+}
+
 pub fn decrypt_sym_key(master_key: &SymKeyFormat, encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput) -> Result<SymKeyFormat, SdkError>
 {
 	decrypt_sym_key_internally(master_key, encrypted_symmetric_key_info)
@@ -131,6 +137,7 @@ mod test
 	use alloc::string::ToString;
 
 	use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
+	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::SymKey;
 
 	use super::*;
@@ -349,6 +356,7 @@ mod test
 			encrypted_key_string: server_in.encrypted_key_string,
 			master_key_id: server_in.master_key_id,
 			key_id: "123".to_string(),
+			time: 0,
 		};
 
 		//get the key
@@ -361,7 +369,25 @@ mod test
 
 		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
-		assert_eq!(decrypted, text.as_bytes())
+		assert_eq!(decrypted, text.as_bytes());
+
+		//test server out decrypt
+		let server_response = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(server_out),
+		};
+
+		let decrypted_key = done_fetch_sym_key(master_key, server_response.to_string().unwrap().as_str()).unwrap();
+
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+
+		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
+
+		assert_eq!(decrypted, text.as_bytes());
 	}
 
 	#[test]
