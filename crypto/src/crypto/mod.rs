@@ -20,6 +20,8 @@ pub use self::crypto::{
 	decrypt_string_symmetric,
 	decrypt_sym_key,
 	decrypt_symmetric,
+	done_fetch_sym_key,
+	done_fetch_sym_keys,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
@@ -38,6 +40,8 @@ pub use self::crypto_rust::{
 	decrypt_string_symmetric,
 	decrypt_sym_key,
 	decrypt_symmetric,
+	done_fetch_sym_key,
+	done_fetch_sym_keys,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
@@ -47,6 +51,7 @@ pub use self::crypto_rust::{
 	generate_non_register_sym_key,
 	prepare_register_sym_key,
 };
+use crate::util::public::handle_server_response;
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
 
@@ -343,6 +348,36 @@ fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<S
 }
 
 /**
+# Get the key from server fetch
+
+Decrypted the server output with the master key
+*/
+fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<SymKeyFormatInt, SdkError>
+{
+	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
+
+	decrypt_sym_key_internally(master_key, &server_out)
+}
+
+/**
+# Get the key from server fetch
+
+like done_fetch_sym_key_internally but this time with an array of keys as server output
+*/
+fn done_fetch_sym_keys_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<Vec<SymKeyFormatInt>, SdkError>
+{
+	let server_out: Vec<GeneratedSymKeyHeadServerOutput> = handle_server_response(server_out)?;
+
+	let mut keys = Vec::with_capacity(server_out.len());
+
+	for out in server_out {
+		keys.push(decrypt_sym_key_internally(master_key, &out)?)
+	}
+
+	Ok(keys)
+}
+
+/**
 # Get a symmetric key which was encrypted by a master key
 
 Backwards the process in prepare_register_sym_key.
@@ -390,6 +425,7 @@ fn generate_non_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Res
 		encrypted_key_string: server_input.encrypted_key_string,
 		master_key_id: server_input.master_key_id,
 		key_id: "non_registered".to_string(),
+		time: 0,
 	};
 
 	let decrypt_out = decrypt_sym_key_internally(master_key, &server_output)?;
