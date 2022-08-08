@@ -21,6 +21,7 @@ pub use self::crypto::{
 	decrypt_sym_key,
 	decrypt_symmetric,
 	done_fetch_sym_key,
+	done_fetch_sym_keys,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
@@ -40,6 +41,7 @@ pub use self::crypto_rust::{
 	decrypt_sym_key,
 	decrypt_symmetric,
 	done_fetch_sym_key,
+	done_fetch_sym_keys,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
@@ -345,11 +347,34 @@ fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<S
 	.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
+/**
+# Get the key from server fetch
+
+Decrypted the server output with the master key
+*/
 fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<SymKeyFormatInt, SdkError>
 {
 	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
 
 	decrypt_sym_key_internally(master_key, &server_out)
+}
+
+/**
+# Get the key from server fetch
+
+like done_fetch_sym_key_internally but this time with an array of keys as server output
+*/
+fn done_fetch_sym_keys_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<Vec<SymKeyFormatInt>, SdkError>
+{
+	let server_out: Vec<GeneratedSymKeyHeadServerOutput> = handle_server_response(server_out)?;
+
+	let mut keys = Vec::with_capacity(server_out.len());
+
+	for out in server_out {
+		keys.push(decrypt_sym_key_internally(master_key, &out)?)
+	}
+
+	Ok(keys)
 }
 
 /**

@@ -13,6 +13,7 @@ use crate::crypto::{
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
 	done_fetch_sym_key_internally,
+	done_fetch_sym_keys_internally,
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
@@ -121,6 +122,11 @@ pub fn done_fetch_sym_key(master_key: &SymKeyFormat, server_out: &str) -> Result
 	done_fetch_sym_key_internally(master_key, server_out)
 }
 
+pub fn done_fetch_sym_keys(master_key: &SymKeyFormat, server_out: &str) -> Result<Vec<SymKeyFormat>, SdkError>
+{
+	done_fetch_sym_keys_internally(master_key, server_out)
+}
+
 pub fn decrypt_sym_key(master_key: &SymKeyFormat, encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput) -> Result<SymKeyFormat, SdkError>
 {
 	decrypt_sym_key_internally(master_key, encrypted_symmetric_key_info)
@@ -135,6 +141,7 @@ pub fn generate_non_register_sym_key(master_key: &SymKeyFormat) -> Result<(SymKe
 mod test
 {
 	use alloc::string::ToString;
+	use alloc::vec;
 
 	use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 	use sentc_crypto_common::ServerOutput;
@@ -370,6 +377,26 @@ mod test
 		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
 		assert_eq!(decrypted, text.as_bytes());
+	}
+
+	#[test]
+	fn test_getting_sym_key_from_server()
+	{
+		let user = create_user();
+		let (group, _) = create_group(&user);
+		let master_key = &group.keys[0].group_key;
+
+		let server_in = prepare_register_sym_key(master_key).unwrap();
+
+		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
+
+		let server_out = GeneratedSymKeyHeadServerOutput {
+			alg: server_in.alg,
+			encrypted_key_string: server_in.encrypted_key_string,
+			master_key_id: server_in.master_key_id,
+			key_id: "123".to_string(),
+			time: 0,
+		};
 
 		//test server out decrypt
 		let server_response = ServerOutput {
@@ -388,6 +415,56 @@ mod test
 		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
 		assert_eq!(decrypted, text.as_bytes());
+	}
+
+	#[test]
+	fn test_getting_sym_keys_as_array()
+	{
+		let user = create_user();
+		let (group, _) = create_group(&user);
+		let master_key = &group.keys[0].group_key;
+
+		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
+		let server_out_0 = GeneratedSymKeyHeadServerOutput {
+			alg: server_in.alg,
+			encrypted_key_string: server_in.encrypted_key_string,
+			master_key_id: server_in.master_key_id,
+			key_id: "123".to_string(),
+			time: 0,
+		};
+
+		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
+		let server_out_1 = GeneratedSymKeyHeadServerOutput {
+			alg: server_in.alg,
+			encrypted_key_string: server_in.encrypted_key_string,
+			master_key_id: server_in.master_key_id,
+			key_id: "123".to_string(),
+			time: 0,
+		};
+
+		let server_outputs = vec![server_out_0, server_out_1];
+
+		//test server out decrypt
+		let server_response = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(server_outputs),
+		};
+
+		let decrypted_keys = done_fetch_sym_keys(master_key, server_response.to_string().unwrap().as_str()).unwrap();
+
+		let text = "123*+^êéèüöß@€&$";
+
+		for decrypted_key in decrypted_keys {
+			let encrypted = encrypt_string_symmetric(&decrypted_key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+
+			let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
+
+			assert_eq!(decrypted, text.as_bytes());
+		}
 	}
 
 	#[test]
