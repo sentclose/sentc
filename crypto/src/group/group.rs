@@ -88,32 +88,37 @@ impl GroupKeys
 
 pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 {
-	let creators_public_key = import_public_key(creators_public_key).map_err(|e| err_to_msg(e))?;
+	let creators_public_key = import_public_key(creators_public_key)?;
 
-	prepare_create_internally(&creators_public_key).map_err(|e| err_to_msg(e))
+	Ok(prepare_create_internally(&creators_public_key)?)
 }
 
 pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> Result<String, String>
 {
 	//the ids comes from the storage of the current impl from the sdk, the group key id comes from get group
-	let previous_group_key = import_sym_key(previous_group_key).map_err(|e| err_to_msg(e))?;
+	let previous_group_key = import_sym_key(previous_group_key)?;
 
-	let invoker_public_key = import_public_key(invoker_public_key).map_err(|e| err_to_msg(e))?;
+	let invoker_public_key = import_public_key(invoker_public_key)?;
 
-	key_rotation_internally(&previous_group_key, &invoker_public_key).map_err(|e| err_to_msg(e))
+	Ok(key_rotation_internally(&previous_group_key, &invoker_public_key)?)
 }
 
 pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key: &str, server_output: &str) -> Result<String, String>
 {
-	let previous_group_key = import_sym_key(previous_group_key).map_err(|e| err_to_msg(e))?;
+	let previous_group_key = import_sym_key(previous_group_key)?;
 
-	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+	let private_key = import_private_key(private_key)?;
 
-	let public_key = import_public_key(public_key).map_err(|e| err_to_msg(e))?;
+	let public_key = import_public_key(public_key)?;
 
 	let server_output = KeyRotationInput::from_string(server_output).map_err(|_| err_to_msg(SdkError::KeyRotationServerOutputWrong))?;
 
-	done_key_rotation_internally(&private_key, &public_key, &previous_group_key, &server_output).map_err(|e| err_to_msg(e))
+	Ok(done_key_rotation_internally(
+		&private_key,
+		&public_key,
+		&previous_group_key,
+		&server_output,
+	)?)
 }
 
 fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
@@ -134,13 +139,13 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 
 pub fn get_group_keys_from_pagination(private_key: &str, server_output: &str) -> Result<Vec<GroupKeyData>, String>
 {
-	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output).map_err(|e| err_to_msg(e))?;
-	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
+	let private_key = import_private_key(private_key)?;
 
 	let mut keys = Vec::with_capacity(server_output.len());
 
 	for key in server_output {
-		let value = get_group_keys(&private_key, &key).map_err(|e| err_to_msg(e))?;
+		let value = get_group_keys(&private_key, &key)?;
 
 		keys.push(value);
 	}
@@ -150,15 +155,15 @@ pub fn get_group_keys_from_pagination(private_key: &str, server_output: &str) ->
 
 pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, String>
 {
-	let server_output: GroupServerData = handle_server_response(server_output).map_err(|e| err_to_msg(e))?;
+	let server_output: GroupServerData = handle_server_response(server_output)?;
 
-	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+	let private_key = import_private_key(private_key)?;
 
 	//resolve a group key page
 	let mut keys = Vec::with_capacity(server_output.keys.len());
 
 	for key in server_output.keys {
-		let value = get_group_keys(&private_key, &key).map_err(|e| err_to_msg(e))?;
+		let value = get_group_keys(&private_key, &key)?;
 
 		keys.push(value);
 	}
@@ -191,14 +196,18 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 
 	//split group key and id
 	for group_key in group_keys {
-		let key = import_sym_key_from_format(&group_key).map_err(|e| err_to_msg(e))?;
+		let key = import_sym_key_from_format(&group_key)?;
 
 		saved_keys.push(key);
 	}
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	prepare_group_keys_for_new_member_internally(&requester_public_key_data, &split_group_keys, key_session).map_err(|e| err_to_msg(e))
+	Ok(prepare_group_keys_for_new_member_internally(
+		&requester_public_key_data,
+		&split_group_keys,
+		key_session,
+	)?)
 }
 
 pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
@@ -213,14 +222,17 @@ pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: 
 
 	//split group key and id
 	for group_key in group_keys {
-		let key = import_sym_key_from_format(&group_key).map_err(|e| err_to_msg(e))?;
+		let key = import_sym_key_from_format(&group_key)?;
 
 		saved_keys.push(key);
 	}
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	prepare_group_keys_for_new_member_via_session_internally(&requester_public_key_data, &split_group_keys).map_err(|e| err_to_msg(e))
+	Ok(prepare_group_keys_for_new_member_via_session_internally(
+		&requester_public_key_data,
+		&split_group_keys,
+	)?)
 }
 
 fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>) -> Vec<&SymKeyFormatInt>

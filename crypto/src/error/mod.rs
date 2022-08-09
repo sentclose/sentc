@@ -52,6 +52,14 @@ impl From<Error> for SdkError
 	}
 }
 
+impl From<SdkError> for String
+{
+	fn from(e: SdkError) -> Self
+	{
+		err_to_msg(e)
+	}
+}
+
 pub fn err_to_msg(error: SdkError) -> String
 {
 	match error {

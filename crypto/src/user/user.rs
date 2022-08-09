@@ -54,33 +54,33 @@ impl MasterKeyFormat
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, String>
 {
-	prepare_check_user_identifier_available_internally(user_identifier).map_err(|e| err_to_msg(e))
+	Ok(prepare_check_user_identifier_available_internally(user_identifier)?)
 }
 
 pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, String>
 {
-	done_check_user_identifier_available_internally(server_output).map_err(|e| err_to_msg(e))
+	Ok(done_check_user_identifier_available_internally(server_output)?)
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
 {
-	register_internally(user_identifier, password).map_err(|e| err_to_msg(e))
+	Ok(register_internally(user_identifier, password)?)
 }
 
 pub fn done_register(server_output: &str) -> Result<UserId, String>
 {
-	done_register_internally(server_output).map_err(|e| err_to_msg(e))
+	Ok(done_register_internally(server_output)?)
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 {
-	prepare_login_start_internally(user_id).map_err(|e| err_to_msg(e))
+	Ok(prepare_login_start_internally(user_id)?)
 }
 
 pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String), String>
 {
 	//the auth key is already in the right json format for the server
-	let (auth_key, master_key_encryption_key) = prepare_login_internally(user_identifier, password, server_output).map_err(|e| err_to_msg(e))?;
+	let (auth_key, master_key_encryption_key) = prepare_login_internally(user_identifier, password, server_output)?;
 
 	//return the encryption key for the master key to the app and then use it for done login
 	let master_key_encryption_key = match master_key_encryption_key {
@@ -119,35 +119,44 @@ pub fn done_login(
 		},
 	};
 
-	let result = done_login_internally(&master_key_encryption, server_output).map_err(|e| err_to_msg(e))?;
+	let result = done_login_internally(&master_key_encryption, server_output)?;
 
 	export_key_data(result)
 }
 
 pub fn prepare_refresh_jwt(refresh_token: &str) -> Result<String, String>
 {
-	prepare_refresh_jwt_internally(refresh_token).map_err(|e| err_to_msg(e))
+	Ok(prepare_refresh_jwt_internally(refresh_token)?)
 }
 
 pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, String>
 {
-	change_password_internally(old_pw, new_pw, server_output_prep_login, server_output_done_login).map_err(|e| err_to_msg(e))
+	Ok(change_password_internally(
+		old_pw,
+		new_pw,
+		server_output_prep_login,
+		server_output_done_login,
+	)?)
 }
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
 {
-	let decrypted_private_key = import_private_key(decrypted_private_key).map_err(|e| err_to_msg(e))?;
+	let decrypted_private_key = import_private_key(decrypted_private_key)?;
 
-	let decrypted_sign_key = import_sign_key(decrypted_sign_key).map_err(|e| err_to_msg(e))?;
+	let decrypted_sign_key = import_sign_key(decrypted_sign_key)?;
 
-	reset_password_internally(new_password, &decrypted_private_key, &decrypted_sign_key).map_err(|e| err_to_msg(e))
+	Ok(reset_password_internally(
+		new_password,
+		&decrypted_private_key,
+		&decrypted_sign_key,
+	)?)
 }
 
 pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<String, String>
 {
 	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
-	let out = prepare_update_user_keys_internally(password, &server_output).map_err(|e| err_to_msg(e))?;
+	let out = prepare_update_user_keys_internally(password, &server_output)?;
 
 	let mut output_arr = Vec::with_capacity(out.len());
 
