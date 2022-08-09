@@ -19,7 +19,6 @@ async fn create_group(
 	base_url: String,
 	auth_token: &str,
 	jwt: &str,
-	refresh_token: &str,
 	parent_group_id: Option<&str>,
 	#[cfg(not(feature = "rust"))] public_key: &str,
 	#[cfg(feature = "rust")] public_key: &sentc_crypto::util::PublicKeyFormat,
@@ -32,15 +31,7 @@ async fn create_group(
 
 	let input = sentc_crypto::group::prepare_create(public_key)?;
 
-	let res = make_req(
-		HttpMethod::POST,
-		url.as_str(),
-		auth_token,
-		Some(input),
-		Some(jwt),
-		Some(refresh_token),
-	)
-	.await?;
+	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
 	let group_id: GroupCreateOutput = handle_server_response(res.as_str())?;
 
@@ -51,39 +42,29 @@ pub fn create<'a>(
 	base_url: String,
 	auth_token: &'a str,
 	jwt: &'a str,
-	refresh_token: &'a str,
 	#[cfg(not(feature = "rust"))] creators_public_key: &'a str,
 	#[cfg(feature = "rust")] creators_public_key: &'a sentc_crypto::util::PublicKeyFormat,
 ) -> impl Future<Output = Res> + 'a
 {
-	create_group(base_url, auth_token, jwt, refresh_token, None, creators_public_key)
+	create_group(base_url, auth_token, jwt, None, creators_public_key)
 }
 
 pub async fn create_child_group<'a>(
 	base_url: String,
 	auth_token: &'a str,
 	jwt: &'a str,
-	refresh_token: &'a str,
 	parent_group_id: &'a str,
 	#[cfg(not(feature = "rust"))] parent_public_key: &'a str,
 	#[cfg(feature = "rust")] parent_public_key: &'a sentc_crypto::util::PublicKeyFormat,
 ) -> impl Future<Output = Res> + 'a
 {
-	create_group(
-		base_url,
-		auth_token,
-		jwt,
-		refresh_token,
-		Some(parent_group_id),
-		parent_public_key,
-	)
+	create_group(base_url, auth_token, jwt, Some(parent_group_id), parent_public_key)
 }
 
 pub async fn get_group(
 	base_url: String,
 	auth_token: &str,
 	jwt: &str,
-	refresh_token: &str,
 	id: &str,
 	#[cfg(not(feature = "rust"))] private_key: &str,
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
@@ -91,15 +72,7 @@ pub async fn get_group(
 {
 	let url = base_url + "/api/v1/group/" + id;
 
-	let res = make_req(
-		HttpMethod::GET,
-		url.as_str(),
-		auth_token,
-		None,
-		Some(jwt),
-		Some(refresh_token),
-	)
-	.await?;
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
 	let out = sentc_crypto::group::get_group_data(private_key, res.as_str())?;
 

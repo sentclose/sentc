@@ -119,7 +119,6 @@ pub async fn change_password(base_url: String, auth_token: &str, user_identifier
 		auth_token,
 		Some(change_pw_input),
 		Some(keys.jwt.as_str()),
-		None,
 	)
 	.await?;
 
@@ -130,7 +129,6 @@ pub async fn reset_password(
 	base_url: String,
 	auth_token: &str,
 	jwt: &str,
-	refresh_token: &str,
 	new_password: &str,
 	#[cfg(not(feature = "rust"))] decrypted_private_key: &str,
 	#[cfg(not(feature = "rust"))] decrypted_sign_key: &str,
@@ -142,34 +140,18 @@ pub async fn reset_password(
 
 	let input = user::reset_password(new_password, decrypted_private_key, decrypted_sign_key)?;
 
-	let res = make_req(
-		HttpMethod::PUT,
-		url.as_str(),
-		auth_token,
-		Some(input),
-		Some(jwt),
-		Some(refresh_token),
-	)
-	.await?;
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
 //__________________________________________________________________________________________________
 
-pub async fn delete(base_url: String, auth_token: &str, jwt: &str, refresh_token: &str) -> VoidRes
+pub async fn delete(base_url: String, auth_token: &str, jwt: &str) -> VoidRes
 {
 	let url = base_url + "/api/v1/user";
 
-	let res = make_req(
-		HttpMethod::DELETE,
-		url.as_str(),
-		auth_token,
-		None,
-		Some(jwt),
-		Some(refresh_token),
-	)
-	.await?;
+	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }

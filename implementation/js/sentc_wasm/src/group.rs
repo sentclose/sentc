@@ -27,3 +27,17 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 	//TODO get this from the js sdk
 	group::prepare_group_keys_for_new_member(requester_public_key_data, group_keys, false)
 }
+
+#[wasm_bindgen]
+pub async fn create(base_url: String, auth_token: String, jwt: String, creators_public_key: String) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::group::create(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		creators_public_key.as_str(),
+	)
+	.await?;
+
+	Ok(out)
+}

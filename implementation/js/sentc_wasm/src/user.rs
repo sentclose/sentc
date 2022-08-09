@@ -180,7 +180,6 @@ pub async fn reset_password(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
-	refresh_token: String,
 	new_password: String,
 	decrypted_private_key: String,
 	decrypted_sign_key: String,
@@ -190,7 +189,6 @@ pub async fn reset_password(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
-		refresh_token.as_str(),
 		new_password.as_str(),
 		decrypted_private_key.as_str(),
 		decrypted_sign_key.as_str(),
@@ -199,7 +197,7 @@ pub async fn reset_password(
 }
 
 #[wasm_bindgen]
-pub async fn delete(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<(), JsValue>
+pub async fn delete(base_url: String, auth_token: String, jwt: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), jwt.as_str(), refresh_token.as_str()).await?)
+	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), jwt.as_str()).await?)
 }

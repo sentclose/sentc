@@ -27,17 +27,10 @@ pub fn make_non_auth_req<'a>(
 	body: Option<String>,
 ) -> impl Future<Output = Result<String, SdkFullError>> + 'a
 {
-	make_req(method, url, auth_token, body, None, None)
+	make_req(method, url, auth_token, body, None)
 }
 
-pub async fn make_req(
-	method: HttpMethod,
-	url: &str,
-	auth_token: &str,
-	body: Option<String>,
-	jwt: Option<&str>,
-	refresh_token: Option<&str>,
-) -> Result<String, SdkFullError>
+pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<String, SdkFullError>
 {
 	let client = reqwest::Client::new();
 
@@ -52,11 +45,7 @@ pub async fn make_req(
 	let builder = builder.header("x-sentc-app-token", auth_token);
 
 	let builder = match jwt {
-		Some(j) => {
-			//TODO decode here the jwt and check the time, if 30 sec left -> refresh the jwt
-
-			builder.header(AUTHORIZATION, auth_header(j))
-		},
+		Some(j) => builder.header(AUTHORIZATION, auth_header(j)),
 		None => builder,
 	};
 
