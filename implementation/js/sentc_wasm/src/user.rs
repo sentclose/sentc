@@ -209,3 +209,9 @@ pub async fn delete_user(base_url: String, auth_token: String, jwt: String) -> R
 {
 	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), jwt.as_str()).await?)
 }
+
+#[wasm_bindgen]
+pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await?)
+}
