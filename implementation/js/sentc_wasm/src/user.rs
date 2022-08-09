@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use sentc_crypto::user;
+use sentc_crypto::{user, KeyData};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -14,6 +14,23 @@ pub struct DoneLoginData
 	user_id: String,
 	exported_public_key: String,
 	exported_verify_key: String,
+}
+
+impl From<KeyData> for DoneLoginData
+{
+	fn from(keys: KeyData) -> Self
+	{
+		Self {
+			private_key: keys.private_key,
+			public_key: keys.public_key,
+			sign_key: keys.sign_key,
+			verify_key: keys.verify_key,
+			jwt: keys.jwt,
+			user_id: keys.user_id,
+			exported_public_key: keys.exported_public_key,
+			exported_verify_key: keys.exported_verify_key,
+		}
+	}
 }
 
 #[wasm_bindgen]
@@ -163,16 +180,7 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 	)
 	.await?;
 
-	Ok(DoneLoginData {
-		private_key: keys.private_key,
-		public_key: keys.public_key,
-		sign_key: keys.sign_key,
-		verify_key: keys.verify_key,
-		jwt: keys.jwt,
-		user_id: keys.user_id,
-		exported_public_key: keys.exported_public_key,
-		exported_verify_key: keys.exported_verify_key,
-	})
+	Ok(keys.into())
 }
 
 #[wasm_bindgen]
@@ -197,7 +205,7 @@ pub async fn reset_password(
 }
 
 #[wasm_bindgen]
-pub async fn delete(base_url: String, auth_token: String, jwt: String) -> Result<(), JsValue>
+pub async fn delete_user(base_url: String, auth_token: String, jwt: String) -> Result<(), JsValue>
 {
 	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), jwt.as_str()).await?)
 }
