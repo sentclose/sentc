@@ -109,7 +109,7 @@ pub async fn change_password(base_url: String, auth_token: &str, user_identifier
 		done_login_out.as_str(),
 	)?;
 
-	let url = base_url + "api/v1/user/update_pw";
+	let url = base_url + "/api/v1/user/update_pw";
 
 	let res = make_req(
 		HttpMethod::PUT,
@@ -123,3 +123,32 @@ pub async fn change_password(base_url: String, auth_token: &str, user_identifier
 
 	handle_general_server_response(res.as_str())
 }
+
+pub async fn reset_password(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	refresh_token: &str,
+	new_password: &str,
+	decrypted_private_key: &str,
+	decrypted_sign_key: &str,
+) -> Result<(), String>
+{
+	let url = base_url + "/api/v1/user/reset_pw";
+
+	let input = user::reset_password(new_password, decrypted_private_key, decrypted_sign_key)?;
+
+	let res = make_req(
+		HttpMethod::PUT,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		Some(refresh_token),
+	)
+	.await?;
+
+	handle_general_server_response(res.as_str())
+}
+
+//__________________________________________________________________________________________________
