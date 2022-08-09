@@ -6,8 +6,9 @@ mod rust;
 use alloc::string::String;
 
 use sentc_crypto::user;
-use sentc_crypto::util::public::handle_general_server_response;
+use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 pub use sentc_crypto::KeyData;
+use sentc_crypto_common::user::UserUpdateServerOut;
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{BoolRes, KeyRes, Res, VoidRes};
@@ -154,4 +155,19 @@ pub async fn delete(base_url: String, auth_token: &str, jwt: &str) -> VoidRes
 	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
+}
+
+//__________________________________________________________________________________________________
+
+pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifier: String) -> Res
+{
+	let url = base_url + "/api/v1/user";
+
+	let input = user::prepare_user_identifier_update(user_identifier)?;
+
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	let out: UserUpdateServerOut = handle_server_response(res.as_str())?;
+
+	Ok(out.user_identifier)
 }
