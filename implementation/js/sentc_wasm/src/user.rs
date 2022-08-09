@@ -174,3 +174,26 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 		exported_verify_key: keys.exported_verify_key,
 	})
 }
+
+#[wasm_bindgen]
+pub async fn reset_password(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	refresh_token: String,
+	new_password: String,
+	decrypted_private_key: String,
+	decrypted_sign_key: String,
+) -> Result<(), JsValue>
+{
+	Ok(sentc_crypto_full::user::reset_password(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		refresh_token.as_str(),
+		new_password.as_str(),
+		decrypted_private_key.as_str(),
+		decrypted_sign_key.as_str(),
+	)
+	.await?)
+}
