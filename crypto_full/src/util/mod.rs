@@ -1,3 +1,5 @@
+pub mod jwt;
+
 use alloc::format;
 use alloc::string::String;
 use core::future::Future;

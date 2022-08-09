@@ -971,9 +971,12 @@ dependencies = [
 name = "sentc-crypto-full"
 version = "0.1.0"
 dependencies = [
+ "base64ct",
  "reqwest",
  "sentc-crypto",
  "sentc-crypto-common",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

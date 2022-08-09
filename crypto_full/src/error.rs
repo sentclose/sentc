@@ -9,6 +9,8 @@ pub enum SdkFullError
 	Base(SdkError),
 	RequestErr,
 	ResponseErr,
+	InvalidJwt,
+	InvalidJwtFormat,
 }
 
 impl From<SdkError> for SdkFullError
@@ -33,6 +35,8 @@ pub fn err_to_msg(error: SdkFullError) -> String
 		SdkFullError::Base(base_error) => sentc_crypto::err_to_msg(base_error),
 		SdkFullError::RequestErr => out_error("client_1000", "Request error"),
 		SdkFullError::ResponseErr => out_error("client_1001", "Response error"),
+		SdkFullError::InvalidJwt => out_error("client_1100", "Jwt is invalid"),
+		SdkFullError::InvalidJwtFormat => out_error("client_1101", "Jwt has a wrong format"),
 		//_ => out_error("client_0", "other"),
 	}
 }

@@ -13,6 +13,11 @@ sentc-crypto-common = {version = "0.1.0", path = "../sdk-common"}
 
 reqwest = "0.11.11"
 
+# to decode the jwt to check the exp
+base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+
 [features]
 default = ["sentc-crypto/default"]
 rust = ["sentc-crypto/rust"]
