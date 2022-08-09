@@ -1,11 +1,7 @@
-use alloc::format;
 use alloc::string::String;
 
 use sentc_crypto::user;
 use wasm_bindgen::prelude::*;
-use web_sys::{RequestInit, RequestMode};
-
-use crate::make_req;
 
 #[wasm_bindgen]
 pub struct DoneLoginData
@@ -70,17 +66,33 @@ impl DoneLoginData
 #[wasm_bindgen]
 pub async fn check_user_identifier_available(base_url: String, auth_token: String, user_identifier: String) -> Result<bool, JsValue>
 {
-	let server_input = user::prepare_check_user_identifier_available(user_identifier.as_str())?;
+	let out = sentc_crypto_full::user::check_user_identifier_available(base_url, auth_token.as_str(), user_identifier.as_str()).await?;
 
-	let url = format!("{}/api/v1/check_user_identifier", base_url);
+	Ok(out)
+}
 
-	let mut opts = RequestInit::new();
-	opts.method("POST");
-	opts.mode(RequestMode::NoCors);
-	opts.body(Some(&JsValue::from_str(server_input.as_str())));
+/**
+# Check if the identifier is available
 
-	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
-	let out = user::done_check_user_identifier_available(res.as_str())?;
+but without making a request
+*/
+#[wasm_bindgen]
+pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, JsValue>
+{
+	let out = user::prepare_check_user_identifier_available(user_identifier)?;
+
+	Ok(out)
+}
+
+/**
+# Validates the response if the identifier is available
+
+but without making a request
+ */
+#[wasm_bindgen]
+pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, JsValue>
+{
+	let out = user::done_check_user_identifier_available(server_output)?;
 
 	Ok(out)
 }
@@ -99,6 +111,19 @@ pub fn prepare_register(user_identifier: &str, password: &str) -> Result<String,
 }
 
 /**
+# Validates the response of register
+
+Returns the new user id
+*/
+#[wasm_bindgen]
+pub fn done_register(server_output: &str) -> Result<String, JsValue>
+{
+	let out = user::done_register(server_output)?;
+
+	Ok(out)
+}
+
+/**
 # Register a new user for the app
 
 Do the full req incl. req.
@@ -107,17 +132,13 @@ No checking about spamming and just return the user id.
 #[wasm_bindgen]
 pub async fn register(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String, JsValue>
 {
-	let register_input = user::register(user_identifier.as_str(), password.as_str())?;
-
-	let url = format!("{}/api/v1/register", base_url);
-
-	let mut opts = RequestInit::new();
-	opts.method("POST");
-	opts.mode(RequestMode::NoCors);
-	opts.body(Some(&JsValue::from_str(register_input.as_str())));
-
-	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
-	let out = user::done_register(res.as_str())?;
+	let out = sentc_crypto_full::user::register(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		password.as_str(),
+	)
+	.await?;
 
 	Ok(out)
 }
@@ -134,32 +155,13 @@ The other backend can validate the jwt
 #[wasm_bindgen]
 pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<DoneLoginData, JsValue>
 {
-	let user_id_input = user::prepare_login_start(user_identifier.as_str())?;
-
-	let url = format!("{}/api/v1/pre_login", base_url);
-
-	let mut opts = RequestInit::new();
-	opts.method("POST");
-	opts.mode(RequestMode::NoCors);
-	opts.body(Some(&JsValue::from_str(user_id_input.as_str())));
-
-	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
-
-	//prepare the login, the auth key is already in the right json format for the server
-	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier.as_str(), password.as_str(), res.as_str())?;
-
-	let url = format!("{}/api/v1/login", base_url);
-
-	//send the auth key to the server
-	let mut opts = RequestInit::new();
-	opts.method("POST");
-	opts.mode(RequestMode::NoCors);
-	opts.body(Some(&JsValue::from_str(auth_key.as_str())));
-
-	//the done login server output
-	let server_output = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
-
-	let keys = user::done_login(master_key_encryption_key.as_str(), server_output.as_str())?;
+	let keys = sentc_crypto_full::user::login(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		password.as_str(),
+	)
+	.await?;
 
 	Ok(DoneLoginData {
 		private_key: keys.private_key,
