@@ -83,6 +83,30 @@ pub extern "C" fn wire_done_login(port_: i64, master_key_encryption: *mut wire_u
 	)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_login(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	user_identifier: *mut wire_uint_8_list,
+	password: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "login",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_user_identifier = user_identifier.wire2api();
+			let api_password = password.wire2api();
+			move |task_callback| login(api_base_url, api_auth_token, api_user_identifier, api_password)
+		},
+	)
+}
+
 // Section: wire structs
 
 #[repr(C)]
