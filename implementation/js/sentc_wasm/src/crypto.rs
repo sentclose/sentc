@@ -1,12 +1,8 @@
-use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto::crypto;
 use wasm_bindgen::prelude::*;
-use web_sys::{RequestInit, RequestMode};
-
-use crate::make_req;
 
 #[wasm_bindgen]
 pub struct CryptoRawOutput
@@ -149,20 +145,20 @@ pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> 
 	crypto::decrypt_sym_key(master_key, encrypted_symmetric_key_info)
 }
 
-#[wasm_bindgen]
-pub async fn generate_and_register_sym_key(base_url: String, auth_token: String, master_key: String) -> Result<String, JsValue>
-{
-	let server_in = crypto::prepare_register_sym_key(master_key.as_str())?;
-
-	let url = format!("{}/api/v1/key/register", base_url);
-
-	let mut opts = RequestInit::new();
-	opts.method("POST");
-	opts.mode(RequestMode::NoCors);
-	opts.body(Some(&JsValue::from_str(server_in.as_str())));
-
-	//should return the generated server key output
-	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
-
-	Ok(decrypt_sym_key(master_key.as_str(), res.as_str())?)
-}
+// #[wasm_bindgen]
+// pub async fn generate_and_register_sym_key(base_url: String, auth_token: String, master_key: String) -> Result<String, JsValue>
+// {
+// 	let server_in = crypto::prepare_register_sym_key(master_key.as_str())?;
+//
+// 	let url = format!("{}/api/v1/key/register", base_url);
+//
+// 	let mut opts = RequestInit::new();
+// 	opts.method("POST");
+// 	opts.mode(RequestMode::NoCors);
+// 	opts.body(Some(&JsValue::from_str(server_in.as_str())));
+//
+// 	//should return the generated server key output
+// 	let res = make_req(url.as_str(), auth_token.as_str(), &opts).await?;
+//
+// 	Ok(decrypt_sym_key(master_key.as_str(), res.as_str())?)
+// }
