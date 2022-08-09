@@ -197,3 +197,9 @@ pub async fn reset_password(
 	)
 	.await?)
 }
+
+#[wasm_bindgen]
+pub async fn delete(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<(), JsValue>
+{
+	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), jwt.as_str(), refresh_token.as_str()).await?)
+}
