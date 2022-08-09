@@ -65,7 +65,11 @@ pub async fn make_req(
 		Some(b) => builder.body(b),
 	};
 
-	let res = builder.send().await.map_err(|e| handle_req_err(e))?;
+	let res = builder
+		.fetch_mode_no_cors()
+		.send()
+		.await
+		.map_err(|e| handle_req_err(e))?;
 
 	res.text().await.map_err(|e| handle_req_err(e))
 }
