@@ -2,6 +2,7 @@
 members = [
     "crypto",
     "crypto_core",
+    "crypto_full",
     "sdk-common",
     "implementation/js/sentc_wasm",
     "implementation/dart/sentc/rust"
