@@ -56,14 +56,14 @@ fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>
 
 pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
 {
-	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+	let key = import_sym_key(key)?;
 
-	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+	let sign_key = prepare_sign_key(sign_key)?;
 
 	let (head, encrypted) = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => encrypt_raw_symmetric_internally(&key, data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => encrypt_raw_symmetric_internally(&key, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => encrypt_raw_symmetric_internally(&key, data, None)?,
+		Some(k) => encrypt_raw_symmetric_internally(&key, data, Some(&k))?,
 	};
 
 	let head = head
@@ -75,15 +75,15 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(
 
 pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+	let key = import_sym_key(key)?;
 
-	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+	let verify_key = prepare_verify_key(verify_key_data)?;
 
 	let head = EncryptedHead::from_string(head).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
-		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None)?,
+		Some(k) => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, Some(&k))?,
 	};
 
 	Ok(decrypted)
@@ -93,12 +93,12 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 {
 	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
-	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+	let sign_key = prepare_sign_key(sign_key)?;
 
 	let (head, encrypted) = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, None)?,
+		Some(k) => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, Some(&k))?,
 	};
 
 	let head = head
@@ -110,15 +110,15 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 
 pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+	let private_key = import_private_key(private_key)?;
 
-	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+	let verify_key = prepare_verify_key(verify_key_data)?;
 
 	let head = EncryptedHead::from_string(head).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
 	let decrypted = match verify_key {
-		None => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None)?,
+		Some(k) => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, Some(&k))?,
 	};
 
 	Ok(decrypted)
@@ -126,14 +126,14 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 
 pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<Vec<u8>, String>
 {
-	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+	let key = import_sym_key(key)?;
 
-	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+	let sign_key = prepare_sign_key(sign_key)?;
 
 	let encrypted = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => encrypt_symmetric_internally(&key, data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => encrypt_symmetric_internally(&key, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => encrypt_symmetric_internally(&key, data, None)?,
+		Some(k) => encrypt_symmetric_internally(&key, data, Some(&k))?,
 	};
 
 	Ok(encrypted)
@@ -141,13 +141,13 @@ pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<Vec<u
 
 pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+	let key = import_sym_key(key)?;
 
-	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+	let verify_key = prepare_verify_key(verify_key_data)?;
 
 	let decrypted = match verify_key {
-		None => decrypt_symmetric_internally(&key, encrypted_data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => decrypt_symmetric_internally(&key, encrypted_data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => decrypt_symmetric_internally(&key, encrypted_data, None)?,
+		Some(k) => decrypt_symmetric_internally(&key, encrypted_data, Some(&k))?,
 	};
 
 	Ok(decrypted)
@@ -157,12 +157,12 @@ pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &s
 {
 	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
-	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+	let sign_key = prepare_sign_key(sign_key)?;
 
 	let encrypted = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => encrypt_asymmetric_internally(&reply_public_key_data, data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => encrypt_asymmetric_internally(&reply_public_key_data, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => encrypt_asymmetric_internally(&reply_public_key_data, data, None)?,
+		Some(k) => encrypt_asymmetric_internally(&reply_public_key_data, data, Some(&k))?,
 	};
 
 	Ok(encrypted)
@@ -170,13 +170,13 @@ pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &s
 
 pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+	let private_key = import_private_key(private_key)?;
 
-	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+	let verify_key = prepare_verify_key(verify_key_data)?;
 
 	let decrypted = match verify_key {
-		None => decrypt_asymmetric_internally(&private_key, encrypted_data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => decrypt_asymmetric_internally(&private_key, encrypted_data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => decrypt_asymmetric_internally(&private_key, encrypted_data, None)?,
+		Some(k) => decrypt_asymmetric_internally(&private_key, encrypted_data, Some(&k))?,
 	};
 
 	Ok(decrypted)
@@ -184,14 +184,14 @@ pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_d
 
 pub fn encrypt_string_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<String, String>
 {
-	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+	let key = import_sym_key(key)?;
 
-	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+	let sign_key = prepare_sign_key(sign_key)?;
 
 	let encrypted = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => encrypt_string_symmetric_internally(&key, data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => encrypt_string_symmetric_internally(&key, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => encrypt_string_symmetric_internally(&key, data, None)?,
+		Some(k) => encrypt_string_symmetric_internally(&key, data, Some(&k))?,
 	};
 
 	Ok(encrypted)
@@ -199,13 +199,13 @@ pub fn encrypt_string_symmetric(key: &str, data: &[u8], sign_key: &str) -> Resul
 
 pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let key = import_sym_key(key).map_err(|e| err_to_msg(e))?;
+	let key = import_sym_key(key)?;
 
-	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+	let verify_key = prepare_verify_key(verify_key_data)?;
 
 	let decrypted = match verify_key {
-		None => decrypt_string_symmetric_internally(&key, encrypted_data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => decrypt_string_symmetric_internally(&key, encrypted_data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => decrypt_string_symmetric_internally(&key, encrypted_data, None)?,
+		Some(k) => decrypt_string_symmetric_internally(&key, encrypted_data, Some(&k))?,
 	};
 
 	Ok(decrypted)
@@ -215,12 +215,12 @@ pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &[u8], sign_
 {
 	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
-	let sign_key = prepare_sign_key(sign_key).map_err(|e| err_to_msg(e))?;
+	let sign_key = prepare_sign_key(sign_key)?;
 
 	let encrypted = match sign_key {
 		//in match because we need a valid ref to the sign key format
-		None => encrypt_string_asymmetric_internally(&reply_public_key_data, data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => encrypt_string_asymmetric_internally(&reply_public_key_data, data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => encrypt_string_asymmetric_internally(&reply_public_key_data, data, None)?,
+		Some(k) => encrypt_string_asymmetric_internally(&reply_public_key_data, data, Some(&k))?,
 	};
 
 	Ok(encrypted)
@@ -228,13 +228,13 @@ pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &[u8], sign_
 
 pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
 {
-	let private_key = import_private_key(private_key).map_err(|e| err_to_msg(e))?;
+	let private_key = import_private_key(private_key)?;
 
-	let verify_key = prepare_verify_key(verify_key_data).map_err(|e| err_to_msg(e))?;
+	let verify_key = prepare_verify_key(verify_key_data)?;
 
 	let decrypted = match verify_key {
-		None => decrypt_string_asymmetric_internally(&private_key, encrypted_data, None).map_err(|e| err_to_msg(e))?,
-		Some(k) => decrypt_string_asymmetric_internally(&private_key, encrypted_data, Some(&k)).map_err(|e| err_to_msg(e))?,
+		None => decrypt_string_asymmetric_internally(&private_key, encrypted_data, None)?,
+		Some(k) => decrypt_string_asymmetric_internally(&private_key, encrypted_data, Some(&k))?,
 	};
 
 	Ok(decrypted)
@@ -242,32 +242,32 @@ pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify
 
 pub fn prepare_register_sym_key(master_key: &str) -> Result<String, String>
 {
-	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
+	let master_key = import_sym_key(master_key)?;
 
-	let out = prepare_register_sym_key_internally(&master_key).map_err(|e| err_to_msg(e))?;
+	let out = prepare_register_sym_key_internally(&master_key)?;
 
 	Ok(out)
 }
 
 pub fn done_fetch_sym_key(master_key: &str, server_out: &str) -> Result<String, String>
 {
-	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
+	let master_key = import_sym_key(master_key)?;
 
-	let out = done_fetch_sym_key_internally(&master_key, server_out).map_err(|e| err_to_msg(e))?;
+	let out = done_fetch_sym_key_internally(&master_key, server_out)?;
 
-	export_sym_key_to_string(out).map_err(|e| err_to_msg(e))
+	Ok(export_sym_key_to_string(out)?)
 }
 
 pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<Vec<String>, String>
 {
-	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
+	let master_key = import_sym_key(master_key)?;
 
-	let out = done_fetch_sym_keys_internally(&master_key, server_out).map_err(|e| err_to_msg(e))?;
+	let out = done_fetch_sym_keys_internally(&master_key, server_out)?;
 
 	let mut out_vec = Vec::with_capacity(out.len());
 
 	for o in out {
-		out_vec.push(export_sym_key_to_string(o).map_err(|e| err_to_msg(e))?);
+		out_vec.push(export_sym_key_to_string(o)?);
 	}
 
 	Ok(out_vec)
@@ -275,22 +275,22 @@ pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<Vec<Str
 
 pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
 {
-	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
+	let master_key = import_sym_key(master_key)?;
 	let encrypted_symmetric_key_info =
 		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
 
-	let out = decrypt_sym_key_internally(&master_key, &encrypted_symmetric_key_info).map_err(|e| err_to_msg(e))?;
+	let out = decrypt_sym_key_internally(&master_key, &encrypted_symmetric_key_info)?;
 
-	export_sym_key_to_string(out).map_err(|e| err_to_msg(e))
+	Ok(export_sym_key_to_string(out)?)
 }
 
 pub fn generate_non_register_sym_key(master_key: &str) -> Result<(String, String), String>
 {
-	let master_key = import_sym_key(master_key).map_err(|e| err_to_msg(e))?;
+	let master_key = import_sym_key(master_key)?;
 
-	let (key, encrypted_key) = generate_non_register_sym_key_internally(&master_key).map_err(|e| err_to_msg(e))?;
+	let (key, encrypted_key) = generate_non_register_sym_key_internally(&master_key)?;
 
-	let exported_key = export_sym_key_to_string(key).map_err(|e| err_to_msg(e))?;
+	let exported_key = export_sym_key_to_string(key)?;
 
 	let exported_encrypted_key = encrypted_key
 		.to_string()
