@@ -19,7 +19,7 @@ use sentc_crypto_common::group::{
 };
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, KeyRotationRes, Res, SessionRes, VoidRes};
+pub(crate) use self::non_rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, KeyRotationGetOut, KeyRotationRes, Res, SessionRes, VoidRes};
 #[cfg(feature = "rust")]
 pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, KeyRotationRes, Res, SessionRes, VoidRes};
 use crate::util::{make_req, HttpMethod};
@@ -342,14 +342,34 @@ pub async fn prepare_done_key_rotation(base_url: String, auth_token: &str, jwt: 
 
 	let out: Vec<KeyRotationInput> = handle_server_response(res.as_str())?;
 
+	//prepare the keys for done_key_rotation.
+	// call for each key the done key rotation fn with the key id and the server output
 	#[cfg(not(feature = "rust"))]
-	let out = serde_json::to_string(&out).map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?;
+	let out = {
+		let mut out_vec = Vec::with_capacity(out.len());
+
+		for key in out {
+			let (out_item, out_id) = (
+				serde_json::to_string(&key).map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?,
+				key.new_group_key_id,
+			);
+
+			out_vec.push(KeyRotationGetOut {
+				pre_group_key_id: out_id,
+				server_output: out_item,
+			});
+		}
+
+		out_vec
+	};
 
 	Ok(out)
 }
 
 /**
 Call this fn for each key.
+
+In two fn because we don't know yet if the user got the pre group key or must fetch it.
 */
 pub async fn done_key_rotation(
 	base_url: String,
