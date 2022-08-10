@@ -10,3 +10,4 @@ pub type KeyRes = Result<Vec<GroupKeyData>, String>;
 pub type SessionRes = Result<Option<String>, String>;
 pub type InviteListRes = Result<String, String>;
 pub type JoinReqListRes = Result<String, String>;
+pub type KeyRotationRes = Result<String, String>;

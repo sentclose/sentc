@@ -8,12 +8,20 @@ use alloc::vec::Vec;
 use core::future::Future;
 
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupCreateOutput, GroupInviteReqList, GroupInviteServerOutput, GroupJoinReqList};
+use sentc_crypto_common::group::{
+	GroupAcceptJoinReqServerOutput,
+	GroupCreateOutput,
+	GroupInviteReqList,
+	GroupInviteServerOutput,
+	GroupJoinReqList,
+	KeyRotationInput,
+	KeyRotationStartServerOutput,
+};
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, Res, SessionRes, VoidRes};
+pub(crate) use self::non_rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, KeyRotationRes, Res, SessionRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, Res, SessionRes, VoidRes};
+pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, KeyRotationRes, Res, SessionRes, VoidRes};
 use crate::util::{make_req, HttpMethod};
 
 async fn create_group(
@@ -293,6 +301,86 @@ pub async fn leave_group(base_url: String, auth_token: &str, jwt: &str, group_id
 	let url = base_url + "/api/v1/group/" + group_id + "/leave";
 
 	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
+
+//__________________________________________________________________________________________________
+
+pub async fn key_rotation(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	#[cfg(not(feature = "rust"))] public_key: &str,
+	#[cfg(feature = "rust")] public_key: &sentc_crypto::util::PublicKeyFormat,
+	#[cfg(not(feature = "rust"))] pre_group_key: &str,
+	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
+) -> Res
+{
+	let url = base_url + "/api/v1/group/" + group_id + "/key_rotation";
+
+	let input = sentc_crypto::group::key_rotation(pre_group_key, public_key)?;
+
+	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	let out: KeyRotationStartServerOutput = handle_server_response(res.as_str())?;
+
+	Ok(out.key_id)
+}
+
+/**
+Get the keys for the key rotation for this group
+
+call with this arr the done key rotation fn for each key with the pre group key
+*/
+pub async fn prepare_done_key_rotation(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> KeyRotationRes
+{
+	let url = base_url + "/api/v1/group/" + group_id + "/key_rotation";
+
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	let out: Vec<KeyRotationInput> = handle_server_response(res.as_str())?;
+
+	#[cfg(not(feature = "rust"))]
+	let out = serde_json::to_string(&out).map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?;
+
+	Ok(out)
+}
+
+/**
+Call this fn for each key.
+*/
+pub async fn done_key_rotation(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	#[cfg(not(feature = "rust"))] server_output: &str,
+	#[cfg(feature = "rust")] server_output: &KeyRotationInput,
+	#[cfg(not(feature = "rust"))] pre_group_key: &str,
+	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
+	#[cfg(not(feature = "rust"))] public_key: &str,
+	#[cfg(feature = "rust")] public_key: &sentc_crypto::util::PublicKeyFormat,
+	#[cfg(not(feature = "rust"))] private_key: &str,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
+) -> VoidRes
+{
+	#[cfg(not(feature = "rust"))]
+	let key_id = serde_json::from_str::<KeyRotationInput>(server_output)
+		.map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?
+		.new_group_key_id;
+	#[cfg(not(feature = "rust"))]
+	let key_id = key_id.as_str();
+
+	#[cfg(feature = "rust")]
+	let key_id = server_output.new_group_key_id.as_str();
+
+	let input = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, server_output)?;
+
+	let url = base_url + "/api/v1/group/" + group_id + "/key_rotation/" + key_id;
+
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
