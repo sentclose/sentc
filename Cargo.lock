@@ -977,6 +977,9 @@ dependencies = [
  "sentc-crypto-common",
  "serde",
  "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -1000,7 +1003,6 @@ dependencies = [
  "sha2 0.10.2",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]
