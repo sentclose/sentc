@@ -2,7 +2,7 @@ import {
 	register_test_full,
 	simulate_server_done_login,
 	simulate_server_prepare_login,
-	prepare_create_group,
+	group_prepare_create_group,
 	simulate_server_create_group,
 	get_group_data_test,
 	encrypt_symmetric,
@@ -56,7 +56,7 @@ export async function run()
 	console.log("_________________________________");
 	console.log("create group");
 
-	const group_create_out = prepare_create_group(keys.public_key);
+	const group_create_out = group_prepare_create_group(keys.public_key);
 	console.log(group_create_out);
 
 	console.log("get group");
