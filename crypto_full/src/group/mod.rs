@@ -406,6 +406,44 @@ pub async fn done_key_rotation(
 }
 
 //__________________________________________________________________________________________________
+//group admin fn
+
+pub async fn update_rank(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_id: &str, rank: i32, admin_rank: i32) -> VoidRes
+{
+	let url = base_url + "/api/v1/group/" + group_id + "/change_rank";
+
+	let input = sentc_crypto::group::prepare_change_rank(user_id, rank, admin_rank)?;
+
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
+
+pub async fn kick_user(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_id: &str, rank: i32, admin_rank: i32) -> VoidRes
+{
+	let url = base_url + "/api/v1/group/" + group_id + "/kick/" + user_id;
+
+	sentc_crypto::group::check_kick_user(rank, admin_rank)?;
+
+	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
+
+//__________________________________________________________________________________________________
+
+pub async fn delete_group(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32) -> VoidRes
+{
+	sentc_crypto::group::check_group_delete(admin_rank)?;
+
+	let url = base_url + "/api/v1/group/" + group_id;
+
+	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
+
+//__________________________________________________________________________________________________
 
 enum SessionKind
 {
