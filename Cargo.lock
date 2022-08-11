@@ -1000,6 +1000,7 @@ dependencies = [
  "getrandom",
  "sentc-crypto",
  "sentc-crypto-full",
+ "serde",
  "sha2 0.10.2",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -1340,6 +1341,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c53b543413a17a202f4be280a7e5c62a1c69345f5de525ee64f8cfdbc954994"
 dependencies = [
  "cfg-if",
+ "serde",
+ "serde_json",
  "wasm-bindgen-macro",
 ]
 
