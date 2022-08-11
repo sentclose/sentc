@@ -177,7 +177,7 @@ pub fn reset_password_test(new_password: &str, decrypted_private_key: &str, decr
 //group tests
 
 #[wasm_bindgen]
-pub fn get_group_data(private_key: &str, server_output: &str) -> Result<String, String>
+pub fn get_group_data_test(private_key: &str, server_output: &str) -> Result<String, String>
 {
 	let out = group::get_group_data(private_key, server_output)?;
 
