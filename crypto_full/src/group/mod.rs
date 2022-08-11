@@ -58,16 +58,19 @@ pub fn create<'a>(
 	create_group(base_url, auth_token, jwt, None, creators_public_key)
 }
 
-pub async fn create_child_group<'a>(
+pub async fn create_child_group(
 	base_url: String,
-	auth_token: &'a str,
-	jwt: &'a str,
-	parent_group_id: &'a str,
-	#[cfg(not(feature = "rust"))] parent_public_key: &'a str,
-	#[cfg(feature = "rust")] parent_public_key: &'a sentc_crypto::util::PublicKeyFormat,
-) -> impl Future<Output = Res> + 'a
+	auth_token: &str,
+	jwt: &str,
+	parent_group_id: &str,
+	admin_rank: i32,
+	#[cfg(not(feature = "rust"))] parent_public_key: &str,
+	#[cfg(feature = "rust")] parent_public_key: &sentc_crypto::util::PublicKeyFormat,
+) -> Res
 {
-	create_group(base_url, auth_token, jwt, Some(parent_group_id), parent_public_key)
+	sentc_crypto::group::check_create_sub_group(admin_rank)?;
+
+	create_group(base_url, auth_token, jwt, Some(parent_group_id), parent_public_key).await
 }
 
 //__________________________________________________________________________________________________
@@ -120,12 +123,15 @@ pub async fn invite_user(
 	id: &str,
 	user_to_invite_id: &str,
 	key_count: i32,
+	admin_rank: i32,
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
 	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::util::SymKeyFormat],
 ) -> SessionRes
 {
+	sentc_crypto::group::check_make_invite_req(admin_rank)?;
+
 	let url = base_url + "/api/v1/group/" + id + "/invite/" + user_to_invite_id;
 
 	let key_session = if key_count > 50 { true } else { false };
@@ -218,10 +224,13 @@ pub async fn get_join_reqs(
 	auth_token: &str,
 	jwt: &str,
 	group_id: &str,
+	admin_rank: i32,
 	last_fetched_time: &str,
 	last_fetched_id: &str,
 ) -> JoinReqListRes
 {
+	sentc_crypto::group::check_get_join_reqs(admin_rank)?;
+
 	let url = base_url + "/api/v1/group/" + group_id + "/join_req/" + last_fetched_time + "/" + last_fetched_id;
 
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
@@ -234,8 +243,10 @@ pub async fn get_join_reqs(
 	Ok(join_reqs)
 }
 
-pub async fn reject_join_req(base_url: String, auth_token: &str, jwt: &str, group_id: &str, rejected_user_id: &str) -> VoidRes
+pub async fn reject_join_req(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32, rejected_user_id: &str) -> VoidRes
 {
+	sentc_crypto::group::check_get_join_reqs(admin_rank)?;
+
 	let url = base_url + "/api/v1/group/" + group_id + "/join_req/" + rejected_user_id;
 
 	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
@@ -250,12 +261,15 @@ pub async fn accept_join_req(
 	group_id: &str,
 	user_id: &str,
 	key_count: i32,
+	admin_rank: i32,
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
 	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::util::SymKeyFormat],
 ) -> SessionRes
 {
+	sentc_crypto::group::check_get_join_reqs(admin_rank)?;
+
 	let url = base_url + "/api/v1/group/" + group_id + "/join_req/" + user_id;
 
 	let key_session = if key_count > 50 { true } else { false };
