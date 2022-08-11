@@ -108,7 +108,7 @@ Create input for the server api.
 Use this for group and child group. For child group use the public key of the parent group!
 */
 #[wasm_bindgen]
-pub fn prepare_create_group(creators_public_key: &str) -> Result<String, String>
+pub fn group_prepare_create_group(creators_public_key: &str) -> Result<String, String>
 {
 	group::prepare_create(creators_public_key)
 }
@@ -119,7 +119,7 @@ Create a group with request.
 Only the default values are send to the server, no extra data. If extra data is required, use prepare_create
 */
 #[wasm_bindgen]
-pub async fn create_group(base_url: String, auth_token: String, jwt: String, creators_public_key: String) -> Result<String, JsValue>
+pub async fn group_create_group(base_url: String, auth_token: String, jwt: String, creators_public_key: String) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::create(
 		base_url,
@@ -133,7 +133,7 @@ pub async fn create_group(base_url: String, auth_token: String, jwt: String, cre
 }
 
 #[wasm_bindgen]
-pub async fn create_child_group(
+pub async fn group_create_child_group(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -163,7 +163,7 @@ Get the group data without request.
 Use the parent group private key when fetching child group data.
 */
 #[wasm_bindgen]
-pub fn extract_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, JsValue>
+pub fn group_extract_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, JsValue>
 {
 	let out = group::get_group_data(private_key, server_output)?;
 
@@ -176,7 +176,7 @@ Get keys from pagination.
 Call the group route with the last fetched key time and the last fetched key id. Get both from the key data.
 */
 #[wasm_bindgen]
-pub fn extract_group_keys(private_key: &str, server_output: &str) -> Result<JsValue, JsValue>
+pub fn group_extract_group_keys(private_key: &str, server_output: &str) -> Result<JsValue, JsValue>
 {
 	let out = group::get_group_keys_from_pagination(private_key, server_output)?;
 
@@ -190,7 +190,8 @@ pub fn extract_group_keys(private_key: &str, server_output: &str) -> Result<JsVa
 }
 
 #[wasm_bindgen]
-pub async fn get_group_data(base_url: String, auth_token: String, jwt: String, private_key: String, id: String) -> Result<GroupOutData, JsValue>
+pub async fn group_get_group_data(base_url: String, auth_token: String, jwt: String, private_key: String, id: String)
+	-> Result<GroupOutData, JsValue>
 {
 	let out = sentc_crypto_full::group::get_group(
 		base_url,
@@ -205,7 +206,7 @@ pub async fn get_group_data(base_url: String, auth_token: String, jwt: String, p
 }
 
 #[wasm_bindgen]
-pub async fn get_group_keys(
+pub async fn group_get_group_keys(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -244,7 +245,7 @@ Prepare all group keys for a new member.
 Use the group keys from get group data or get group keys fn as string array
 */
 #[wasm_bindgen]
-pub fn prepare_keys_for_new_member(user_public_key: &str, group_keys: &str, key_count: i32, admin_rank: i32) -> Result<String, JsValue>
+pub fn group_prepare_keys_for_new_member(user_public_key: &str, group_keys: &str, key_count: i32, admin_rank: i32) -> Result<String, JsValue>
 {
 	group::check_make_invite_req(admin_rank)?;
 
@@ -256,7 +257,7 @@ pub fn prepare_keys_for_new_member(user_public_key: &str, group_keys: &str, key_
 }
 
 #[wasm_bindgen]
-pub async fn invite_user(
+pub async fn group_invite_user(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -288,7 +289,7 @@ pub async fn invite_user(
 }
 
 #[wasm_bindgen]
-pub async fn invite_user_session(
+pub async fn group_invite_user_session(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -313,7 +314,7 @@ pub async fn invite_user_session(
 }
 
 #[wasm_bindgen]
-pub async fn get_invites_for_user(
+pub async fn group_get_invites_for_user(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -334,7 +335,7 @@ pub async fn get_invites_for_user(
 }
 
 #[wasm_bindgen]
-pub async fn accept_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
+pub async fn group_accept_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::accept_invite(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
 
@@ -342,7 +343,7 @@ pub async fn accept_invite(base_url: String, auth_token: String, jwt: String, id
 }
 
 #[wasm_bindgen]
-pub async fn reject_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
+pub async fn group_reject_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::reject_invite(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
 
@@ -353,7 +354,7 @@ pub async fn reject_invite(base_url: String, auth_token: String, jwt: String, id
 //join req
 
 #[wasm_bindgen]
-pub async fn join_req(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
+pub async fn group_join_req(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::join_req(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
 
@@ -361,7 +362,7 @@ pub async fn join_req(base_url: String, auth_token: String, jwt: String, id: Str
 }
 
 #[wasm_bindgen]
-pub async fn get_join_reqs(
+pub async fn group_get_join_reqs(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -386,7 +387,7 @@ pub async fn get_join_reqs(
 }
 
 #[wasm_bindgen]
-pub async fn reject_join_req(
+pub async fn group_reject_join_req(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -409,7 +410,7 @@ pub async fn reject_join_req(
 }
 
 #[wasm_bindgen]
-pub async fn accept_join_req(
+pub async fn group_accept_join_req(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -441,7 +442,7 @@ pub async fn accept_join_req(
 }
 
 #[wasm_bindgen]
-pub async fn join_user_session(
+pub async fn group_join_user_session(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -479,7 +480,7 @@ pub async fn leave_group(base_url: String, auth_token: String, jwt: String, id: 
 //key rotation
 
 #[wasm_bindgen]
-pub fn prepare_key_rotation(pre_group_key: &str, public_key: &str) -> Result<String, JsValue>
+pub fn group_prepare_key_rotation(pre_group_key: &str, public_key: &str) -> Result<String, JsValue>
 {
 	let out = group::key_rotation(pre_group_key, public_key)?;
 
@@ -487,7 +488,7 @@ pub fn prepare_key_rotation(pre_group_key: &str, public_key: &str) -> Result<Str
 }
 
 #[wasm_bindgen]
-pub fn done_key_rotation(private_key: &str, public_key: &str, pre_group_key: &str, server_output: &str) -> Result<String, JsValue>
+pub fn group_done_key_rotation(private_key: &str, public_key: &str, pre_group_key: &str, server_output: &str) -> Result<String, JsValue>
 {
 	let out = group::done_key_rotation(private_key, public_key, pre_group_key, server_output)?;
 
@@ -495,7 +496,7 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, pre_group_key: &st
 }
 
 #[wasm_bindgen]
-pub async fn key_rotation(
+pub async fn group_key_rotation(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -523,7 +524,7 @@ Get the keys for done key rotation.
 Then call for each key rotation server output the finish_key_rotation fn
 */
 #[wasm_bindgen]
-pub async fn pre_done_key_rotation(base_url: String, auth_token: String, jwt: String, id: String) -> Result<JsValue, JsValue>
+pub async fn group_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String, id: String) -> Result<JsValue, JsValue>
 {
 	let out = sentc_crypto_full::group::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
 
@@ -531,7 +532,7 @@ pub async fn pre_done_key_rotation(base_url: String, auth_token: String, jwt: St
 }
 
 #[wasm_bindgen]
-pub async fn finish_key_rotation(
+pub async fn group_finish_key_rotation(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -561,7 +562,7 @@ pub async fn finish_key_rotation(
 //group update fn
 
 #[wasm_bindgen]
-pub fn prepare_update_rank(user_id: &str, rank: i32, admin_rank: i32) -> Result<String, JsValue>
+pub fn group_prepare_update_rank(user_id: &str, rank: i32, admin_rank: i32) -> Result<String, JsValue>
 {
 	let input = group::prepare_change_rank(user_id, rank, admin_rank)?;
 
@@ -569,7 +570,7 @@ pub fn prepare_update_rank(user_id: &str, rank: i32, admin_rank: i32) -> Result<
 }
 
 #[wasm_bindgen]
-pub async fn update_rank(
+pub async fn group_update_rank(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
@@ -594,7 +595,7 @@ pub async fn update_rank(
 }
 
 #[wasm_bindgen]
-pub async fn kick_user(
+pub async fn group_kick_user(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
