@@ -620,3 +620,13 @@ pub async fn group_kick_user(
 }
 
 //__________________________________________________________________________________________________
+
+#[wasm_bindgen]
+pub async fn group_delete_group(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32) -> Result<(), JsValue>
+{
+	sentc_crypto_full::group::delete_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), admin_rank).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
