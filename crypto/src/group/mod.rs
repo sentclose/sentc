@@ -25,13 +25,12 @@ use crate::SdkError;
 #[cfg(not(feature = "rust"))]
 mod group;
 
+mod group_rank_check;
 #[cfg(feature = "rust")]
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
 pub use self::group::{
-	check_group_delete,
-	check_kick_user,
 	done_key_rotation,
 	get_group_data,
 	get_group_keys_from_pagination,
@@ -44,10 +43,9 @@ pub use self::group::{
 	GroupKeys,
 	GroupOutData,
 };
+pub use self::group_rank_check::{check_get_join_reqs, check_group_delete, check_kick_user, check_make_invite_req};
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
-	check_group_delete,
-	check_kick_user,
 	done_key_rotation,
 	get_group_data,
 	get_group_keys_from_pagination,
@@ -320,29 +318,6 @@ fn prepare_change_rank_internally(user_id: &str, new_rank: i32, admin_rank: i32)
 	}
 	.to_string()
 	.map_err(|_| SdkError::JsonToStringFailed)
-}
-
-fn check_kick_user_internally(user_rank: i32, admin_rank: i32) -> Result<(), SdkError>
-{
-	if admin_rank > 2 {
-		return Err(SdkError::GroupPermission);
-	}
-
-	if admin_rank > user_rank {
-		//user has a higher rank
-		return Err(SdkError::GroupUserKickRank);
-	}
-
-	Ok(())
-}
-
-fn check_group_delete_internally(admin_rank: i32) -> Result<(), SdkError>
-{
-	if admin_rank > 1 {
-		return Err(SdkError::GroupPermission);
-	}
-
-	Ok(())
 }
 
 #[cfg(test)]

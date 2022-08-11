@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
 use crate::group::{
-	check_group_delete_internally,
-	check_kick_user_internally,
 	done_key_rotation_internally,
 	get_group_keys_internally,
 	key_rotation_internally,
@@ -255,16 +253,6 @@ fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>)
 pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, String>
 {
 	Ok(prepare_change_rank_internally(user_id, new_rank, admin_rank)?)
-}
-
-pub fn check_kick_user(user_rank: i32, admin_rank: i32) -> Result<(), String>
-{
-	Ok(check_kick_user_internally(user_rank, admin_rank)?)
-}
-
-pub fn check_group_delete(admin_rank: i32) -> Result<(), String>
-{
-	Ok(check_group_delete_internally(admin_rank)?)
 }
 
 #[cfg(test)]
