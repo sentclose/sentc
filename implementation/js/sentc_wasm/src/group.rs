@@ -558,3 +558,64 @@ pub async fn finish_key_rotation(
 }
 
 //__________________________________________________________________________________________________
+//group update fn
+
+#[wasm_bindgen]
+pub fn prepare_update_rank(user_id: &str, rank: i32, admin_rank: i32) -> Result<String, JsValue>
+{
+	let input = group::prepare_change_rank(user_id, rank, admin_rank)?;
+
+	Ok(input)
+}
+
+#[wasm_bindgen]
+pub async fn update_rank(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	user_id: String,
+	rank: i32,
+	admin_rank: i32,
+) -> Result<(), JsValue>
+{
+	sentc_crypto_full::group::update_rank(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		user_id.as_str(),
+		rank,
+		admin_rank,
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[wasm_bindgen]
+pub async fn kick_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	user_id: String,
+	rank: i32,
+	admin_rank: i32,
+) -> Result<(), JsValue>
+{
+	sentc_crypto_full::group::kick_user(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		user_id.as_str(),
+		rank,
+		admin_rank,
+	)
+	.await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
