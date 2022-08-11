@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerOutput};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::SymKeyId;
 
 use crate::crypto::{
 	decrypt_asymmetric_internally,
@@ -258,11 +259,11 @@ pub fn done_fetch_sym_key(master_key: &str, server_out: &str) -> Result<String, 
 	Ok(export_sym_key_to_string(out)?)
 }
 
-pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<Vec<String>, String>
+pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<(Vec<String>, u128, SymKeyId), String>
 {
 	let master_key = import_sym_key(master_key)?;
 
-	let out = done_fetch_sym_keys_internally(&master_key, server_out)?;
+	let (out, last_time, last_id) = done_fetch_sym_keys_internally(&master_key, server_out)?;
 
 	let mut out_vec = Vec::with_capacity(out.len());
 
@@ -270,7 +271,7 @@ pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<Vec<Str
 		out_vec.push(export_sym_key_to_string(o)?);
 	}
 
-	Ok(out_vec)
+	Ok((out_vec, last_time, last_id))
 }
 
 pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
@@ -629,7 +630,7 @@ mod test
 			result: Some(server_outputs),
 		};
 
-		let decrypted_keys = done_fetch_sym_keys(master_key, server_response.to_string().unwrap().as_str()).unwrap();
+		let (decrypted_keys, _, _) = done_fetch_sym_keys(master_key, server_response.to_string().unwrap().as_str()).unwrap();
 
 		let text = "123*+^êéèüöß@€&$";
 

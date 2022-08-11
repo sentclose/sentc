@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::SymKeyId;
 
 use crate::crypto::{
 	decrypt_asymmetric_internally,
@@ -122,7 +123,7 @@ pub fn done_fetch_sym_key(master_key: &SymKeyFormat, server_out: &str) -> Result
 	done_fetch_sym_key_internally(master_key, server_out)
 }
 
-pub fn done_fetch_sym_keys(master_key: &SymKeyFormat, server_out: &str) -> Result<Vec<SymKeyFormat>, SdkError>
+pub fn done_fetch_sym_keys(master_key: &SymKeyFormat, server_out: &str) -> Result<(Vec<SymKeyFormat>, u128, SymKeyId), SdkError>
 {
 	done_fetch_sym_keys_internally(master_key, server_out)
 }
@@ -454,7 +455,7 @@ mod test
 			result: Some(server_outputs),
 		};
 
-		let decrypted_keys = done_fetch_sym_keys(master_key, server_response.to_string().unwrap().as_str()).unwrap();
+		let (decrypted_keys, _, _) = done_fetch_sym_keys(master_key, server_response.to_string().unwrap().as_str()).unwrap();
 
 		let text = "123*+^êéèüöß@€&$";
 

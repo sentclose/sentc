@@ -9,6 +9,7 @@ use alloc::vec::Vec;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerOutput, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::SymKeyId;
 use sentc_crypto_core::{crypto as crypto_core, SignK, ED25519_OUTPUT};
 
 #[cfg(not(feature = "rust"))]
@@ -364,17 +365,21 @@ fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str)
 
 like done_fetch_sym_key_internally but this time with an array of keys as server output
 */
-fn done_fetch_sym_keys_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<Vec<SymKeyFormatInt>, SdkError>
+fn done_fetch_sym_keys_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<(Vec<SymKeyFormatInt>, u128, SymKeyId), SdkError>
 {
 	let server_out: Vec<GeneratedSymKeyHeadServerOutput> = handle_server_response(server_out)?;
 
 	let mut keys = Vec::with_capacity(server_out.len());
 
+	let last_element = &server_out[server_out.len() - 1];
+	let last_time = last_element.time;
+	let last_id = last_element.key_id.to_string();
+
 	for out in server_out {
 		keys.push(decrypt_sym_key_internally(master_key, &out)?)
 	}
 
-	Ok(keys)
+	Ok((keys, last_time, last_id))
 }
 
 /**
