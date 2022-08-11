@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use sentc_crypto::{group, test_fn, user};
+use sentc_crypto::{group, test_fn, user, KeyData};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -61,6 +61,23 @@ pub struct DoneLoginData1
 	user_id: String,
 	exported_public_key: String,
 	exported_verify_key: String,
+}
+
+impl From<KeyData> for DoneLoginData1
+{
+	fn from(keys: KeyData) -> Self
+	{
+		Self {
+			private_key: keys.private_key,
+			public_key: keys.public_key,
+			sign_key: keys.sign_key,
+			verify_key: keys.verify_key,
+			jwt: keys.jwt,
+			user_id: keys.user_id,
+			exported_public_key: keys.exported_public_key,
+			exported_verify_key: keys.exported_verify_key,
+		}
+	}
 }
 
 #[wasm_bindgen]
@@ -132,16 +149,7 @@ pub fn done_login_test(
 {
 	let keys = user::done_login(master_key_encryption, server_output)?;
 
-	Ok(DoneLoginData1 {
-		private_key: keys.private_key,
-		public_key: keys.public_key,
-		sign_key: keys.sign_key,
-		verify_key: keys.verify_key,
-		jwt: keys.jwt,
-		user_id: keys.user_id,
-		exported_public_key: keys.exported_public_key,
-		exported_verify_key: keys.exported_verify_key,
-	})
+	Ok(keys.into())
 }
 
 #[wasm_bindgen]

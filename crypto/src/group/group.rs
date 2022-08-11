@@ -11,6 +11,7 @@ use crate::group::{
 	done_key_rotation_internally,
 	get_group_keys_internally,
 	key_rotation_internally,
+	prepare_change_rank_internally,
 	prepare_create_internally,
 	prepare_group_keys_for_new_member_internally,
 	prepare_group_keys_for_new_member_via_session_internally,
@@ -247,6 +248,11 @@ fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>)
 	}
 
 	split_group_keys
+}
+
+pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, String>
+{
+	Ok(prepare_change_rank_internally(user_id, new_rank, admin_rank)?)
 }
 
 #[cfg(test)]

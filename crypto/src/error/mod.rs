@@ -38,6 +38,10 @@ pub enum SdkError
 
 	AlgNotFound,
 
+	GroupRank,
+	GroupUserKickRank,
+	GroupPermission,
+
 	ServerErr(u32, String),
 }
 
@@ -78,6 +82,14 @@ pub fn err_to_msg(error: SdkError) -> String
 		SdkError::DerivedKeyWrongFormat => out_error("client_2", "The encrypted key has a wrong format."),
 		//salt decode error (from base64 string to bytes)
 		SdkError::DecodeSaltFailed => out_error("client_4", "The salt has a wrong format"),
+		SdkError::GroupRank => {
+			out_error(
+				"client_200",
+				"No valid group rank. Please choose between 1 (highest) and 4 (lowest)",
+			)
+		},
+		SdkError::GroupPermission => out_error("client_201", "No permission to fulfill this action"),
+		SdkError::GroupUserKickRank => out_error("client_202", "The user to delete has a higher rank"),
 		SdkError::ServerErr(code, msg) => {
 			out_error(
 				(String::from("server_") + code.to_string().as_str()).as_str(),

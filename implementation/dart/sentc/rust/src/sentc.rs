@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use sentc_crypto::{test_fn, user};
+use tokio::runtime::Runtime;
 
 pub struct PrepareLoginOutput
 {
@@ -46,6 +47,33 @@ pub fn done_login(
 ) -> Result<KeyData>
 {
 	let data = user::done_login(master_key_encryption.as_str(), server_output.as_str()).map_err(|err| anyhow!(err))?;
+
+	Ok(KeyData {
+		private_key: data.private_key,
+		public_key: data.public_key,
+		sign_key: data.sign_key,
+		verify_key: data.verify_key,
+		jwt: data.jwt,
+		exported_public_key: data.exported_public_key,
+		exported_verify_key: data.exported_verify_key,
+	})
+}
+
+pub fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<KeyData>
+{
+	let rt = Runtime::new().unwrap();
+
+	let data = rt
+		.block_on(async {
+			sentc_crypto_full::user::login(
+				base_url,
+				auth_token.as_str(),
+				user_identifier.as_str(),
+				password.as_str(),
+			)
+			.await
+		})
+		.map_err(|err| anyhow!(err))?;
 
 	Ok(KeyData {
 		private_key: data.private_key,

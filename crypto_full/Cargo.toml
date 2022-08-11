@@ -1,0 +1,34 @@
+[package]
+name = "sentc-crypto-full"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# own crypto lib
+sentc-crypto = {version = "0.1.0", path = "../crypto", default-features = false}
+
+sentc-crypto-common = {version = "0.1.0", path = "../sdk-common"}
+
+#_______________________________________________________________________________________________________________________
+# req handling
+reqwest = {version = "0.11.11", optional = true}
+
+wasm-bindgen = {version = "0.2.74", optional = true}
+
+wasm-bindgen-futures = {version = "0.4.31", optional = true}
+
+web-sys = {version = "0.3.4", optional = true, features = ['Headers', 'Request','RequestInit','RequestMode', 'Response','Window']}
+
+#_______________________________________________________________________________________________________________________
+# to decode the jwt to check the exp
+base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+
+[features]
+default = ["sentc-crypto/default","reqwest"]
+rust = ["sentc-crypto/rust","reqwest"]
+
+wasm = ["sentc-crypto/default","wasm-bindgen","wasm-bindgen-futures","web-sys"]

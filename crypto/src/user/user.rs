@@ -18,6 +18,7 @@ use crate::user::{
 	prepare_login_start_internally,
 	prepare_refresh_jwt_internally,
 	prepare_update_user_keys_internally,
+	prepare_user_identifier_update_internally,
 	register_internally,
 	reset_password_internally,
 };
@@ -122,6 +123,11 @@ pub fn done_login(
 	let result = done_login_internally(&master_key_encryption, server_output)?;
 
 	export_key_data(result)
+}
+
+pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, String>
+{
+	Ok(prepare_user_identifier_update_internally(user_identifier)?)
 }
 
 pub fn prepare_refresh_jwt(refresh_token: &str) -> Result<String, String>

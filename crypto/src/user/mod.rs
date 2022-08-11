@@ -25,6 +25,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserPublicKeyData,
+	UserUpdateServerInput,
 	UserVerifyKeyData,
 };
 use sentc_crypto_common::UserId;
@@ -65,6 +66,7 @@ pub use self::user::{
 	prepare_login_start,
 	prepare_refresh_jwt,
 	prepare_update_user_keys,
+	prepare_user_identifier_update,
 	register,
 	reset_password,
 	MasterKeyFormat,
@@ -81,6 +83,7 @@ pub use self::user_rust::{
 	prepare_login_start,
 	prepare_refresh_jwt,
 	prepare_update_user_keys,
+	prepare_user_identifier_update,
 	register,
 	reset_password,
 };
@@ -285,6 +288,15 @@ fn done_login_internally_with_server_out(
 		exported_public_key,
 		exported_verify_key,
 	})
+}
+
+fn prepare_user_identifier_update_internally(user_identifier: String) -> Result<String, SdkError>
+{
+	let input = UserUpdateServerInput {
+		user_identifier: user_identifier,
+	};
+
+	input.to_string().map_err(|_| SdkError::JsonToStringFailed)
 }
 
 fn prepare_refresh_jwt_internally(refresh_token: &str) -> Result<String, SdkError>

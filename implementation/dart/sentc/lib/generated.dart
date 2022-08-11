@@ -35,6 +35,15 @@ abstract class SentcFlutter {
       dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kDoneLoginConstMeta;
+
+  Future<KeyData> login(
+      {required String baseUrl,
+      required String authToken,
+      required String userIdentifier,
+      required String password,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kLoginConstMeta;
 }
 
 class KeyData {
@@ -150,6 +159,31 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "done_login",
         argNames: ["masterKeyEncryption", "serverOutput"],
+      );
+
+  Future<KeyData> login(
+          {required String baseUrl,
+          required String authToken,
+          required String userIdentifier,
+          required String password,
+          dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port_) => inner.wire_login(
+            port_,
+            _api2wire_String(baseUrl),
+            _api2wire_String(authToken),
+            _api2wire_String(userIdentifier),
+            _api2wire_String(password)),
+        parseSuccessData: _wire2api_key_data,
+        constMeta: kLoginConstMeta,
+        argValues: [baseUrl, authToken, userIdentifier, password],
+        hint: hint,
+      ));
+
+  FlutterRustBridgeTaskConstMeta get kLoginConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "login",
+        argNames: ["baseUrl", "authToken", "userIdentifier", "password"],
       );
 
   // Section: api2wire
@@ -309,6 +343,38 @@ class SentcFlutterWire implements FlutterRustBridgeWireBase {
   late final _wire_done_login = _wire_done_loginPtr.asFunction<
       void Function(
           int, ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
+
+  void wire_login(
+    int port_,
+    ffi.Pointer<wire_uint_8_list> base_url,
+    ffi.Pointer<wire_uint_8_list> auth_token,
+    ffi.Pointer<wire_uint_8_list> user_identifier,
+    ffi.Pointer<wire_uint_8_list> password,
+  ) {
+    return _wire_login(
+      port_,
+      base_url,
+      auth_token,
+      user_identifier,
+      password,
+    );
+  }
+
+  late final _wire_loginPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Int64,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>)>>('wire_login');
+  late final _wire_login = _wire_loginPtr.asFunction<
+      void Function(
+          int,
+          ffi.Pointer<wire_uint_8_list>,
+          ffi.Pointer<wire_uint_8_list>,
+          ffi.Pointer<wire_uint_8_list>,
+          ffi.Pointer<wire_uint_8_list>)>();
 
   ffi.Pointer<wire_uint_8_list> new_uint_8_list(
     int len,

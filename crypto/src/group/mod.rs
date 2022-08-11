@@ -9,6 +9,7 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::group::{
 	CreateData,
 	DoneKeyRotationData,
+	GroupChangeRankServerInput,
 	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
@@ -24,6 +25,7 @@ use crate::SdkError;
 #[cfg(not(feature = "rust"))]
 mod group;
 
+mod group_rank_check;
 #[cfg(feature = "rust")]
 mod group_rust;
 
@@ -33,6 +35,7 @@ pub use self::group::{
 	get_group_data,
 	get_group_keys_from_pagination,
 	key_rotation,
+	prepare_change_rank,
 	prepare_create,
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_via_session,
@@ -40,12 +43,14 @@ pub use self::group::{
 	GroupKeys,
 	GroupOutData,
 };
+pub use self::group_rank_check::{check_create_sub_group, check_get_join_reqs, check_group_delete, check_kick_user, check_make_invite_req};
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
 	done_key_rotation,
 	get_group_data,
 	get_group_keys_from_pagination,
 	key_rotation,
+	prepare_change_rank,
 	prepare_create,
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_via_session,
@@ -295,6 +300,24 @@ fn prepare_group_keys_for_new_member_internally_with_public_key(
 	}
 
 	Ok(encrypted_group_keys)
+}
+
+fn prepare_change_rank_internally(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, SdkError>
+{
+	if new_rank < 1 || new_rank > 4 {
+		return Err(SdkError::GroupRank);
+	}
+
+	if admin_rank > 1 {
+		return Err(SdkError::GroupPermission);
+	}
+
+	GroupChangeRankServerInput {
+		changed_user_id: user_id.to_string(),
+		new_rank,
+	}
+	.to_string()
+	.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 #[cfg(test)]

@@ -13,6 +13,10 @@ crate-type = ["staticlib", "cdylib"]
 # own crypto lib
 sentc-crypto = {version = "0.1.0", path = "../../../../crypto", features = ["server"] }
 
+sentc-crypto-full = {version = "0.1.0", path = "../../../../crypto_full"}
+
+tokio = { version = "1.14.0", features = ["rt-multi-thread"] }
+
 # flutter ffi
 flutter_rust_bridge = "1"
 
