@@ -66,6 +66,8 @@ export class Sentc
 		if (!this.sentc) {
 			await init();	//init wasm
 
+			//TODO init client to server -> refresh jwt
+
 			let errCallback: ResCallBack;
 
 			if (options?.storage?.errCallBack) {
@@ -162,6 +164,7 @@ export class Sentc
 			exported_public_key: out.get_exported_public_key(),
 			exported_verify_key: out.get_exported_verify_key(),
 			jwt: out.get_jwt(),
+			refresh_token: out.get_refresh_token(),
 			user_id: out.get_id()
 		};
 
@@ -186,7 +189,7 @@ export class Sentc
 			throw Error();
 		}
 
-		const jwt = await this.handleJwt(user.jwt);
+		const jwt = await this.handleJwt(user.jwt, user.refresh_token);
 
 		const decryptedPrivateKey = user.private_key;
 		const decryptedSignKey = user.sign_key;
@@ -262,18 +265,18 @@ export class Sentc
 			throw Error();
 		}
 
-		return this.handleJwt(user.jwt);
+		return this.handleJwt(user.jwt, user.refresh_token);
 	}
 
 	// eslint-disable-next-line require-await
-	private async handleJwt(jwt: string)
+	private async handleJwt(jwt: string, refresh_token: string)
 	{
 		const jwt_data = decode_jwt(jwt);
 
 		const exp = jwt_data.get_exp();
 
 		if (exp <= Date.now() + 30 * 1000) {
-			//TODO do refresh request
+			//TODO do refresh request and save the new jwt into the data
 		}
 
 		return jwt;
@@ -318,4 +321,11 @@ export class Sentc
 
 		return user;
 	}
+
+	//__________________________________________________________________________________________________________________
+
+	//TODO get group and return a group
+	// look first int he storage if the group is there, maybe call get group data again to get updates
+	// if not in store -> get group data from req
+	// return a group obj
 }

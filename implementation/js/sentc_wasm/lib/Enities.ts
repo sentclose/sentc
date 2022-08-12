@@ -16,6 +16,7 @@ export interface UserData
 	exported_public_key: string,
 	exported_verify_key: string,
 	jwt: string,
+	refresh_token: string,
 	user_id: string
 }
 

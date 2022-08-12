@@ -11,6 +11,7 @@ pub struct DoneLoginData
 	sign_key: String,
 	verify_key: String,
 	jwt: String,
+	refresh_token: String,
 	user_id: String,
 	exported_public_key: String,
 	exported_verify_key: String,
@@ -26,6 +27,7 @@ impl From<KeyData> for DoneLoginData
 			sign_key: keys.sign_key,
 			verify_key: keys.verify_key,
 			jwt: keys.jwt,
+			refresh_token: keys.refresh_token,
 			user_id: keys.user_id,
 			exported_public_key: keys.exported_public_key,
 			exported_verify_key: keys.exported_verify_key,
@@ -59,6 +61,11 @@ impl DoneLoginData
 	pub fn get_jwt(&self) -> String
 	{
 		self.jwt.clone()
+	}
+
+	pub fn get_refresh_token(&self) -> String
+	{
+		self.refresh_token.clone()
 	}
 
 	pub fn get_id(&self) -> String
