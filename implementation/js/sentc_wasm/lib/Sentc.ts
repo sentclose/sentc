@@ -191,14 +191,7 @@ export class Sentc
 	public async resetPassword(newPassword: string)
 	{
 		//check if the user is logged in with a valid jwt and got the private keys
-		const user = await Sentc.getActualUser();
-
-		if (!user) {
-			//TODO err handling
-			throw Error();
-		}
-
-		const jwt = await Sentc.handleJwt(user.jwt, user.refresh_token);
+		const user = await Sentc.getActualUser(true);
 
 		const decryptedPrivateKey = user.private_key;
 		const decryptedSignKey = user.sign_key;
@@ -206,7 +199,7 @@ export class Sentc
 		return reset_password(
 			this.options.base_url,
 			this.options.app_token,
-			jwt,
+			user.jwt,
 			newPassword,
 			decryptedPrivateKey,
 			decryptedSignKey
@@ -215,7 +208,7 @@ export class Sentc
 
 	public async changePassword(oldPassword:string, newPassword:string)
 	{
-		const user_check = await Sentc.getActualUser(true);
+		const user_check = await Sentc.getActualUser(false, true);
 
 		if (!user_check) {
 			//TODO err handling
@@ -235,7 +228,7 @@ export class Sentc
 
 	public async deleteUser(password: string)
 	{
-		const user = await Sentc.getActualUser(true);
+		const user = await Sentc.getActualUser(false, true);
 
 		if (!user) {
 			//TODO err handling
@@ -269,11 +262,6 @@ export class Sentc
 		//get the jwt from the store and check the exp
 		const user = await this.getActualUser();
 
-		if (!user) {
-			//TODO err handling
-			throw Error();
-		}
-
 		return this.handleJwt(user.jwt, user.refresh_token);
 	}
 
@@ -291,31 +279,61 @@ export class Sentc
 		return jwt;
 	}
 
-	private static getActualUser(): Promise<UserData | false>;
+	/**
+	 * Get the actual used user data
+	 *
+	 * @throws Error
+	 * when user is not set
+	 */
+	public static getActualUser(): Promise<UserData>;
 
-	private static getActualUser(username: boolean): Promise<[UserData, string] | false>;
+	/**
+	 * Get the actual user but with a valid jwt
+	 * @param jwt
+	 * @throws Error
+	 * when user is not set or the jwt refresh failed
+	 */
+	public static getActualUser(jwt: true): Promise<UserData>;
 
-	private static async getActualUser(username = false)
+	/**
+	 * Get the actual used user and the username
+	 *
+	 * @param jwt
+	 * @param username
+	 * @throws Error
+	 * when user not exists in the client
+	 */
+	public static getActualUser(jwt: false, username: true): Promise<[UserData, string]>;
+
+	public static async getActualUser(jwt = false, username = false)
 	{
-		const storage = await Sentc.getStore();
+		const storage = await this.getStore();
 
 		const actualUser: string = await storage.getItem(USER_KEY_STORAGE_NAMES.actualUser);
 
 		if (!actualUser) {
-			return false;
+			//TOD= error handling
+			throw new Error();
+		}
+
+		const user = await this.getUser(actualUser);
+
+		if (!user) {
+			//TODO error handling
+			throw new Error();
+		}
+
+		if (jwt) {
+			user.jwt = await this.handleJwt(user.jwt, user.refresh_token);
+
+			return user;
 		}
 
 		if (username) {
-			const user = await this.getUser(actualUser);
-
-			if (!user) {
-				return false;
-			}
-
 			return [user, actualUser];
 		}
 
-		return this.getUser(actualUser);
+		return user;
 	}
 
 	public static async getUser(userIdentifier: string): Promise<UserData | false>
@@ -352,14 +370,9 @@ export class Sentc
 			return new Group(group, this.options.base_url, this.options.app_token);
 		}
 
-		const user = await Sentc.getActualUser();
+		const user = await Sentc.getActualUser(true);
 
-		if (!user) {
-			//TODO err handling
-			throw Error();
-		}
-
-		const jwt = await Sentc.handleJwt(user.jwt, user.refresh_token);
+		const jwt = user.jwt;
 
 		const out = await group_get_group_data(
 			this.options.base_url,
@@ -369,24 +382,16 @@ export class Sentc
 			group_id
 		);
 
-		const group_data: GroupData = {
-			group_id: out.get_group_id(),
-			parent_group_id: out.get_parent_group_id(),
-			rank: out.get_rank(),
-			key_update: out.get_key_update(),
-			create_time: out.get_created_time(),
-			joined_time: out.get_joined_time(),
-			keys: out.get_keys()
-		};
+		const keys: GroupKey[] = out.get_keys();
 
-		if (group_data.keys.length > 50) {
+		if (keys.length > 50) {
 			//fetch the rest of the keys via pagination
-			let last_item = group_data.keys[group_data.keys.length - 1];
+			let last_item = keys[keys.length - 1];
 			let next_fetch = true;
 
 			while (next_fetch) {
 				// eslint-disable-next-line no-await-in-loop
-				const keys: GroupKey[] = await group_get_group_keys(
+				const fetchedKeys: GroupKey[] = await group_get_group_keys(
 					this.options.base_url,
 					this.options.app_token,
 					jwt,
@@ -396,14 +401,24 @@ export class Sentc
 					last_item.group_key_id
 				);
 
-				group_data.keys.push(...keys);
+				keys.push(...fetchedKeys);
 
-				next_fetch = keys.length > 50;
+				next_fetch = fetchedKeys.length > 50;
 
-				last_item = keys[keys.length - 1];
+				last_item = fetchedKeys[fetchedKeys.length - 1];
 			}
 			
 		}
+
+		const group_data: GroupData = {
+			group_id: out.get_group_id(),
+			parent_group_id: out.get_parent_group_id(),
+			rank: out.get_rank(),
+			key_update: out.get_key_update(),
+			create_time: out.get_created_time(),
+			joined_time: out.get_joined_time(),
+			keys
+		};
 
 		//store the group data
 		await storage.set(group_key, group_data);
