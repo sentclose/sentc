@@ -43,7 +43,14 @@ pub use self::group::{
 	GroupKeys,
 	GroupOutData,
 };
-pub use self::group_rank_check::{check_create_sub_group, check_get_join_reqs, check_group_delete, check_kick_user, check_make_invite_req};
+pub use self::group_rank_check::{
+	check_create_sub_group,
+	check_delete_user_rank,
+	check_get_join_reqs,
+	check_group_delete,
+	check_kick_user,
+	check_make_invite_req,
+};
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
 	done_key_rotation,

@@ -32,6 +32,15 @@ pub fn check_group_delete(admin_rank: i32) -> VoidRes
 	Ok(())
 }
 
+pub fn check_delete_user_rank(admin_rank: i32) -> VoidRes
+{
+	if admin_rank > 2 {
+		return Err(SdkError::GroupPermission)?;
+	}
+
+	Ok(())
+}
+
 pub fn check_get_join_reqs(admin_rank: i32) -> VoidRes
 {
 	if admin_rank > 2 {
