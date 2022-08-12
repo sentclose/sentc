@@ -4,7 +4,9 @@ export type UserId = GeneralIdFormat;
 export const enum USER_KEY_STORAGE_NAMES
 {
 	userData = "user_data",
-	actualUser = "actual_user"
+	actualUser = "actual_user",
+
+	groupData = "group_data"
 }
 
 export interface UserData
@@ -20,13 +22,21 @@ export interface UserData
 	user_id: string
 }
 
+export interface GroupKey {
+	private_group_key: string,
+	public_group_key: string,
+	group_key: string,
+	time: number
+}
+
 export interface GroupData
 {
 	group_id: string,
-	keys: {
-		private_group_key: string,
-		public_group_key: string,
-		group_key: string
-	}[]
+	parent_group_id: string,
+	rank: number,
+	key_update:boolean,
+	create_time: string,
+	joined_time: string,
+	keys: GroupKey[]
 }
 

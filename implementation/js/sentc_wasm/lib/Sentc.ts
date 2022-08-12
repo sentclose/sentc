@@ -12,10 +12,11 @@ import init, {
 	done_check_user_identifier_available,
 	done_register,
 	decode_jwt,
-	reset_password, update_user, change_password, delete_user
+	reset_password, update_user, change_password, delete_user, group_get_group_data
 } from "../pkg";
-import {USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
+import {GroupData, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
+import {Group} from "./Group";
 
 export interface StaticOptions {
 	errCallBack: ResCallBack
@@ -179,17 +180,19 @@ export class Sentc
 		return userData;
 	}
 
+	//__________________________________________________________________________________________________________________
+
 	public async resetPassword(newPassword: string)
 	{
 		//check if the user is logged in with a valid jwt and got the private keys
-		const user = await this.getActualUser();
+		const user = await Sentc.getActualUser();
 
 		if (!user) {
 			//TODO err handling
 			throw Error();
 		}
 
-		const jwt = await this.handleJwt(user.jwt, user.refresh_token);
+		const jwt = await Sentc.handleJwt(user.jwt, user.refresh_token);
 
 		const decryptedPrivateKey = user.private_key;
 		const decryptedSignKey = user.sign_key;
@@ -206,7 +209,7 @@ export class Sentc
 
 	public async changePassword(oldPassword:string, newPassword:string)
 	{
-		const user_check = await this.getActualUser(true);
+		const user_check = await Sentc.getActualUser(true);
 
 		if (!user_check) {
 			//TODO err handling
@@ -226,7 +229,7 @@ export class Sentc
 
 	public async deleteUser(password: string)
 	{
-		const user = await this.getActualUser(true);
+		const user = await Sentc.getActualUser(true);
 
 		if (!user) {
 			//TODO err handling
@@ -243,7 +246,7 @@ export class Sentc
 
 	public async updateUser(newIdentifier: string)
 	{
-		const jwt = await this.getJwt();
+		const jwt = await Sentc.getJwt();
 
 		return update_user(
 			this.options.base_url,
@@ -255,7 +258,7 @@ export class Sentc
 
 	//__________________________________________________________________________________________________________________
 
-	public async getJwt()
+	public static async getJwt()
 	{
 		//get the jwt from the store and check the exp
 		const user = await this.getActualUser();
@@ -269,7 +272,7 @@ export class Sentc
 	}
 
 	// eslint-disable-next-line require-await
-	private async handleJwt(jwt: string, refresh_token: string)
+	private static async handleJwt(jwt: string, refresh_token: string)
 	{
 		const jwt_data = decode_jwt(jwt);
 
@@ -282,11 +285,11 @@ export class Sentc
 		return jwt;
 	}
 
-	private getActualUser(): Promise<UserData | false>;
+	private static getActualUser(): Promise<UserData | false>;
 
-	private getActualUser(username: boolean): Promise<[UserData, string] | false>;
+	private static getActualUser(username: boolean): Promise<[UserData, string] | false>;
 
-	private async getActualUser(username = false)
+	private static async getActualUser(username = false)
 	{
 		const storage = await Sentc.getStore();
 
@@ -309,9 +312,9 @@ export class Sentc
 		return this.getUser(actualUser);
 	}
 
-	public async getUser(userIdentifier: string): Promise<UserData | false>
+	public static async getUser(userIdentifier: string): Promise<UserData | false>
 	{
-		const storage = await Sentc.getStore();
+		const storage = await this.getStore();
 
 		const user = await storage.getItem(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier);
 
@@ -324,8 +327,59 @@ export class Sentc
 
 	//__________________________________________________________________________________________________________________
 
-	//TODO get group and return a group
-	// look first int he storage if the group is there, maybe call get group data again to get updates
-	// if not in store -> get group data from req
-	// return a group obj
+	/**
+	 * Fetch a group in the client. Won't work for server side rendering, use here the extract group data
+	 *
+	 * @param group_id
+	 */
+	public async getGroup(group_id: string)
+	{
+		const storage = await Sentc.getStore();
+
+		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + group_id;
+
+		const group: GroupData = await storage.getItem(group_key);
+
+		if (group) {
+			//TODO check for group updates
+
+			return new Group(group, this.options.base_url, this.options.app_token);
+		}
+
+		const user = await Sentc.getActualUser();
+
+		if (!user) {
+			//TODO err handling
+			throw Error();
+		}
+
+		const jwt = await Sentc.handleJwt(user.jwt, user.refresh_token);
+
+		const out = await group_get_group_data(
+			this.options.base_url,
+			this.options.app_token,
+			jwt,
+			user.private_key,
+			group_id
+		);
+
+		const group_data: GroupData = {
+			group_id: out.get_group_id(),
+			parent_group_id: out.get_parent_group_id(),
+			rank: out.get_rank(),
+			key_update: out.get_key_update(),
+			create_time: out.get_created_time(),
+			joined_time: out.get_joined_time(),
+			keys: out.get_keys()
+		};
+
+		if (group_data.keys.length >= 50) {
+			//TODO fetch the rest of the keys via pagination
+		}
+
+		//store the group data
+		await storage.set(group_key, group_data);
+		
+		return new Group(group_data, this.options.base_url, this.options.app_token);
+	}
 }
