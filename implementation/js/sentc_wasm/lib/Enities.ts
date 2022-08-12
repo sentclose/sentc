@@ -59,3 +59,22 @@ export interface GroupKeyRotationOut
 	pre_group_key_id: string,
 	server_output: string
 }
+
+//______________________________________________________________________________________________________________________
+
+export interface SignHead {
+	id: string,
+	alg: string
+}
+
+export interface CryptoHead {
+	id: string,
+	sign: SignHead | undefined
+}
+
+export interface CryptoRawOutput
+{
+	head: string,
+	data: Uint8Array
+}
+

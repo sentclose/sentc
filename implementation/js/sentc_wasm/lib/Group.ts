@@ -2,9 +2,20 @@
  * @author Jörn Heinemann <joernheinemann@gmx.de>
  * @since 2022/08/12
  */
-import {GroupData, GroupJoinReqListItem, GroupKey, GroupKeyRotationOut, USER_KEY_STORAGE_NAMES} from "./Enities";
 import {
-	group_accept_join_req, group_delete_group,
+	CryptoHead,
+	CryptoRawOutput,
+	GroupData,
+	GroupJoinReqListItem,
+	GroupKey,
+	GroupKeyRotationOut,
+	USER_KEY_STORAGE_NAMES
+} from "./Enities";
+import {
+	decrypt_raw_symmetric,
+	encrypt_raw_symmetric,
+	group_accept_join_req,
+	group_delete_group,
 	group_done_key_rotation,
 	group_finish_key_rotation,
 	group_get_group_keys,
@@ -30,6 +41,8 @@ export class Group
 	constructor(private data: GroupData, private base_url: string, private app_token: string) {}
 
 	//__________________________________________________________________________________________________________________
+
+	//TODO create child group
 
 	public prepareKeysForNewMember(user_id: string)
 	{
@@ -378,4 +391,79 @@ export class Group
 
 		return [JSON.stringify(keys), end < this.data.keys.length - 1];
 	}
+
+	private async getGroupKey(key_id: string)
+	{
+		let key_index = this.data.key_map.get(key_id);
+
+		if (!key_index) {
+			const user = await Sentc.getActualUser(true);
+
+			this.data = await this.fetchKeys(user.jwt, user.private_key);
+
+			const storage = await Sentc.getStore();
+			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
+
+			await storage.set(group_key, this.data);
+
+			key_index = this.data.key_map.get(key_id);
+			if (!key_index) {
+				//key not found TODO error
+				throw new Error();
+			}
+		}
+
+		const key = this.data.keys[key_index]?.group_key;
+		if (!key) {
+			//key not found TODO error
+			throw new Error();
+		}
+
+		return key;
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public encryptRaw(data: Uint8Array): Promise<CryptoRawOutput>;
+
+	public encryptRaw(data: Uint8Array, sign: true): Promise<CryptoRawOutput>;
+
+	public async encryptRaw(data: Uint8Array, sign = false): Promise<CryptoRawOutput>
+	{
+		const latest_key = this.data.keys[this.data.keys.length - 1];
+
+		let sign_key = "";
+
+		if (sign) {
+			const user = await Sentc.getActualUser();
+
+			sign_key = user.sign_key;
+		}
+
+		const out = encrypt_raw_symmetric(latest_key.group_key, data, sign_key);
+
+		return {
+			head: out.get_head(),
+			data: out.get_data()
+		};
+	}
+
+	public decryptRaw(head: string, encrypted_data: Uint8Array): Promise<Uint8Array>;
+
+	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Promise<Uint8Array>;
+
+	public async decryptRaw(head: string, encrypted_data: Uint8Array, verify_key = ""): Promise<Uint8Array>
+	{
+		const de_head: CryptoHead = JSON.parse(head);
+
+		const key = await this.getGroupKey(de_head.id);
+
+		return decrypt_raw_symmetric(key, encrypted_data, head, verify_key);
+	}
+
+	//TODO normal encrypt and decrypt.
+	//TODO get sdk head deserialize
+	//TODO get from wasm split head and encrypted data so we can see the head from this data
+	//TODO encrypt and decrypt with register and non register keys (encrypted by group key)
+	//TODO for other sym keys get the master key id for key creation and save it in a head too, so we know which group key should use
 }
