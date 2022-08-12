@@ -38,7 +38,8 @@ export interface GroupData
 	key_update:boolean,
 	create_time: string,
 	joined_time: string,
-	keys: GroupKey[]
+	keys: GroupKey[],
+	key_map: Map<string, number>	//save the index of the key to this key id
 }
 
 export interface GroupInviteListItem

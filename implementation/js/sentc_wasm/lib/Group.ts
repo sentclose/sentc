@@ -2,9 +2,9 @@
  * @author Jörn Heinemann <joernheinemann@gmx.de>
  * @since 2022/08/12
  */
-import {GroupData, GroupJoinReqListItem, GroupKeyRotationOut} from "./Enities";
+import {GroupData, GroupJoinReqListItem, GroupKey, GroupKeyRotationOut, USER_KEY_STORAGE_NAMES} from "./Enities";
 import {
-	group_accept_join_req, group_done_key_rotation,
+	group_accept_join_req, group_done_key_rotation, group_finish_key_rotation, group_get_group_keys,
 	group_get_join_reqs,
 	group_invite_user,
 	group_invite_user_session,
@@ -206,12 +206,109 @@ export class Group
 	{
 		const user = await Sentc.getActualUser(true);
 
-		const keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url,this.app_token,user.jwt,this.data.group_id);
+		let keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url, this.app_token, user.jwt, this.data.group_id);
 
+		let next_round = false;
+		let rounds_left = 10;
 
+		do {
+			const left_keys = [];
+
+			//should be always there because the group rotation keys are ordered by time
+			for (let i = 0; i < keys.length; i++) {
+				const key = keys[i];
+
+				const pre_key_index = this.data.key_map.get(key.pre_group_key_id);
+				if (!pre_key_index) {
+					left_keys.push(key);
+					continue;
+				}
+
+				const pre_key = this.data.keys[pre_key_index];
+				if (!pre_key) {
+					left_keys.push(key);
+					continue;
+				}
+
+				//await must be in this loop because we need the keys
+				// eslint-disable-next-line no-await-in-loop
+				await group_finish_key_rotation(
+					this.base_url,
+					this.app_token,
+					user.jwt,
+					this.data.group_id,
+					key.server_output,
+					pre_key.group_key,
+					user.public_key,
+					user.private_key
+				);
+			}
+
+			//when it runs 10 times and there are still left -> break up
+			rounds_left--;
+
+			//fetch the new keys, when there are still keys left, maybe they are there after the key fetch -> must be in loop too
+			// eslint-disable-next-line no-await-in-loop
+			await this.fetchKeys(user.jwt, user.private_key);
+
+			if (left_keys.length > 0) {
+				keys = [];
+				//push the not found keys into the key array, maybe the pre group keys are in the next round
+				keys.push(...left_keys);
+
+				next_round = true;
+			} else {
+				next_round = false;
+			}
+		} while (next_round && rounds_left > 0);
+
+		//after a key rotation -> save the new group data in the store
+		const storage = await Sentc.getStore();
+		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
+		return storage.set(group_key, this.data);
 	}
 
 	//__________________________________________________________________________________________________________________
+
+	public async fetchKeys(jwt: string, private_key: string)
+	{
+		let last_item = this.data.keys[this.data.keys.length - 1];
+
+		let next_fetch = true;
+
+		const keys: GroupKey[] = [];
+
+		while (next_fetch) {
+			// eslint-disable-next-line no-await-in-loop
+			const fetchedKeys: GroupKey[] = await group_get_group_keys(
+				this.base_url,
+				this.app_token,
+				jwt,
+				private_key,
+				this.data.group_id,
+				last_item.time.toString(),
+				last_item.group_key_id
+			);
+
+			keys.push(...fetchedKeys);
+
+			next_fetch = fetchedKeys.length > 50;
+
+			last_item = fetchedKeys[fetchedKeys.length - 1];
+		}
+
+		const last_inserted_key_index = this.data.keys.length;
+
+		//insert in the key map
+		for (let i = 0; i < keys.length; i++) {
+			this.data.key_map.set(keys[i].group_key_id, i + last_inserted_key_index);
+		}
+
+		this.data.keys.push(...keys);
+
+		//return the updated data, so it can be saved in the store
+		return this.data;
+	}
 
 	private prepareKeyString(page = 0): [string, boolean]
 	{

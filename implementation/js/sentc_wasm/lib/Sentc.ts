@@ -18,9 +18,9 @@ import init, {
 	delete_user,
 	group_get_group_data,
 	group_get_invites_for_user,
-	group_accept_invite, group_reject_invite, group_get_group_keys, group_join_req
+	group_accept_invite, group_reject_invite, group_join_req
 } from "../pkg";
-import {GroupData, GroupInviteListItem, GroupKey, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
+import {GroupData, GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {Group} from "./Group";
 
@@ -382,48 +382,30 @@ export class Sentc
 			group_id
 		);
 
-		const keys: GroupKey[] = out.get_keys();
+		const keys = out.get_keys();
 
-		if (keys.length > 50) {
-			//fetch the rest of the keys via pagination
-			let last_item = keys[keys.length - 1];
-			let next_fetch = true;
-
-			while (next_fetch) {
-				// eslint-disable-next-line no-await-in-loop
-				const fetchedKeys: GroupKey[] = await group_get_group_keys(
-					this.options.base_url,
-					this.options.app_token,
-					jwt,
-					user.private_key,
-					group_id,
-					last_item.time.toString(),
-					last_item.group_key_id
-				);
-
-				keys.push(...fetchedKeys);
-
-				next_fetch = fetchedKeys.length > 50;
-
-				last_item = fetchedKeys[fetchedKeys.length - 1];
-			}
-			
-		}
-
-		const group_data: GroupData = {
+		let group_data: GroupData = {
 			group_id: out.get_group_id(),
 			parent_group_id: out.get_parent_group_id(),
 			rank: out.get_rank(),
 			key_update: out.get_key_update(),
 			create_time: out.get_created_time(),
 			joined_time: out.get_joined_time(),
-			keys
+			keys,
+			key_map: new Map()
 		};
+
+		const group_obj = new Group(group_data, this.options.base_url, this.options.app_token);
+
+		if (keys.length >= 50) {
+			//fetch the rest of the keys via pagination, get the updated data back
+			group_data = await group_obj.fetchKeys(jwt, user.private_key);
+		}
 
 		//store the group data
 		await storage.set(group_key, group_data);
 		
-		return new Group(group_data, this.options.base_url, this.options.app_token);
+		return group_obj;
 	}
 
 	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)
