@@ -4,10 +4,7 @@ export type UserId = GeneralIdFormat;
 export const enum USER_KEY_STORAGE_NAMES
 {
 	userData = "user_data",
-	privateKey = "private_key",
-	publicKey = "public_key",
-	verifyKey = "verify_key",
-	signKey = "sign_key"
+	actualUser = "actual_user"
 }
 
 export interface UserData
