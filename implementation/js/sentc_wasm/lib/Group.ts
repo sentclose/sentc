@@ -2,13 +2,13 @@
  * @author Jörn Heinemann <joernheinemann@gmx.de>
  * @since 2022/08/12
  */
-import {GroupData, GroupJoinReqListItem} from "./Enities";
+import {GroupData, GroupJoinReqListItem, GroupKeyRotationOut} from "./Enities";
 import {
-	group_accept_join_req,
+	group_accept_join_req, group_done_key_rotation,
 	group_get_join_reqs,
 	group_invite_user,
 	group_invite_user_session,
-	group_join_user_session,
+	group_join_user_session, group_key_rotation, group_pre_done_key_rotation, group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
 	group_reject_join_req, leave_group
 } from "../pkg";
@@ -176,6 +176,39 @@ export class Group
 			jwt,
 			this.data.group_id
 		);
+	}
+
+	//__________________________________________________________________________________________________________________
+	//key rotation
+
+	public async prepareKeyRotation()
+	{
+		const user = await Sentc.getActualUser(true);
+
+		return group_prepare_key_rotation(this.data.keys[this.data.keys.length - 1].group_key, user.public_key);
+	}
+
+	public async doneKeyRotation(server_output: string)
+	{
+		const user = await Sentc.getActualUser(true);
+
+		return group_done_key_rotation(user.private_key, user.public_key, this.data.keys[this.data.keys.length - 1].group_key, server_output);
+	}
+
+	public async keyRotation()
+	{
+		const user = await Sentc.getActualUser(true);
+
+		return group_key_rotation(this.base_url, this.app_token, user.jwt, this.data.group_id, user.public_key, this.data.keys[this.data.keys.length - 1].group_key);
+	}
+
+	public async finishKeyRotation()
+	{
+		const user = await Sentc.getActualUser(true);
+
+		const keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url,this.app_token,user.jwt,this.data.group_id);
+
+
 	}
 
 	//__________________________________________________________________________________________________________________

@@ -52,3 +52,9 @@ export interface GroupJoinReqListItem
 	user_id: string,
 	time: number
 }
+
+export interface GroupKeyRotationOut
+{
+	pre_group_key_id: string,
+	server_output: string
+}
