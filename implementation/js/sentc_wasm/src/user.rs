@@ -205,6 +205,27 @@ pub async fn reset_password(
 }
 
 #[wasm_bindgen]
+pub async fn change_password(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	old_password: String,
+	new_password: String,
+) -> Result<(), JsValue>
+{
+	sentc_crypto_full::user::change_password(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		old_password.as_str(),
+		new_password.as_str(),
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[wasm_bindgen]
 pub async fn delete_user(base_url: String, auth_token: String, jwt: String) -> Result<(), JsValue>
 {
 	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), jwt.as_str()).await?)
