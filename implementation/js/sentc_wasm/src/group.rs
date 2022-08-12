@@ -554,15 +554,7 @@ pub async fn group_update_rank(
 }
 
 #[wasm_bindgen]
-pub async fn group_kick_user(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	user_id: String,
-	rank: i32,
-	admin_rank: i32,
-) -> Result<(), JsValue>
+pub async fn group_kick_user(base_url: String, auth_token: String, jwt: String, id: String, user_id: String, admin_rank: i32) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::kick_user(
 		base_url,
@@ -570,7 +562,6 @@ pub async fn group_kick_user(
 		jwt.as_str(),
 		id.as_str(),
 		user_id.as_str(),
-		rank,
 		admin_rank,
 	)
 	.await?;

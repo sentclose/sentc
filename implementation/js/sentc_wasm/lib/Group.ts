@@ -4,13 +4,23 @@
  */
 import {GroupData, GroupJoinReqListItem, GroupKey, GroupKeyRotationOut, USER_KEY_STORAGE_NAMES} from "./Enities";
 import {
-	group_accept_join_req, group_done_key_rotation, group_finish_key_rotation, group_get_group_keys,
+	group_accept_join_req, group_delete_group,
+	group_done_key_rotation,
+	group_finish_key_rotation,
+	group_get_group_keys,
 	group_get_join_reqs,
 	group_invite_user,
 	group_invite_user_session,
-	group_join_user_session, group_key_rotation, group_pre_done_key_rotation, group_prepare_key_rotation,
+	group_join_user_session,
+	group_key_rotation,
+	group_kick_user,
+	group_pre_done_key_rotation,
+	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
-	group_reject_join_req, leave_group
+	group_prepare_update_rank,
+	group_reject_join_req,
+	group_update_rank,
+	leave_group
 } from "../pkg";
 import {Sentc} from "./Sentc";
 
@@ -266,6 +276,47 @@ export class Group
 		const storage = await Sentc.getStore();
 		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
 		return storage.set(group_key, this.data);
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public prepareUpdateRank(user_id: string, new_rank: number)
+	{
+		return group_prepare_update_rank(user_id, new_rank, this.data.rank);
+	}
+
+	public async updateRank(user_id: string, new_rank: number)
+	{
+		const user = await Sentc.getActualUser(true);
+
+		//check if the updated user is the actual user -> then update the group store
+
+		await group_update_rank(this.base_url, this.app_token, user.jwt, this.data.group_id, user_id, new_rank, this.data.rank);
+		
+		if (user.user_id === user_id) {
+			const storage = await Sentc.getStore();
+			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
+
+			this.data.rank = new_rank;
+
+			return storage.set(group_key, this.data);
+		}
+	}
+
+	public async kickUser(user_id: string)
+	{
+		const jwt = await Sentc.getJwt();
+
+		return group_kick_user(this.base_url, this.app_token, jwt, this.data.group_id, user_id, this.data.rank);
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public async deleteGroup()
+	{
+		const jwt = await Sentc.getJwt();
+
+		return group_delete_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank);
 	}
 
 	//__________________________________________________________________________________________________________________
