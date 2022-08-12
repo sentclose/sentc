@@ -12,6 +12,7 @@ pub struct GroupKeyData
 	public_group_key: String,
 	group_key: String,
 	time: u128,
+	group_key_id: String,
 }
 
 impl From<group::GroupKeyData> for GroupKeyData
@@ -23,6 +24,7 @@ impl From<group::GroupKeyData> for GroupKeyData
 			public_group_key: key.public_group_key,
 			group_key: key.group_key,
 			time: key.time,
+			group_key_id: key.group_key_id,
 		}
 	}
 }

@@ -1,9 +1,9 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::GroupId;
+use sentc_crypto_common::{GroupId, SymKeyId};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
@@ -41,6 +41,7 @@ pub struct GroupKeyData
 	pub public_group_key: String,
 	pub group_key: String,
 	pub time: u128,
+	pub group_key_id: SymKeyId,
 }
 
 /**
@@ -126,6 +127,8 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 {
 	let result = get_group_keys_internally(&private_key, &server_output)?;
 
+	let group_key_id = result.group_key.key_id.to_string();
+
 	let private_group_key = export_private_key_to_string(result.private_group_key)?;
 	let public_group_key = export_public_key_to_string(result.public_group_key)?;
 	let group_key = export_sym_key_to_string(result.group_key)?;
@@ -135,6 +138,7 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 		public_group_key,
 		group_key,
 		time: result.time,
+		group_key_id,
 	})
 }
 
