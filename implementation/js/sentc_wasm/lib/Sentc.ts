@@ -12,9 +12,15 @@ import init, {
 	done_check_user_identifier_available,
 	done_register,
 	decode_jwt,
-	reset_password, update_user, change_password, delete_user, group_get_group_data
+	reset_password,
+	update_user,
+	change_password,
+	delete_user,
+	group_get_group_data,
+	group_get_invites_for_user,
+	group_accept_invite, group_reject_invite, group_get_group_keys
 } from "../pkg";
-import {GroupData, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
+import {GroupData, GroupInviteListItem, GroupKey, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {Group} from "./Group";
 
@@ -373,13 +379,74 @@ export class Sentc
 			keys: out.get_keys()
 		};
 
-		if (group_data.keys.length >= 50) {
-			//TODO fetch the rest of the keys via pagination
+		if (group_data.keys.length > 50) {
+			//fetch the rest of the keys via pagination
+			let last_item = group_data.keys[group_data.keys.length - 1];
+			let next_fetch = true;
+
+			while (next_fetch) {
+				// eslint-disable-next-line no-await-in-loop
+				const keys: GroupKey[] = await group_get_group_keys(
+					this.options.base_url,
+					this.options.app_token,
+					jwt,
+					user.private_key,
+					group_id,
+					last_item.time.toString(),
+					last_item.group_key_id
+				);
+
+				group_data.keys.push(...keys);
+
+				next_fetch = keys.length > 50;
+
+				last_item = keys[keys.length - 1];
+			}
+			
 		}
 
 		//store the group data
 		await storage.set(group_key, group_data);
 		
 		return new Group(group_data, this.options.base_url, this.options.app_token);
+	}
+
+	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)
+	{
+		const jwt = await Sentc.getJwt();
+
+		const out: GroupInviteListItem[] = await group_get_invites_for_user(
+			this.options.base_url,
+			this.options.app_token,
+			jwt,
+			last_fetched_item.time.toString(),
+			last_fetched_item.group_id
+		);
+
+		return out;
+	}
+
+	public async acceptGroupInvite(group_id: string)
+	{
+		const jwt = await Sentc.getJwt();
+
+		return group_accept_invite(
+			this.options.base_url,
+			this.options.app_token,
+			jwt,
+			group_id
+		);
+	}
+
+	public async rejectGroupInvite(group_id: string)
+	{
+		const jwt = await Sentc.getJwt();
+
+		return group_reject_invite(
+			this.options.base_url,
+			this.options.app_token,
+			jwt,
+			group_id
+		);
 	}
 }

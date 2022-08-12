@@ -26,7 +26,8 @@ export interface GroupKey {
 	private_group_key: string,
 	public_group_key: string,
 	group_key: string,
-	time: number
+	time: number,
+	group_key_id: string
 }
 
 export interface GroupData
@@ -40,3 +41,8 @@ export interface GroupData
 	keys: GroupKey[]
 }
 
+export interface GroupInviteListItem
+{
+	group_id: string,
+	time: number
+}
