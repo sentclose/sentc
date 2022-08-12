@@ -292,7 +292,7 @@ export class Group
 
 			keys.push(...fetchedKeys);
 
-			next_fetch = fetchedKeys.length > 50;
+			next_fetch = fetchedKeys.length >= 50;
 
 			last_item = fetchedKeys[fetchedKeys.length - 1];
 		}
