@@ -18,7 +18,7 @@ import init, {
 	delete_user,
 	group_get_group_data,
 	group_get_invites_for_user,
-	group_accept_invite, group_reject_invite, group_get_group_keys
+	group_accept_invite, group_reject_invite, group_get_group_keys, group_join_req
 } from "../pkg";
 import {GroupData, GroupInviteListItem, GroupKey, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
@@ -443,6 +443,19 @@ export class Sentc
 		const jwt = await Sentc.getJwt();
 
 		return group_reject_invite(
+			this.options.base_url,
+			this.options.app_token,
+			jwt,
+			group_id
+		);
+	}
+
+	//join req
+	public async groupJoinRequest(group_id: string)
+	{
+		const jwt = await Sentc.getJwt();
+
+		return group_join_req(
 			this.options.base_url,
 			this.options.app_token,
 			jwt,

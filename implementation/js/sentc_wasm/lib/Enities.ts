@@ -46,3 +46,9 @@ export interface GroupInviteListItem
 	group_id: string,
 	time: number
 }
+
+export interface GroupJoinReqListItem
+{
+	user_id: string,
+	time: number
+}
