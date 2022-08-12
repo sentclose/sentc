@@ -184,9 +184,6 @@ pub async fn get_invites_for_user(
 
 	let invites: Vec<GroupInviteReqList> = handle_server_response(res.as_str())?;
 
-	#[cfg(not(feature = "rust"))]
-	let invites = serde_json::to_string(&invites).map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?;
-
 	Ok(invites)
 }
 
@@ -236,9 +233,6 @@ pub async fn get_join_reqs(
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
 	let join_reqs: Vec<GroupJoinReqList> = handle_server_response(res.as_str())?;
-
-	#[cfg(not(feature = "rust"))]
-	let join_reqs = serde_json::to_string(&join_reqs).map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?;
 
 	Ok(join_reqs)
 }
