@@ -2,32 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use sentc_crypto::group;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-
-#[derive(Serialize, Deserialize)]
-pub struct GroupKeyData
-{
-	private_group_key: String,
-	public_group_key: String,
-	group_key: String,
-	time: u128,
-	group_key_id: String,
-}
-
-impl From<group::GroupKeyData> for GroupKeyData
-{
-	fn from(key: group::GroupKeyData) -> Self
-	{
-		Self {
-			private_group_key: key.private_group_key,
-			public_group_key: key.public_group_key,
-			group_key: key.group_key,
-			time: key.time,
-			group_key_id: key.group_key_id,
-		}
-	}
-}
 
 #[wasm_bindgen]
 pub struct GroupOutData
@@ -38,19 +13,13 @@ pub struct GroupOutData
 	key_update: bool,
 	created_time: u128,
 	joined_time: u128,
-	keys: Vec<GroupKeyData>,
+	keys: Vec<group::GroupKeyData>,
 }
 
 impl From<group::GroupOutData> for GroupOutData
 {
 	fn from(data: group::GroupOutData) -> Self
 	{
-		let mut out_keys = Vec::with_capacity(data.keys.len());
-
-		for key in data.keys {
-			out_keys.push(key.into());
-		}
-
 		Self {
 			group_id: data.group_id,
 			parent_group_id: data.parent_group_id,
@@ -58,7 +27,7 @@ impl From<group::GroupOutData> for GroupOutData
 			key_update: data.key_update,
 			created_time: data.created_time,
 			joined_time: data.joined_time,
-			keys: out_keys,
+			keys: data.keys,
 		}
 	}
 }
@@ -182,13 +151,7 @@ pub fn group_extract_group_keys(private_key: &str, server_output: &str) -> Resul
 {
 	let out = group::get_group_keys_from_pagination(private_key, server_output)?;
 
-	let mut out_keys: Vec<GroupKeyData> = Vec::with_capacity(out.len());
-
-	for key in out {
-		out_keys.push(key.into());
-	}
-
-	Ok(JsValue::from_serde(&out_keys).unwrap())
+	Ok(JsValue::from_serde(&out).unwrap())
 }
 
 #[wasm_bindgen]
@@ -229,13 +192,7 @@ pub async fn group_get_group_keys(
 	)
 	.await?;
 
-	let mut out_keys: Vec<GroupKeyData> = Vec::with_capacity(out.len());
-
-	for key in out {
-		out_keys.push(key.into());
-	}
-
-	Ok(JsValue::from_serde(&out_keys).unwrap())
+	Ok(JsValue::from_serde(&out).unwrap())
 }
 
 //__________________________________________________________________________________________________
