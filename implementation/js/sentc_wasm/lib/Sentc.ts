@@ -16,13 +16,12 @@ import init, {
 	update_user,
 	change_password,
 	delete_user,
-	group_get_group_data,
 	group_get_invites_for_user,
 	group_accept_invite, group_reject_invite, group_join_req
 } from "../pkg";
-import {GroupData, GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
+import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
-import {Group} from "./Group";
+import {getGroup} from "./Group";
 
 export interface StaticOptions {
 	errCallBack: ResCallBack
@@ -356,56 +355,9 @@ export class Sentc
 	 *
 	 * @param group_id
 	 */
-	public async getGroup(group_id: string)
+	public getGroup(group_id: string)
 	{
-		const storage = await Sentc.getStore();
-
-		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + group_id;
-
-		const group: GroupData = await storage.getItem(group_key);
-
-		if (group) {
-			//TODO check for group updates
-
-			return new Group(group, this.options.base_url, this.options.app_token);
-		}
-
-		const user = await Sentc.getActualUser(true);
-
-		const jwt = user.jwt;
-
-		const out = await group_get_group_data(
-			this.options.base_url,
-			this.options.app_token,
-			jwt,
-			user.private_key,
-			group_id
-		);
-
-		const keys = out.get_keys();
-
-		let group_data: GroupData = {
-			group_id: out.get_group_id(),
-			parent_group_id: out.get_parent_group_id(),
-			rank: out.get_rank(),
-			key_update: out.get_key_update(),
-			create_time: out.get_created_time(),
-			joined_time: out.get_joined_time(),
-			keys,
-			key_map: new Map()
-		};
-
-		const group_obj = new Group(group_data, this.options.base_url, this.options.app_token);
-
-		if (keys.length >= 50) {
-			//fetch the rest of the keys via pagination, get the updated data back
-			group_data = await group_obj.fetchKeys(jwt, user.private_key);
-		}
-
-		//store the group data
-		await storage.set(group_key, group_data);
-		
-		return group_obj;
+		return getGroup(group_id, this.options.base_url, this.options.app_token);
 	}
 
 	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)

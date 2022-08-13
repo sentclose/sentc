@@ -57,7 +57,18 @@ export interface GroupJoinReqListItem
 export interface GroupKeyRotationOut
 {
 	pre_group_key_id: string,
-	server_output: string
+	server_output: string,
+	encrypted_eph_key_key_id: string
+}
+
+export interface KeyRotationInput {
+	encrypted_ephemeral_key_by_group_key_and_public_key: string,
+	encrypted_group_key_by_ephemeral: string,
+	ephemeral_alg: string,
+	encrypted_eph_key_key_id: string, //the public key id which was used to encrypt the eph key on the server.
+	previous_group_key_id: string,
+	time: string,
+	new_group_key_id: string,
 }
 
 //______________________________________________________________________________________________________________________

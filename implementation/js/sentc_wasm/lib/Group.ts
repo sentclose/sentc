@@ -8,7 +8,7 @@ import {
 	GroupData,
 	GroupJoinReqListItem,
 	GroupKey,
-	GroupKeyRotationOut,
+	GroupKeyRotationOut, KeyRotationInput,
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
@@ -17,11 +17,17 @@ import {
 	decrypt_symmetric,
 	deserialize_head_from_string,
 	encrypt_raw_symmetric,
-	encrypt_string_symmetric, encrypt_symmetric, generate_and_register_sym_key, get_sym_key_by_id,
-	group_accept_join_req, group_create_child_group,
+	encrypt_string_symmetric,
+	encrypt_symmetric,
+	generate_and_register_sym_key,
+	get_sym_key_by_id,
+	group_accept_join_req,
+	group_create_child_group,
 	group_delete_group,
 	group_done_key_rotation,
 	group_finish_key_rotation,
+	group_get_done_key_rotation_server_input,
+	group_get_group_data,
 	group_get_group_keys,
 	group_get_join_reqs,
 	group_invite_user,
@@ -29,7 +35,8 @@ import {
 	group_join_user_session,
 	group_key_rotation,
 	group_kick_user,
-	group_pre_done_key_rotation, group_prepare_create_group,
+	group_pre_done_key_rotation,
+	group_prepare_create_group,
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
 	group_prepare_update_rank,
@@ -42,17 +49,79 @@ import {
 import {Sentc} from "./Sentc";
 
 
+export async function getGroup(group_id: string, base_url: string, app_token: string, parent_private_key: string | false = false) {
+	const storage = await Sentc.getStore();
+
+	const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + group_id;
+
+	const group: GroupData = await storage.getItem(group_key);
+
+	if (group) {
+		//TODO check for group updates
+
+		return new Group(group, base_url, app_token, !!(parent_private_key));
+	}
+
+	const user = await Sentc.getActualUser(true);
+
+	const jwt = user.jwt;
+
+	const private_key = (parent_private_key !== false) ? parent_private_key : user.private_key;
+
+	const out = await group_get_group_data(
+		base_url,
+		app_token,
+		jwt,
+		private_key,
+		group_id
+	);
+
+	const keys = out.get_keys();
+
+	let group_data: GroupData = {
+		group_id: out.get_group_id(),
+		parent_group_id: out.get_parent_group_id(),
+		rank: out.get_rank(),
+		key_update: out.get_key_update(),
+		create_time: out.get_created_time(),
+		joined_time: out.get_joined_time(),
+		keys,
+		key_map: new Map()
+	};
+
+	const group_obj = new Group(group_data, base_url, app_token, !!(parent_private_key));
+
+	if (keys.length >= 50) {
+		//fetch the rest of the keys via pagination, get the updated data back
+		group_data = await group_obj.fetchKeys(jwt, user.private_key);
+	}
+
+	//store the group data
+	await storage.set(group_key, group_data);
+
+	return group_obj;
+}
+
 export class Group
 {
-	constructor(private data: GroupData, private base_url: string, private app_token: string) {}
+	constructor(private data: GroupData, private base_url: string, private app_token: string, private from_parent: boolean) {}
 
 	//__________________________________________________________________________________________________________________
 
+	public getChildGroup(group_id: string)
+	{
+		//TODO get the right used private key
+
+		//return getGroup(group_id,this.base_url,this.app_token,this.data.)
+	}
+
 	public prepareCreateChildGroup()
 	{
-		const latest_key = this.data.keys[this.data.keys.length - 1].public_group_key;
+		const latest_key = this.data.keys[this.data.keys.length - 1];
 
-		return group_prepare_create_group(latest_key);
+		const group_input = group_prepare_create_group(latest_key.public_group_key);
+
+		return [group_input, latest_key.group_key_id];
 	}
 
 	public async createChildGroup()
@@ -232,25 +301,115 @@ export class Group
 	//__________________________________________________________________________________________________________________
 	//key rotation
 
+	/**
+	 * Get the actual used public key.
+	 * For the user, or if user joined via parent group the parent group public key
+	 *
+	 * @private
+	 */
+	private async getPublicKey()
+	{
+		let public_key;
+
+		if (!this.from_parent) {
+			const user = await Sentc.getActualUser(true);
+
+			public_key = user.public_key;
+		} else {
+			//get parent group public key
+			const storage = await Sentc.getStore();
+			const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.parent_group_id;
+			const parent_group: GroupData = await storage.getItem(parent_group_key);
+
+			if (!parent_group) {
+				//TODO err handling
+				throw new Error();
+			}
+
+			//use the latest key
+			public_key = parent_group.keys[parent_group.keys.length - 1].public_group_key;
+		}
+
+		return public_key;
+	}
+
+	/**
+	 * Gets the right private key to the used public key
+	 *
+	 * @param private_key_id
+	 * @private
+	 */
+	private async getPrivateKey(private_key_id: string)
+	{
+		if (!this.from_parent) {
+			const user = await Sentc.getActualUser(true);
+			return user.private_key;
+		}
+
+		//get parent group public key
+		const storage = await Sentc.getStore();
+		const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.parent_group_id;
+		const parent_group: GroupData = await storage.getItem(parent_group_key);
+
+		if (!parent_group) {
+			//TODO err handling
+			throw new Error();
+		}
+
+		const group_key = await this.getGroupKey(private_key_id);
+
+		//use the latest key
+		return group_key.private_group_key;
+	}
+
+	private getKeyRotationServerOut(server_output: string): KeyRotationInput
+	{
+		const de_server_output = group_get_done_key_rotation_server_input(server_output);
+
+		return {
+			encrypted_eph_key_key_id: de_server_output.get_encrypted_eph_key_key_id(),
+			encrypted_ephemeral_key_by_group_key_and_public_key: de_server_output.get_encrypted_ephemeral_key_by_group_key_and_public_key(),
+			encrypted_group_key_by_ephemeral: de_server_output.get_encrypted_group_key_by_ephemeral(),
+			ephemeral_alg: de_server_output.get_ephemeral_alg(),
+			new_group_key_id: de_server_output.get_new_group_key_id(),
+			previous_group_key_id: de_server_output.get_previous_group_key_id(),
+			time: de_server_output.get_time()
+		};
+	}
+
+	/**
+	 * Prepares the key rotation to use it with own backend.
+	 *
+	 * The newest public key is used to encrypt the key for the starter.
+	 * If the starter joined via parent group then the parent group public key is used
+	 */
 	public async prepareKeyRotation()
 	{
-		const user = await Sentc.getActualUser(true);
+		//if this is a child group -> start the key rotation with the parent key!
+		const public_key = await this.getPublicKey();
 
-		return group_prepare_key_rotation(this.data.keys[this.data.keys.length - 1].group_key, user.public_key);
+		return group_prepare_key_rotation(this.data.keys[this.data.keys.length - 1].group_key, public_key);
 	}
 
 	public async doneKeyRotation(server_output: string)
 	{
-		const user = await Sentc.getActualUser(true);
+		const out = this.getKeyRotationServerOut(server_output);
 
-		return group_done_key_rotation(user.private_key, user.public_key, this.data.keys[this.data.keys.length - 1].group_key, server_output);
+		const [public_key, private_key] = await Promise.all([
+			this.getPublicKey(),
+			this.getPrivateKey(out.encrypted_eph_key_key_id)
+		]);
+
+		return group_done_key_rotation(private_key, public_key, this.data.keys[this.data.keys.length - 1].group_key, server_output);
 	}
 
 	public async keyRotation()
 	{
 		const user = await Sentc.getActualUser(true);
 
-		return group_key_rotation(this.base_url, this.app_token, user.jwt, this.data.group_id, user.public_key, this.data.keys[this.data.keys.length - 1].group_key);
+		const public_key = await this.getPublicKey();
+
+		return group_key_rotation(this.base_url, this.app_token, user.jwt, this.data.group_id, public_key, this.data.keys[this.data.keys.length - 1].group_key);
 	}
 
 	public async finishKeyRotation()
@@ -261,6 +420,9 @@ export class Group
 
 		let next_round = false;
 		let rounds_left = 10;
+
+		//use always the newest public key
+		const public_key = await this.getPublicKey();
 
 		do {
 			const left_keys = [];
@@ -281,6 +443,10 @@ export class Group
 					continue;
 				}
 
+				//get the right used private key for each key
+				// eslint-disable-next-line no-await-in-loop
+				const private_key = await this.getPrivateKey(key.encrypted_eph_key_key_id);
+
 				//await must be in this loop because we need the keys
 				// eslint-disable-next-line no-await-in-loop
 				await group_finish_key_rotation(
@@ -290,8 +456,8 @@ export class Group
 					this.data.group_id,
 					key.server_output,
 					pre_key.group_key,
-					user.public_key,
-					user.private_key
+					public_key,
+					private_key
 				);
 			}
 
@@ -441,7 +607,7 @@ export class Group
 			}
 		}
 
-		const key = this.data.keys[key_index]?.group_key;
+		const key = this.data.keys[key_index];
 		if (!key) {
 			//key not found TODO error
 			throw new Error();
@@ -486,7 +652,7 @@ export class Group
 
 		const key = await this.getGroupKey(de_head.id);
 
-		return decrypt_raw_symmetric(key, encrypted_data, head, verify_key);
+		return decrypt_raw_symmetric(key.group_key, encrypted_data, head, verify_key);
 	}
 
 	public async encrypt(data: Uint8Array): Promise<Uint8Array>
@@ -518,7 +684,7 @@ export class Group
 
 		const key = await this.getGroupKey(head.id);
 
-		return decrypt_symmetric(key, data, verify_key);
+		return decrypt_symmetric(key.group_key, data, verify_key);
 	}
 
 	public encryptString(data: string): Promise<string>;
@@ -550,7 +716,7 @@ export class Group
 
 		const key = await this.getGroupKey(head.id);
 
-		return decrypt_string_symmetric(key, data, verify_key);
+		return decrypt_string_symmetric(key.group_key, data, verify_key);
 	}
 
 	/**
@@ -578,7 +744,7 @@ export class Group
 	{
 		const group_key = await this.getGroupKey(group_key_id);
 
-		return get_sym_key_by_id(this.base_url, this.app_token, key_id, group_key);
+		return get_sym_key_by_id(this.base_url, this.app_token, key_id, group_key.group_key);
 	}
 
 	public encryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
@@ -597,6 +763,8 @@ export class Group
 
 		return encrypt_symmetric(generated_key, data, sign_key);
 	}
+
+	//TODO generate non registered key
 
 	public decryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
 
