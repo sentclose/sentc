@@ -23,6 +23,8 @@ use crate::crypto::{
 	encrypt_symmetric_internally,
 	generate_non_register_sym_key_internally,
 	prepare_register_sym_key_internally,
+	split_head_and_encrypted_data_internally,
+	split_head_and_encrypted_string_internally,
 };
 use crate::util::{export_sym_key_to_string, import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
 use crate::{err_to_msg, SdkError};
@@ -53,6 +55,16 @@ fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>
 	};
 
 	Ok(verify_key)
+}
+
+pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), String>
+{
+	Ok(split_head_and_encrypted_data_internally(data_with_head)?)
+}
+
+pub fn split_head_and_encrypted_string(data_with_head: &str) -> Result<EncryptedHead, String>
+{
+	Ok(split_head_and_encrypted_string_internally(data_with_head)?)
 }
 
 pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>

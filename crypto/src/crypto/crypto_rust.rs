@@ -23,9 +23,21 @@ use crate::crypto::{
 	encrypt_symmetric_internally,
 	generate_non_register_sym_key_internally,
 	prepare_register_sym_key_internally,
+	split_head_and_encrypted_data_internally,
+	split_head_and_encrypted_string_internally,
 	EncryptedHead,
 };
 use crate::{PrivateKeyFormat, SdkError, SignKeyFormat, SymKeyFormat};
+
+pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>
+{
+	split_head_and_encrypted_data_internally(data_with_head)
+}
+
+pub fn split_head_and_encrypted_string(data_with_head: &str) -> Result<EncryptedHead, SdkError>
+{
+	split_head_and_encrypted_string_internally(data_with_head)
+}
 
 pub fn encrypt_raw_symmetric(key: &SymKeyFormat, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {

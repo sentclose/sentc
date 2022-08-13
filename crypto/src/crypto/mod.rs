@@ -31,6 +31,8 @@ pub use self::crypto::{
 	encrypt_symmetric,
 	generate_non_register_sym_key,
 	prepare_register_sym_key,
+	split_head_and_encrypted_data,
+	split_head_and_encrypted_string,
 };
 #[cfg(feature = "rust")]
 pub use self::crypto_rust::{
@@ -51,6 +53,8 @@ pub use self::crypto_rust::{
 	encrypt_symmetric,
 	generate_non_register_sym_key,
 	prepare_register_sym_key,
+	split_head_and_encrypted_data,
+	split_head_and_encrypted_string,
 };
 use crate::util::public::handle_server_response;
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
@@ -91,6 +95,11 @@ fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8]
 	Ok(encrypted_data_without_sig)
 }
 
+/**
+Get the head and the data.
+
+This can not only be used internally, to get the used key_id
+*/
 fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>
 {
 	let mut i = 0usize;
@@ -108,6 +117,20 @@ fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(En
 
 	//ignore the zero byte
 	Ok((head, &data_with_head[i + 1..]))
+}
+
+/**
+Get head from string.
+
+Just the head because of life time issues and we need the full data for encrypt and decrypt
+*/
+fn split_head_and_encrypted_string_internally(encrypted_data_with_head: &str) -> Result<EncryptedHead, SdkError>
+{
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
+
+	let (head, _) = split_head_and_encrypted_data_internally(&encrypted)?;
+
+	Ok(head)
 }
 
 fn put_head_and_encrypted_data_internally(head: &EncryptedHead, encrypted: &[u8]) -> Result<Vec<u8>, SdkError>
