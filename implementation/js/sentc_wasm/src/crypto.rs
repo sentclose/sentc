@@ -47,6 +47,22 @@ impl NonRegisteredKeyOutput
 }
 
 #[wasm_bindgen]
+pub fn split_head_and_encrypted_data(data: &[u8]) -> Result<JsValue, JsValue>
+{
+	let (head, _data) = crypto::split_head_and_encrypted_data(data)?;
+
+	Ok(JsValue::from_serde(&head).unwrap())
+}
+
+#[wasm_bindgen]
+pub fn split_head_and_encrypted_string(data: &str) -> Result<JsValue, JsValue>
+{
+	let head = crypto::split_head_and_encrypted_string(data)?;
+
+	Ok(JsValue::from_serde(&head).unwrap())
+}
+
+#[wasm_bindgen]
 pub fn encrypt_raw_symmetric(key: String, data: &[u8], sign_key: &str) -> Result<CryptoRawOutput, JsValue>
 {
 	let (head, data) = crypto::encrypt_raw_symmetric(key.as_str(), data, sign_key)?;
