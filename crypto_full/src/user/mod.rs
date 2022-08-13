@@ -11,9 +11,9 @@ pub use sentc_crypto::KeyData;
 use sentc_crypto_common::user::UserUpdateServerOut;
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{BoolRes, KeyRes, Res, VoidRes};
+pub(crate) use self::non_rust::{BoolRes, KeyRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{BoolRes, KeyRes, Res, VoidRes};
+pub(crate) use self::rust::{BoolRes, KeyRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -188,4 +188,51 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 	let out: UserUpdateServerOut = handle_server_response(res.as_str())?;
 
 	Ok(out.user_identifier)
+}
+
+//__________________________________________________________________________________________________
+
+pub async fn fetch_user_public_data(base_url: String, auth_token: &str, user_id: &str) -> UserPublicDataRes
+{
+	let url = base_url + "/api/v1/user/" + user_id;
+
+	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
+
+	#[cfg(feature = "rust")]
+	let public_data = sentc_crypto::util::public::import_public_data_from_string_into_format(res.as_str())?;
+
+	#[cfg(not(feature = "rust"))]
+	let public_data = sentc_crypto::util::public::import_public_data_from_string_into_export_string(res.as_str())?;
+
+	Ok(public_data)
+}
+
+pub async fn fetch_user_public_key(base_url: String, auth_token: &str, user_id: &str) -> UserPublicKeyRes
+{
+	let url = base_url + "/api/v1/user/" + user_id + "/public_key";
+
+	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
+
+	#[cfg(feature = "rust")]
+	let public_data = sentc_crypto::util::public::import_public_key_from_string_into_format(res.as_str())?;
+
+	#[cfg(not(feature = "rust"))]
+	let public_data = sentc_crypto::util::public::import_public_key_from_string_into_export_string(res.as_str())?;
+
+	Ok(public_data)
+}
+
+pub async fn fetch_user_verify_key(base_url: String, auth_token: &str, user_id: &str) -> UserVerifyKeyRes
+{
+	let url = base_url + "/api/v1/user/" + user_id + "/verify_key";
+
+	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
+
+	#[cfg(feature = "rust")]
+	let public_data = sentc_crypto::util::public::import_verify_key_from_string_into_format(res.as_str())?;
+
+	#[cfg(not(feature = "rust"))]
+	let public_data = sentc_crypto::util::public::import_verify_key_from_string_into_export_string(res.as_str())?;
+
+	Ok(public_data)
 }
