@@ -1,5 +1,4 @@
 use alloc::string::{String, ToString};
-use alloc::vec::Vec;
 
 use sentc_crypto::group;
 use wasm_bindgen::prelude::*;
@@ -13,7 +12,7 @@ pub struct GroupOutData
 	key_update: bool,
 	created_time: u128,
 	joined_time: u128,
-	keys: Vec<group::GroupKeyData>,
+	keys: JsValue,
 }
 
 impl From<group::GroupOutData> for GroupOutData
@@ -27,7 +26,7 @@ impl From<group::GroupOutData> for GroupOutData
 			key_update: data.key_update,
 			created_time: data.created_time,
 			joined_time: data.joined_time,
-			keys: data.keys,
+			keys: JsValue::from_serde(&data.keys).unwrap(),
 		}
 	}
 }
@@ -42,7 +41,7 @@ impl GroupOutData
 
 	pub fn get_keys(&self) -> JsValue
 	{
-		JsValue::from_serde(&self.keys).unwrap()
+		self.keys.clone()
 	}
 
 	pub fn get_parent_group_id(&self) -> String
@@ -68,6 +67,62 @@ impl GroupOutData
 	pub fn get_joined_time(&self) -> String
 	{
 		self.joined_time.to_string()
+	}
+}
+
+/**
+Keys after decrypt each key
+*/
+#[wasm_bindgen]
+pub struct GroupKeyData
+{
+	private_group_key: String,
+	public_group_key: String,
+	group_key: String,
+	time: u128,
+	group_key_id: String,
+}
+
+impl From<group::GroupKeyData> for GroupKeyData
+{
+	fn from(key: group::GroupKeyData) -> Self
+	{
+		Self {
+			private_group_key: key.private_group_key,
+			public_group_key: key.public_group_key,
+			group_key: key.group_key,
+			time: key.time,
+			group_key_id: key.group_key_id,
+		}
+	}
+}
+
+#[wasm_bindgen]
+impl GroupKeyData
+{
+	pub fn get_private_group_key(&self) -> String
+	{
+		self.private_group_key.clone()
+	}
+
+	pub fn get_public_group_key(&self) -> String
+	{
+		self.public_group_key.clone()
+	}
+
+	pub fn get_group_key(&self) -> String
+	{
+		self.group_key.clone()
+	}
+
+	pub fn get_time(&self) -> String
+	{
+		self.time.to_string()
+	}
+
+	pub fn get_group_key_id(&self) -> String
+	{
+		self.group_key_id.clone()
 	}
 }
 
@@ -186,9 +241,9 @@ Get the group data without request.
 Use the parent group private key when fetching child group data.
 */
 #[wasm_bindgen]
-pub fn group_extract_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, JsValue>
+pub fn group_extract_group_data(server_output: &str) -> Result<GroupOutData, JsValue>
 {
-	let out = group::get_group_data(private_key, server_output)?;
+	let out = group::get_group_data(server_output)?;
 
 	Ok(out.into())
 }
@@ -199,25 +254,17 @@ Get keys from pagination.
 Call the group route with the last fetched key time and the last fetched key id. Get both from the key data.
 */
 #[wasm_bindgen]
-pub fn group_extract_group_keys(private_key: &str, server_output: &str) -> Result<JsValue, JsValue>
+pub fn group_extract_group_keys(server_output: &str) -> Result<JsValue, JsValue>
 {
-	let out = group::get_group_keys_from_pagination(private_key, server_output)?;
+	let out = group::get_group_keys_from_server_output(server_output)?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
 }
 
 #[wasm_bindgen]
-pub async fn group_get_group_data(base_url: String, auth_token: String, jwt: String, private_key: String, id: String)
-	-> Result<GroupOutData, JsValue>
+pub async fn group_get_group_data(base_url: String, auth_token: String, jwt: String, id: String) -> Result<GroupOutData, JsValue>
 {
-	let out = sentc_crypto_full::group::get_group(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		private_key.as_str(),
-	)
-	.await?;
+	let out = sentc_crypto_full::group::get_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
 
 	Ok(out.into())
 }
@@ -227,7 +274,6 @@ pub async fn group_get_group_keys(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
-	private_key: String,
 	id: String,
 	last_fetched_time: String,
 	last_fetched_key_id: String,
@@ -240,11 +286,18 @@ pub async fn group_get_group_keys(
 		id.as_str(),
 		last_fetched_time.as_str(),
 		last_fetched_key_id.as_str(),
-		private_key.as_str(),
 	)
 	.await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
+pub fn group_decrypt_key(private_key: &str, server_key_data: &str) -> Result<GroupKeyData, JsValue>
+{
+	let out = sentc_crypto_full::group::decrypt_key(server_key_data, private_key)?;
+
+	Ok(out.into())
 }
 
 //__________________________________________________________________________________________________

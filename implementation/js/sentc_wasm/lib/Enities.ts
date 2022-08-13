@@ -30,6 +30,11 @@ export interface GroupKey {
 	group_key_id: string
 }
 
+export interface GroupOutDataKeys {
+	private_key_id: string,
+	key_data: string
+}
+
 export interface GroupData
 {
 	group_id: string,
