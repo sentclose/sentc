@@ -6,6 +6,8 @@ export const enum USER_KEY_STORAGE_NAMES
 	userData = "user_data",
 	actualUser = "actual_user",
 
+	userPublicKey = "user_public_key",
+
 	groupData = "group_data"
 }
 

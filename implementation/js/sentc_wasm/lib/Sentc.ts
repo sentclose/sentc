@@ -17,7 +17,7 @@ import init, {
 	change_password,
 	delete_user,
 	group_get_invites_for_user,
-	group_accept_invite, group_reject_invite, group_join_req
+	group_accept_invite, group_reject_invite, group_join_req, user_fetch_public_key
 } from "../pkg";
 import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
@@ -346,6 +346,30 @@ export class Sentc
 		}
 
 		return user;
+	}
+
+	public static async getUserPublicKeyData(base_url: string, app_token: string, user_id: string)
+	{
+		const storage = await this.getStore();
+
+		const store_key = USER_KEY_STORAGE_NAMES.userPublicKey + "_id_" + user_id;
+
+		const user = await storage.getItem(store_key);
+
+		if (user) {
+			return user;
+		}
+
+		const fetched_data = await user_fetch_public_key(base_url, app_token, user_id);
+
+		if (!fetched_data) {
+			//TODO error handling
+			throw new Error();
+		}
+
+		await storage.set(store_key, fetched_data);
+
+		return fetched_data;
 	}
 
 	//__________________________________________________________________________________________________________________
