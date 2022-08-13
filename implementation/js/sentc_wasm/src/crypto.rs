@@ -63,6 +63,14 @@ pub fn split_head_and_encrypted_string(data: &str) -> Result<JsValue, JsValue>
 }
 
 #[wasm_bindgen]
+pub fn deserialize_head_from_string(head: &str) -> Result<JsValue, JsValue>
+{
+	let head = crypto::deserialize_head_from_string(head)?;
+
+	Ok(JsValue::from_serde(&head).unwrap())
+}
+
+#[wasm_bindgen]
 pub fn encrypt_raw_symmetric(key: String, data: &[u8], sign_key: &str) -> Result<CryptoRawOutput, JsValue>
 {
 	let (head, data) = crypto::encrypt_raw_symmetric(key.as_str(), data, sign_key)?;
