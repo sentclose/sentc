@@ -84,6 +84,27 @@ impl DoneLoginData
 	}
 }
 
+#[wasm_bindgen]
+pub struct UserPublicData
+{
+	public_key: String,
+	verify_key: String,
+}
+
+#[wasm_bindgen]
+impl UserPublicData
+{
+	pub fn get_verify_key(&self) -> String
+	{
+		self.verify_key.clone()
+	}
+
+	pub fn get_public_key(&self) -> String
+	{
+		self.public_key.clone()
+	}
+}
+
 /**
 # Check if the identifier is available for this app
 */
@@ -248,4 +269,29 @@ pub async fn delete_user(base_url: String, auth_token: String, user_identifier: 
 pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<String, JsValue>
 {
 	Ok(sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await?)
+}
+
+//__________________________________________________________________________________________________
+
+#[wasm_bindgen]
+pub async fn user_fetch_public_data(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicData, JsValue>
+{
+	let (public_key, verify_key) = sentc_crypto_full::user::fetch_user_public_data(base_url, auth_token.as_str(), user_id.as_str()).await?;
+
+	Ok(UserPublicData {
+		public_key,
+		verify_key,
+	})
+}
+
+#[wasm_bindgen]
+pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await?)
+}
+
+#[wasm_bindgen]
+pub async fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto_full::user::fetch_user_verify_key(base_url, auth_token.as_str(), user_id.as_str()).await?)
 }
