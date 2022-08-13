@@ -13,6 +13,7 @@ use crate::crypto::{
 	decrypt_string_symmetric_internally,
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
+	deserialize_head_from_string_internally,
 	done_fetch_sym_key_internally,
 	done_fetch_sym_keys_internally,
 	encrypt_asymmetric_internally,
@@ -23,9 +24,26 @@ use crate::crypto::{
 	encrypt_symmetric_internally,
 	generate_non_register_sym_key_internally,
 	prepare_register_sym_key_internally,
+	split_head_and_encrypted_data_internally,
+	split_head_and_encrypted_string_internally,
 	EncryptedHead,
 };
 use crate::{PrivateKeyFormat, SdkError, SignKeyFormat, SymKeyFormat};
+
+pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>
+{
+	split_head_and_encrypted_data_internally(data_with_head)
+}
+
+pub fn split_head_and_encrypted_string(data_with_head: &str) -> Result<EncryptedHead, SdkError>
+{
+	split_head_and_encrypted_string_internally(data_with_head)
+}
+
+pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, SdkError>
+{
+	deserialize_head_from_string_internally(head)
+}
 
 pub fn encrypt_raw_symmetric(key: &SymKeyFormat, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
@@ -85,7 +103,7 @@ pub fn decrypt_asymmetric(
 	decrypt_asymmetric_internally(private_key, encrypted_data_with_head, verify_key)
 }
 
-pub fn encrypt_string_symmetric(key: &SymKeyFormat, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<String, SdkError>
+pub fn encrypt_string_symmetric(key: &SymKeyFormat, data: &str, sign_key: Option<&SignKeyFormat>) -> Result<String, SdkError>
 {
 	encrypt_string_symmetric_internally(key, data, sign_key)
 }
@@ -94,12 +112,12 @@ pub fn decrypt_string_symmetric(
 	key: &SymKeyFormat,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, SdkError>
+) -> Result<String, SdkError>
 {
 	decrypt_string_symmetric_internally(key, encrypted_data_with_head, verify_key)
 }
 
-pub fn encrypt_string_asymmetric(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<String, SdkError>
+pub fn encrypt_string_asymmetric(reply_public_key: &UserPublicKeyData, data: &str, sign_key: Option<&SignKeyFormat>) -> Result<String, SdkError>
 {
 	encrypt_string_asymmetric_internally(reply_public_key, data, sign_key)
 }
@@ -108,7 +126,7 @@ pub fn decrypt_string_asymmetric(
 	private_key: &PrivateKeyFormat,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, SdkError>
+) -> Result<String, SdkError>
 {
 	decrypt_string_asymmetric_internally(private_key, encrypted_data_with_head, verify_key)
 }
@@ -292,11 +310,11 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(group_key, text.as_bytes(), None).unwrap();
+		let encrypted = encrypt_string_symmetric(group_key, text, None).unwrap();
 
 		let decrypted = decrypt_string_symmetric(group_key, &encrypted, None).unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted)
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
@@ -310,11 +328,11 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(group_key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+		let encrypted = encrypt_string_symmetric(group_key, text, Some(&user.sign_key)).unwrap();
 
 		let decrypted = decrypt_string_symmetric(group_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted)
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
@@ -325,11 +343,11 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_asymmetric(&user.exported_public_key, text.as_bytes(), None).unwrap();
+		let encrypted = encrypt_string_asymmetric(&user.exported_public_key, text, None).unwrap();
 
 		let decrypted = decrypt_string_asymmetric(&user.private_key, &encrypted, None).unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted)
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
@@ -340,11 +358,11 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_asymmetric(&user.exported_public_key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+		let encrypted = encrypt_string_asymmetric(&user.exported_public_key, text, Some(&user.sign_key)).unwrap();
 
 		let decrypted = decrypt_string_asymmetric(&user.private_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted)
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
@@ -373,11 +391,11 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(&user.sign_key)).unwrap();
 
 		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
-		assert_eq!(decrypted, text.as_bytes());
+		assert_eq!(decrypted, text);
 	}
 
 	#[test]
@@ -411,11 +429,11 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(&user.sign_key)).unwrap();
 
 		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
-		assert_eq!(decrypted, text.as_bytes());
+		assert_eq!(decrypted, text);
 	}
 
 	#[test]
@@ -460,11 +478,11 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		for decrypted_key in decrypted_keys {
-			let encrypted = encrypt_string_symmetric(&decrypted_key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+			let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(&user.sign_key)).unwrap();
 
 			let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
-			assert_eq!(decrypted, text.as_bytes());
+			assert_eq!(decrypted, text);
 		}
 	}
 
@@ -480,11 +498,11 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text.as_bytes(), Some(&user.sign_key)).unwrap();
+		let encrypted = encrypt_string_symmetric(&key, text, Some(&user.sign_key)).unwrap();
 
 		let decrypted = decrypt_string_symmetric(&key, &encrypted, Some(&user.exported_verify_key)).unwrap();
 
-		assert_eq!(decrypted, text.as_bytes());
+		assert_eq!(decrypted, text);
 
 		//check if we can decrypt the key with the master key
 

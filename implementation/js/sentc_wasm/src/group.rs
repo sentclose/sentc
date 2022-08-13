@@ -2,30 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use sentc_crypto::group;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-
-#[derive(Serialize, Deserialize)]
-pub struct GroupKeyData
-{
-	private_group_key: String,
-	public_group_key: String,
-	group_key: String,
-	time: u128,
-}
-
-impl From<group::GroupKeyData> for GroupKeyData
-{
-	fn from(key: group::GroupKeyData) -> Self
-	{
-		Self {
-			private_group_key: key.private_group_key,
-			public_group_key: key.public_group_key,
-			group_key: key.group_key,
-			time: key.time,
-		}
-	}
-}
 
 #[wasm_bindgen]
 pub struct GroupOutData
@@ -36,19 +13,13 @@ pub struct GroupOutData
 	key_update: bool,
 	created_time: u128,
 	joined_time: u128,
-	keys: Vec<GroupKeyData>,
+	keys: Vec<group::GroupKeyData>,
 }
 
 impl From<group::GroupOutData> for GroupOutData
 {
 	fn from(data: group::GroupOutData) -> Self
 	{
-		let mut out_keys = Vec::with_capacity(data.keys.len());
-
-		for key in data.keys {
-			out_keys.push(key.into());
-		}
-
 		Self {
 			group_id: data.group_id,
 			parent_group_id: data.parent_group_id,
@@ -56,7 +27,7 @@ impl From<group::GroupOutData> for GroupOutData
 			key_update: data.key_update,
 			created_time: data.created_time,
 			joined_time: data.joined_time,
-			keys: out_keys,
+			keys: data.keys,
 		}
 	}
 }
@@ -97,6 +68,58 @@ impl GroupOutData
 	pub fn get_joined_time(&self) -> String
 	{
 		self.joined_time.to_string()
+	}
+}
+
+#[wasm_bindgen]
+pub struct KeyRotationInput
+{
+	encrypted_ephemeral_key_by_group_key_and_public_key: String,
+	encrypted_group_key_by_ephemeral: String,
+	ephemeral_alg: String,
+	encrypted_eph_key_key_id: String, //the public key id which was used to encrypt the eph key on the server.
+	previous_group_key_id: String,
+	time: u128,
+	new_group_key_id: String,
+}
+
+#[wasm_bindgen]
+impl KeyRotationInput
+{
+	pub fn get_encrypted_ephemeral_key_by_group_key_and_public_key(&self) -> String
+	{
+		self.encrypted_ephemeral_key_by_group_key_and_public_key
+			.clone()
+	}
+
+	pub fn get_encrypted_group_key_by_ephemeral(&self) -> String
+	{
+		self.encrypted_group_key_by_ephemeral.clone()
+	}
+
+	pub fn get_ephemeral_alg(&self) -> String
+	{
+		self.ephemeral_alg.clone()
+	}
+
+	pub fn get_encrypted_eph_key_key_id(&self) -> String
+	{
+		self.encrypted_eph_key_key_id.clone()
+	}
+
+	pub fn get_previous_group_key_id(&self) -> String
+	{
+		self.previous_group_key_id.clone()
+	}
+
+	pub fn get_new_group_key_id(&self) -> String
+	{
+		self.new_group_key_id.clone()
+	}
+
+	pub fn get_time(&self) -> String
+	{
+		self.time.to_string()
 	}
 }
 
@@ -180,13 +203,7 @@ pub fn group_extract_group_keys(private_key: &str, server_output: &str) -> Resul
 {
 	let out = group::get_group_keys_from_pagination(private_key, server_output)?;
 
-	let mut out_keys: Vec<GroupKeyData> = Vec::with_capacity(out.len());
-
-	for key in out {
-		out_keys.push(key.into());
-	}
-
-	Ok(JsValue::from_serde(&out_keys).unwrap())
+	Ok(JsValue::from_serde(&out).unwrap())
 }
 
 #[wasm_bindgen]
@@ -227,13 +244,7 @@ pub async fn group_get_group_keys(
 	)
 	.await?;
 
-	let mut out_keys: Vec<GroupKeyData> = Vec::with_capacity(out.len());
-
-	for key in out {
-		out_keys.push(key.into());
-	}
-
-	Ok(JsValue::from_serde(&out_keys).unwrap())
+	Ok(JsValue::from_serde(&out).unwrap())
 }
 
 //__________________________________________________________________________________________________
@@ -532,6 +543,22 @@ pub async fn group_pre_done_key_rotation(base_url: String, auth_token: String, j
 }
 
 #[wasm_bindgen]
+pub fn group_get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, JsValue>
+{
+	let out = group::get_done_key_rotation_server_input(server_output)?;
+
+	Ok(KeyRotationInput {
+		encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
+		encrypted_group_key_by_ephemeral: out.encrypted_group_key_by_ephemeral,
+		ephemeral_alg: out.ephemeral_alg,
+		encrypted_eph_key_key_id: out.encrypted_eph_key_key_id,
+		previous_group_key_id: out.previous_group_key_id,
+		time: out.time,
+		new_group_key_id: out.new_group_key_id,
+	})
+}
+
+#[wasm_bindgen]
 pub async fn group_finish_key_rotation(
 	base_url: String,
 	auth_token: String,
@@ -595,15 +622,7 @@ pub async fn group_update_rank(
 }
 
 #[wasm_bindgen]
-pub async fn group_kick_user(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	user_id: String,
-	rank: i32,
-	admin_rank: i32,
-) -> Result<(), JsValue>
+pub async fn group_kick_user(base_url: String, auth_token: String, jwt: String, id: String, user_id: String, admin_rank: i32) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::kick_user(
 		base_url,
@@ -611,7 +630,6 @@ pub async fn group_kick_user(
 		jwt.as_str(),
 		id.as_str(),
 		user_id.as_str(),
-		rank,
 		admin_rank,
 	)
 	.await?;

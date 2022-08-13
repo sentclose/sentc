@@ -21,6 +21,7 @@ pub use self::crypto::{
 	decrypt_string_symmetric,
 	decrypt_sym_key,
 	decrypt_symmetric,
+	deserialize_head_from_string,
 	done_fetch_sym_key,
 	done_fetch_sym_keys,
 	encrypt_asymmetric,
@@ -31,6 +32,8 @@ pub use self::crypto::{
 	encrypt_symmetric,
 	generate_non_register_sym_key,
 	prepare_register_sym_key,
+	split_head_and_encrypted_data,
+	split_head_and_encrypted_string,
 };
 #[cfg(feature = "rust")]
 pub use self::crypto_rust::{
@@ -41,6 +44,7 @@ pub use self::crypto_rust::{
 	decrypt_string_symmetric,
 	decrypt_sym_key,
 	decrypt_symmetric,
+	deserialize_head_from_string,
 	done_fetch_sym_key,
 	done_fetch_sym_keys,
 	encrypt_asymmetric,
@@ -51,6 +55,8 @@ pub use self::crypto_rust::{
 	encrypt_symmetric,
 	generate_non_register_sym_key,
 	prepare_register_sym_key,
+	split_head_and_encrypted_data,
+	split_head_and_encrypted_string,
 };
 use crate::util::public::handle_server_response;
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
@@ -91,6 +97,11 @@ fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8]
 	Ok(encrypted_data_without_sig)
 }
 
+/**
+Get the head and the data.
+
+This can not only be used internally, to get the used key_id
+*/
 fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>
 {
 	let mut i = 0usize;
@@ -110,6 +121,20 @@ fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(En
 	Ok((head, &data_with_head[i + 1..]))
 }
 
+/**
+Get head from string.
+
+Just the head because of life time issues and we need the full data for encrypt and decrypt
+*/
+fn split_head_and_encrypted_string_internally(encrypted_data_with_head: &str) -> Result<EncryptedHead, SdkError>
+{
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
+
+	let (head, _) = split_head_and_encrypted_data_internally(&encrypted)?;
+
+	Ok(head)
+}
+
 fn put_head_and_encrypted_data_internally(head: &EncryptedHead, encrypted: &[u8]) -> Result<Vec<u8>, SdkError>
 {
 	let head = head.to_string().map_err(|_| SdkError::JsonToStringFailed)?;
@@ -121,6 +146,16 @@ fn put_head_and_encrypted_data_internally(head: &EncryptedHead, encrypted: &[u8]
 	out.extend(encrypted);
 
 	Ok(out)
+}
+
+/**
+Get the head from string
+
+This can be used to get the head struct when getting the head as string, like raw decrypt in the non rust sdk.
+*/
+fn deserialize_head_from_string_internally(head: &str) -> Result<EncryptedHead, SdkError>
+{
+	EncryptedHead::from_string(head).map_err(|_| SdkError::JsonParseFailed)
 }
 
 fn encrypt_raw_symmetric_internally(
@@ -285,9 +320,9 @@ fn decrypt_asymmetric_internally(
 	)?)
 }
 
-fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
+fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &str, sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
 {
-	let encrypted = encrypt_symmetric_internally(key, data, sign_key)?;
+	let encrypted = encrypt_symmetric_internally(key, data.as_bytes(), sign_key)?;
 
 	Ok(Base64::encode_string(&encrypted))
 }
@@ -296,20 +331,22 @@ fn decrypt_string_symmetric_internally(
 	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, SdkError>
+) -> Result<String, SdkError>
 {
 	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	Ok(decrypt_symmetric_internally(key, &encrypted, verify_key)?)
+	let decrypted = decrypt_symmetric_internally(key, &encrypted, verify_key)?;
+
+	String::from_utf8(decrypted).map_err(|_| SdkError::DecodeEncryptedDataFailed)
 }
 
 fn encrypt_string_asymmetric_internally(
 	reply_public_key: &UserPublicKeyData,
-	data: &[u8],
+	data: &str,
 	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<String, SdkError>
 {
-	let encrypted = encrypt_asymmetric_internally(reply_public_key, data, sign_key)?;
+	let encrypted = encrypt_asymmetric_internally(reply_public_key, data.as_bytes(), sign_key)?;
 
 	Ok(Base64::encode_string(&encrypted))
 }
@@ -318,11 +355,13 @@ fn decrypt_string_asymmetric_internally(
 	private_key: &PrivateKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, SdkError>
+) -> Result<String, SdkError>
 {
 	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	Ok(decrypt_asymmetric_internally(private_key, &encrypted, verify_key)?)
+	let decrypted = decrypt_asymmetric_internally(private_key, &encrypted, verify_key)?;
+
+	String::from_utf8(decrypted).map_err(|_| SdkError::DecodeEncryptedDataFailed)
 }
 
 /**

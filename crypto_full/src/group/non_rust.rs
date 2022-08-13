@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto::group::{GroupKeyData, GroupOutData};
 use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList};
+use sentc_crypto_common::EncryptionKeyPairId;
 use serde::{Deserialize, Serialize};
 
 pub type Res = Result<String, String>;
@@ -18,5 +19,6 @@ pub type KeyRotationRes = Result<Vec<KeyRotationGetOut>, String>;
 pub struct KeyRotationGetOut
 {
 	pub pre_group_key_id: String,
+	pub encrypted_eph_key_key_id: EncryptionKeyPairId,
 	pub server_output: String,
 }

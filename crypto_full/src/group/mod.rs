@@ -357,13 +357,15 @@ pub async fn prepare_done_key_rotation(base_url: String, auth_token: &str, jwt: 
 		let mut out_vec = Vec::with_capacity(out.len());
 
 		for key in out {
-			let (out_item, out_id) = (
+			let (out_item, out_id, encrypted_eph_key_key_id) = (
 				serde_json::to_string(&key).map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?,
 				key.new_group_key_id,
+				key.encrypted_eph_key_key_id,
 			);
 
 			out_vec.push(KeyRotationGetOut {
 				pre_group_key_id: out_id,
+				encrypted_eph_key_key_id,
 				server_output: out_item,
 			});
 		}
@@ -427,11 +429,11 @@ pub async fn update_rank(base_url: String, auth_token: &str, jwt: &str, group_id
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
-pub async fn kick_user(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_id: &str, rank: i32, admin_rank: i32) -> VoidRes
+pub async fn kick_user(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_id: &str, admin_rank: i32) -> VoidRes
 {
 	let url = base_url + "/api/v1/group/" + group_id + "/kick/" + user_id;
 
-	sentc_crypto::group::check_kick_user(rank, admin_rank)?;
+	sentc_crypto::group::check_delete_user_rank(admin_rank)?;
 
 	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
 

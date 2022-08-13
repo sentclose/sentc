@@ -11,6 +11,7 @@ pub struct DoneLoginData
 	sign_key: String,
 	verify_key: String,
 	jwt: String,
+	refresh_token: String,
 	user_id: String,
 	exported_public_key: String,
 	exported_verify_key: String,
@@ -26,6 +27,7 @@ impl From<KeyData> for DoneLoginData
 			sign_key: keys.sign_key,
 			verify_key: keys.verify_key,
 			jwt: keys.jwt,
+			refresh_token: keys.refresh_token,
 			user_id: keys.user_id,
 			exported_public_key: keys.exported_public_key,
 			exported_verify_key: keys.exported_verify_key,
@@ -59,6 +61,11 @@ impl DoneLoginData
 	pub fn get_jwt(&self) -> String
 	{
 		self.jwt.clone()
+	}
+
+	pub fn get_refresh_token(&self) -> String
+	{
+		self.refresh_token.clone()
 	}
 
 	pub fn get_id(&self) -> String
@@ -205,9 +212,36 @@ pub async fn reset_password(
 }
 
 #[wasm_bindgen]
-pub async fn delete_user(base_url: String, auth_token: String, jwt: String) -> Result<(), JsValue>
+pub async fn change_password(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	old_password: String,
+	new_password: String,
+) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), jwt.as_str()).await?)
+	sentc_crypto_full::user::change_password(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		old_password.as_str(),
+		new_password.as_str(),
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[wasm_bindgen]
+pub async fn delete_user(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<(), JsValue>
+{
+	Ok(sentc_crypto_full::user::delete(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		password.as_str(),
+	)
+	.await?)
 }
 
 #[wasm_bindgen]

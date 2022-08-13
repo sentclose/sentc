@@ -148,11 +148,29 @@ pub async fn reset_password(
 
 //__________________________________________________________________________________________________
 
-pub async fn delete(base_url: String, auth_token: &str, jwt: &str) -> VoidRes
+pub async fn delete(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> VoidRes
 {
+	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
+
+	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier, password, prep_login_out.as_str())?;
+
+	//make done login req again to get a fresh jwt
+	let url = base_url.clone() + "/api/v1/done_login";
+
+	let done_login_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+
+	let keys = user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
+
 	let url = base_url + "/api/v1/user";
 
-	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(keys.jwt.as_str()),
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }

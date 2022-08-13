@@ -7,6 +7,7 @@ use sentc_crypto_common::GroupId;
 
 use crate::group::{
 	done_key_rotation_internally,
+	get_done_key_rotation_server_input_internally,
 	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
@@ -38,6 +39,11 @@ pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, S
 pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat) -> Result<String, SdkError>
 {
 	key_rotation_internally(&previous_group_key, &invoker_public_key)
+}
+
+pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, SdkError>
+{
+	get_done_key_rotation_server_input_internally(server_output)
 }
 
 pub fn done_key_rotation(
