@@ -12,8 +12,12 @@ import {
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
-	decrypt_raw_symmetric, decrypt_string_symmetric, decrypt_symmetric,
-	encrypt_raw_symmetric, encrypt_string_symmetric, encrypt_symmetric,
+	decrypt_raw_symmetric,
+	decrypt_string_symmetric,
+	decrypt_symmetric,
+	deserialize_head_from_string,
+	encrypt_raw_symmetric,
+	encrypt_string_symmetric, encrypt_symmetric,
 	group_accept_join_req,
 	group_delete_group,
 	group_done_key_rotation,
@@ -31,7 +35,9 @@ import {
 	group_prepare_update_rank,
 	group_reject_join_req,
 	group_update_rank,
-	leave_group, split_head_and_encrypted_data, split_head_and_encrypted_string
+	leave_group,
+	split_head_and_encrypted_data,
+	split_head_and_encrypted_string
 } from "../pkg";
 import {Sentc} from "./Sentc";
 
@@ -50,8 +56,16 @@ export class Group
 
 		//TODo get or fetch the user public data via static fn in sentc
 
-		const key_string = JSON.stringify(this.data.keys);
+		const keys = [];
 
+		for (let i = 0; i < this.data.keys.length; i++) {
+			const key = this.data.keys[i].group_key;
+			keys.push(key);
+		}
+
+		const key_string = JSON.stringify(keys);
+
+		//TODO use user public key
 		return group_prepare_keys_for_new_member(user_id, key_string, key_count, this.data.rank);
 	}
 
@@ -454,7 +468,7 @@ export class Group
 
 	public async decryptRaw(head: string, encrypted_data: Uint8Array, verify_key = ""): Promise<Uint8Array>
 	{
-		const de_head: CryptoHead = JSON.parse(head);
+		const de_head: CryptoHead = deserialize_head_from_string(head);
 
 		const key = await this.getGroupKey(de_head.id);
 
