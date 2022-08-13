@@ -21,6 +21,7 @@ pub use self::crypto::{
 	decrypt_string_symmetric,
 	decrypt_sym_key,
 	decrypt_symmetric,
+	deserialize_head_from_string,
 	done_fetch_sym_key,
 	done_fetch_sym_keys,
 	encrypt_asymmetric,
@@ -43,6 +44,7 @@ pub use self::crypto_rust::{
 	decrypt_string_symmetric,
 	decrypt_sym_key,
 	decrypt_symmetric,
+	deserialize_head_from_string,
 	done_fetch_sym_key,
 	done_fetch_sym_keys,
 	encrypt_asymmetric,
@@ -144,6 +146,16 @@ fn put_head_and_encrypted_data_internally(head: &EncryptedHead, encrypted: &[u8]
 	out.extend(encrypted);
 
 	Ok(out)
+}
+
+/**
+Get the head from string
+
+This can be used to get the head struct when getting the head as string, like raw decrypt in the non rust sdk.
+*/
+fn deserialize_head_from_string_internally(head: &str) -> Result<EncryptedHead, SdkError>
+{
+	EncryptedHead::from_string(head).map_err(|_| SdkError::JsonParseFailed)
 }
 
 fn encrypt_raw_symmetric_internally(

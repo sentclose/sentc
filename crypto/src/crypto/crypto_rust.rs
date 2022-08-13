@@ -13,6 +13,7 @@ use crate::crypto::{
 	decrypt_string_symmetric_internally,
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
+	deserialize_head_from_string_internally,
 	done_fetch_sym_key_internally,
 	done_fetch_sym_keys_internally,
 	encrypt_asymmetric_internally,
@@ -37,6 +38,11 @@ pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(Encrypted
 pub fn split_head_and_encrypted_string(data_with_head: &str) -> Result<EncryptedHead, SdkError>
 {
 	split_head_and_encrypted_string_internally(data_with_head)
+}
+
+pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, SdkError>
+{
+	deserialize_head_from_string_internally(head)
 }
 
 pub fn encrypt_raw_symmetric(key: &SymKeyFormat, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<(EncryptedHead, Vec<u8>), SdkError>
