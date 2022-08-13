@@ -18,7 +18,7 @@ import {
 	deserialize_head_from_string,
 	encrypt_raw_symmetric,
 	encrypt_string_symmetric, encrypt_symmetric, generate_and_register_sym_key, get_sym_key_by_id,
-	group_accept_join_req,
+	group_accept_join_req, group_create_child_group,
 	group_delete_group,
 	group_done_key_rotation,
 	group_finish_key_rotation,
@@ -29,7 +29,7 @@ import {
 	group_join_user_session,
 	group_key_rotation,
 	group_kick_user,
-	group_pre_done_key_rotation,
+	group_pre_done_key_rotation, group_prepare_create_group,
 	group_prepare_key_rotation,
 	group_prepare_keys_for_new_member,
 	group_prepare_update_rank,
@@ -48,7 +48,21 @@ export class Group
 
 	//__________________________________________________________________________________________________________________
 
-	//TODO create child group
+	public prepareCreateChildGroup()
+	{
+		const latest_key = this.data.keys[this.data.keys.length - 1].public_group_key;
+
+		return group_prepare_create_group(latest_key);
+	}
+
+	public async createChildGroup()
+	{
+		const latest_key = this.data.keys[this.data.keys.length - 1].public_group_key;
+
+		const jwt = await Sentc.getJwt();
+
+		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank);
+	}
 
 	public prepareKeysForNewMember(user_id: string)
 	{
