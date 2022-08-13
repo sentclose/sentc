@@ -8,7 +8,9 @@ import {
 	GroupData,
 	GroupJoinReqListItem,
 	GroupKey,
-	GroupKeyRotationOut, GroupOutDataKeys, KeyRotationInput,
+	GroupKeyRotationOut,
+	GroupOutDataKeys,
+	KeyRotationInput,
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
@@ -22,7 +24,8 @@ import {
 	generate_and_register_sym_key,
 	get_sym_key_by_id,
 	group_accept_join_req,
-	group_create_child_group, group_decrypt_key,
+	group_create_child_group,
+	group_decrypt_key,
 	group_delete_group,
 	group_done_key_rotation,
 	group_finish_key_rotation,
@@ -143,11 +146,11 @@ export class Group
 		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank);
 	}
 
-	public prepareKeysForNewMember(user_id: string)
+	public async prepareKeysForNewMember(user_id: string)
 	{
 		const key_count = this.data.keys.length;
-
-		//TODo get or fetch the user public data via static fn in sentc
+		
+		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
 		const keys = [];
 
@@ -158,13 +161,12 @@ export class Group
 
 		const key_string = JSON.stringify(keys);
 
-		//TODO use user public key
-		return group_prepare_keys_for_new_member(user_id, key_string, key_count, this.data.rank);
+		return group_prepare_keys_for_new_member(public_key, key_string, key_count, this.data.rank);
 	}
 
 	public async invite(user_id: string)
 	{
-		//TODO get or fetch the user public data via static fn in sentc
+		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
 		const key_count = this.data.keys.length;
 		const [key_string] = this.prepareKeyString();
@@ -179,7 +181,7 @@ export class Group
 			user_id,
 			key_count,
 			this.data.rank,
-			user_id,	//TODO use the public key here
+			public_key,
 			key_string
 		);
 
@@ -202,7 +204,7 @@ export class Group
 				jwt,
 				this.data.group_id,
 				session_id,
-				user_id, //TODo use the public key here
+				public_key,
 				next_keys[0]
 			));
 
@@ -252,7 +254,7 @@ export class Group
 		const key_count = this.data.keys.length;
 		const [key_string] = this.prepareKeyString();
 
-		//TODO get or fetch the user public data via static fn in sentc
+		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
 		const session_id = await group_accept_join_req(
 			this.base_url,
@@ -262,7 +264,7 @@ export class Group
 			user_id,
 			key_count,
 			this.data.rank,
-			user_id,	//TODo use the public key here
+			public_key,
 			key_string
 		);
 
@@ -284,7 +286,7 @@ export class Group
 				jwt,
 				this.data.group_id,
 				session_id,
-				user_id, //TODo use the public key here
+				public_key,
 				next_keys[0]
 			));
 
@@ -593,6 +595,8 @@ export class Group
 
 		for (let i = 0; i < fetchedKeys.length; i++) {
 			const fetched_key = fetchedKeys[i];
+
+			//TODO check for fetched key if the the  key_data is still a string and was not deserialize by json
 
 			// eslint-disable-next-line no-await-in-loop
 			const private_key = await this.getPrivateKey(fetched_key.private_key_id);

@@ -179,11 +179,11 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 
 fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 {
-	let private_key = export_private_key_to_string(key_data.private_key).map_err(|e| err_to_msg(e))?;
+	let private_key = export_private_key_to_string(key_data.private_key)?;
 	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
-	let public_key = export_public_key_to_string(key_data.public_key).map_err(|e| err_to_msg(e))?;
-	let sign_key = export_sign_key_to_string(key_data.sign_key).map_err(|e| err_to_msg(e))?;
-	let verify_key = export_verify_key_to_string(key_data.verify_key).map_err(|e| err_to_msg(e))?;
+	let public_key = export_public_key_to_string(key_data.public_key)?;
+	let sign_key = export_sign_key_to_string(key_data.sign_key)?;
+	let verify_key = export_verify_key_to_string(key_data.verify_key)?;
 
 	Ok(KeyData {
 		private_key,
