@@ -9,6 +9,7 @@ use serde_json::{from_str, to_string};
 
 use crate::group::{
 	done_key_rotation_internally,
+	get_done_key_rotation_server_input_internally,
 	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
@@ -105,6 +106,11 @@ pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> Resul
 	Ok(key_rotation_internally(&previous_group_key, &invoker_public_key)?)
 }
 
+pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, String>
+{
+	Ok(get_done_key_rotation_server_input_internally(server_output)?)
+}
+
 pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key: &str, server_output: &str) -> Result<String, String>
 {
 	let previous_group_key = import_sym_key(previous_group_key)?;
@@ -113,7 +119,7 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 
 	let public_key = import_public_key(public_key)?;
 
-	let server_output = KeyRotationInput::from_string(server_output).map_err(|_| err_to_msg(SdkError::KeyRotationServerOutputWrong))?;
+	let server_output = get_done_key_rotation_server_input(server_output)?;
 
 	Ok(done_key_rotation_internally(
 		&private_key,
@@ -123,6 +129,7 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 	)?)
 }
 
+//TODO exec this in a loop in the sdk impl because we don't know the right private key before we got the server output
 fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
 {
 	let result = get_group_keys_internally(&private_key, &server_output)?;
@@ -142,6 +149,7 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 	})
 }
 
+//TODO remove this fn
 pub fn get_group_keys_from_pagination(private_key: &str, server_output: &str) -> Result<Vec<GroupKeyData>, String>
 {
 	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
@@ -158,6 +166,7 @@ pub fn get_group_keys_from_pagination(private_key: &str, server_output: &str) ->
 	Ok(keys)
 }
 
+//TODO only return the group data without the keys
 pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, String>
 {
 	let server_output: GroupServerData = handle_server_response(server_output)?;

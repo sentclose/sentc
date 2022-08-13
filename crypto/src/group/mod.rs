@@ -32,6 +32,7 @@ mod group_rust;
 #[cfg(not(feature = "rust"))]
 pub use self::group::{
 	done_key_rotation,
+	get_done_key_rotation_server_input,
 	get_group_data,
 	get_group_keys_from_pagination,
 	key_rotation,
@@ -54,6 +55,7 @@ pub use self::group_rank_check::{
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
 	done_key_rotation,
+	get_done_key_rotation_server_input,
 	get_group_data,
 	get_group_keys_from_pagination,
 	key_rotation,
@@ -136,6 +138,14 @@ fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_
 	Ok(rotation_out
 		.to_string()
 		.map_err(|_| SdkError::JsonToStringFailed)?)
+}
+
+/**
+Deserialize the server output
+*/
+fn get_done_key_rotation_server_input_internally(server_output: &str) -> Result<KeyRotationInput, SdkError>
+{
+	KeyRotationInput::from_string(server_output).map_err(|_| SdkError::KeyRotationServerOutputWrong)
 }
 
 fn done_key_rotation_internally(
