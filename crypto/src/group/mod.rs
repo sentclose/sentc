@@ -19,6 +19,7 @@ use sentc_crypto_common::group::{
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
+use crate::util::public::handle_server_response;
 use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
 
@@ -34,7 +35,8 @@ pub use self::group::{
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
-	get_group_keys_from_pagination,
+	get_group_keys,
+	get_group_keys_from_server_output,
 	key_rotation,
 	prepare_change_rank,
 	prepare_create,
@@ -43,6 +45,7 @@ pub use self::group::{
 	GroupKeyData,
 	GroupKeys,
 	GroupOutData,
+	GroupOutDataKeys,
 };
 pub use self::group_rank_check::{
 	check_create_sub_group,
@@ -57,7 +60,8 @@ pub use self::group_rust::{
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
-	get_group_keys_from_pagination,
+	get_group_keys,
+	get_group_keys_from_server_output,
 	key_rotation,
 	prepare_change_rank,
 	prepare_create,
@@ -191,6 +195,19 @@ fn done_key_rotation_internally(
 		.map_err(|_| SdkError::JsonToStringFailed)?)
 }
 
+/**
+Get the key data from str
+*/
+fn get_group_keys_from_server_output_internally(server_output: &str) -> Result<Vec<GroupKeyServerOutput>, SdkError>
+{
+	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
+
+	Ok(server_output)
+}
+
+/**
+Call this fn for each key, with the right private key
+*/
 fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput)
 	-> Result<DoneGettingGroupKeysOutput, SdkError>
 {
@@ -349,7 +366,7 @@ pub(crate) mod test_fn
 	use crate::util::KeyData;
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
+	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -388,13 +405,23 @@ pub(crate) mod test_fn
 		};
 
 		#[cfg(feature = "rust")]
-		let out = get_group_data(&user.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+		let out = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		(out, GroupServerData::from_string(group_ser_str.as_str()).unwrap())
+		let mut group_keys = Vec::with_capacity(out.keys.len());
+
+		for key in &out.keys {
+			group_keys.push(get_group_keys(&user.private_key, &key).unwrap());
+		}
+
+		(
+			out,
+			group_keys,
+			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
+		)
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, GroupServerData)
+	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.as_str()).unwrap();
@@ -433,10 +460,18 @@ pub(crate) mod test_fn
 		};
 
 		#[cfg(not(feature = "rust"))]
-		let group_data = get_group_data(user.private_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
+
+		//get the group keys
+		let mut group_keys = Vec::with_capacity(group_data.keys.len());
+
+		for key in &group_data.keys {
+			group_keys.push(get_group_keys(user.private_key.as_str(), &key.key_data).unwrap());
+		}
 
 		(
 			group_data,
+			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
 		)
 	}

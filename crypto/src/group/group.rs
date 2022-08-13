@@ -3,13 +3,14 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::{GroupId, SymKeyId};
+use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
 use crate::group::{
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
+	get_group_keys_from_server_output_internally,
 	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
@@ -26,7 +27,6 @@ use crate::util::{
 	import_public_key,
 	import_sym_key,
 	import_sym_key_from_format,
-	PrivateKeyFormatInt,
 	SymKeyFormat,
 	SymKeyFormatInt,
 };
@@ -57,7 +57,7 @@ pub struct GroupOutData
 	pub key_update: bool,
 	pub created_time: u128,
 	pub joined_time: u128,
-	pub keys: Vec<GroupKeyData>,
+	pub keys: Vec<GroupOutDataKeys>,
 }
 
 impl GroupOutData
@@ -71,6 +71,13 @@ impl GroupOutData
 	{
 		to_string(self)
 	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GroupOutDataKeys
+{
+	pub private_key_id: EncryptionKeyPairId,
+	pub key_data: String, //serde string
 }
 
 #[derive(Serialize, Deserialize)]
@@ -129,10 +136,13 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 	)?)
 }
 
-//TODO exec this in a loop in the sdk impl because we don't know the right private key before we got the server output
-fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
+pub fn get_group_keys(private_key: &str, server_key_output: &str) -> Result<GroupKeyData, String>
 {
-	let result = get_group_keys_internally(&private_key, &server_output)?;
+	let private_key = import_private_key(private_key)?;
+
+	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(|_| SdkError::JsonParseFailed)?;
+
+	let result = get_group_keys_internally(&private_key, &server_key_output)?;
 
 	let group_key_id = result.group_key.key_id.to_string();
 
@@ -149,43 +159,59 @@ fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeySer
 	})
 }
 
-//TODO remove this fn
-pub fn get_group_keys_from_pagination(private_key: &str, server_output: &str) -> Result<Vec<GroupKeyData>, String>
+/**
+Call this fn for pagination key fetch
+*/
+pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<GroupOutDataKeys>, String>
 {
-	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
-	let private_key = import_private_key(private_key)?;
+	let out = get_group_keys_from_server_output_internally(server_output)?;
 
-	let mut keys = Vec::with_capacity(server_output.len());
+	let mut keys = Vec::with_capacity(out.len());
 
-	for key in server_output {
-		let value = get_group_keys(&private_key, &key)?;
+	//create string for each key and save the used public key id for the sdk impl
+	for key in out {
+		let private_key_id = key.user_public_key_id.clone();
 
-		keys.push(value);
+		//call with this string the get group keys fn
+		let key_data = key.to_string().map_err(|_| SdkError::JsonParseFailed)?;
+
+		keys.push(GroupOutDataKeys {
+			private_key_id,
+			key_data,
+		});
 	}
 
 	Ok(keys)
 }
 
-//TODO only return the group data without the keys
-pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOutData, String>
+/**
+Returns the Group data.
+
+Returns the server keys to use get_group_keys to decrypt each group key with the right private key
+*/
+pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 {
 	let server_output: GroupServerData = handle_server_response(server_output)?;
-
-	let private_key = import_private_key(private_key)?;
-
-	//resolve a group key page
-	let mut keys = Vec::with_capacity(server_output.keys.len());
-
-	for key in server_output.keys {
-		let value = get_group_keys(&private_key, &key)?;
-
-		keys.push(value);
-	}
 
 	let parent_group_id = match server_output.parent_group_id {
 		Some(v) => v,
 		None => String::from(""),
 	};
+
+	let mut keys = Vec::with_capacity(server_output.keys.len());
+
+	//create string for each key and save the used public key id for the sdk impl
+	for key in server_output.keys {
+		let private_key_id = key.user_public_key_id.clone();
+
+		//call with this string the get group keys fn
+		let key_data = key.to_string().map_err(|_| SdkError::JsonParseFailed)?;
+
+		keys.push(GroupOutDataKeys {
+			private_key_id,
+			key_data,
+		});
+	}
 
 	Ok(GroupOutData {
 		group_id: server_output.group_id,
@@ -194,7 +220,7 @@ pub fn get_group_data(private_key: &str, server_output: &str) -> Result<GroupOut
 		key_update: server_output.key_update,
 		created_time: server_output.created_time,
 		joined_time: server_output.joined_time,
-		keys,
+		keys, //save the keys from server output to decrypt them later with get group keys
 	})
 }
 
@@ -305,7 +331,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _) = create_group(&user);
+		let (data, _, _) = create_group(&user);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -315,7 +341,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (data, group_server_out) = create_group(&user);
+		let (_, key_data, group_server_out) = create_group(&user);
 
 		let keys = group_server_out.keys;
 
@@ -328,12 +354,14 @@ mod test
 
 		let server_key_out = server_key_out.to_string().unwrap();
 
-		let group_keys_from_server_out = get_group_keys_from_pagination(user.private_key.as_str(), server_key_out.as_str()).unwrap();
+		let group_keys_from_server_out = get_group_keys_from_server_output(server_key_out.as_str()).unwrap();
+
+		let group_keys_from_server_out = get_group_keys(user.private_key.as_str(), &group_keys_from_server_out[0].key_data).unwrap();
 
 		//only one key
 		assert_eq!(
-			data.keys[0].group_key.to_string(),
-			group_keys_from_server_out[0].group_key.to_string()
+			key_data[0].group_key.to_string(),
+			group_keys_from_server_out.group_key.to_string()
 		);
 	}
 
@@ -376,11 +404,11 @@ mod test
 			result: Some(group_server_output_user_0),
 		};
 
-		let group_data_user_0 = get_group_data(user.private_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = group_data_user_0.keys[0].group_key.as_str();
+		let group_key_user_0 = get_group_keys(user.private_key.as_str(), group_data_user_0.keys[0].key_data.as_str()).unwrap();
 
-		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0).unwrap()]);
+		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]);
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member(
@@ -421,14 +449,15 @@ mod test
 			result: Some(group_server_output_user_1),
 		};
 
-		let group_data_user_1 = get_group_data(
+		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
+		let group_key_user_1 = get_group_keys(
 			user1.private_key.as_str(),
-			server_output.to_string().unwrap().as_str(),
+			group_data_user_1.keys[0].key_data.as_str(),
 		)
 		.unwrap();
 
-		let group_key_0 = import_sym_key(group_data_user_0.keys[0].group_key.as_str()).unwrap();
-		let group_key_1 = import_sym_key(group_data_user_1.keys[0].group_key.as_str()).unwrap();
+		let group_key_0 = import_sym_key(group_key_user_0.group_key.as_str()).unwrap();
+		let group_key_1 = import_sym_key(group_key_user_1.group_key.as_str()).unwrap();
 
 		assert_eq!(group_key_0.key_id, group_key_1.key_id);
 
@@ -478,11 +507,11 @@ mod test
 			result: Some(group_server_output_user_0),
 		};
 
-		let group_data_user_0 = get_group_data(user.private_key.as_str(), server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = group_data_user_0.keys[0].group_key.as_str();
+		let group_key_user_0 = get_group_keys(user.private_key.as_str(), group_data_user_0.keys[0].key_data.as_str()).unwrap();
 
-		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(group_key_user_0).unwrap()]);
+		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]);
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member_via_session(
@@ -523,14 +552,15 @@ mod test
 			result: Some(group_server_output_user_1),
 		};
 
-		let group_data_user_1 = get_group_data(
+		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
+		let group_key_user_1 = get_group_keys(
 			user1.private_key.as_str(),
-			server_output.to_string().unwrap().as_str(),
+			group_data_user_1.keys[0].key_data.as_str(),
 		)
 		.unwrap();
 
-		let group_key_0 = import_sym_key(group_data_user_0.keys[0].group_key.as_str()).unwrap();
-		let group_key_1 = import_sym_key(group_data_user_1.keys[0].group_key.as_str()).unwrap();
+		let group_key_0 = import_sym_key(group_key_user_0.group_key.as_str()).unwrap();
+		let group_key_1 = import_sym_key(group_key_user_1.group_key.as_str()).unwrap();
 
 		assert_eq!(group_key_0.key_id, group_key_1.key_id);
 
@@ -546,9 +576,9 @@ mod test
 	{
 		let user = create_user();
 
-		let (data, group_server_out) = create_group(&user);
+		let (_data, key_data, group_server_out) = create_group(&user);
 
-		let rotation_out = key_rotation(data.keys[0].group_key.as_str(), user.public_key.as_str()).unwrap();
+		let rotation_out = key_rotation(key_data[0].group_key.as_str(), user.public_key.as_str()).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -565,8 +595,8 @@ mod test
 		};
 
 		let new_group_key_direct = get_group_keys(
-			&import_private_key(user.private_key.as_str()).unwrap(),
-			&server_key_output_direct,
+			user.private_key.as_str(),
+			&server_key_output_direct.to_string().unwrap(),
 		)
 		.unwrap();
 
@@ -591,7 +621,7 @@ mod test
 		let done_key_rotation = done_key_rotation(
 			user.private_key.as_str(),
 			user.public_key.as_str(),
-			data.keys[0].group_key.as_str(),
+			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
 		)
 		.unwrap();
@@ -610,13 +640,9 @@ mod test
 			time: 0,
 		};
 
-		let out = get_group_keys(
-			&import_private_key(user.private_key.as_str()).unwrap(),
-			&server_key_output,
-		)
-		.unwrap();
+		let out = get_group_keys(user.private_key.as_str(), &server_key_output.to_string().unwrap()).unwrap();
 
-		let old_group_key = import_sym_key(data.keys[0].group_key.to_string().as_str()).unwrap();
+		let old_group_key = import_sym_key(key_data[0].group_key.to_string().as_str()).unwrap();
 
 		let new_group_key_direct = import_sym_key(new_group_key_direct.group_key.as_str()).unwrap();
 

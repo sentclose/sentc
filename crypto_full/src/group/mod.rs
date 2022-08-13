@@ -19,9 +19,20 @@ use sentc_crypto_common::group::{
 };
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, KeyRotationGetOut, KeyRotationRes, Res, SessionRes, VoidRes};
+pub(crate) use self::non_rust::{
+	DataRes,
+	InviteListRes,
+	JoinReqListRes,
+	KeyFetchRes,
+	KeyRes,
+	KeyRotationGetOut,
+	KeyRotationRes,
+	Res,
+	SessionRes,
+	VoidRes,
+};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyRes, KeyRotationRes, Res, SessionRes, VoidRes};
+pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyFetchRes, KeyRes, KeyRotationRes, Res, SessionRes, VoidRes};
 use crate::util::{make_req, HttpMethod};
 
 async fn create_group(
@@ -75,20 +86,13 @@ pub async fn create_child_group(
 
 //__________________________________________________________________________________________________
 
-pub async fn get_group(
-	base_url: String,
-	auth_token: &str,
-	jwt: &str,
-	id: &str,
-	#[cfg(not(feature = "rust"))] private_key: &str,
-	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
-) -> DataRes
+pub async fn get_group(base_url: String, auth_token: &str, jwt: &str, id: &str) -> DataRes
 {
 	let url = base_url + "/api/v1/group/" + id;
 
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
-	let out = sentc_crypto::group::get_group_data(private_key, res.as_str())?;
+	let out = sentc_crypto::group::get_group_data(res.as_str())?;
 
 	Ok(out)
 }
@@ -100,17 +104,25 @@ pub async fn get_group_keys(
 	id: &str,
 	last_fetched_time: &str,
 	last_fetched_key_id: &str,
-	#[cfg(not(feature = "rust"))] private_key: &str,
-	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
-) -> KeyRes
+) -> KeyFetchRes
 {
 	let url = base_url + "/api/v1/group/" + id + "/keys" + last_fetched_time + "/" + last_fetched_key_id;
 
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
-	let group_keys = sentc_crypto::group::get_group_keys_from_pagination(private_key, res.as_str())?;
+	let group_keys = sentc_crypto::group::get_group_keys_from_server_output(res.as_str())?;
 
 	Ok(group_keys)
+}
+
+pub fn decrypt_key(
+	#[cfg(not(feature = "rust"))] server_key_output: &str,
+	#[cfg(feature = "rust")] server_key_output: &sentc_crypto_common::group::GroupKeyServerOutput,
+	#[cfg(not(feature = "rust"))] private_key: &str,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
+) -> KeyRes
+{
+	Ok(sentc_crypto::group::get_group_keys(private_key, server_key_output)?)
 }
 
 //__________________________________________________________________________________________________

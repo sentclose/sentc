@@ -301,6 +301,6 @@ mod test
 
 		let server_out = simulate_server_create_group(group.as_str());
 
-		let _group_out = get_group_data(user.private_key.as_str(), server_out.as_str()).unwrap();
+		let _group_out = get_group_data(server_out.as_str()).unwrap();
 	}
 }

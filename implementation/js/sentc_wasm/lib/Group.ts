@@ -8,7 +8,7 @@ import {
 	GroupData,
 	GroupJoinReqListItem,
 	GroupKey,
-	GroupKeyRotationOut, KeyRotationInput,
+	GroupKeyRotationOut, GroupOutDataKeys, KeyRotationInput,
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
@@ -22,7 +22,7 @@ import {
 	generate_and_register_sym_key,
 	get_sym_key_by_id,
 	group_accept_join_req,
-	group_create_child_group,
+	group_create_child_group, group_decrypt_key,
 	group_delete_group,
 	group_done_key_rotation,
 	group_finish_key_rotation,
@@ -66,17 +66,15 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 	const jwt = user.jwt;
 
-	const private_key = (parent_private_key !== false) ? parent_private_key : user.private_key;
-
 	const out = await group_get_group_data(
 		base_url,
 		app_token,
 		jwt,
-		private_key,
 		group_id
 	);
 
-	const keys = out.get_keys();
+	//save the fetched keys but only decrypt them when creating the group obj
+	const fetched_keys: GroupOutDataKeys[] = out.get_keys();
 
 	let group_data: GroupData = {
 		group_id: out.get_group_id(),
@@ -85,15 +83,22 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		key_update: out.get_key_update(),
 		create_time: out.get_created_time(),
 		joined_time: out.get_joined_time(),
-		keys,
+		keys: [],
 		key_map: new Map()
 	};
 
 	const group_obj = new Group(group_data, base_url, app_token, !!(parent_private_key));
 
+	//update the group obj and the group data (which we saved in store) with the decrypted keys.
+	//it is ok to use the private key with an empty array,
+	// because we are using the keys of the parent group when this is a child group
+	const keys = await group_obj.decryptKey(fetched_keys);
+	group_data.keys = keys;
+	group_obj.groupKeys = keys;
+
 	if (keys.length >= 50) {
 		//fetch the rest of the keys via pagination, get the updated data back
-		group_data = await group_obj.fetchKeys(jwt, user.private_key);
+		group_data = await group_obj.fetchKeys(jwt);
 	}
 
 	//store the group data
@@ -105,6 +110,11 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 export class Group
 {
 	constructor(private data: GroupData, private base_url: string, private app_token: string, private from_parent: boolean) {}
+
+	set groupKeys(keys: GroupKey[])
+	{
+		this.data.keys = keys;
+	}
 
 	//__________________________________________________________________________________________________________________
 
@@ -466,7 +476,7 @@ export class Group
 
 			//fetch the new keys, when there are still keys left, maybe they are there after the key fetch -> must be in loop too
 			// eslint-disable-next-line no-await-in-loop
-			await this.fetchKeys(user.jwt, user.private_key);
+			await this.fetchKeys(user.jwt);
 
 			if (left_keys.length > 0) {
 				keys = [];
@@ -528,7 +538,7 @@ export class Group
 
 	//__________________________________________________________________________________________________________________
 
-	public async fetchKeys(jwt: string, private_key: string)
+	public async fetchKeys(jwt: string)
 	{
 		let last_item = this.data.keys[this.data.keys.length - 1];
 
@@ -538,21 +548,23 @@ export class Group
 
 		while (next_fetch) {
 			// eslint-disable-next-line no-await-in-loop
-			const fetchedKeys: GroupKey[] = await group_get_group_keys(
+			const fetchedKeys: GroupOutDataKeys[] = await group_get_group_keys(
 				this.base_url,
 				this.app_token,
 				jwt,
-				private_key,
 				this.data.group_id,
 				last_item.time.toString(),
 				last_item.group_key_id
 			);
 
-			keys.push(...fetchedKeys);
+			// eslint-disable-next-line no-await-in-loop
+			const decrypted_key = await this.decryptKey(fetchedKeys);
+
+			keys.push(...decrypted_key);
 
 			next_fetch = fetchedKeys.length >= 50;
 
-			last_item = fetchedKeys[fetchedKeys.length - 1];
+			last_item = decrypted_key[fetchedKeys.length - 1];
 		}
 
 		const last_inserted_key_index = this.data.keys.length;
@@ -566,6 +578,29 @@ export class Group
 
 		//return the updated data, so it can be saved in the store
 		return this.data;
+	}
+
+	/**
+	 * Decrypt the key with the right private key.
+	 *
+	 * get the right private key for each key
+	 *
+	 * @param fetchedKeys
+	 */
+	public async decryptKey(fetchedKeys: GroupOutDataKeys[]): Promise<GroupKey[]>
+	{
+		const keys = [];
+
+		for (let i = 0; i < fetchedKeys.length; i++) {
+			const fetched_key = fetchedKeys[i];
+
+			// eslint-disable-next-line no-await-in-loop
+			const private_key = await this.getPrivateKey(fetched_key.private_key_id);
+
+			keys.push(group_decrypt_key(private_key, fetched_key.key_data));
+		}
+
+		return keys;
 	}
 
 	private prepareKeyString(page = 0): [string, boolean]
@@ -593,7 +628,7 @@ export class Group
 		if (!key_index) {
 			const user = await Sentc.getActualUser(true);
 
-			this.data = await this.fetchKeys(user.jwt, user.private_key);
+			this.data = await this.fetchKeys(user.jwt);
 
 			const storage = await Sentc.getStore();
 			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
