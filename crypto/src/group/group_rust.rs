@@ -8,6 +8,7 @@ use sentc_crypto_common::GroupId;
 use crate::group::{
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
+	get_group_keys_from_server_output_internally,
 	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
@@ -22,7 +23,7 @@ use crate::SdkError;
 
 pub struct GroupOutData
 {
-	pub keys: Vec<GroupKeyData>,
+	pub keys: Vec<GroupKeyServerOutput>,
 	pub parent_group_id: Option<GroupId>,
 	pub key_update: bool,
 	pub created_time: u128,
@@ -56,36 +57,22 @@ pub fn done_key_rotation(
 	done_key_rotation_internally(&private_key, &public_key, &previous_group_key, server_output)
 }
 
-fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
+pub fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
 {
 	get_group_keys_internally(private_key, server_output)
 }
 
-pub fn get_group_keys_from_pagination(private_key: &PrivateKeyFormat, server_output: &str) -> Result<Vec<GroupKeyData>, SdkError>
+pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<GroupKeyServerOutput>, SdkError>
 {
-	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
-
-	let mut keys = Vec::with_capacity(server_output.len());
-
-	for key in &server_output {
-		keys.push(get_group_keys(private_key, key)?);
-	}
-
-	Ok(keys)
+	get_group_keys_from_server_output_internally(server_output)
 }
 
-pub fn get_group_data(private_key: &PrivateKeyFormat, server_output: &str) -> Result<GroupOutData, SdkError>
+pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 {
 	let server_output: GroupServerData = handle_server_response(server_output)?;
 
-	let mut keys = Vec::with_capacity(server_output.keys.len());
-
-	for key in &server_output.keys {
-		keys.push(get_group_keys(private_key, key)?);
-	}
-
 	Ok(GroupOutData {
-		keys,
+		keys: server_output.keys,
 		key_update: server_output.key_update,
 		parent_group_id: server_output.parent_group_id,
 		created_time: server_output.created_time,
@@ -152,7 +139,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _) = create_group(&user);
+		let (data, _, _) = create_group(&user);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -162,7 +149,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (data, group_server_out) = create_group(&user);
+		let (_, key_data, group_server_out) = create_group(&user);
 
 		let keys = group_server_out.keys;
 
@@ -175,12 +162,11 @@ mod test
 
 		let server_key_out = server_key_out.to_string().unwrap();
 
-		let group_keys_from_server_out = get_group_keys_from_pagination(&user.private_key, server_key_out.as_str()).unwrap();
+		let group_keys_from_server_out = get_group_keys_from_server_output(server_key_out.as_str()).unwrap();
 
-		match (
-			&data.keys[0].group_key.key,
-			&group_keys_from_server_out[0].group_key.key,
-		) {
+		let group_keys_from_server_out = get_group_keys(&user.private_key, &group_keys_from_server_out[0]).unwrap();
+
+		match (&key_data[0].group_key.key, &group_keys_from_server_out.group_key.key) {
 			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
 				assert_eq!(*k1, *k2);
 			},
@@ -225,15 +211,12 @@ mod test
 			result: Some(group_server_output_user_0),
 		};
 
-		let group_data_user_0 = get_group_data(&user.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
+
+		let group_key_user_0 = get_group_keys(&user.private_key, &group_data_user_0.keys[0]).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(
-			&user1.exported_public_key,
-			&[&group_data_user_0.keys[0].group_key],
-			false,
-		)
-		.unwrap();
+		let out = prepare_group_keys_for_new_member(&user1.exported_public_key, &[&group_key_user_0.group_key], false).unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.keys[0]; //this group only got one key
 
@@ -266,17 +249,12 @@ mod test
 			result: Some(group_server_output_user_1),
 		};
 
-		let group_data_user_1 = get_group_data(&user1.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
+		let group_key_user_1 = get_group_keys(&user1.private_key, &group_data_user_1.keys[0]).unwrap();
 
-		assert_eq!(
-			group_data_user_0.keys[0].group_key.key_id,
-			group_data_user_1.keys[0].group_key.key_id
-		);
+		assert_eq!(group_key_user_0.group_key.key_id, group_key_user_1.group_key.key_id);
 
-		match (
-			&group_data_user_0.keys[0].group_key.key,
-			&group_data_user_1.keys[0].group_key.key,
-		) {
+		match (&group_key_user_0.group_key.key, &group_key_user_1.group_key.key) {
 			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
 				assert_eq!(*k0, *k1);
 			},
@@ -324,10 +302,12 @@ mod test
 			result: Some(group_server_output_user_0),
 		};
 
-		let group_data_user_0 = get_group_data(&user.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
+
+		let group_key_user_0 = get_group_keys(&user.private_key, &group_data_user_0.keys[0]).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member_via_session(&user1.exported_public_key, &[&group_data_user_0.keys[0].group_key]).unwrap();
+		let out = prepare_group_keys_for_new_member_via_session(&user1.exported_public_key, &[&group_key_user_0.group_key]).unwrap();
 
 		let out: Vec<GroupKeysForNewMember> = serde_json::from_str(out.as_str()).unwrap();
 		let out_group_1 = &out[0]; //this group only got one key
@@ -361,17 +341,12 @@ mod test
 			result: Some(group_server_output_user_1),
 		};
 
-		let group_data_user_1 = get_group_data(&user1.private_key, server_output.to_string().unwrap().as_str()).unwrap();
+		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
+		let group_key_user_1 = get_group_keys(&user1.private_key, &group_data_user_1.keys[0]).unwrap();
 
-		assert_eq!(
-			group_data_user_0.keys[0].group_key.key_id,
-			group_data_user_1.keys[0].group_key.key_id
-		);
+		assert_eq!(group_key_user_0.group_key.key_id, group_key_user_1.group_key.key_id);
 
-		match (
-			&group_data_user_0.keys[0].group_key.key,
-			&group_data_user_1.keys[0].group_key.key,
-		) {
+		match (&group_key_user_0.group_key.key, &group_key_user_1.group_key.key) {
 			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
 				assert_eq!(*k0, *k1);
 			},
@@ -383,9 +358,9 @@ mod test
 	{
 		let user = create_user();
 
-		let (data, group_server_out) = create_group(&user);
+		let (_data, key_data, group_server_out) = create_group(&user);
 
-		let rotation_out = key_rotation(&data.keys[0].group_key, &user.public_key).unwrap();
+		let rotation_out = key_rotation(&key_data[0].group_key, &user.public_key).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -420,7 +395,7 @@ mod test
 		let done_key_rotation = done_key_rotation(
 			&user.private_key,
 			&user.public_key,
-			&data.keys[0].group_key,
+			&key_data[0].group_key,
 			&server_output,
 		)
 		.unwrap();
@@ -442,7 +417,7 @@ mod test
 		let out = get_group_keys(&user.private_key, &server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
-		match (&data.keys[0].group_key.key, &out.group_key.key) {
+		match (&key_data[0].group_key.key, &out.group_key.key) {
 			(SymKey::Aes(k_old), SymKey::Aes(k_new)) => {
 				assert_ne!(*k_old, *k_new);
 			},
