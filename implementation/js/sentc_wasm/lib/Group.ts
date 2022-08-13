@@ -12,8 +12,8 @@ import {
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
-	decrypt_raw_symmetric, decrypt_symmetric,
-	encrypt_raw_symmetric, encrypt_symmetric,
+	decrypt_raw_symmetric, decrypt_string_symmetric, decrypt_symmetric,
+	encrypt_raw_symmetric, encrypt_string_symmetric, encrypt_symmetric,
 	group_accept_join_req,
 	group_delete_group,
 	group_done_key_rotation,
@@ -31,7 +31,7 @@ import {
 	group_prepare_update_rank,
 	group_reject_join_req,
 	group_update_rank,
-	leave_group, split_head_and_encrypted_data
+	leave_group, split_head_and_encrypted_data, split_head_and_encrypted_string
 } from "../pkg";
 import {Sentc} from "./Sentc";
 
@@ -492,7 +492,38 @@ export class Group
 
 		return decrypt_symmetric(key, data, verify_key);
 	}
-	
+
+	public encryptString(data: string): Promise<string>;
+
+	public encryptString(data: string, sign: true): Promise<string>;
+
+	public async encryptString(data: string, sign = false): Promise<string>
+	{
+		const latest_key = this.data.keys[this.data.keys.length - 1];
+
+		let sign_key = "";
+
+		if (sign) {
+			const user = await Sentc.getActualUser();
+
+			sign_key = user.sign_key;
+		}
+
+		return encrypt_string_symmetric(latest_key.group_key, data, sign_key);
+	}
+
+	public decryptString(data: string): Promise<string>;
+
+	public decryptString(data: string, verify_key: string): Promise<string>;
+
+	public async decryptString(data: string, verify_key = ""): Promise<string>
+	{
+		const head: CryptoHead = split_head_and_encrypted_string(data);
+
+		const key = await this.getGroupKey(head.id);
+
+		return decrypt_string_symmetric(key, data, verify_key);
+	}
 
 	//TODO get sdk head deserialize
 
