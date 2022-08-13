@@ -594,6 +594,8 @@ export class Group
 		for (let i = 0; i < fetchedKeys.length; i++) {
 			const fetched_key = fetchedKeys[i];
 
+			//TODO check for fetched key if the the  key_data is still a string and was not deserialize by json
+
 			// eslint-disable-next-line no-await-in-loop
 			const private_key = await this.getPrivateKey(fetched_key.private_key_id);
 
