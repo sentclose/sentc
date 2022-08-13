@@ -71,6 +71,58 @@ impl GroupOutData
 	}
 }
 
+#[wasm_bindgen]
+pub struct KeyRotationInput
+{
+	encrypted_ephemeral_key_by_group_key_and_public_key: String,
+	encrypted_group_key_by_ephemeral: String,
+	ephemeral_alg: String,
+	encrypted_eph_key_key_id: String, //the public key id which was used to encrypt the eph key on the server.
+	previous_group_key_id: String,
+	time: u128,
+	new_group_key_id: String,
+}
+
+#[wasm_bindgen]
+impl KeyRotationInput
+{
+	pub fn get_encrypted_ephemeral_key_by_group_key_and_public_key(&self) -> String
+	{
+		self.encrypted_ephemeral_key_by_group_key_and_public_key
+			.clone()
+	}
+
+	pub fn get_encrypted_group_key_by_ephemeral(&self) -> String
+	{
+		self.encrypted_group_key_by_ephemeral.clone()
+	}
+
+	pub fn get_ephemeral_alg(&self) -> String
+	{
+		self.ephemeral_alg.clone()
+	}
+
+	pub fn get_encrypted_eph_key_key_id(&self) -> String
+	{
+		self.encrypted_eph_key_key_id.clone()
+	}
+
+	pub fn get_previous_group_key_id(&self) -> String
+	{
+		self.previous_group_key_id.clone()
+	}
+
+	pub fn get_new_group_key_id(&self) -> String
+	{
+		self.new_group_key_id.clone()
+	}
+
+	pub fn get_time(&self) -> String
+	{
+		self.time.to_string()
+	}
+}
+
 //__________________________________________________________________________________________________
 
 /**
@@ -488,6 +540,22 @@ pub async fn group_pre_done_key_rotation(base_url: String, auth_token: String, j
 	let out = sentc_crypto_full::group::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
+pub fn group_get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, JsValue>
+{
+	let out = group::get_done_key_rotation_server_input(server_output)?;
+
+	Ok(KeyRotationInput {
+		encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
+		encrypted_group_key_by_ephemeral: out.encrypted_group_key_by_ephemeral,
+		ephemeral_alg: out.ephemeral_alg,
+		encrypted_eph_key_key_id: out.encrypted_eph_key_key_id,
+		previous_group_key_id: out.previous_group_key_id,
+		time: out.time,
+		new_group_key_id: out.new_group_key_id,
+	})
 }
 
 #[wasm_bindgen]
