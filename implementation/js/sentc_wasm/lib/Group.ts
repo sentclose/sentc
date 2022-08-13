@@ -17,7 +17,7 @@ import {
 	decrypt_symmetric,
 	deserialize_head_from_string,
 	encrypt_raw_symmetric,
-	encrypt_string_symmetric, encrypt_symmetric,
+	encrypt_string_symmetric, encrypt_symmetric, generate_and_register_sym_key, get_sym_key_by_id,
 	group_accept_join_req,
 	group_delete_group,
 	group_done_key_rotation,
@@ -539,8 +539,57 @@ export class Group
 		return decrypt_string_symmetric(key, data, verify_key);
 	}
 
-	//TODO get sdk head deserialize
+	/**
+	 * Register a new symmetric key to encrypt and decrypt.
+	 *
+	 * This key is encrypted by the latest group key
+	 *
+	 * Save the key id too of the key which was used to encrypt this key!
+	 */
+	public async registerKey()
+	{
+		const latest_key = this.data.keys[this.data.keys.length - 1];
 
-	//TODO encrypt and decrypt with register and non register keys (encrypted by group key)
-	//TODO for other sym keys get the master key id for key creation and save it in a head too, so we know which group key should use
+		const jwt = await Sentc.getJwt();
+
+		const key_id = await generate_and_register_sym_key(this.base_url, this.app_token, jwt, latest_key.group_key);
+
+		const key = await get_sym_key_by_id(this.base_url, this.app_token, key_id, latest_key.group_key);
+
+		//return the group key id which was used to encrypt this key
+		return [key, latest_key.group_key_id];
+	}
+
+	public async fetchKey(key_id: string, group_key_id: string)
+	{
+		const group_key = await this.getGroupKey(group_key_id);
+
+		return get_sym_key_by_id(this.base_url, this.app_token, key_id, group_key);
+	}
+
+	public encryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
+
+	public encryptByGeneratedKey(data: Uint8Array, generated_key: string, sign: true): Promise<Uint8Array>;
+
+	public async encryptByGeneratedKey(data: Uint8Array, generated_key: string, sign = false)
+	{
+		let sign_key = "";
+
+		if (sign) {
+			const user = await Sentc.getActualUser();
+
+			sign_key = user.sign_key;
+		}
+
+		return encrypt_symmetric(generated_key, data, sign_key);
+	}
+
+	public decryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
+
+	public decryptByGeneratedKey(data: Uint8Array, generated_key: string, verify_key: string): Promise<Uint8Array>;
+
+	public decryptByGeneratedKey(data: Uint8Array, generated_key: string, verify_key = ""): Promise<Uint8Array>
+	{
+		return Promise.resolve(decrypt_symmetric(generated_key, data, verify_key));
+	}
 }
