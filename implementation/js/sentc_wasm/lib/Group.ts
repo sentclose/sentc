@@ -12,8 +12,8 @@ import {
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
-	decrypt_raw_symmetric,
-	encrypt_raw_symmetric,
+	decrypt_raw_symmetric, decrypt_symmetric,
+	encrypt_raw_symmetric, encrypt_symmetric,
 	group_accept_join_req,
 	group_delete_group,
 	group_done_key_rotation,
@@ -31,7 +31,7 @@ import {
 	group_prepare_update_rank,
 	group_reject_join_req,
 	group_update_rank,
-	leave_group
+	leave_group, split_head_and_encrypted_data
 } from "../pkg";
 import {Sentc} from "./Sentc";
 
@@ -461,9 +461,41 @@ export class Group
 		return decrypt_raw_symmetric(key, encrypted_data, head, verify_key);
 	}
 
-	//TODO normal encrypt and decrypt.
+	public async encrypt(data: Uint8Array): Promise<Uint8Array>
+
+	public async encrypt(data: Uint8Array, sign: true): Promise<Uint8Array>
+
+	public async encrypt(data: Uint8Array, sign = false): Promise<Uint8Array>
+	{
+		const latest_key = this.data.keys[this.data.keys.length - 1];
+
+		let sign_key = "";
+
+		if (sign) {
+			const user = await Sentc.getActualUser();
+
+			sign_key = user.sign_key;
+		}
+
+		return encrypt_symmetric(latest_key.group_key, data, sign_key);
+	}
+
+	public decrypt(data: Uint8Array): Promise<Uint8Array>;
+
+	public decrypt(data: Uint8Array, verify_key: string): Promise<Uint8Array>;
+
+	public async decrypt(data: Uint8Array, verify_key = ""): Promise<Uint8Array>
+	{
+		const head: CryptoHead = split_head_and_encrypted_data(data);
+
+		const key = await this.getGroupKey(head.id);
+
+		return decrypt_symmetric(key, data, verify_key);
+	}
+	
+
 	//TODO get sdk head deserialize
-	//TODO get from wasm split head and encrypted data so we can see the head from this data
+
 	//TODO encrypt and decrypt with register and non register keys (encrypted by group key)
 	//TODO for other sym keys get the master key id for key creation and save it in a head too, so we know which group key should use
 }
