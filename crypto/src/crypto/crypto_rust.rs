@@ -175,8 +175,8 @@ mod test
 	{
 		let user = create_user();
 
-		let (group, _) = create_group(&user);
-		let group_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let group_key = &key_data[0].group_key;
 
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
@@ -194,8 +194,8 @@ mod test
 		//create a rust dummy user
 		let user = create_user();
 
-		let (group, _) = create_group(&user);
-		let group_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let group_key = &key_data[0].group_key;
 
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
@@ -238,8 +238,8 @@ mod test
 	{
 		let user = create_user();
 
-		let (group, _) = create_group(&user);
-		let group_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let group_key = &key_data[0].group_key;
 
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
@@ -256,8 +256,8 @@ mod test
 	{
 		let user = create_user();
 
-		let (group, _) = create_group(&user);
-		let group_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let group_key = &key_data[0].group_key;
 
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
@@ -304,8 +304,8 @@ mod test
 	{
 		let user = create_user();
 
-		let (group, _) = create_group(&user);
-		let group_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let group_key = &key_data[0].group_key;
 
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
@@ -322,8 +322,8 @@ mod test
 	{
 		let user = create_user();
 
-		let (group, _) = create_group(&user);
-		let group_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let group_key = &key_data[0].group_key;
 
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
@@ -369,8 +369,8 @@ mod test
 	fn test_encrypt_decrypt_sym_key()
 	{
 		let user = create_user();
-		let (group, _) = create_group(&user);
-		let master_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let master_key = &key_data[0].group_key;
 
 		let server_in = prepare_register_sym_key(master_key).unwrap();
 
@@ -402,8 +402,8 @@ mod test
 	fn test_getting_sym_key_from_server()
 	{
 		let user = create_user();
-		let (group, _) = create_group(&user);
-		let master_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let master_key = &key_data[0].group_key;
 
 		let server_in = prepare_register_sym_key(master_key).unwrap();
 
@@ -440,8 +440,8 @@ mod test
 	fn test_getting_sym_keys_as_array()
 	{
 		let user = create_user();
-		let (group, _) = create_group(&user);
-		let master_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let master_key = &key_data[0].group_key;
 
 		let server_in = prepare_register_sym_key(master_key).unwrap();
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
@@ -490,8 +490,8 @@ mod test
 	fn test_generate_non_register_sym_key()
 	{
 		let user = create_user();
-		let (group, _) = create_group(&user);
-		let master_key = &group.keys[0].group_key;
+		let (_, key_data, _) = create_group(&user);
+		let master_key = &key_data[0].group_key;
 
 		let (key, encrypted_key) = generate_non_register_sym_key(master_key).unwrap();
 
