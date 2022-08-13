@@ -308,9 +308,9 @@ fn decrypt_asymmetric_internally(
 	)?)
 }
 
-fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
+fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &str, sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
 {
-	let encrypted = encrypt_symmetric_internally(key, data, sign_key)?;
+	let encrypted = encrypt_symmetric_internally(key, data.as_bytes(), sign_key)?;
 
 	Ok(Base64::encode_string(&encrypted))
 }
@@ -319,20 +319,22 @@ fn decrypt_string_symmetric_internally(
 	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, SdkError>
+) -> Result<String, SdkError>
 {
 	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	Ok(decrypt_symmetric_internally(key, &encrypted, verify_key)?)
+	let decrypted = decrypt_symmetric_internally(key, &encrypted, verify_key)?;
+
+	String::from_utf8(decrypted).map_err(|_| SdkError::DecodeEncryptedDataFailed)
 }
 
 fn encrypt_string_asymmetric_internally(
 	reply_public_key: &UserPublicKeyData,
-	data: &[u8],
+	data: &str,
 	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<String, SdkError>
 {
-	let encrypted = encrypt_asymmetric_internally(reply_public_key, data, sign_key)?;
+	let encrypted = encrypt_asymmetric_internally(reply_public_key, data.as_bytes(), sign_key)?;
 
 	Ok(Base64::encode_string(&encrypted))
 }
@@ -341,11 +343,13 @@ fn decrypt_string_asymmetric_internally(
 	private_key: &PrivateKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<Vec<u8>, SdkError>
+) -> Result<String, SdkError>
 {
 	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	Ok(decrypt_asymmetric_internally(private_key, &encrypted, verify_key)?)
+	let decrypted = decrypt_asymmetric_internally(private_key, &encrypted, verify_key)?;
+
+	String::from_utf8(decrypted).map_err(|_| SdkError::DecodeEncryptedDataFailed)
 }
 
 /**
