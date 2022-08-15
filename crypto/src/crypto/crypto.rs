@@ -336,7 +336,7 @@ mod test
 	fn test_encrypt_decrypt_sym_raw()
 	{
 		let user = create_user();
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
 		let text = "123*+^êéèüöß@€&$";
@@ -353,14 +353,14 @@ mod test
 	{
 		let user = create_user();
 
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), user.sign_key.as_str()).unwrap();
+		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), user.keys.sign_key.as_str()).unwrap();
 
-		let decrypted = decrypt_raw_symmetric(group_key, &encrypted, &head, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_raw_symmetric(group_key, &encrypted, &head, user.keys.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -371,9 +371,9 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let (head, encrypted) = encrypt_raw_asymmetric(user.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
+		let (head, encrypted) = encrypt_raw_asymmetric(user.keys.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
 
-		let decrypted = decrypt_raw_asymmetric(user.private_key.as_str(), &encrypted, &head, "").unwrap();
+		let decrypted = decrypt_raw_asymmetric(user.keys.private_key.as_str(), &encrypted, &head, "").unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -385,17 +385,17 @@ mod test
 		let user = create_user();
 
 		let (head, encrypted) = encrypt_raw_asymmetric(
-			user.exported_public_key.as_str(),
+			user.keys.exported_public_key.as_str(),
 			text.as_bytes(),
-			user.sign_key.as_str(),
+			user.keys.sign_key.as_str(),
 		)
 		.unwrap();
 
 		let decrypted = decrypt_raw_asymmetric(
-			user.private_key.as_str(),
+			user.keys.private_key.as_str(),
 			&encrypted,
 			&head,
-			user.exported_verify_key.as_str(),
+			user.keys.exported_verify_key.as_str(),
 		)
 		.unwrap();
 
@@ -406,7 +406,7 @@ mod test
 	fn test_encrypt_decrypt_sym()
 	{
 		let user = create_user();
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
 		let text = "123*+^êéèüöß@€&$";
@@ -423,14 +423,14 @@ mod test
 	{
 		let user = create_user();
 
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), user.keys.sign_key.as_str()).unwrap();
 
-		let decrypted = decrypt_symmetric(group_key, &encrypted, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_symmetric(group_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -441,9 +441,9 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let encrypted = encrypt_asymmetric(user.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
+		let encrypted = encrypt_asymmetric(user.keys.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
 
-		let decrypted = decrypt_asymmetric(user.private_key.as_str(), &encrypted, "").unwrap();
+		let decrypted = decrypt_asymmetric(user.keys.private_key.as_str(), &encrypted, "").unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -455,16 +455,16 @@ mod test
 		let user = create_user();
 
 		let encrypted = encrypt_asymmetric(
-			user.exported_public_key.as_str(),
+			user.keys.exported_public_key.as_str(),
 			text.as_bytes(),
-			user.sign_key.as_str(),
+			user.keys.sign_key.as_str(),
 		)
 		.unwrap();
 
 		let decrypted = decrypt_asymmetric(
-			user.private_key.as_str(),
+			user.keys.private_key.as_str(),
 			&encrypted,
-			user.exported_verify_key.as_str(),
+			user.keys.exported_verify_key.as_str(),
 		)
 		.unwrap();
 
@@ -475,7 +475,7 @@ mod test
 	fn test_encrypt_decrypt_string_sym()
 	{
 		let user = create_user();
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
 		let text = "123*+^êéèüöß@€&$";
@@ -492,14 +492,14 @@ mod test
 	{
 		let user = create_user();
 
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(group_key, text, user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(group_key, text, user.keys.sign_key.as_str()).unwrap();
 
-		let decrypted = decrypt_string_symmetric(group_key, &encrypted, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(group_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(text, decrypted);
 	}
@@ -510,9 +510,9 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let encrypted = encrypt_string_asymmetric(user.exported_public_key.as_str(), text, "").unwrap();
+		let encrypted = encrypt_string_asymmetric(user.keys.exported_public_key.as_str(), text, "").unwrap();
 
-		let decrypted = decrypt_string_asymmetric(user.private_key.as_str(), &encrypted, "").unwrap();
+		let decrypted = decrypt_string_asymmetric(user.keys.private_key.as_str(), &encrypted, "").unwrap();
 
 		assert_eq!(text, decrypted);
 	}
@@ -523,12 +523,17 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let encrypted = encrypt_string_asymmetric(user.exported_public_key.as_str(), text, user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_asymmetric(
+			user.keys.exported_public_key.as_str(),
+			text,
+			user.keys.sign_key.as_str(),
+		)
+		.unwrap();
 
 		let decrypted = decrypt_string_asymmetric(
-			user.private_key.as_str(),
+			user.keys.private_key.as_str(),
 			&encrypted,
-			user.exported_verify_key.as_str(),
+			user.keys.exported_verify_key.as_str(),
 		)
 		.unwrap();
 
@@ -539,7 +544,7 @@ mod test
 	fn test_encrypt_decrypt_sym_key()
 	{
 		let user = create_user();
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
 		let server_in = prepare_register_sym_key(master_key).unwrap();
@@ -561,9 +566,9 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.keys.sign_key.as_str()).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -572,7 +577,7 @@ mod test
 	fn test_getting_sym_key_from_server()
 	{
 		let user = create_user();
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
 		let server_in = prepare_register_sym_key(master_key).unwrap();
@@ -600,9 +605,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.keys.sign_key.as_str()).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -611,7 +616,7 @@ mod test
 	fn test_getting_sym_keys_as_array()
 	{
 		let user = create_user();
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
 		let server_in = prepare_register_sym_key(master_key).unwrap();
@@ -648,9 +653,9 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		for decrypted_key in decrypted_keys {
-			let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.sign_key.as_str()).unwrap();
+			let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.keys.sign_key.as_str()).unwrap();
 
-			let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.exported_verify_key.as_str()).unwrap();
+			let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
 
 			assert_eq!(decrypted, text);
 		}
@@ -660,7 +665,7 @@ mod test
 	fn test_generate_non_register_sym_key()
 	{
 		let user = create_user();
-		let (_, key_data, _) = create_group(&user);
+		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
 		let (key, encrypted_key) = generate_non_register_sym_key(master_key).unwrap();
@@ -668,9 +673,9 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text, user.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&key, text, user.keys.sign_key.as_str()).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&key, &encrypted, user.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(&key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(decrypted, text);
 

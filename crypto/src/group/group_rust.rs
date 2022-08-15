@@ -126,10 +126,10 @@ mod test
 		//create a rust dummy user
 		let user = create_user();
 
-		let group = prepare_create(&user.public_key).unwrap();
+		let group = prepare_create(&user.keys.public_key).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
-		assert_eq!(group.creator_public_key_id, user.public_key.key_id);
+		assert_eq!(group.creator_public_key_id, user.keys.public_key.key_id);
 	}
 
 	#[test]
@@ -139,7 +139,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _, _) = create_group(&user);
+		let (data, _, _) = create_group(&user.keys);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -149,7 +149,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (_, key_data, group_server_out) = create_group(&user);
+		let (_, key_data, group_server_out) = create_group(&user.keys);
 
 		let keys = group_server_out.keys;
 
@@ -164,7 +164,7 @@ mod test
 
 		let group_keys_from_server_out = get_group_keys_from_server_output(server_key_out.as_str()).unwrap();
 
-		let group_keys_from_server_out = get_group_keys(&user.private_key, &group_keys_from_server_out[0]).unwrap();
+		let group_keys_from_server_out = get_group_keys(&user.keys.private_key, &group_keys_from_server_out[0]).unwrap();
 
 		match (&key_data[0].group_key.key, &group_keys_from_server_out.group_key.key) {
 			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
@@ -179,7 +179,7 @@ mod test
 		let user = create_user();
 		let user1 = create_user();
 
-		let group_create = prepare_create(&user.public_key).unwrap();
+		let group_create = prepare_create(&user.keys.public_key).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -213,10 +213,10 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = get_group_keys(&user.private_key, &group_data_user_0.keys[0]).unwrap();
+		let group_key_user_0 = get_group_keys(&user.keys.private_key, &group_data_user_0.keys[0]).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(&user1.exported_public_key, &[&group_key_user_0.group_key], false).unwrap();
+		let out = prepare_group_keys_for_new_member(&user1.keys.exported_public_key, &[&group_key_user_0.group_key], false).unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.keys[0]; //this group only got one key
 
@@ -250,7 +250,7 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = get_group_keys(&user1.private_key, &group_data_user_1.keys[0]).unwrap();
+		let group_key_user_1 = get_group_keys(&user1.keys.private_key, &group_data_user_1.keys[0]).unwrap();
 
 		assert_eq!(group_key_user_0.group_key.key_id, group_key_user_1.group_key.key_id);
 
@@ -270,7 +270,7 @@ mod test
 		let user = create_user();
 		let user1 = create_user();
 
-		let group_create = prepare_create(&user.public_key).unwrap();
+		let group_create = prepare_create(&user.keys.public_key).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -304,10 +304,10 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = get_group_keys(&user.private_key, &group_data_user_0.keys[0]).unwrap();
+		let group_key_user_0 = get_group_keys(&user.keys.private_key, &group_data_user_0.keys[0]).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member_via_session(&user1.exported_public_key, &[&group_key_user_0.group_key]).unwrap();
+		let out = prepare_group_keys_for_new_member_via_session(&user1.keys.exported_public_key, &[&group_key_user_0.group_key]).unwrap();
 
 		let out: Vec<GroupKeysForNewMember> = serde_json::from_str(out.as_str()).unwrap();
 		let out_group_1 = &out[0]; //this group only got one key
@@ -342,7 +342,7 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = get_group_keys(&user1.private_key, &group_data_user_1.keys[0]).unwrap();
+		let group_key_user_1 = get_group_keys(&user1.keys.private_key, &group_data_user_1.keys[0]).unwrap();
 
 		assert_eq!(group_key_user_0.group_key.key_id, group_key_user_1.group_key.key_id);
 
@@ -358,9 +358,9 @@ mod test
 	{
 		let user = create_user();
 
-		let (_data, key_data, group_server_out) = create_group(&user);
+		let (_data, key_data, group_server_out) = create_group(&user.keys);
 
-		let rotation_out = key_rotation(&key_data[0].group_key, &user.public_key).unwrap();
+		let rotation_out = key_rotation(&key_data[0].group_key, &user.keys.public_key).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -372,15 +372,16 @@ mod test
 			public_group_key: rotation_out.public_group_key.to_string(),
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
-			user_public_key_id: user.public_key.key_id.to_string(),
+			user_public_key_id: user.keys.public_key.key_id.to_string(),
 			time: 0,
 		};
 
-		let new_group_key_direct = get_group_keys(&user.private_key, &server_key_output_direct).unwrap();
+		let new_group_key_direct = get_group_keys(&user.keys.private_key, &server_key_output_direct).unwrap();
 
 		//simulate server key rotation encrypt. encrypt the ephemeral_key (encrypted by the previous room key) with the public keys of all users
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
-		let encrypted_ephemeral_key_by_group_key_and_public_key = encrypt_asymmetric_core(&user.public_key.key, &encrypted_ephemeral_key).unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key =
+			encrypt_asymmetric_core(&user.keys.public_key.key, &encrypted_ephemeral_key).unwrap();
 
 		let server_output = KeyRotationInput {
 			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
@@ -393,8 +394,8 @@ mod test
 		};
 
 		let done_key_rotation = done_key_rotation(
-			&user.private_key,
-			&user.public_key,
+			&user.keys.private_key,
+			&user.keys.public_key,
 			&key_data[0].group_key,
 			&server_output,
 		)
@@ -414,7 +415,7 @@ mod test
 			time: 0,
 		};
 
-		let out = get_group_keys(&user.private_key, &server_key_output).unwrap();
+		let out = get_group_keys(&user.keys.private_key, &server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
 		match (&key_data[0].group_key.key, &out.group_key.key) {
