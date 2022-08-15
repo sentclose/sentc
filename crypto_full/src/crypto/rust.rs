@@ -2,6 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto::SymKeyFormat;
+use sentc_crypto_common::SymKeyId;
 
 use crate::error::SdkFullError;
 
