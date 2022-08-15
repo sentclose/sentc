@@ -18,18 +18,6 @@ use flutter_rust_bridge::*;
 // Section: wire functions
 
 #[no_mangle]
-pub extern "C" fn wire_register_test_full(port_: i64) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-		WrapInfo {
-			debug_name: "register_test_full",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || move |task_callback| Ok(register_test_full()),
-	)
-}
-
-#[no_mangle]
 pub extern "C" fn wire_register(port_: i64, user_identifier: *mut wire_uint_8_list, password: *mut wire_uint_8_list) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -193,7 +181,6 @@ impl support::IntoDart for KeyData {
 			self.public_key.into_dart(),
 			self.sign_key.into_dart(),
 			self.verify_key.into_dart(),
-			self.jwt.into_dart(),
 			self.exported_public_key.into_dart(),
 			self.exported_verify_key.into_dart(),
 		]
@@ -208,6 +195,19 @@ impl support::IntoDart for PrepareLoginOutput {
 	}
 }
 impl support::IntoDartExceptPrimitive for PrepareLoginOutput {}
+
+impl support::IntoDart for UserData {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.jwt.into_dart(),
+			self.user_id.into_dart(),
+			self.refresh_token.into_dart(),
+			self.keys.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for UserData {}
 
 // Section: executor
 

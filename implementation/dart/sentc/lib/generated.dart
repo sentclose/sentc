@@ -12,10 +12,6 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'dart:ffi' as ffi;
 
 abstract class SentcFlutter {
-  Future<String> registerTestFull({dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kRegisterTestFullConstMeta;
-
   Future<String> register(
       {required String userIdentifier, required String password, dynamic hint});
 
@@ -29,14 +25,14 @@ abstract class SentcFlutter {
 
   FlutterRustBridgeTaskConstMeta get kPrepareLoginConstMeta;
 
-  Future<KeyData> doneLogin(
+  Future<UserData> doneLogin(
       {required String masterKeyEncryption,
       required String serverOutput,
       dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kDoneLoginConstMeta;
 
-  Future<KeyData> login(
+  Future<UserData> login(
       {required String baseUrl,
       required String authToken,
       required String userIdentifier,
@@ -51,7 +47,6 @@ class KeyData {
   final String publicKey;
   final String signKey;
   final String verifyKey;
-  final String jwt;
   final String exportedPublicKey;
   final String exportedVerifyKey;
 
@@ -60,7 +55,6 @@ class KeyData {
     required this.publicKey,
     required this.signKey,
     required this.verifyKey,
-    required this.jwt,
     required this.exportedPublicKey,
     required this.exportedVerifyKey,
   });
@@ -76,27 +70,26 @@ class PrepareLoginOutput {
   });
 }
 
+class UserData {
+  final String jwt;
+  final String userId;
+  final String refreshToken;
+  final KeyData keys;
+
+  UserData({
+    required this.jwt,
+    required this.userId,
+    required this.refreshToken,
+    required this.keys,
+  });
+}
+
 class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
     implements SentcFlutter {
   factory SentcFlutterImpl(ffi.DynamicLibrary dylib) =>
       SentcFlutterImpl.raw(SentcFlutterWire(dylib));
 
   SentcFlutterImpl.raw(SentcFlutterWire inner) : super(inner);
-
-  Future<String> registerTestFull({dynamic hint}) =>
-      executeNormal(FlutterRustBridgeTask(
-        callFfi: (port_) => inner.wire_register_test_full(port_),
-        parseSuccessData: _wire2api_String,
-        constMeta: kRegisterTestFullConstMeta,
-        argValues: [],
-        hint: hint,
-      ));
-
-  FlutterRustBridgeTaskConstMeta get kRegisterTestFullConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "register_test_full",
-        argNames: [],
-      );
 
   Future<String> register(
           {required String userIdentifier,
@@ -140,7 +133,7 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
         argNames: ["userIdentifier", "password", "serverOutput"],
       );
 
-  Future<KeyData> doneLogin(
+  Future<UserData> doneLogin(
           {required String masterKeyEncryption,
           required String serverOutput,
           dynamic hint}) =>
@@ -149,7 +142,7 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
             port_,
             _api2wire_String(masterKeyEncryption),
             _api2wire_String(serverOutput)),
-        parseSuccessData: _wire2api_key_data,
+        parseSuccessData: _wire2api_user_data,
         constMeta: kDoneLoginConstMeta,
         argValues: [masterKeyEncryption, serverOutput],
         hint: hint,
@@ -161,7 +154,7 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
         argNames: ["masterKeyEncryption", "serverOutput"],
       );
 
-  Future<KeyData> login(
+  Future<UserData> login(
           {required String baseUrl,
           required String authToken,
           required String userIdentifier,
@@ -174,7 +167,7 @@ class SentcFlutterImpl extends FlutterRustBridgeBase<SentcFlutterWire>
             _api2wire_String(authToken),
             _api2wire_String(userIdentifier),
             _api2wire_String(password)),
-        parseSuccessData: _wire2api_key_data,
+        parseSuccessData: _wire2api_user_data,
         constMeta: kLoginConstMeta,
         argValues: [baseUrl, authToken, userIdentifier, password],
         hint: hint,
@@ -212,16 +205,15 @@ String _wire2api_String(dynamic raw) {
 
 KeyData _wire2api_key_data(dynamic raw) {
   final arr = raw as List<dynamic>;
-  if (arr.length != 7)
-    throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+  if (arr.length != 6)
+    throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
   return KeyData(
     privateKey: _wire2api_String(arr[0]),
     publicKey: _wire2api_String(arr[1]),
     signKey: _wire2api_String(arr[2]),
     verifyKey: _wire2api_String(arr[3]),
-    jwt: _wire2api_String(arr[4]),
-    exportedPublicKey: _wire2api_String(arr[5]),
-    exportedVerifyKey: _wire2api_String(arr[6]),
+    exportedPublicKey: _wire2api_String(arr[4]),
+    exportedVerifyKey: _wire2api_String(arr[5]),
   );
 }
 
@@ -241,6 +233,18 @@ int _wire2api_u8(dynamic raw) {
 
 Uint8List _wire2api_uint_8_list(dynamic raw) {
   return raw as Uint8List;
+}
+
+UserData _wire2api_user_data(dynamic raw) {
+  final arr = raw as List<dynamic>;
+  if (arr.length != 4)
+    throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+  return UserData(
+    jwt: _wire2api_String(arr[0]),
+    userId: _wire2api_String(arr[1]),
+    refreshToken: _wire2api_String(arr[2]),
+    keys: _wire2api_key_data(arr[3]),
+  );
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
@@ -264,20 +268,6 @@ class SentcFlutterWire implements FlutterRustBridgeWireBase {
       ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
           lookup)
       : _lookup = lookup;
-
-  void wire_register_test_full(
-    int port_,
-  ) {
-    return _wire_register_test_full(
-      port_,
-    );
-  }
-
-  late final _wire_register_test_fullPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
-          'wire_register_test_full');
-  late final _wire_register_test_full =
-      _wire_register_test_fullPtr.asFunction<void Function(int)>();
 
   void wire_register(
     int port_,
