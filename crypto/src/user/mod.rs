@@ -452,7 +452,6 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 pub(crate) mod test_fn
 {
 	use alloc::string::ToString;
-	use alloc::vec;
 
 	use sentc_crypto_common::user::{DoneLoginServerOutput, KeyDerivedData, RegisterData};
 	use sentc_crypto_common::ServerOutput;
@@ -506,7 +505,6 @@ pub(crate) mod test_fn
 			jwt: "abc".to_string(),
 			refresh_token: "abc".to_string(),
 			user_id: "abc".to_string(),
-			group_invites: vec![],
 		};
 
 		ServerOutput {
