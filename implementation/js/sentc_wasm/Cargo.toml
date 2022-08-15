@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # own crypto lib
-sentc-crypto = {version = "0.1.0", path = "../../../crypto", features = ["server"]}
+sentc-crypto = {version = "0.1.0", path = "../../../crypto"}
 
 sentc-crypto-full = {version = "0.1.0", path = "../../../crypto_full", default-features = false, features = ["wasm"]}
 
