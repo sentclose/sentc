@@ -1,61 +1,87 @@
 use alloc::string::String;
 
-use sentc_crypto::{user, KeyData};
+use sentc_crypto::user;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub struct DoneLoginData
+pub struct KeyData
 {
 	private_key: String, //Base64 exported keys
 	public_key: String,
 	sign_key: String,
 	verify_key: String,
-	jwt: String,
-	refresh_token: String,
-	user_id: String,
 	exported_public_key: String,
 	exported_verify_key: String,
 }
 
-impl From<KeyData> for DoneLoginData
+impl From<sentc_crypto::util::KeyData> for KeyData
 {
-	fn from(keys: KeyData) -> Self
+	fn from(key: sentc_crypto::KeyData) -> Self
 	{
 		Self {
-			private_key: keys.private_key,
-			public_key: keys.public_key,
-			sign_key: keys.sign_key,
-			verify_key: keys.verify_key,
-			jwt: keys.jwt,
-			refresh_token: keys.refresh_token,
-			user_id: keys.user_id,
-			exported_public_key: keys.exported_public_key,
-			exported_verify_key: keys.exported_verify_key,
+			private_key: key.private_key,
+			public_key: key.public_key,
+			sign_key: key.sign_key,
+			verify_key: key.verify_key,
+			exported_public_key: key.exported_public_key,
+			exported_verify_key: key.exported_verify_key,
 		}
 	}
 }
 
 #[wasm_bindgen]
-impl DoneLoginData
+pub struct UserData
+{
+	keys: KeyData,
+	jwt: String,
+	refresh_token: String,
+	user_id: String,
+}
+
+impl From<sentc_crypto::util::UserData> for UserData
+{
+	fn from(data: sentc_crypto::util::UserData) -> Self
+	{
+		Self {
+			jwt: data.jwt,
+			refresh_token: data.refresh_token,
+			user_id: data.user_id,
+			keys: data.keys.into(),
+		}
+	}
+}
+
+#[wasm_bindgen]
+impl UserData
 {
 	pub fn get_private_key(&self) -> String
 	{
-		self.private_key.clone()
+		self.keys.private_key.clone()
 	}
 
 	pub fn get_public_key(&self) -> String
 	{
-		self.public_key.clone()
+		self.keys.public_key.clone()
 	}
 
 	pub fn get_sign_key(&self) -> String
 	{
-		self.sign_key.clone()
+		self.keys.sign_key.clone()
 	}
 
 	pub fn get_verify_key(&self) -> String
 	{
-		self.verify_key.clone()
+		self.keys.verify_key.clone()
+	}
+
+	pub fn get_exported_public_key(&self) -> String
+	{
+		self.keys.exported_public_key.clone()
+	}
+
+	pub fn get_exported_verify_key(&self) -> String
+	{
+		self.keys.exported_verify_key.clone()
 	}
 
 	pub fn get_jwt(&self) -> String
@@ -71,16 +97,6 @@ impl DoneLoginData
 	pub fn get_id(&self) -> String
 	{
 		self.user_id.clone()
-	}
-
-	pub fn get_exported_public_key(&self) -> String
-	{
-		self.exported_public_key.clone()
-	}
-
-	pub fn get_exported_verify_key(&self) -> String
-	{
-		self.exported_verify_key.clone()
 	}
 }
 
@@ -198,9 +214,9 @@ If there are more data in the backend, then it is possible to call it via the jw
 The other backend can validate the jwt
 */
 #[wasm_bindgen]
-pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<DoneLoginData, JsValue>
+pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserData, JsValue>
 {
-	let keys = sentc_crypto_full::user::login(
+	let data = sentc_crypto_full::user::login(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -208,7 +224,7 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 	)
 	.await?;
 
-	Ok(keys.into())
+	Ok(data.into())
 }
 
 #[wasm_bindgen]

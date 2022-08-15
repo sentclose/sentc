@@ -1,10 +1,10 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_core::{crypto as crypto_core, hash_auth_key, HashedAuthenticationKey};
+use sentc_crypto_core::{crypto as crypto_core, hash_auth_key, DeriveAuthKeyForAuth, HashedAuthenticationKey};
 
+use crate::util::import_public_key_from_pem_with_alg;
 use crate::util::public::generate_salt_from_base64;
-use crate::util::{derive_auth_key_from_base64, hashed_authentication_key_from_base64, import_public_key_from_pem_with_alg};
 use crate::SdkError;
 
 /**
@@ -53,4 +53,30 @@ pub fn encrypt_ephemeral_group_key_with_public_key(public_key_in_pem: &str, publ
 	let encrypted_eph_key = crypto_core::encrypt_asymmetric(&public_key, &eph_key)?;
 
 	Ok(Base64::encode_string(&encrypted_eph_key))
+}
+
+pub(crate) fn derive_auth_key_from_base64(auth_key: &str, alg: &str) -> Result<DeriveAuthKeyForAuth, SdkError>
+{
+	match alg {
+		sentc_crypto_core::ARGON_2_OUTPUT => {
+			let v = Base64::decode_vec(auth_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
+			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
+
+			Ok(DeriveAuthKeyForAuth::Argon2(v))
+		},
+		_ => Err(SdkError::AlgNotFound),
+	}
+}
+
+pub(crate) fn hashed_authentication_key_from_base64(hashed_key: &str, alg: &str) -> Result<HashedAuthenticationKey, SdkError>
+{
+	match alg {
+		sentc_crypto_core::ARGON_2_OUTPUT => {
+			let v = Base64::decode_vec(hashed_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
+			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
+
+			Ok(HashedAuthenticationKey::Argon2(v))
+		},
+		_ => Err(SdkError::AlgNotFound),
+	}
 }

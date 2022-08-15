@@ -316,10 +316,10 @@ mod test
 		//create a rust dummy user
 		let user = create_user();
 
-		let group = prepare_create(&user.public_key.as_str()).unwrap();
+		let group = prepare_create(&user.keys.public_key.as_str()).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
-		let pk = import_public_key(user.public_key.as_str()).unwrap();
+		let pk = import_public_key(user.keys.public_key.as_str()).unwrap();
 
 		assert_eq!(group.creator_public_key_id, pk.key_id);
 	}
@@ -331,7 +331,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _, _) = create_group(&user);
+		let (data, _, _) = create_group(&user.keys);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -341,7 +341,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (_, key_data, group_server_out) = create_group(&user);
+		let (_, key_data, group_server_out) = create_group(&user.keys);
 
 		let keys = group_server_out.keys;
 
@@ -356,7 +356,11 @@ mod test
 
 		let group_keys_from_server_out = get_group_keys_from_server_output(server_key_out.as_str()).unwrap();
 
-		let group_keys_from_server_out = get_group_keys(user.private_key.as_str(), &group_keys_from_server_out[0].key_data).unwrap();
+		let group_keys_from_server_out = get_group_keys(
+			user.keys.private_key.as_str(),
+			&group_keys_from_server_out[0].key_data,
+		)
+		.unwrap();
 
 		//only one key
 		assert_eq!(
@@ -372,7 +376,7 @@ mod test
 
 		let user1 = create_user();
 
-		let group_create = prepare_create(user.public_key.as_str()).unwrap();
+		let group_create = prepare_create(user.keys.public_key.as_str()).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -406,13 +410,17 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = get_group_keys(user.private_key.as_str(), group_data_user_0.keys[0].key_data.as_str()).unwrap();
+		let group_key_user_0 = get_group_keys(
+			user.keys.private_key.as_str(),
+			group_data_user_0.keys[0].key_data.as_str(),
+		)
+		.unwrap();
 
 		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]);
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member(
-			user1.exported_public_key.as_str(),
+			user1.keys.exported_public_key.as_str(),
 			group_keys.to_string().unwrap().as_str(),
 			false,
 		)
@@ -451,7 +459,7 @@ mod test
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 		let group_key_user_1 = get_group_keys(
-			user1.private_key.as_str(),
+			user1.keys.private_key.as_str(),
 			group_data_user_1.keys[0].key_data.as_str(),
 		)
 		.unwrap();
@@ -475,7 +483,7 @@ mod test
 
 		let user1 = create_user();
 
-		let group_create = prepare_create(user.public_key.as_str()).unwrap();
+		let group_create = prepare_create(user.keys.public_key.as_str()).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -509,13 +517,17 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = get_group_keys(user.private_key.as_str(), group_data_user_0.keys[0].key_data.as_str()).unwrap();
+		let group_key_user_0 = get_group_keys(
+			user.keys.private_key.as_str(),
+			group_data_user_0.keys[0].key_data.as_str(),
+		)
+		.unwrap();
 
 		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]);
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member_via_session(
-			user1.exported_public_key.as_str(),
+			user1.keys.exported_public_key.as_str(),
 			group_keys.to_string().unwrap().as_str(),
 		)
 		.unwrap();
@@ -554,7 +566,7 @@ mod test
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 		let group_key_user_1 = get_group_keys(
-			user1.private_key.as_str(),
+			user1.keys.private_key.as_str(),
 			group_data_user_1.keys[0].key_data.as_str(),
 		)
 		.unwrap();
@@ -576,9 +588,9 @@ mod test
 	{
 		let user = create_user();
 
-		let (_data, key_data, group_server_out) = create_group(&user);
+		let (_data, key_data, group_server_out) = create_group(&user.keys);
 
-		let rotation_out = key_rotation(key_data[0].group_key.as_str(), user.public_key.as_str()).unwrap();
+		let rotation_out = key_rotation(key_data[0].group_key.as_str(), user.keys.public_key.as_str()).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -595,7 +607,7 @@ mod test
 		};
 
 		let new_group_key_direct = get_group_keys(
-			user.private_key.as_str(),
+			user.keys.private_key.as_str(),
 			&server_key_output_direct.to_string().unwrap(),
 		)
 		.unwrap();
@@ -603,7 +615,9 @@ mod test
 		//simulate server key rotation encrypt. encrypt the ephemeral_key (encrypted by the previous room key) with the public keys of all users
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
 		let encrypted_ephemeral_key_by_group_key_and_public_key = encrypt_asymmetric_core(
-			&import_public_key(user.public_key.as_str()).unwrap().key,
+			&import_public_key(user.keys.public_key.as_str())
+				.unwrap()
+				.key,
 			&encrypted_ephemeral_key,
 		)
 		.unwrap();
@@ -619,8 +633,8 @@ mod test
 		};
 
 		let done_key_rotation = done_key_rotation(
-			user.private_key.as_str(),
-			user.public_key.as_str(),
+			user.keys.private_key.as_str(),
+			user.keys.public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
 		)
@@ -640,7 +654,11 @@ mod test
 			time: 0,
 		};
 
-		let out = get_group_keys(user.private_key.as_str(), &server_key_output.to_string().unwrap()).unwrap();
+		let out = get_group_keys(
+			user.keys.private_key.as_str(),
+			&server_key_output.to_string().unwrap(),
+		)
+		.unwrap();
 
 		let old_group_key = import_sym_key(key_data[0].group_key.to_string().as_str()).unwrap();
 

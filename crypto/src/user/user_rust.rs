@@ -19,7 +19,7 @@ use crate::user::{
 	register_internally,
 	reset_password_internally,
 };
-use crate::util::{KeyData, PrivateKeyFormat, SignKeyFormat};
+use crate::util::{KeyData, PrivateKeyFormat, SignKeyFormat, UserData};
 use crate::SdkError;
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
@@ -52,7 +52,7 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 	prepare_login_internally(user_identifier, password, server_output)
 }
 
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<KeyData, SdkError>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserData, SdkError>
 {
 	done_login_internally(&master_key_encryption, server_output)
 }
@@ -124,7 +124,7 @@ mod test
 		//now save the values
 		let login_out = done_login(&master_key_encryption_key, &server_output).unwrap();
 
-		let private_key = match login_out.private_key.key {
+		let private_key = match login_out.keys.private_key.key {
 			Sk::Ecies(k) => k,
 		};
 

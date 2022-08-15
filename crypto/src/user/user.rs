@@ -31,6 +31,8 @@ use crate::util::{
 	import_sign_key,
 	KeyData,
 	KeyDataInt,
+	UserData,
+	UserDataInt,
 };
 use crate::{err_to_msg, SdkError};
 
@@ -103,7 +105,7 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 pub fn done_login(
 	master_key_encryption: &str, //from the prepare login as base64 for exporting
 	server_output: &str,
-) -> Result<KeyData, String>
+) -> Result<UserData, String>
 {
 	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
 
@@ -122,7 +124,7 @@ pub fn done_login(
 
 	let result = done_login_internally(&master_key_encryption, server_output)?;
 
-	export_key_data(result)
+	export_user_data(result)
 }
 
 pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, String>
@@ -177,6 +179,22 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 	to_string(&output_arr).map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))
 }
 
+fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
+{
+	let jwt = user_data.jwt;
+	let refresh_token = user_data.refresh_token;
+	let user_id = user_data.user_id;
+
+	let keys = export_key_data(user_data.keys)?;
+
+	Ok(UserData {
+		keys,
+		jwt,
+		refresh_token,
+		user_id,
+	})
+}
+
 fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 {
 	let private_key = export_private_key_to_string(key_data.private_key)?;
@@ -190,9 +208,6 @@ fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 		public_key,
 		sign_key,
 		verify_key,
-		jwt: key_data.jwt,
-		refresh_token: key_data.refresh_token,
-		user_id: key_data.user_id,
 		exported_public_key: key_data
 			.exported_public_key
 			.to_string()
@@ -250,7 +265,7 @@ mod test
 		)
 		.unwrap();
 
-		let private_key = match PrivateKeyFormat::from_string(login_out.private_key.as_str()).unwrap() {
+		let private_key = match PrivateKeyFormat::from_string(login_out.keys.private_key.as_str()).unwrap() {
 			PrivateKeyFormat::Ecies {
 				key_id: _,
 				key,

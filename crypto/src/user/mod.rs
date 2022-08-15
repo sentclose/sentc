@@ -13,6 +13,7 @@ use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
+	DoneLoginServerOutput,
 	JwtRefreshInput,
 	KeyDerivedData,
 	MasterKey,
@@ -44,6 +45,7 @@ use crate::util::{
 	PrivateKeyFormatInt,
 	PublicKeyFormatInt,
 	SignKeyFormatInt,
+	UserDataInt,
 	VerifyKeyFormatInt,
 };
 use crate::SdkError;
@@ -216,11 +218,20 @@ fn prepare_login_internally(user_identifier: &str, password: &str, server_output
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<KeyDataInt, SdkError>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserDataInt, SdkError>
 {
-	let server_output: DoneLoginServerKeysOutput = handle_server_response(server_output)?;
+	let server_output: DoneLoginServerOutput = handle_server_response(server_output)?;
 
-	done_login_internally_with_server_out(master_key_encryption, &server_output)
+	let keys = done_login_internally_with_server_out(master_key_encryption, &server_output.keys)?;
+
+	let out = UserDataInt {
+		keys,
+		jwt: server_output.jwt.to_string(),
+		refresh_token: server_output.refresh_token.to_string(),
+		user_id: server_output.user_id.to_string(),
+	};
+
+	Ok(out)
 }
 
 fn done_login_internally_with_server_out(
@@ -266,9 +277,6 @@ fn done_login_internally_with_server_out(
 	};
 
 	Ok(KeyDataInt {
-		jwt: server_output.jwt.to_string(),
-		refresh_token: server_output.refresh_token.to_string(),
-		user_id: server_output.user_id.to_string(),
 		private_key: PrivateKeyFormatInt {
 			key_id: server_output.keypair_encrypt_id.clone(),
 			key: out.private_key,
@@ -293,7 +301,7 @@ fn done_login_internally_with_server_out(
 fn prepare_user_identifier_update_internally(user_identifier: String) -> Result<String, SdkError>
 {
 	let input = UserUpdateServerInput {
-		user_identifier: user_identifier,
+		user_identifier,
 	};
 
 	input.to_string().map_err(|_| SdkError::JsonToStringFailed)
@@ -318,10 +326,10 @@ fn change_password_internally(old_pw: &str, new_pw: &str, server_output_prep_log
 	-> Result<String, SdkError>
 {
 	let server_output_prep_login: PrepareLoginSaltServerOutput = handle_server_response(server_output_prep_login)?;
-	let server_output_done_login: DoneLoginServerKeysOutput = handle_server_response(server_output_done_login)?;
+	let server_output_done_login: DoneLoginServerOutput = handle_server_response(server_output_done_login)?;
 
 	let encrypted_master_key =
-		Base64::decode_vec(server_output_done_login.encrypted_master_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+		Base64::decode_vec(server_output_done_login.keys.encrypted_master_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
 
 	let output = core_user::change_password(
@@ -445,12 +453,12 @@ pub(crate) mod test_fn
 {
 	use alloc::string::ToString;
 
-	use sentc_crypto_common::user::{KeyDerivedData, RegisterData};
+	use sentc_crypto_common::user::{DoneLoginServerOutput, KeyDerivedData, RegisterData};
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
 	use crate::util::server::generate_salt_from_base64_to_string;
-	use crate::util::KeyData;
+	use crate::util::UserData;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
@@ -480,7 +488,7 @@ pub(crate) mod test_fn
 		} = data;
 
 		//get the server output back
-		let out = DoneLoginServerKeysOutput {
+		let keys = DoneLoginServerKeysOutput {
 			encrypted_master_key: master_key.encrypted_master_key,
 			encrypted_private_key: derived.encrypted_private_key,
 			encrypted_sign_key: derived.encrypted_sign_key,
@@ -490,9 +498,13 @@ pub(crate) mod test_fn
 			keypair_sign_alg: derived.keypair_sign_alg,
 			keypair_encrypt_id: "abc".to_string(),
 			keypair_sign_id: "dfg".to_string(),
-			jwt: "jwt".to_string(),
-			user_id: "abc".to_string(),
+		};
+
+		let out = DoneLoginServerOutput {
+			keys,
+			jwt: "abc".to_string(),
 			refresh_token: "abc".to_string(),
+			user_id: "abc".to_string(),
 		};
 
 		ServerOutput {
@@ -506,7 +518,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_user() -> KeyData
+	pub(crate) fn create_user() -> UserData
 	{
 		let username = "admin";
 		let password = "12345";
@@ -528,7 +540,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_user() -> KeyData
+	pub(crate) fn create_user() -> UserData
 	{
 		let username = "admin";
 		let password = "12345";
