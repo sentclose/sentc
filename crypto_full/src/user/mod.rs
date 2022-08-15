@@ -11,9 +11,9 @@ pub use sentc_crypto::KeyData;
 use sentc_crypto_common::user::UserUpdateServerOut;
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{BoolRes, KeyRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::non_rust::{BoolRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{BoolRes, KeyRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::rust::{BoolRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -56,7 +56,7 @@ pub async fn prepare_login_start(base_url: String, auth_token: &str, user_identi
 	Ok(res)
 }
 
-pub async fn done_login(base_url: String, auth_token: &str, user_identifier: &str, password: &str, prepare_login_server_output: &str) -> KeyRes
+pub async fn done_login(base_url: String, auth_token: &str, user_identifier: &str, password: &str, prepare_login_server_output: &str) -> LoginRes
 {
 	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier, password, prepare_login_server_output)?;
 
@@ -69,7 +69,7 @@ pub async fn done_login(base_url: String, auth_token: &str, user_identifier: &st
 	Ok(keys)
 }
 
-pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> KeyRes
+pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> LoginRes
 {
 	let user_id_input = user::prepare_login_start(user_identifier)?;
 
