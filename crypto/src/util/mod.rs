@@ -39,7 +39,7 @@ pub(crate) use self::util_non_rust::{
 	import_sym_key_from_format,
 };
 #[cfg(not(feature = "rust"))]
-pub use self::util_non_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, VerifyKeyFormat};
+pub use self::util_non_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, UserData, VerifyKeyFormat};
 //if rust feature is enabled export the internally functions as externally
 #[cfg(feature = "rust")]
 pub use self::{
@@ -48,6 +48,7 @@ pub use self::{
 	PublicKeyFormatInt as PublicKeyFormat,
 	SignKeyFormatInt as SignKeyFormat,
 	SymKeyFormatInt as SymKeyFormat,
+	UserDataInt as UserData,
 	VerifyKeyFormatInt as VerifyKeyFormat,
 };
 use crate::SdkError;
@@ -96,11 +97,16 @@ pub struct KeyDataInt
 	pub sign_key: SignKeyFormatInt,
 	pub public_key: PublicKeyFormatInt,
 	pub verify_key: VerifyKeyFormatInt,
+	pub exported_public_key: UserPublicKeyData,
+	pub exported_verify_key: UserVerifyKeyData,
+}
+
+pub struct UserDataInt
+{
+	pub keys: KeyDataInt,
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
-	pub exported_public_key: UserPublicKeyData,
-	pub exported_verify_key: UserVerifyKeyData,
 }
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, SdkError>
@@ -140,36 +146,10 @@ pub(crate) fn hashed_authentication_key_to_string(hashed_authentication_key_byte
 	}
 }
 
-pub(crate) fn hashed_authentication_key_from_base64(hashed_key: &str, alg: &str) -> Result<HashedAuthenticationKey, SdkError>
-{
-	match alg {
-		ARGON_2_OUTPUT => {
-			let v = Base64::decode_vec(hashed_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
-			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
-
-			Ok(HashedAuthenticationKey::Argon2(v))
-		},
-		_ => Err(SdkError::AlgNotFound),
-	}
-}
-
 pub(crate) fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &DeriveAuthKeyForAuth) -> String
 {
 	match derive_auth_key_for_auth {
 		DeriveAuthKeyForAuth::Argon2(h) => Base64::encode_string(h),
-	}
-}
-
-pub(crate) fn derive_auth_key_from_base64(auth_key: &str, alg: &str) -> Result<DeriveAuthKeyForAuth, SdkError>
-{
-	match alg {
-		ARGON_2_OUTPUT => {
-			let v = Base64::decode_vec(auth_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
-			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
-
-			Ok(DeriveAuthKeyForAuth::Argon2(v))
-		},
-		_ => Err(SdkError::AlgNotFound),
 	}
 }
 

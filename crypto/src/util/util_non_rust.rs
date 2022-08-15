@@ -109,11 +109,17 @@ pub struct KeyData
 	pub public_key: String,
 	pub sign_key: String,
 	pub verify_key: String,
+	pub exported_public_key: String,
+	pub exported_verify_key: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UserData
+{
+	pub keys: KeyData,
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
-	pub exported_public_key: String,
-	pub exported_verify_key: String,
 }
 
 #[derive(Serialize, Deserialize)]
