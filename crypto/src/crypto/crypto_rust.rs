@@ -17,7 +17,7 @@ use crate::crypto::{
 	done_fetch_sym_key_by_private_key_internally,
 	done_fetch_sym_key_internally,
 	done_fetch_sym_keys_internally,
-	done_register_sym_key_by_public_key_internally,
+	done_register_sym_key_internally,
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
@@ -134,7 +134,7 @@ pub fn decrypt_string_asymmetric(
 	decrypt_string_asymmetric_internally(private_key, encrypted_data_with_head, verify_key)
 }
 
-pub fn prepare_register_sym_key(master_key: &SymKeyFormat) -> Result<String, SdkError>
+pub fn prepare_register_sym_key(master_key: &SymKeyFormat) -> Result<(String, SymKeyFormat), SdkError>
 {
 	prepare_register_sym_key_internally(master_key)
 }
@@ -144,9 +144,9 @@ pub fn prepare_register_sym_key_by_public_key(reply_public_key: &UserPublicKeyDa
 	prepare_register_sym_key_by_public_key_internally(&reply_public_key)
 }
 
-pub fn done_register_sym_key_by_public_key(key_id: &str, non_registered_sym_key: &mut SymKeyFormat)
+pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &mut SymKeyFormat)
 {
-	done_register_sym_key_by_public_key_internally(key_id, non_registered_sym_key)
+	done_register_sym_key_internally(key_id, non_registered_sym_key)
 }
 
 pub fn done_fetch_sym_key(master_key: &SymKeyFormat, server_out: &str) -> Result<SymKeyFormat, SdkError>
@@ -416,7 +416,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 
 		//get the server output
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
@@ -449,7 +449,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 
@@ -487,7 +487,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 		let server_out_0 = GeneratedSymKeyHeadServerOutput {
 			alg: server_in.alg,
@@ -497,7 +497,7 @@ mod test
 			time: 0,
 		};
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 		let server_out_1 = GeneratedSymKeyHeadServerOutput {
 			alg: server_in.alg,
@@ -569,7 +569,7 @@ mod test
 		//get the server output
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 
-		done_register_sym_key_by_public_key("123", &mut key);
+		done_register_sym_key("123", &mut key);
 
 		let text = "123*+^êéèüöß@€&$";
 

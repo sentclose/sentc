@@ -17,7 +17,7 @@ use crate::crypto::{
 	done_fetch_sym_key_by_private_key_internally,
 	done_fetch_sym_key_internally,
 	done_fetch_sym_keys_internally,
-	done_register_sym_key_by_public_key_internally,
+	done_register_sym_key_internally,
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
@@ -262,13 +262,13 @@ pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify
 	Ok(decrypted)
 }
 
-pub fn prepare_register_sym_key(master_key: &str) -> Result<String, String>
+pub fn prepare_register_sym_key(master_key: &str) -> Result<(String, String), String>
 {
 	let master_key = import_sym_key(master_key)?;
 
-	let out = prepare_register_sym_key_internally(&master_key)?;
+	let (server_input, key) = prepare_register_sym_key_internally(&master_key)?;
 
-	Ok(out)
+	Ok((server_input, export_sym_key_to_string(key)?))
 }
 
 pub fn prepare_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
@@ -280,11 +280,11 @@ pub fn prepare_register_sym_key_by_public_key(reply_public_key: &str) -> Result<
 	Ok((server_input, export_sym_key_to_string(key)?))
 }
 
-pub fn done_register_sym_key_by_public_key(key_id: &str, non_registered_sym_key: &str) -> Result<String, String>
+pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &str) -> Result<String, String>
 {
 	let mut non_registered_sym_key = import_sym_key(non_registered_sym_key)?;
 
-	done_register_sym_key_by_public_key_internally(key_id, &mut non_registered_sym_key);
+	done_register_sym_key_internally(key_id, &mut non_registered_sym_key);
 
 	Ok(export_sym_key_to_string(non_registered_sym_key)?)
 }
@@ -577,7 +577,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 
 		//get the server output
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
@@ -610,7 +610,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 
 		//get the server output
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
@@ -649,7 +649,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let master_key = &key_data[0].group_key;
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 		let server_out_0 = GeneratedSymKeyHeadServerOutput {
 			alg: server_in.alg,
@@ -659,7 +659,7 @@ mod test
 			time: 0,
 		};
 
-		let server_in = prepare_register_sym_key(master_key).unwrap();
+		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 		let server_out_1 = GeneratedSymKeyHeadServerOutput {
 			alg: server_in.alg,
@@ -733,7 +733,7 @@ mod test
 		//get the server output
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 
-		let key = done_register_sym_key_by_public_key("123", &non_registered_key).unwrap();
+		let key = done_register_sym_key("123", &non_registered_key).unwrap();
 
 		let text = "123*+^êéèüöß@€&$";
 
