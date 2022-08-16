@@ -9,9 +9,9 @@ use sentc_crypto::util::public::{handle_general_server_response, handle_server_r
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerRegisterOutput;
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{KeyRes, KeysRes, Res, VoidRes};
+pub(crate) use self::non_rust::{GenKeyRes, KeyRes, KeysRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{KeyRes, KeysRes, Res, VoidRes};
+pub(crate) use self::rust::{GenKeyRes, KeyRes, KeysRes, VoidRes};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 pub async fn register_sym_key(
@@ -20,16 +20,20 @@ pub async fn register_sym_key(
 	jwt: &str,
 	#[cfg(not(feature = "rust"))] master_key: &str,
 	#[cfg(feature = "rust")] master_key: &sentc_crypto::util::SymKeyFormat,
-) -> Res
+) -> GenKeyRes
 {
-	let url = base_url + "/api/v1/keys/sym_key";
+	let url = base_url.clone() + "/api/v1/keys/sym_key";
 	let key_data = sentc_crypto::crypto::prepare_register_sym_key(master_key)?;
 
 	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(key_data), Some(jwt)).await?;
 
 	let out: GeneratedSymKeyHeadServerRegisterOutput = handle_server_response(res.as_str())?;
+	let key_id = out.key_id;
 
-	Ok(out.key_id)
+	//fetch the key
+	let key = get_sym_key_by_id(base_url, auth_token, &key_id, master_key).await?;
+
+	Ok((key_id, key))
 }
 
 pub async fn get_sym_key_by_id(
