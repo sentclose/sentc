@@ -9,7 +9,7 @@ import {
 	GroupJoinReqListItem,
 	GroupKey,
 	GroupKeyRotationOut,
-	GroupOutDataKeys,
+	GroupOutDataKeys, GroupUserListItem,
 	KeyRotationInput,
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
@@ -32,7 +32,7 @@ import {
 	group_get_done_key_rotation_server_input,
 	group_get_group_data,
 	group_get_group_keys,
-	group_get_join_reqs,
+	group_get_join_reqs, group_get_member,
 	group_invite_user,
 	group_invite_user_session,
 	group_join_user_session,
@@ -146,6 +146,25 @@ export class Group
 		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank);
 	}
 
+	public async getMember(last_fetched_item: GroupUserListItem | null = null)
+	{
+		const jwt = await Sentc.getJwt();
+
+		const last_fetched_time = last_fetched_item.joined_time.toString() ?? "0";
+		const last_id = last_fetched_item.user_id ?? "none";
+
+		const list: GroupUserListItem[] = await group_get_member(
+			this.base_url,
+			this.app_token,
+			jwt,
+			this.data.group_id,
+			last_fetched_time,
+			last_id
+		);
+
+		return list;
+	}
+
 	public async prepareKeysForNewMember(user_id: string)
 	{
 		const key_count = this.data.keys.length;
@@ -221,14 +240,17 @@ export class Group
 	{
 		const jwt = await Sentc.getJwt();
 
+		const last_fetched_time = last_fetched_item.time.toString() ?? "0";
+		const last_id = last_fetched_item.user_id ?? "none";
+
 		const reqs: GroupJoinReqListItem[] = await group_get_join_reqs(
 			this.base_url,
 			this.app_token,
 			jwt,
 			this.data.group_id,
 			this.data.rank,
-			last_fetched_item.time.toString(),
-			last_fetched_item.user_id
+			last_fetched_time,
+			last_id
 		);
 
 		return reqs;

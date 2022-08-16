@@ -80,6 +80,12 @@ export interface KeyRotationInput {
 	new_group_key_id: string,
 }
 
+export interface GroupUserListItem {
+	user_id: string,
+	rank: number,
+	joined_time: number,
+}
+
 //______________________________________________________________________________________________________________________
 
 export interface SignHead {

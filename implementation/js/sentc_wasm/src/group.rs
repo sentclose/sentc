@@ -300,6 +300,29 @@ pub fn group_decrypt_key(private_key: &str, server_key_data: &str) -> Result<Gro
 	Ok(out.into())
 }
 
+#[wasm_bindgen]
+pub async fn group_get_member(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	last_fetched_time: String,
+	last_fetched_id: String,
+) -> Result<JsValue, JsValue>
+{
+	let out = sentc_crypto_full::group::get_member(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_id.as_str(),
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
+}
+
 //__________________________________________________________________________________________________
 //invite
 
