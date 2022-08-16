@@ -230,9 +230,35 @@ pub async fn generate_and_register_sym_key(base_url: String, auth_token: String,
 }
 
 #[wasm_bindgen]
+pub async fn generate_and_register_sym_key_by_public_key(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	public_key: String,
+) -> Result<KeyGenOutput, JsValue>
+{
+	let (key_id, key) =
+		sentc_crypto_full::crypto::register_key_by_public_key(base_url, auth_token.as_str(), jwt.as_str(), public_key.as_str()).await?;
+
+	Ok(KeyGenOutput {
+		key,
+		key_id,
+	})
+}
+
+#[wasm_bindgen]
 pub async fn get_sym_key_by_id(base_url: String, auth_token: String, key_id: String, master_key: String) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::crypto::get_sym_key_by_id(base_url, auth_token.as_str(), key_id.as_str(), master_key.as_str()).await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub async fn get_sym_key_by_id_by_private_key(base_url: String, auth_token: String, key_id: String, private_key: String) -> Result<String, JsValue>
+{
+	let out =
+		sentc_crypto_full::crypto::get_sym_key_by_id_by_private_key(base_url, auth_token.as_str(), key_id.as_str(), private_key.as_str()).await?;
 
 	Ok(out)
 }
