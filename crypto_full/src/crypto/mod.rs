@@ -23,17 +23,35 @@ pub async fn register_sym_key(
 ) -> GenKeyRes
 {
 	let url = base_url.clone() + "/api/v1/keys/sym_key";
-	let key_data = sentc_crypto::crypto::prepare_register_sym_key(master_key)?;
+	let (server_input, encoded_key) = sentc_crypto::crypto::prepare_register_sym_key(master_key)?;
 
-	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(key_data), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::POST,
+		url.as_str(),
+		auth_token,
+		Some(server_input),
+		Some(jwt),
+	)
+	.await?;
 
 	let out: GeneratedSymKeyHeadServerRegisterOutput = handle_server_response(res.as_str())?;
 	let key_id = out.key_id;
 
-	//fetch the key
-	let key = get_sym_key_by_id(base_url, auth_token, &key_id, master_key).await?;
+	#[cfg(feature = "rust")]
+	{
+		let mut encoded_key = encoded_key;
 
-	Ok((key_id, key))
+		sentc_crypto::crypto::done_register_sym_key(&key_id, &mut encoded_key);
+
+		return Ok((key_id, encoded_key));
+	}
+
+	#[cfg(not(feature = "rust"))]
+	{
+		let key = sentc_crypto::crypto::done_register_sym_key(&key_id, &encoded_key)?;
+
+		return Ok((key_id, key));
+	}
 }
 
 pub async fn get_sym_key_by_id(
@@ -111,14 +129,14 @@ pub async fn register_key_by_public_key(
 	{
 		let mut encoded_key = encoded_key;
 
-		sentc_crypto::crypto::done_register_sym_key_by_public_key(&key_id, &mut encoded_key);
+		sentc_crypto::crypto::done_register_sym_key(&key_id, &mut encoded_key);
 
 		return Ok((key_id, encoded_key));
 	}
 
 	#[cfg(not(feature = "rust"))]
 	{
-		let key = sentc_crypto::crypto::done_register_sym_key_by_public_key(&key_id, &encoded_key)?;
+		let key = sentc_crypto::crypto::done_register_sym_key(&key_id, &encoded_key)?;
 
 		return Ok((key_id, key));
 	}
