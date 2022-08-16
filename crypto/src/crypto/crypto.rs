@@ -14,8 +14,10 @@ use crate::crypto::{
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
 	deserialize_head_from_string_internally,
+	done_fetch_sym_key_by_private_key_internally,
 	done_fetch_sym_key_internally,
 	done_fetch_sym_keys_internally,
+	done_register_sym_key_by_public_key_internally,
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
@@ -23,6 +25,7 @@ use crate::crypto::{
 	encrypt_string_symmetric_internally,
 	encrypt_symmetric_internally,
 	generate_non_register_sym_key_internally,
+	prepare_register_sym_key_by_public_key_internally,
 	prepare_register_sym_key_internally,
 	split_head_and_encrypted_data_internally,
 	split_head_and_encrypted_string_internally,
@@ -268,11 +271,38 @@ pub fn prepare_register_sym_key(master_key: &str) -> Result<String, String>
 	Ok(out)
 }
 
+pub fn prepare_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
+{
+	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+
+	let (server_input, key) = prepare_register_sym_key_by_public_key_internally(&reply_public_key)?;
+
+	Ok((server_input, export_sym_key_to_string(key)?))
+}
+
+pub fn done_register_sym_key_by_public_key(key_id: &str, non_registered_sym_key: &str) -> Result<String, String>
+{
+	let mut non_registered_sym_key = import_sym_key(non_registered_sym_key)?;
+
+	done_register_sym_key_by_public_key_internally(key_id, &mut non_registered_sym_key);
+
+	Ok(export_sym_key_to_string(non_registered_sym_key)?)
+}
+
 pub fn done_fetch_sym_key(master_key: &str, server_out: &str) -> Result<String, String>
 {
 	let master_key = import_sym_key(master_key)?;
 
 	let out = done_fetch_sym_key_internally(&master_key, server_out)?;
+
+	Ok(export_sym_key_to_string(out)?)
+}
+
+pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str) -> Result<String, String>
+{
+	let private_key = import_private_key(private_key)?;
+
+	let out = done_fetch_sym_key_by_private_key_internally(&private_key, server_out)?;
 
 	Ok(export_sym_key_to_string(out)?)
 }
@@ -691,5 +721,58 @@ mod test
 				assert_eq!(k1, k2);
 			},
 		}
+	}
+
+	#[test]
+	fn test_generating_sym_key_by_public_key()
+	{
+		let user = create_user();
+
+		let (server_in, non_registered_key) = prepare_register_sym_key_by_public_key(user.keys.exported_public_key.as_str()).unwrap();
+
+		//get the server output
+		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
+
+		let key = done_register_sym_key_by_public_key("123", &non_registered_key).unwrap();
+
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(&key, text, user.keys.sign_key.as_str()).unwrap();
+
+		let decrypted = decrypt_string_symmetric(&key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
+
+		assert_eq!(decrypted, text);
+
+		//no test server output
+
+		let server_out = GeneratedSymKeyHeadServerOutput {
+			alg: server_in.alg,
+			encrypted_key_string: server_in.encrypted_key_string,
+			master_key_id: server_in.master_key_id,
+			key_id: "123".to_string(),
+			time: 0,
+		};
+
+		//test server out decrypt
+		let server_response = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(server_out),
+		};
+
+		let decrypted_key = done_fetch_sym_key_by_private_key(
+			user.keys.private_key.as_str(),
+			server_response.to_string().unwrap().as_str(),
+		)
+		.unwrap();
+
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.keys.sign_key.as_str()).unwrap();
+
+		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
+
+		assert_eq!(decrypted, text);
 	}
 }
