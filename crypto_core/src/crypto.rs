@@ -13,7 +13,7 @@ Generates a new sym key (defined by the used alg).
 
 Encrypt the new key by the given master key
 */
-pub fn generate_symmetric_with_master_key(master_key: &SymKey) -> Result<(Vec<u8>, &str), Error>
+pub fn generate_symmetric_with_master_key(master_key: &SymKey) -> Result<(Vec<u8>, &str, SymKey), Error>
 {
 	let out = generate_symmetric()?;
 
@@ -21,7 +21,7 @@ pub fn generate_symmetric_with_master_key(master_key: &SymKey) -> Result<(Vec<u8
 		SymKey::Aes(k) => encrypt_symmetric(master_key, &k)?,
 	};
 
-	Ok((encrypted_sym_key, out.alg))
+	Ok((encrypted_sym_key, out.alg, out.key))
 }
 
 /**
