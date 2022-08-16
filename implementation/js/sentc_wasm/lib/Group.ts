@@ -793,12 +793,13 @@ export class Group
 
 		const jwt = await Sentc.getJwt();
 
-		const key_id = await generate_and_register_sym_key(this.base_url, this.app_token, jwt, latest_key.group_key);
+		const key_out = await generate_and_register_sym_key(this.base_url, this.app_token, jwt, latest_key.group_key);
 
-		const key = await get_sym_key_by_id(this.base_url, this.app_token, key_id, latest_key.group_key);
+		const key_id = key_out.get_key_id();
+		const key = key_out.get_key();
 
 		//return the group key id which was used to encrypt this key
-		return [key, latest_key.group_key_id];
+		return [key, key_id, latest_key.group_key_id];
 	}
 
 	public async fetchKey(key_id: string, group_key_id: string)

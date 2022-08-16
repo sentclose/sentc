@@ -47,6 +47,27 @@ impl NonRegisteredKeyOutput
 }
 
 #[wasm_bindgen]
+pub struct KeyGenOutput
+{
+	key: String,
+	key_id: String,
+}
+
+#[wasm_bindgen]
+impl KeyGenOutput
+{
+	pub fn get_key(&self) -> String
+	{
+		self.key.clone()
+	}
+
+	pub fn get_key_id(&self) -> String
+	{
+		self.key_id.clone()
+	}
+}
+
+#[wasm_bindgen]
 pub fn split_head_and_encrypted_data(data: &[u8]) -> Result<JsValue, JsValue>
 {
 	let (head, _data) = crypto::split_head_and_encrypted_data(data)?;
@@ -198,11 +219,14 @@ pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> 
 //__________________________________________________________________________________________________
 
 #[wasm_bindgen]
-pub async fn generate_and_register_sym_key(base_url: String, auth_token: String, jwt: String, master_key: String) -> Result<String, JsValue>
+pub async fn generate_and_register_sym_key(base_url: String, auth_token: String, jwt: String, master_key: String) -> Result<KeyGenOutput, JsValue>
 {
-	let out = sentc_crypto_full::crypto::register_sym_key(base_url, auth_token.as_str(), jwt.as_str(), master_key.as_str()).await?;
+	let (key_id, key) = sentc_crypto_full::crypto::register_sym_key(base_url, auth_token.as_str(), jwt.as_str(), master_key.as_str()).await?;
 
-	Ok(out)
+	Ok(KeyGenOutput {
+		key,
+		key_id,
+	})
 }
 
 #[wasm_bindgen]
