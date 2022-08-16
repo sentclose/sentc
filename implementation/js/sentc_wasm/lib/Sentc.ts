@@ -441,12 +441,15 @@ export class Sentc
 	{
 		const jwt = await Sentc.getJwt();
 
+		const last_fetched_time = last_fetched_item.time.toString() ?? "0";
+		const last_id = last_fetched_item.group_id ?? "none";
+
 		const out: GroupInviteListItem[] = await group_get_invites_for_user(
 			this.options.base_url,
 			this.options.app_token,
 			jwt,
-			last_fetched_item.time.toString(),
-			last_fetched_item.group_id
+			last_fetched_time,
+			last_id
 		);
 
 		return out;

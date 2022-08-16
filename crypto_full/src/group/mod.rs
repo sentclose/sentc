@@ -14,6 +14,7 @@ use sentc_crypto_common::group::{
 	GroupInviteReqList,
 	GroupInviteServerOutput,
 	GroupJoinReqList,
+	GroupUserListItem,
 	KeyRotationInput,
 	KeyRotationStartServerOutput,
 };
@@ -27,12 +28,13 @@ pub(crate) use self::non_rust::{
 	KeyRes,
 	KeyRotationGetOut,
 	KeyRotationRes,
+	MemberRes,
 	Res,
 	SessionRes,
 	VoidRes,
 };
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyFetchRes, KeyRes, KeyRotationRes, Res, SessionRes, VoidRes};
+pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyFetchRes, KeyRes, KeyRotationRes, MemberRes, Res, SessionRes, VoidRes};
 use crate::util::{make_req, HttpMethod};
 
 async fn create_group(
@@ -123,6 +125,17 @@ pub fn decrypt_key(
 ) -> KeyRes
 {
 	Ok(sentc_crypto::group::get_group_keys(private_key, server_key_output)?)
+}
+
+pub async fn get_member(base_url: String, auth_token: &str, jwt: &str, id: &str, last_fetched_time: &str, last_fetched_id: &str) -> MemberRes
+{
+	let url = base_url + "/api/v1/group/" + id + "/member/" + last_fetched_time + "/" + last_fetched_id;
+
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	let out: Vec<GroupUserListItem> = handle_server_response(res.as_str())?;
+
+	Ok(out)
 }
 
 //__________________________________________________________________________________________________

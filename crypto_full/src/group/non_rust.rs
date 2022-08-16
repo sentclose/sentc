@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto::group::{GroupKeyData, GroupOutData, GroupOutDataKeys};
-use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList};
+use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupUserListItem};
 use sentc_crypto_common::EncryptionKeyPairId;
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +15,7 @@ pub type SessionRes = Result<Option<String>, String>;
 pub type InviteListRes = Result<Vec<GroupInviteReqList>, String>;
 pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, String>;
 pub type KeyRotationRes = Result<Vec<KeyRotationGetOut>, String>;
+pub type MemberRes = Result<Vec<GroupUserListItem>, String>;
 
 #[derive(Serialize, Deserialize)]
 pub struct KeyRotationGetOut
