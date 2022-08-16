@@ -8,6 +8,11 @@ pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 	alg::sym::aes_gcm::generate_key()
 }
 
+/**
+Generates a new sym key (defined by the used alg).
+
+Encrypt the new key by the given master key
+*/
 pub fn generate_symmetric_with_master_key(master_key: &SymKey) -> Result<(Vec<u8>, &str), Error>
 {
 	let out = generate_symmetric()?;
@@ -19,6 +24,9 @@ pub fn generate_symmetric_with_master_key(master_key: &SymKey) -> Result<(Vec<u8
 	Ok((encrypted_sym_key, out.alg))
 }
 
+/**
+Decrypt and return a sym key by another sym key
+*/
 pub fn get_symmetric_key_from_master_key(master_key: &SymKey, encrypted_symmetric_key: &[u8], alg: &str) -> Result<SymKey, Error>
 {
 	let decrypted_symmetric_key = decrypt_symmetric(master_key, encrypted_symmetric_key)?;
@@ -36,6 +44,44 @@ pub fn get_symmetric_key_from_master_key(master_key: &SymKey, encrypted_symmetri
 
 	Ok(key)
 }
+
+/**
+Generate a sym key and encrypt it with a public key
+*/
+pub fn generate_symmetric_with_public_key(public_key: &Pk) -> Result<(Vec<u8>, &str, SymKey), Error>
+{
+	let out = generate_symmetric()?;
+
+	let encrypted_sym_key = match &out.key {
+		SymKey::Aes(k) => encrypt_asymmetric(public_key, k)?,
+	};
+
+	//need to return the key because this can't be fetched
+	Ok((encrypted_sym_key, out.alg, out.key))
+}
+
+/**
+Decrypt and a sym key by private key
+*/
+pub fn get_symmetric_key_from_private_key(private_key: &Sk, encrypted_symmetric_key: &[u8], alg: &str) -> Result<SymKey, Error>
+{
+	let decrypted_symmetric_key = decrypt_asymmetric(private_key, encrypted_symmetric_key)?;
+
+	let key = match alg {
+		alg::sym::aes_gcm::AES_GCM_OUTPUT => {
+			SymKey::Aes(
+				decrypted_symmetric_key
+					.try_into()
+					.map_err(|_| Error::KeyDecryptFailed)?,
+			)
+		},
+		_ => return Err(Error::AlgNotFound),
+	};
+
+	Ok(key)
+}
+
+//__________________________________________________________________________________________________
 
 pub fn encrypt_symmetric(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
 {

@@ -6,7 +6,7 @@ use sentc_crypto_common::SymKeyId;
 
 use crate::error::SdkFullError;
 
-pub type Res = Result<String, SdkFullError>;
+pub type GenKeyRes = Result<(String, SymKeyFormat), SdkFullError>;
 pub type KeyRes = Result<SymKeyFormat, SdkFullError>;
 pub type KeysRes = Result<(Vec<SymKeyFormat>, u128, SymKeyId), SdkFullError>;
 pub type VoidRes = Result<(), SdkFullError>;

@@ -23,7 +23,9 @@ pub use self::crypto::{
 	decrypt_symmetric,
 	deserialize_head_from_string,
 	done_fetch_sym_key,
+	done_fetch_sym_key_by_private_key,
 	done_fetch_sym_keys,
+	done_register_sym_key_by_public_key,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
@@ -32,6 +34,7 @@ pub use self::crypto::{
 	encrypt_symmetric,
 	generate_non_register_sym_key,
 	prepare_register_sym_key,
+	prepare_register_sym_key_by_public_key,
 	split_head_and_encrypted_data,
 	split_head_and_encrypted_string,
 };
@@ -46,7 +49,9 @@ pub use self::crypto_rust::{
 	decrypt_symmetric,
 	deserialize_head_from_string,
 	done_fetch_sym_key,
+	done_fetch_sym_key_by_private_key,
 	done_fetch_sym_keys,
+	done_register_sym_key_by_public_key,
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
@@ -55,6 +60,7 @@ pub use self::crypto_rust::{
 	encrypt_symmetric,
 	generate_non_register_sym_key,
 	prepare_register_sym_key,
+	prepare_register_sym_key_by_public_key,
 	split_head_and_encrypted_data,
 	split_head_and_encrypted_string,
 };
@@ -388,6 +394,51 @@ fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<S
 }
 
 /**
+# Prepare key register
+
+but this time encrypted by a users public key
+
+Return the non registered version but only to register the key on the server to get the id,
+then put the id back in
+*/
+fn prepare_register_sym_key_by_public_key_internally(reply_public_key: &UserPublicKeyData) -> Result<(String, SymKeyFormatInt), SdkError>
+{
+	let public_key = import_public_key_from_pem_with_alg(
+		reply_public_key.public_key_pem.as_str(),
+		reply_public_key.public_key_alg.as_str(),
+	)?;
+
+	let (encrypted_key, sym_key_alg, key) = crypto_core::generate_symmetric_with_public_key(&public_key)?;
+
+	let encrypted_key_string = Base64::encode_string(&encrypted_key);
+
+	let sym_key_format = SymKeyFormatInt {
+		key,
+		key_id: "".to_string(),
+	};
+
+	Ok((
+		GeneratedSymKeyHeadServerInput {
+			encrypted_key_string,
+			alg: sym_key_alg.to_string(),
+			master_key_id: reply_public_key.public_key_id.to_string(),
+		}
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)?,
+		sym_key_format,
+	))
+}
+
+/**
+In two fn because we can't just call decrypt key because we don't get the private key yet
+*/
+fn done_register_sym_key_by_public_key_internally(key_id: &str, non_registered_sym_key: &mut SymKeyFormatInt)
+{
+	//put the key id to the non registered key
+	non_registered_sym_key.key_id = key_id.to_string();
+}
+
+/**
 # Get the key from server fetch
 
 Decrypted the server output with the master key
@@ -397,6 +448,25 @@ fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str)
 	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
 
 	decrypt_sym_key_internally(master_key, &server_out)
+}
+
+/**
+# Get the key from server fetch
+
+decrypt it with the private key
+*/
+fn done_fetch_sym_key_by_private_key_internally(private_key: &PrivateKeyFormatInt, server_out: &str) -> Result<SymKeyFormatInt, SdkError>
+{
+	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
+
+	let encrypted_sym_key = Base64::decode_vec(&server_out.encrypted_key_string).map_err(|_| SdkError::KeyDecryptFailed)?;
+
+	let key = crypto_core::get_symmetric_key_from_private_key(&private_key.key, &encrypted_sym_key, server_out.alg.as_str())?;
+
+	Ok(SymKeyFormatInt {
+		key,
+		key_id: server_out.key_id,
+	})
 }
 
 /**
