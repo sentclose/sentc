@@ -43,6 +43,7 @@ export interface GroupData
 {
 	group_id: string,
 	parent_group_id: string,
+	from_parent: boolean,	//describe if this group was fetched by parent group or normal fetch
 	rank: number,
 	key_update:boolean,
 	create_time: string,
