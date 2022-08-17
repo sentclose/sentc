@@ -11,6 +11,7 @@ use crate::crypto::{
 	decrypt_raw_symmetric_internally,
 	decrypt_string_asymmetric_internally,
 	decrypt_string_symmetric_internally,
+	decrypt_sym_key_by_private_key_internally,
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
 	deserialize_head_from_string_internally,
@@ -24,6 +25,7 @@ use crate::crypto::{
 	encrypt_string_asymmetric_internally,
 	encrypt_string_symmetric_internally,
 	encrypt_symmetric_internally,
+	generate_non_register_sym_key_by_public_key_internally,
 	generate_non_register_sym_key_internally,
 	prepare_register_sym_key_by_public_key_internally,
 	prepare_register_sym_key_internally,
@@ -333,11 +335,38 @@ pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> 
 	Ok(export_sym_key_to_string(out)?)
 }
 
+pub fn decrypt_sym_key_by_private_key(private_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
+{
+	let private_key = import_private_key(private_key)?;
+
+	let encrypted_symmetric_key_info =
+		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+
+	let out = decrypt_sym_key_by_private_key_internally(&private_key, &encrypted_symmetric_key_info)?;
+
+	Ok(export_sym_key_to_string(out)?)
+}
+
 pub fn generate_non_register_sym_key(master_key: &str) -> Result<(String, String), String>
 {
 	let master_key = import_sym_key(master_key)?;
 
 	let (key, encrypted_key) = generate_non_register_sym_key_internally(&master_key)?;
+
+	let exported_key = export_sym_key_to_string(key)?;
+
+	let exported_encrypted_key = encrypted_key
+		.to_string()
+		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?;
+
+	Ok((exported_key, exported_encrypted_key))
+}
+
+pub fn generate_non_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
+{
+	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+
+	let (key, encrypted_key) = generate_non_register_sym_key_by_public_key_internally(&reply_public_key)?;
 
 	let exported_key = export_sym_key_to_string(key)?;
 
@@ -774,5 +803,43 @@ mod test
 		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
 
 		assert_eq!(decrypted, text);
+	}
+
+	#[test]
+	fn test_generate_non_register_sym_key_by_public_key()
+	{
+		let user = create_user();
+
+		let (key, encrypted_key) = generate_non_register_sym_key_by_public_key(&user.keys.exported_public_key).unwrap();
+
+		//test the encrypt / decrypt
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(&key, text, user.keys.sign_key.as_str()).unwrap();
+
+		let decrypted = decrypt_string_symmetric(&key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
+
+		assert_eq!(decrypted, text);
+
+		//check if we can decrypt the key with the master key
+
+		let decrypted_key = decrypt_sym_key_by_private_key(&user.keys.private_key, &encrypted_key).unwrap();
+
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user.keys.sign_key.as_str()).unwrap();
+
+		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user.keys.exported_verify_key.as_str()).unwrap();
+
+		assert_eq!(decrypted, text);
+
+		let key = import_sym_key(&key).unwrap();
+		let decrypted_key = import_sym_key(&decrypted_key).unwrap();
+
+		match (key.key, decrypted_key.key) {
+			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
+				assert_eq!(k1, k2);
+			},
+		}
 	}
 }
