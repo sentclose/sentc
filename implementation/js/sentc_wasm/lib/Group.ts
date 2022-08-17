@@ -40,7 +40,7 @@ import {Sentc} from "./Sentc";
 import {AbstractCrypto} from "./AbstractCrypto";
 
 
-export async function getGroup(group_id: string, base_url: string, app_token: string, parent_private_key: string | false = false)
+export async function getGroup(group_id: string, base_url: string, app_token: string, parent = false)
 {
 	const storage = await Sentc.getStore();
 
@@ -51,7 +51,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	if (group) {
 		//TODO check for group updates
 
-		return new Group(group, base_url, app_token, !!(parent_private_key));
+		return new Group(group, base_url, app_token);
 	}
 
 	const user = await Sentc.getActualUser(true);
@@ -71,6 +71,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	let group_data: GroupData = {
 		group_id: out.get_group_id(),
 		parent_group_id: out.get_parent_group_id(),
+		from_parent: parent,
 		rank: out.get_rank(),
 		key_update: out.get_key_update(),
 		create_time: out.get_created_time(),
@@ -79,7 +80,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		key_map: new Map()
 	};
 
-	const group_obj = new Group(group_data, base_url, app_token, !!(parent_private_key));
+	const group_obj = new Group(group_data, base_url, app_token);
 
 	//update the group obj and the group data (which we saved in store) with the decrypted keys.
 	//it is ok to use the private key with an empty array,
@@ -110,7 +111,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 export class Group extends AbstractCrypto
 {
-	constructor(private data: GroupData, base_url: string, app_token: string, private from_parent: boolean) {
+	constructor(private data: GroupData, base_url: string, app_token: string) {
 		super(base_url, app_token);
 	}
 
@@ -128,9 +129,7 @@ export class Group extends AbstractCrypto
 
 	public getChildGroup(group_id: string)
 	{
-		//TODO get the right used private key
-
-		//return getGroup(group_id,this.base_url,this.app_token,this.data.)
+		return getGroup(group_id, this.base_url, this.app_token, true);
 	}
 
 	public prepareCreateChildGroup()
@@ -350,7 +349,7 @@ export class Group extends AbstractCrypto
 	{
 		let public_key;
 
-		if (!this.from_parent) {
+		if (!this.data.from_parent) {
 			const user = await Sentc.getActualUser(true);
 
 			public_key = user.public_key;
@@ -375,27 +374,34 @@ export class Group extends AbstractCrypto
 	/**
 	 * Gets the right private key to the used public key
 	 *
+	 * If it is from user -> get it from user
+	 *
+	 * If not then form the parent group
+	 *
 	 * @param private_key_id
 	 * @private
 	 */
 	private async getPrivateKey(private_key_id: string)
 	{
-		if (!this.from_parent) {
+		if (!this.data.from_parent) {
 			const user = await Sentc.getActualUser(true);
 			return user.private_key;
 		}
 
-		//get parent group public key
+		//get parent group private key
 		const storage = await Sentc.getStore();
 		const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.parent_group_id;
-		const parent_group: GroupData = await storage.getItem(parent_group_key);
+		const parent_group_data: GroupData = await storage.getItem(parent_group_key);
 
-		if (!parent_group) {
+		if (!parent_group_data) {
 			//TODO err handling
 			throw new Error();
 		}
 
-		const group_key = await this.getGroupKey(private_key_id);
+		const parent_group = new Group(parent_group_data, this.base_url, this.app_token);
+
+		//private key id got the same id as the group key
+		const group_key = await parent_group.getGroupKey(private_key_id);
 
 		//use the latest key
 		return group_key.private_group_key;
