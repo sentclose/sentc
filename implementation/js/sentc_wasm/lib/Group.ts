@@ -20,7 +20,7 @@ import {
 	group_finish_key_rotation,
 	group_get_done_key_rotation_server_input,
 	group_get_group_data,
-	group_get_group_keys,
+	group_get_group_keys, group_get_group_updates,
 	group_get_join_reqs, group_get_member,
 	group_invite_user,
 	group_invite_user_session,
@@ -48,15 +48,18 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 	const group: GroupData = await storage.getItem(group_key);
 
-	if (group) {
-		//TODO check for group updates
-
-		return new Group(group, base_url, app_token);
-	}
-
 	const user = await Sentc.getActualUser(true);
 
 	const jwt = user.jwt;
+
+	if (group) {
+		const update = await group_get_group_updates(base_url, app_token, jwt, group_id);
+
+		group.rank = update.get_rank();
+		group.key_update = update.get_key_update();
+
+		return new Group(group, base_url, app_token);
+	}
 
 	const out = await group_get_group_data(
 		base_url,
