@@ -40,7 +40,8 @@ import {Sentc} from "./Sentc";
 import {AbstractCrypto} from "./AbstractCrypto";
 
 
-export async function getGroup(group_id: string, base_url: string, app_token: string, parent_private_key: string | false = false) {
+export async function getGroup(group_id: string, base_url: string, app_token: string, parent_private_key: string | false = false)
+{
 	const storage = await Sentc.getStore();
 
 	const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + group_id;
@@ -87,6 +88,15 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	group_data.keys = keys;
 	group_obj.groupKeys = keys;
 
+	const key_map: Map<string, number> = new Map();
+
+	//insert in the key map
+	for (let i = 0; i < keys.length; i++) {
+		key_map.set(keys[i].group_key_id, i);
+	}
+	group_data.key_map = key_map;
+	group_obj.groupKeyMap = key_map;
+
 	if (keys.length >= 50) {
 		//fetch the rest of the keys via pagination, get the updated data back
 		group_data = await group_obj.fetchKeys(jwt);
@@ -107,6 +117,11 @@ export class Group extends AbstractCrypto
 	set groupKeys(keys: GroupKey[])
 	{
 		this.data.keys = keys;
+	}
+
+	set groupKeyMap(key_map: Map<string, number>)
+	{
+		this.data.key_map = key_map;
 	}
 
 	//__________________________________________________________________________________________________________________
