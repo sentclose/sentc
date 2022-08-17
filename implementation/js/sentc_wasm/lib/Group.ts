@@ -21,7 +21,7 @@ import {
 	encrypt_raw_symmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric,
-	generate_and_register_sym_key,
+	generate_and_register_sym_key, generate_non_register_sym_key,
 	get_sym_key_by_id,
 	group_accept_join_req,
 	group_create_child_group,
@@ -802,6 +802,18 @@ export class Group
 		return [key, key_id, latest_key.group_key_id];
 	}
 
+	public generateNonRegisteredKey()
+	{
+		const latest_key = this.data.keys[this.data.keys.length - 1];
+
+		const key_out = generate_non_register_sym_key(latest_key.group_key);
+
+		const encrypted_key = key_out.get_encrypted_key();
+		const key = key_out.get_key();
+
+		return [key, encrypted_key, latest_key.group_key_id];
+	}
+
 	public async fetchKey(key_id: string, group_key_id: string)
 	{
 		const group_key = await this.getGroupKey(group_key_id);
@@ -825,8 +837,6 @@ export class Group
 
 		return encrypt_symmetric(generated_key, data, sign_key);
 	}
-
-	//TODO generate non registered key
 
 	public decryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
 
