@@ -3,8 +3,6 @@
  * @since 2022/08/12
  */
 import {
-	CryptoHead,
-	CryptoRawOutput,
 	GroupData,
 	GroupJoinReqListItem,
 	GroupKey,
@@ -14,15 +12,6 @@ import {
 	USER_KEY_STORAGE_NAMES
 } from "./Enities";
 import {
-	decrypt_raw_symmetric,
-	decrypt_string_symmetric,
-	decrypt_symmetric,
-	deserialize_head_from_string,
-	encrypt_raw_symmetric,
-	encrypt_string_symmetric,
-	encrypt_symmetric,
-	generate_and_register_sym_key, generate_non_register_sym_key,
-	get_sym_key_by_id,
 	group_accept_join_req,
 	group_create_child_group,
 	group_decrypt_key,
@@ -45,11 +34,10 @@ import {
 	group_prepare_update_rank,
 	group_reject_join_req,
 	group_update_rank,
-	leave_group,
-	split_head_and_encrypted_data,
-	split_head_and_encrypted_string
+	leave_group
 } from "../pkg";
 import {Sentc} from "./Sentc";
+import {AbstractCrypto} from "./AbstractCrypto";
 
 
 export async function getGroup(group_id: string, base_url: string, app_token: string, parent_private_key: string | false = false) {
@@ -110,9 +98,11 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	return group_obj;
 }
 
-export class Group
+export class Group extends AbstractCrypto
 {
-	constructor(private data: GroupData, private base_url: string, private app_token: string, private from_parent: boolean) {}
+	constructor(private data: GroupData, base_url: string, app_token: string, private from_parent: boolean) {
+		super(base_url, app_token);
+	}
 
 	set groupKeys(keys: GroupKey[])
 	{
@@ -679,171 +669,17 @@ export class Group
 
 	//__________________________________________________________________________________________________________________
 
-	public encryptRaw(data: Uint8Array): Promise<CryptoRawOutput>;
-
-	public encryptRaw(data: Uint8Array, sign: true): Promise<CryptoRawOutput>;
-
-	public async encryptRaw(data: Uint8Array, sign = false): Promise<CryptoRawOutput>
+	getSymKeyToEncrypt(): Promise<[string, string]>
 	{
 		const latest_key = this.data.keys[this.data.keys.length - 1];
 
-		let sign_key = "";
-
-		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
-		}
-
-		const out = encrypt_raw_symmetric(latest_key.group_key, data, sign_key);
-
-		return {
-			head: out.get_head(),
-			data: out.get_data()
-		};
+		return Promise.resolve([latest_key.group_key, latest_key.group_key_id]);
 	}
 
-	public decryptRaw(head: string, encrypted_data: Uint8Array): Promise<Uint8Array>;
-
-	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Promise<Uint8Array>;
-
-	public async decryptRaw(head: string, encrypted_data: Uint8Array, verify_key = ""): Promise<Uint8Array>
+	async getSymKeyById(key_id: string): Promise<string>
 	{
-		const de_head: CryptoHead = deserialize_head_from_string(head);
+		const key = await this.getGroupKey(key_id);
 
-		const key = await this.getGroupKey(de_head.id);
-
-		return decrypt_raw_symmetric(key.group_key, encrypted_data, head, verify_key);
-	}
-
-	public async encrypt(data: Uint8Array): Promise<Uint8Array>
-
-	public async encrypt(data: Uint8Array, sign: true): Promise<Uint8Array>
-
-	public async encrypt(data: Uint8Array, sign = false): Promise<Uint8Array>
-	{
-		const latest_key = this.data.keys[this.data.keys.length - 1];
-
-		let sign_key = "";
-
-		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
-		}
-
-		return encrypt_symmetric(latest_key.group_key, data, sign_key);
-	}
-
-	public decrypt(data: Uint8Array): Promise<Uint8Array>;
-
-	public decrypt(data: Uint8Array, verify_key: string): Promise<Uint8Array>;
-
-	public async decrypt(data: Uint8Array, verify_key = ""): Promise<Uint8Array>
-	{
-		const head: CryptoHead = split_head_and_encrypted_data(data);
-
-		const key = await this.getGroupKey(head.id);
-
-		return decrypt_symmetric(key.group_key, data, verify_key);
-	}
-
-	public encryptString(data: string): Promise<string>;
-
-	public encryptString(data: string, sign: true): Promise<string>;
-
-	public async encryptString(data: string, sign = false): Promise<string>
-	{
-		const latest_key = this.data.keys[this.data.keys.length - 1];
-
-		let sign_key = "";
-
-		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
-		}
-
-		return encrypt_string_symmetric(latest_key.group_key, data, sign_key);
-	}
-
-	public decryptString(data: string): Promise<string>;
-
-	public decryptString(data: string, verify_key: string): Promise<string>;
-
-	public async decryptString(data: string, verify_key = ""): Promise<string>
-	{
-		const head: CryptoHead = split_head_and_encrypted_string(data);
-
-		const key = await this.getGroupKey(head.id);
-
-		return decrypt_string_symmetric(key.group_key, data, verify_key);
-	}
-
-	/**
-	 * Register a new symmetric key to encrypt and decrypt.
-	 *
-	 * This key is encrypted by the latest group key
-	 *
-	 * Save the key id too of the key which was used to encrypt this key!
-	 */
-	public async registerKey()
-	{
-		const latest_key = this.data.keys[this.data.keys.length - 1];
-
-		const jwt = await Sentc.getJwt();
-
-		const key_out = await generate_and_register_sym_key(this.base_url, this.app_token, jwt, latest_key.group_key);
-
-		const key_id = key_out.get_key_id();
-		const key = key_out.get_key();
-
-		//return the group key id which was used to encrypt this key
-		return [key, key_id, latest_key.group_key_id];
-	}
-
-	public generateNonRegisteredKey()
-	{
-		const latest_key = this.data.keys[this.data.keys.length - 1];
-
-		const key_out = generate_non_register_sym_key(latest_key.group_key);
-
-		const encrypted_key = key_out.get_encrypted_key();
-		const key = key_out.get_key();
-
-		return [key, encrypted_key, latest_key.group_key_id];
-	}
-
-	public async fetchKey(key_id: string, group_key_id: string)
-	{
-		const group_key = await this.getGroupKey(group_key_id);
-
-		return get_sym_key_by_id(this.base_url, this.app_token, key_id, group_key.group_key);
-	}
-
-	public encryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
-
-	public encryptByGeneratedKey(data: Uint8Array, generated_key: string, sign: true): Promise<Uint8Array>;
-
-	public async encryptByGeneratedKey(data: Uint8Array, generated_key: string, sign = false)
-	{
-		let sign_key = "";
-
-		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
-		}
-
-		return encrypt_symmetric(generated_key, data, sign_key);
-	}
-
-	public decryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
-
-	public decryptByGeneratedKey(data: Uint8Array, generated_key: string, verify_key: string): Promise<Uint8Array>;
-
-	public decryptByGeneratedKey(data: Uint8Array, generated_key: string, verify_key = ""): Promise<Uint8Array>
-	{
-		return Promise.resolve(decrypt_symmetric(generated_key, data, verify_key));
+		return key.group_key;
 	}
 }
