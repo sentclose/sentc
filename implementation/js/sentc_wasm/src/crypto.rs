@@ -211,9 +211,29 @@ pub fn generate_non_register_sym_key(master_key: &str) -> Result<NonRegisteredKe
 }
 
 #[wasm_bindgen]
+pub fn generate_non_register_sym_key_by_public_key(reply_public_key: &str) -> Result<NonRegisteredKeyOutput, JsValue>
+{
+	let (key, encrypted_key) = crypto::generate_non_register_sym_key_by_public_key(reply_public_key)?;
+
+	Ok(NonRegisteredKeyOutput {
+		key,
+		encrypted_key,
+	})
+}
+
+#[wasm_bindgen]
 pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, JsValue>
 {
 	Ok(crypto::decrypt_sym_key(master_key, encrypted_symmetric_key_info)?)
+}
+
+#[wasm_bindgen]
+pub fn decrypt_sym_key_by_private_key(private_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, JsValue>
+{
+	Ok(crypto::decrypt_sym_key_by_private_key(
+		private_key,
+		encrypted_symmetric_key_info,
+	)?)
 }
 
 //__________________________________________________________________________________________________
