@@ -22,7 +22,7 @@ import init, {
 	group_join_req,
 	user_fetch_public_key,
 	user_fetch_public_data,
-	user_fetch_verify_key
+	user_fetch_verify_key, group_prepare_create_group, group_create_group
 } from "../pkg";
 import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
@@ -492,5 +492,20 @@ export class Sentc
 		);
 	}
 
-	//TODO create group
+	//__________________________________________________________________________________________________________________
+
+	public async prepareGroupCreate()
+	{
+		const user = await Sentc.getActualUser();
+
+		//important use the public key not the exported public key here!
+		return group_prepare_create_group(user.public_key);
+	}
+
+	public async createGroup()
+	{
+		const user = await Sentc.getActualUser(true);
+
+		return group_create_group(this.options.base_url, this.options.app_token, user.jwt, user.public_key);
+	}
 }
