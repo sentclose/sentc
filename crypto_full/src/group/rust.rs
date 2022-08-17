@@ -2,7 +2,14 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto::group::{GroupKeyData, GroupOutData};
-use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, GroupUserListItem, KeyRotationInput};
+use sentc_crypto_common::group::{
+	GroupDataCheckUpdateServerOutput,
+	GroupInviteReqList,
+	GroupJoinReqList,
+	GroupKeyServerOutput,
+	GroupUserListItem,
+	KeyRotationInput,
+};
 
 use crate::error::SdkFullError;
 
@@ -16,3 +23,4 @@ pub type InviteListRes = Result<Vec<GroupInviteReqList>, SdkFullError>;
 pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, SdkFullError>;
 pub type KeyRotationRes = Result<Vec<KeyRotationInput>, SdkFullError>;
 pub type MemberRes = Result<Vec<GroupUserListItem>, SdkFullError>;
+pub type UserUpdateCheckRes = Result<GroupDataCheckUpdateServerOutput, SdkFullError>;
