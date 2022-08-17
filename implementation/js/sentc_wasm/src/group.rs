@@ -178,6 +178,27 @@ impl KeyRotationInput
 	}
 }
 
+#[wasm_bindgen]
+pub struct GroupDataCheckUpdateServerOutput
+{
+	key_update: bool,
+	rank: i32,
+}
+
+#[wasm_bindgen]
+impl GroupDataCheckUpdateServerOutput
+{
+	pub fn get_key_update(&self) -> bool
+	{
+		self.key_update
+	}
+
+	pub fn get_rank(&self) -> i32
+	{
+		self.rank
+	}
+}
+
 //__________________________________________________________________________________________________
 
 /**
@@ -321,6 +342,22 @@ pub async fn group_get_member(
 	.await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
+pub async fn group_get_group_updates(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+) -> Result<GroupDataCheckUpdateServerOutput, JsValue>
+{
+	let out = sentc_crypto_full::group::get_group_updates(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+
+	Ok(GroupDataCheckUpdateServerOutput {
+		key_update: out.key_update,
+		rank: out.rank,
+	})
 }
 
 //__________________________________________________________________________________________________
