@@ -11,6 +11,7 @@ use sentc_crypto::util::public::{handle_general_server_response, handle_server_r
 use sentc_crypto_common::group::{
 	GroupAcceptJoinReqServerOutput,
 	GroupCreateOutput,
+	GroupDataCheckUpdateServerOutput,
 	GroupInviteReqList,
 	GroupInviteServerOutput,
 	GroupJoinReqList,
@@ -31,10 +32,23 @@ pub(crate) use self::non_rust::{
 	MemberRes,
 	Res,
 	SessionRes,
+	UserUpdateCheckRes,
 	VoidRes,
 };
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, KeyFetchRes, KeyRes, KeyRotationRes, MemberRes, Res, SessionRes, VoidRes};
+pub(crate) use self::rust::{
+	DataRes,
+	InviteListRes,
+	JoinReqListRes,
+	KeyFetchRes,
+	KeyRes,
+	KeyRotationRes,
+	MemberRes,
+	Res,
+	SessionRes,
+	UserUpdateCheckRes,
+	VoidRes,
+};
 use crate::util::{make_req, HttpMethod};
 
 async fn create_group(
@@ -134,6 +148,17 @@ pub async fn get_member(base_url: String, auth_token: &str, jwt: &str, id: &str,
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
 	let out: Vec<GroupUserListItem> = handle_server_response(res.as_str())?;
+
+	Ok(out)
+}
+
+pub async fn get_group_updates(base_url: String, auth_token: &str, jwt: &str, id: &str) -> UserUpdateCheckRes
+{
+	let url = base_url + "/api/v1/group/" + id + "/update_check";
+
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	let out: GroupDataCheckUpdateServerOutput = handle_server_response(res.as_str())?;
 
 	Ok(out)
 }
