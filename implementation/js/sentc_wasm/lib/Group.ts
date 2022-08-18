@@ -591,7 +591,7 @@ export class Group extends AbstractCrypto
 				this.app_token,
 				jwt,
 				this.data.group_id,
-				last_item.time.toString(),
+				last_item.time,
 				last_item.group_key_id
 			);
 
@@ -627,7 +627,7 @@ export class Group extends AbstractCrypto
 	 */
 	public async decryptKey(fetchedKeys: GroupOutDataKeys[]): Promise<GroupKey[]>
 	{
-		const keys = [];
+		const keys: GroupKey[] = [];
 
 		for (let i = 0; i < fetchedKeys.length; i++) {
 			const fetched_key = fetchedKeys[i];
@@ -637,7 +637,15 @@ export class Group extends AbstractCrypto
 			// eslint-disable-next-line no-await-in-loop
 			const private_key = await this.getPrivateKey(fetched_key.private_key_id);
 
-			keys.push(group_decrypt_key(private_key, fetched_key.key_data));
+			const decrypted_keys = group_decrypt_key(private_key, fetched_key.key_data);
+
+			keys.push({
+				group_key_id: decrypted_keys.get_group_key_id(),
+				group_key: decrypted_keys.get_group_key(),
+				private_group_key: decrypted_keys.get_private_group_key(),
+				time: decrypted_keys.get_time(),
+				public_group_key: decrypted_keys.get_public_group_key()
+			});
 		}
 
 		return keys;

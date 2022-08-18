@@ -30,7 +30,7 @@ export interface GroupKey {
 	private_group_key: string,
 	public_group_key: string,
 	group_key: string,
-	time: number,
+	time: string,
 	group_key_id: string
 }
 
