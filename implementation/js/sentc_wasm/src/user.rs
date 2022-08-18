@@ -149,6 +149,7 @@ pub struct UserInitServerOutput
 	invites: JsValue,
 }
 
+#[wasm_bindgen]
 impl UserInitServerOutput
 {
 	pub fn get_jwt(&self) -> String
