@@ -27,7 +27,7 @@ import init, {
 	group_create_group,
 	prepare_login_start,
 	prepare_login,
-	done_login, refresh_jwt
+	done_login, refresh_jwt, init_user
 } from "../pkg";
 import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
@@ -67,8 +67,9 @@ export class Sentc
 	//@ts-ignore
 	private static options: SentcOptions = {};
 
+	//the first page of the group invites for the user
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	private constructor() {}
+	private constructor(public group_invites: GroupInviteListItem[] = []) {}
 	
 	public static async getStore()
 	{
@@ -85,8 +86,14 @@ export class Sentc
 		return this.storage;
 	}
 
-	public static async init(options: SentcOptions, force = false)
+	public static async init(options: SentcOptions)
 	{
+		if (this.sentc) {
+			return this.sentc;
+		}
+
+		await init();	//init wasm
+
 		const base_url = options?.base_url ?? "http://127.0.0.1:3002";	//TODO change base url
 
 		let errCallBack: ResCallBack;
@@ -105,34 +112,42 @@ export class Sentc
 			endpoint_url: base_url + "/api/v1/refresh"
 		};
 
-		const app_options: SentcOptions = {
+		Sentc.options = {
 			base_url,
 			app_token: options?.app_token,
 			storage: {errCallBack},
 			refresh
 		};
 
-		if (!this.sentc) {
-			await init();	//init wasm
+		//save the invites if we fetched them from init request
+		let invites: GroupInviteListItem[] = [];
 
-			Sentc.options = app_options;
+		try {
+			const [user, username] = await this.getActualUser(false, true);
+
+			let jwt;
 
 			if (refresh?.endpoint === REFRESH_ENDPOINT.api) {
 				//if refresh over api -> then do the init
+				const out = await init_user(options.base_url, options.app_token, user.jwt, user.refresh_token);
+				invites = out.get_invites();
 
-			} else if (refresh?.endpoint === REFRESH_ENDPOINT.cookie) {
-				//make the init req to the backend server
+				jwt = out.get_jwt();
+			} else {
+				//if refresh over cookie -> do normal refresh jwt
+				jwt = await this.refreshJwt(user.jwt, user.refresh_token);
 			}
 
-			this.sentc = new Sentc();
+			const storage = await this.getStore();
 
-			return this.sentc;
+			user.jwt = jwt;
+			//save the user data with the new jwt
+			await storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + username, user);
+		} catch (e) {
+			//user was not logged in -> do nothing
 		}
 
-		if (force) {
-			//return a new instance with new options
-			new Sentc();
-		}
+		this.sentc = new Sentc(invites);
 
 		return this.sentc;
 	}
@@ -463,7 +478,7 @@ export class Sentc
 		const actualUser: string = await storage.getItem(USER_KEY_STORAGE_NAMES.actualUser);
 
 		if (!actualUser) {
-			//TOD= error handling
+			//TODO error handling
 			throw new Error();
 		}
 
