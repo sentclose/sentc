@@ -41,7 +41,7 @@ export const enum REFRESH_ENDPOINT {
 
 export interface RefreshOptions {
 	endpoint_url?: string,
-	endpoint_fn?: (old_jwt: string, refresh_token: string) => Promise<string>,
+	endpoint_fn?: (old_jwt: string) => Promise<string>,
 	endpoint: REFRESH_ENDPOINT
 }
 
@@ -323,6 +323,9 @@ export class Sentc
 			return refresh_jwt(this.options.base_url, this.options.app_token, old_jwt, refresh_token);
 		}
 
+		//refresh token is not needed for the other options because the dev is responsible to send the refresh token
+		// e.g. via http only cookie
+
 		if (options.endpoint === REFRESH_ENDPOINT.cookie) {
 			const headers = new Headers();
 			headers.append("Authorization", "Bearer " + old_jwt);
@@ -337,7 +340,7 @@ export class Sentc
 		
 		if (options.endpoint === REFRESH_ENDPOINT.cookie_fn) {
 			//make the req via the cookie fn, where the dev can define an own refresh flow
-			return options.endpoint_fn(old_jwt, refresh_token);
+			return options.endpoint_fn(old_jwt);
 		}
 
 		throw new Error("No refresh option found");
