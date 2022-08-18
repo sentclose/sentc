@@ -121,6 +121,27 @@ impl UserPublicData
 	}
 }
 
+#[wasm_bindgen]
+pub struct PrepareLoginOutput
+{
+	auth_key: String,
+	master_key_encryption_key: String,
+}
+
+#[wasm_bindgen]
+impl PrepareLoginOutput
+{
+	pub fn get_auth_key(&self) -> String
+	{
+		self.auth_key.clone()
+	}
+
+	pub fn get_master_key_encryption_key(&self) -> String
+	{
+		self.master_key_encryption_key.clone()
+	}
+}
+
 /**
 # Check if the identifier is available for this app
 */
@@ -202,6 +223,33 @@ pub async fn register(base_url: String, auth_token: String, user_identifier: Str
 	.await?;
 
 	Ok(out)
+}
+
+#[wasm_bindgen]
+pub async fn prepare_login_start(base_url: String, auth_token: String, user_identifier: String) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::prepare_login_start(base_url, auth_token.as_str(), user_identifier.as_str()).await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub fn prepare_login(user_identifier: &str, password: &str, prepare_login_server_output: &str) -> Result<PrepareLoginOutput, JsValue>
+{
+	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier, password, prepare_login_server_output)?;
+
+	Ok(PrepareLoginOutput {
+		auth_key,
+		master_key_encryption_key,
+	})
+}
+
+#[wasm_bindgen]
+pub fn done_login(master_key_encryption_key: &str, done_login_server_output: &str) -> Result<UserData, JsValue>
+{
+	let data = user::done_login(master_key_encryption_key, done_login_server_output)?;
+
+	Ok(data.into())
 }
 
 /**

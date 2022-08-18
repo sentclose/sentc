@@ -22,11 +22,27 @@ import init, {
 	group_join_req,
 	user_fetch_public_key,
 	user_fetch_public_data,
-	user_fetch_verify_key, group_prepare_create_group, group_create_group
+	user_fetch_verify_key,
+	group_prepare_create_group,
+	group_create_group,
+	prepare_login_start,
+	prepare_login,
+	done_login
 } from "../pkg";
 import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getGroup} from "./Group";
+
+export const enum REFRESH_ENDPOINT {
+	cookie,
+	body,
+	api
+}
+
+export interface RefreshOptions {
+	endpoint_url?: string,
+	endpoint: REFRESH_ENDPOINT
+}
 
 export interface StaticOptions {
 	errCallBack: ResCallBack
@@ -35,11 +51,13 @@ export interface StaticOptions {
 export interface DynOptions {
 	base_url?: string,
 	app_token: string,
+	refresh: RefreshOptions,
 }
 
 export interface SentcOptions {
 	base_url?: string,
 	app_token: string,
+	refresh?: RefreshOptions,
 	storage?: StaticOptions
 }
 
@@ -74,6 +92,19 @@ export class Sentc
 
 	public static async init(options: SentcOptions, force = false)
 	{
+		const base_url = options?.base_url ?? "http://127.0.0.1:3002";	//TODO change base url
+
+		const refresh: RefreshOptions = options?.refresh ?? {
+			endpoint: REFRESH_ENDPOINT.api,
+			endpoint_url: base_url + "/api/v1/refresh"
+		};
+
+		const app_options: DynOptions = {
+			base_url,
+			app_token: options?.app_token,
+			refresh
+		};
+
 		if (!this.sentc) {
 			await init();	//init wasm
 
@@ -94,20 +125,14 @@ export class Sentc
 				errCallBack: errCallback
 			};
 
-			this.sentc = new Sentc({
-				base_url: options?.base_url ?? "http://127.0.0.1:3002",	//TODO change base url
-				app_token: options?.app_token
-			});
+			this.sentc = new Sentc(app_options);
 
 			return this.sentc;
 		}
 
 		if (force) {
 			//return a new instance with new options
-			new Sentc({
-				base_url: options?.base_url ?? "http://127.0.0.1:3002",	//TODO change base url
-				app_token: options?.app_token
-			});
+			new Sentc(app_options);
 		}
 
 		return this.sentc;
@@ -161,6 +186,60 @@ export class Sentc
 		}
 
 		return register(this.options.base_url, this.options.app_token, userIdentifier, password);
+	}
+
+	/**
+	 * Make the first login request to get the salt
+	 */
+	public prepareLoginStart(userIdentifier: string)
+	{
+		return prepare_login_start(this.options.base_url, this.options.app_token, userIdentifier);
+	}
+
+	/**
+	 * Prepare the data to done login process.
+	 *
+	 * prepare_login_server_output is the result of the prepareLoginStart function
+	 *
+	 * Send the auth key string to the server and use the master_key_encryption_key for the done login function
+	 */
+	public prepareLogin(userIdentifier: string, password: string, prepare_login_server_output: string)
+	{
+		const data = prepare_login(userIdentifier, password, prepare_login_server_output);
+
+		return [data.get_auth_key(), data.get_master_key_encryption_key()];
+	}
+
+	/**
+	 * Get and decrypt the user data from the done_login_server_output output
+	 *
+	 * prepare login is required
+	 */
+	public async doneLogin(userIdentifier: string, master_key_encryption_key: string, done_login_server_output: string)
+	{
+		const out = done_login(master_key_encryption_key, done_login_server_output);
+
+		const userData: UserData = {
+			private_key: out.get_private_key(),
+			public_key: out.get_public_key(),
+			sign_key: out.get_sign_key(),
+			verify_key: out.get_verify_key(),
+			exported_public_key: out.get_exported_public_key(),
+			exported_verify_key: out.get_exported_verify_key(),
+			jwt: out.get_jwt(),
+			refresh_token: out.get_refresh_token(),
+			user_id: out.get_id()
+		};
+
+		//save user data in indexeddb
+		const storage = await Sentc.getStore();
+
+		await Promise.all([
+			storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, userData),
+			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier)
+		]);
+
+		return userData;
 	}
 
 	public async login(userIdentifier: string, password: string)
