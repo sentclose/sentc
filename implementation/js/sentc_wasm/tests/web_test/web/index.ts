@@ -7,10 +7,16 @@ export async function run()
 	});
 
 	console.log("_________________________________");
-	console.log("_________________________________");
-	console.log("real usage");
+
+	console.log("prepare fn");
 
 	const pw = "hello";
+
+	console.log("prepare check username");
+
+	const check_username_out = sentc.prepareCheckUserIdentifierAvailable("admin");
+
+	console.log(check_username_out);
 
 	console.log("register user");
 	const register_out = sentc.prepareRegister("admin", pw);
@@ -18,6 +24,30 @@ export async function run()
 	console.log(register_out);
 
 	console.log("_________________________________");
+
+	console.log("real usage");
+
+	console.log("check username");
+
+	const check = await sentc.checkUserIdentifierAvailable("admin");
+
+	if (!check) {
+		throw new Error("Username found");
+	}
+
+	await sentc.register("admin", pw);
+
+	console.log("login");
+
+	await sentc.login("admin", pw);
+
+	console.log("create and get group");
+
+	const group_id = await sentc.createGroup();
+
+	const group = await sentc.getGroup(group_id);
+
+	console.log(group);
 }
 
 /**
