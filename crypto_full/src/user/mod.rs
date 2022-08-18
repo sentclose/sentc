@@ -8,12 +8,12 @@ use alloc::string::String;
 use sentc_crypto::user;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 pub use sentc_crypto::KeyData;
-use sentc_crypto_common::user::UserUpdateServerOut;
+use sentc_crypto_common::user::{DoneLoginLightServerOutput, UserInitServerOutput, UserUpdateServerOut};
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{BoolRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::non_rust::{BoolRes, InitRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{BoolRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::rust::{BoolRes, InitRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -87,6 +87,32 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 	let keys = user::done_login(&master_key_encryption_key, server_out.as_str())?;
 
 	Ok(keys)
+}
+
+pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: &str) -> Res
+{
+	let input = user::prepare_refresh_jwt(refresh_token)?;
+
+	let url = base_url.clone() + "/api/v1/refresh";
+
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	let server_output: DoneLoginLightServerOutput = handle_server_response(res.as_str())?;
+
+	Ok(server_output.jwt)
+}
+
+pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_token: &str) -> InitRes
+{
+	let input = user::prepare_refresh_jwt(refresh_token)?;
+
+	let url = base_url.clone() + "/api/v1/refresh";
+
+	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	let server_output: UserInitServerOutput = handle_server_response(res.as_str())?;
+
+	Ok(server_output)
 }
 
 //__________________________________________________________________________________________________

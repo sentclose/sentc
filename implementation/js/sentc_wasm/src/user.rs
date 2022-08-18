@@ -121,6 +121,48 @@ impl UserPublicData
 	}
 }
 
+#[wasm_bindgen]
+pub struct PrepareLoginOutput
+{
+	auth_key: String,
+	master_key_encryption_key: String,
+}
+
+#[wasm_bindgen]
+impl PrepareLoginOutput
+{
+	pub fn get_auth_key(&self) -> String
+	{
+		self.auth_key.clone()
+	}
+
+	pub fn get_master_key_encryption_key(&self) -> String
+	{
+		self.master_key_encryption_key.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub struct UserInitServerOutput
+{
+	jwt: String,
+	invites: JsValue,
+}
+
+#[wasm_bindgen]
+impl UserInitServerOutput
+{
+	pub fn get_jwt(&self) -> String
+	{
+		self.jwt.clone()
+	}
+
+	pub fn get_invites(&self) -> JsValue
+	{
+		self.invites.clone()
+	}
+}
+
 /**
 # Check if the identifier is available for this app
 */
@@ -204,6 +246,33 @@ pub async fn register(base_url: String, auth_token: String, user_identifier: Str
 	Ok(out)
 }
 
+#[wasm_bindgen]
+pub async fn prepare_login_start(base_url: String, auth_token: String, user_identifier: String) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::prepare_login_start(base_url, auth_token.as_str(), user_identifier.as_str()).await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub fn prepare_login(user_identifier: &str, password: &str, prepare_login_server_output: &str) -> Result<PrepareLoginOutput, JsValue>
+{
+	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier, password, prepare_login_server_output)?;
+
+	Ok(PrepareLoginOutput {
+		auth_key,
+		master_key_encryption_key,
+	})
+}
+
+#[wasm_bindgen]
+pub fn done_login(master_key_encryption_key: &str, done_login_server_output: &str) -> Result<UserData, JsValue>
+{
+	let data = user::done_login(master_key_encryption_key, done_login_server_output)?;
+
+	Ok(data.into())
+}
+
 /**
 # Login the user to this app
 
@@ -225,6 +294,25 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 	.await?;
 
 	Ok(data.into())
+}
+
+#[wasm_bindgen]
+pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::refresh_jwt(base_url, auth_token.as_str(), jwt.as_str(), refresh_token.as_str()).await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub async fn init_user(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<UserInitServerOutput, JsValue>
+{
+	let out = sentc_crypto_full::user::init_user(base_url, auth_token.as_str(), jwt.as_str(), refresh_token.as_str()).await?;
+
+	Ok(UserInitServerOutput {
+		jwt: out.jwt,
+		invites: JsValue::from_serde(&out.invites).unwrap(),
+	})
 }
 
 #[wasm_bindgen]

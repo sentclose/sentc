@@ -22,25 +22,38 @@ import init, {
 	group_join_req,
 	user_fetch_public_key,
 	user_fetch_public_data,
-	user_fetch_verify_key, group_prepare_create_group, group_create_group
+	user_fetch_verify_key,
+	group_prepare_create_group,
+	group_create_group,
+	prepare_login_start,
+	prepare_login,
+	done_login, refresh_jwt, init_user
 } from "../pkg";
 import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getGroup} from "./Group";
 
-export interface StaticOptions {
-	errCallBack: ResCallBack
+export const enum REFRESH_ENDPOINT {
+	cookie,
+	cookie_fn,
+	api
 }
 
-export interface DynOptions {
-	base_url?: string,
-	app_token: string,
+export interface RefreshOptions {
+	endpoint_url?: string,
+	endpoint_fn?: (old_jwt: string, refresh_token: string) => Promise<string>,
+	endpoint: REFRESH_ENDPOINT
+}
+
+export interface StorageOptions {
+	errCallBack: ResCallBack,
 }
 
 export interface SentcOptions {
 	base_url?: string,
 	app_token: string,
-	storage?: StaticOptions
+	refresh?: RefreshOptions,
+	storage?: StorageOptions
 }
 
 export class Sentc
@@ -52,10 +65,11 @@ export class Sentc
 	private static storage: StorageInterface;
 
 	//@ts-ignore
-	private static static_options: StaticOptions = {};
+	private static options: SentcOptions = {};
 
+	//the first page of the group invites for the user
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	private constructor(private options: DynOptions) {}
+	private constructor(public group_invites: GroupInviteListItem[] = []) {}
 	
 	public static async getStore()
 	{
@@ -65,50 +79,75 @@ export class Sentc
 			return this.storage;
 		}
 
-		this.storage = await StorageFactory.getStorage(this.static_options.errCallBack, "sentclose", "keys");
+		this.storage = await StorageFactory.getStorage(this.options.storage.errCallBack, "sentclose", "keys");
 
 		this.init_storage = true;
 
 		return this.storage;
 	}
 
-	public static async init(options: SentcOptions, force = false)
+	public static async init(options: SentcOptions)
 	{
-		if (!this.sentc) {
-			await init();	//init wasm
-
-			//TODO init client to server -> refresh jwt
-
-			let errCallback: ResCallBack;
-
-			if (options?.storage?.errCallBack) {
-				errCallback = options?.storage?.errCallBack;
-			} else {
-				errCallback = ({err, warn}) => {
-					console.error(err);
-					console.warn(warn);
-				};
-			}
-
-			Sentc.static_options = {
-				errCallBack: errCallback
-			};
-
-			this.sentc = new Sentc({
-				base_url: options?.base_url ?? "http://127.0.0.1:3002",	//TODO change base url
-				app_token: options?.app_token
-			});
-
+		if (this.sentc) {
 			return this.sentc;
 		}
 
-		if (force) {
-			//return a new instance with new options
-			new Sentc({
-				base_url: options?.base_url ?? "http://127.0.0.1:3002",	//TODO change base url
-				app_token: options?.app_token
-			});
+		await init();	//init wasm
+
+		const base_url = options?.base_url ?? "http://127.0.0.1:3002";	//TODO change base url
+
+		let errCallBack: ResCallBack;
+
+		if (options?.storage?.errCallBack) {
+			errCallBack = options?.storage?.errCallBack;
+		} else {
+			errCallBack = ({err, warn}) => {
+				console.error(err);
+				console.warn(warn);
+			};
 		}
+
+		const refresh: RefreshOptions = options?.refresh ?? {
+			endpoint: REFRESH_ENDPOINT.api,
+			endpoint_url: base_url + "/api/v1/refresh"
+		};
+
+		Sentc.options = {
+			base_url,
+			app_token: options?.app_token,
+			storage: {errCallBack},
+			refresh
+		};
+
+		//save the invites if we fetched them from init request
+		let invites: GroupInviteListItem[] = [];
+
+		try {
+			const [user, username] = await this.getActualUser(false, true);
+
+			let jwt;
+
+			if (refresh?.endpoint === REFRESH_ENDPOINT.api) {
+				//if refresh over api -> then do the init
+				const out = await init_user(options.base_url, options.app_token, user.jwt, user.refresh_token);
+				invites = out.get_invites();
+
+				jwt = out.get_jwt();
+			} else {
+				//if refresh over cookie -> do normal refresh jwt
+				jwt = await this.refreshJwt(user.jwt, user.refresh_token);
+			}
+
+			const storage = await this.getStore();
+
+			user.jwt = jwt;
+			//save the user data with the new jwt
+			await storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + username, user);
+		} catch (e) {
+			//user was not logged in -> do nothing
+		}
+
+		this.sentc = new Sentc(invites);
 
 		return this.sentc;
 	}
@@ -119,7 +158,7 @@ export class Sentc
 			return false;
 		}
 
-		return check_user_identifier_available(this.options.base_url, this.options.app_token, userIdentifier);
+		return check_user_identifier_available(Sentc.options.base_url, Sentc.options.app_token, userIdentifier);
 	}
 
 	public prepareCheckUserIdentifierAvailable(userIdentifier: string)
@@ -149,23 +188,64 @@ export class Sentc
 		return prepare_register(userIdentifier, password);
 	}
 
+	/**
+	 * Validates the register output from the api when using prepare register function
+	 *
+	 * @param serverOutput
+	 */
 	public doneRegister(serverOutput: string)
 	{
 		return done_register(serverOutput);
 	}
 
+	/**
+	 * Register a new user.
+	 *
+	 * @param userIdentifier
+	 * @param password
+	 * @throws Error
+	 * - if username exists
+	 * - request error
+	 */
 	public register(userIdentifier: string, password: string): Promise<UserId> | false
 	{
 		if (userIdentifier === "" || password === "") {
 			return false;
 		}
 
-		return register(this.options.base_url, this.options.app_token, userIdentifier, password);
+		return register(Sentc.options.base_url, Sentc.options.app_token, userIdentifier, password);
 	}
 
-	public async login(userIdentifier: string, password: string)
+	/**
+	 * Make the first login request to get the salt
+	 */
+	public prepareLoginStart(userIdentifier: string)
 	{
-		const out = await login(this.options.base_url, this.options.app_token, userIdentifier, password);
+		return prepare_login_start(Sentc.options.base_url, Sentc.options.app_token, userIdentifier);
+	}
+
+	/**
+	 * Prepare the data to done login process.
+	 *
+	 * prepare_login_server_output is the result of the prepareLoginStart function
+	 *
+	 * Send the auth key string to the server and use the master_key_encryption_key for the done login function
+	 */
+	public prepareLogin(userIdentifier: string, password: string, prepare_login_server_output: string)
+	{
+		const data = prepare_login(userIdentifier, password, prepare_login_server_output);
+
+		return [data.get_auth_key(), data.get_master_key_encryption_key()];
+	}
+
+	/**
+	 * Get and decrypt the user data from the done_login_server_output output
+	 *
+	 * prepare login is required
+	 */
+	public async doneLogin(userIdentifier: string, master_key_encryption_key: string, done_login_server_output: string)
+	{
+		const out = done_login(master_key_encryption_key, done_login_server_output);
 
 		const userData: UserData = {
 			private_key: out.get_private_key(),
@@ -190,6 +270,79 @@ export class Sentc
 		return userData;
 	}
 
+	/**
+	 * Log the user in
+	 *
+	 * Store all user data in the storage (e.g. Indexeddb)
+	 *
+	 * For a refresh token flow -> send the refresh token to your server and save it in a http only strict cookie
+	 * Then the user is safe for xss and csrf attacks
+	 *
+	 */
+	public async login(userIdentifier: string, password: string)
+	{
+		const out = await login(Sentc.options.base_url, Sentc.options.app_token, userIdentifier, password);
+
+		const userData: UserData = {
+			private_key: out.get_private_key(),
+			public_key: out.get_public_key(),
+			sign_key: out.get_sign_key(),
+			verify_key: out.get_verify_key(),
+			exported_public_key: out.get_exported_public_key(),
+			exported_verify_key: out.get_exported_verify_key(),
+			jwt: out.get_jwt(),
+			refresh_token: out.get_refresh_token(),
+			user_id: out.get_id()
+		};
+
+		const store_user_data = userData;
+
+		if (Sentc.options.refresh.endpoint !== REFRESH_ENDPOINT.api) {
+			//if the refresh token should not be stored on the client -> invalidates the stored refresh token
+			//but just return the refresh token with the rest of the user data
+			store_user_data.refresh_token = "";
+		}
+
+		//save user data in indexeddb
+		const storage = await Sentc.getStore();
+
+		await Promise.all([
+			storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, store_user_data),
+			storage.set(USER_KEY_STORAGE_NAMES.actualUser, userIdentifier)
+		]);
+
+		return userData;
+	}
+
+	public static refreshJwt(old_jwt: string, refresh_token: string)
+	{
+		const options = this.options.refresh;
+
+		if (options.endpoint === REFRESH_ENDPOINT.api) {
+			//make the req directly to the api, via wasm
+			return refresh_jwt(this.options.base_url, this.options.app_token, old_jwt, refresh_token);
+		}
+
+		if (options.endpoint === REFRESH_ENDPOINT.cookie) {
+			const headers = new Headers();
+			headers.append("Authorization", "Bearer " + old_jwt);
+
+			//make the req without a body because the token sits in cookie
+			return fetch(options.endpoint_url, {
+				method: "GET",
+				credentials: "include",
+				headers
+			}).then((res) => {return res.text();});
+		}
+		
+		if (options.endpoint === REFRESH_ENDPOINT.cookie_fn) {
+			//make the req via the cookie fn, where the dev can define an own refresh flow
+			return options.endpoint_fn(old_jwt, refresh_token);
+		}
+
+		throw new Error("No refresh option found");
+	}
+
 	//__________________________________________________________________________________________________________________
 
 	public async resetPassword(newPassword: string)
@@ -201,8 +354,8 @@ export class Sentc
 		const decryptedSignKey = user.sign_key;
 
 		return reset_password(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			user.jwt,
 			newPassword,
 			decryptedPrivateKey,
@@ -222,8 +375,8 @@ export class Sentc
 		const username = user_check[1];
 
 		return change_password(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			username,
 			oldPassword,
 			newPassword
@@ -240,8 +393,8 @@ export class Sentc
 		}
 
 		return delete_user(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			user[1],
 			password
 		);
@@ -252,8 +405,8 @@ export class Sentc
 		const jwt = await Sentc.getJwt();
 
 		return update_user(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			jwt,
 			newIdentifier
 		);
@@ -269,7 +422,6 @@ export class Sentc
 		return this.handleJwt(user.jwt, user.refresh_token);
 	}
 
-	// eslint-disable-next-line require-await
 	private static async handleJwt(jwt: string, refresh_token: string)
 	{
 		const jwt_data = decode_jwt(jwt);
@@ -277,7 +429,17 @@ export class Sentc
 		const exp = jwt_data.get_exp();
 
 		if (exp <= Date.now() + 30 * 1000) {
-			//TODO do refresh request and save the new jwt into the data
+			//refresh even when the jwt is valid for 30 sec
+			jwt = await this.refreshJwt(jwt, refresh_token);
+
+			const [user_data, userIdentifier] = await this.getActualUser(false, true);
+
+			user_data.jwt = jwt;
+
+			const storage = await this.getStore();
+
+			//save the user data with the new jwt
+			await storage.set(USER_KEY_STORAGE_NAMES.userData + "_id_" + userIdentifier, user_data);
 		}
 
 		return jwt;
@@ -316,7 +478,7 @@ export class Sentc
 		const actualUser: string = await storage.getItem(USER_KEY_STORAGE_NAMES.actualUser);
 
 		if (!actualUser) {
-			//TOD= error handling
+			//TODO error handling
 			throw new Error();
 		}
 
@@ -434,7 +596,7 @@ export class Sentc
 	 */
 	public getGroup(group_id: string)
 	{
-		return getGroup(group_id, this.options.base_url, this.options.app_token);
+		return getGroup(group_id, Sentc.options.base_url, Sentc.options.app_token);
 	}
 
 	public async getGroupInvites(last_fetched_item: GroupInviteListItem | null = null)
@@ -445,8 +607,8 @@ export class Sentc
 		const last_id = last_fetched_item.group_id ?? "none";
 
 		const out: GroupInviteListItem[] = await group_get_invites_for_user(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			jwt,
 			last_fetched_time,
 			last_id
@@ -460,8 +622,8 @@ export class Sentc
 		const jwt = await Sentc.getJwt();
 
 		return group_accept_invite(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			jwt,
 			group_id
 		);
@@ -472,8 +634,8 @@ export class Sentc
 		const jwt = await Sentc.getJwt();
 
 		return group_reject_invite(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			jwt,
 			group_id
 		);
@@ -485,8 +647,8 @@ export class Sentc
 		const jwt = await Sentc.getJwt();
 
 		return group_join_req(
-			this.options.base_url,
-			this.options.app_token,
+			Sentc.options.base_url,
+			Sentc.options.app_token,
 			jwt,
 			group_id
 		);
@@ -506,6 +668,6 @@ export class Sentc
 	{
 		const user = await Sentc.getActualUser(true);
 
-		return group_create_group(this.options.base_url, this.options.app_token, user.jwt, user.public_key);
+		return group_create_group(Sentc.options.base_url, Sentc.options.app_token, user.jwt, user.public_key);
 	}
 }
