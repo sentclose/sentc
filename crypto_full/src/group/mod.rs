@@ -174,6 +174,7 @@ pub async fn invite_user(
 	user_to_invite_id: &str,
 	key_count: i32,
 	admin_rank: i32,
+	auto_invite: bool,
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
@@ -182,7 +183,9 @@ pub async fn invite_user(
 {
 	sentc_crypto::group::check_make_invite_req(admin_rank)?;
 
-	let url = base_url + "/api/v1/group/" + id + "/invite/" + user_to_invite_id;
+	let endpoint = if auto_invite { "invite_auto" } else { "invite" };
+
+	let url = base_url + "/api/v1/group/" + id + "/" + endpoint + "/" + user_to_invite_id;
 
 	let key_session = if key_count > 50 { true } else { false };
 

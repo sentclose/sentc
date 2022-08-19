@@ -190,7 +190,17 @@ export class Group extends AbstractCrypto
 		return group_prepare_keys_for_new_member(public_key, key_string, key_count, this.data.rank);
 	}
 
-	public async invite(user_id: string)
+	public invite(user_id: string)
+	{
+		return this.inviteUserInternally(user_id);
+	}
+
+	public inviteAuto(user_id: string)
+	{
+		return this.inviteUserInternally(user_id, true);
+	}
+
+	private async inviteUserInternally(user_id: string, auto = false)
 	{
 		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
@@ -207,6 +217,7 @@ export class Group extends AbstractCrypto
 			user_id,
 			key_count,
 			this.data.rank,
+			auto,
 			public_key,
 			key_string
 		);
