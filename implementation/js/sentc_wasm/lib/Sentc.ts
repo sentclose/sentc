@@ -32,6 +32,7 @@ import init, {
 import {GroupInviteListItem, USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {getGroup} from "./Group";
+import {AbstractAsymCrypto} from "./crypto/AbstractAsymCrypto";
 
 export const enum REFRESH_ENDPOINT {
 	cookie,
@@ -56,7 +57,7 @@ export interface SentcOptions {
 	storage?: StorageOptions
 }
 
-export class Sentc
+export class Sentc extends AbstractAsymCrypto
 {
 	private static sentc: Sentc = null;
 
@@ -68,8 +69,10 @@ export class Sentc
 	private static options: SentcOptions = {};
 
 	//the first page of the group invites for the user
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	private constructor(public group_invites: GroupInviteListItem[] = []) {}
+	private constructor(public group_invites: GroupInviteListItem[] = [])
+	{
+		super(Sentc.options.base_url, Sentc.options.app_token);
+	}
 	
 	public static async getStore()
 	{
@@ -542,7 +545,7 @@ export class Sentc
 		return fetched_data;
 	}
 
-	public static async getUserPublicKeyData(base_url: string, app_token: string, user_id: string)
+	public static async getUserPublicKeyData(base_url: string, app_token: string, user_id: string): Promise<{key: string, id: string}>
 	{
 		const storage = await this.getStore();
 
@@ -561,12 +564,17 @@ export class Sentc
 			throw new Error();
 		}
 
-		await storage.set(store_key, fetched_data);
+		const key = fetched_data.get_public_key();
+		const id = fetched_data.get_public_key_id();
 
-		return fetched_data;
+		const returns = {key, id};
+
+		await storage.set(store_key, returns);
+
+		return returns;
 	}
 
-	public static async getUserVerifyKeyData(base_url: string, app_token: string, user_id: string)
+	public static async getUserVerifyKeyData(base_url: string, app_token: string, user_id: string): Promise<{key: string, id: string}>
 	{
 		const storage = await this.getStore();
 
@@ -585,9 +593,30 @@ export class Sentc
 			throw new Error();
 		}
 
-		await storage.set(store_key, fetched_data);
+		const key = fetched_data.get_verify_key();
+		const id = fetched_data.get_verify_key_id();
 
-		return fetched_data;
+		const returns = {key, id};
+		
+		await storage.set(store_key, returns);
+
+		return returns;
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public async getPublicKey(reply_id: string): Promise<[string, string]>
+	{
+		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, reply_id);
+
+		return [public_key.key, public_key.id];
+	}
+
+	public async getPrivateKey(): Promise<string>
+	{
+		const user = await Sentc.getActualUser();
+
+		return user.private_key;
 	}
 
 	//__________________________________________________________________________________________________________________

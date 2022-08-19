@@ -104,7 +104,9 @@ impl UserData
 pub struct UserPublicData
 {
 	public_key: String,
+	public_key_id: String,
 	verify_key: String,
+	verify_key_id: String,
 }
 
 #[wasm_bindgen]
@@ -118,6 +120,58 @@ impl UserPublicData
 	pub fn get_public_key(&self) -> String
 	{
 		self.public_key.clone()
+	}
+
+	pub fn get_verify_key_id(&self) -> String
+	{
+		self.verify_key_id.clone()
+	}
+
+	pub fn get_public_key_id(&self) -> String
+	{
+		self.public_key_id.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub struct UserPublicKeyData
+{
+	public_key: String,
+	public_key_id: String,
+}
+
+#[wasm_bindgen]
+impl UserPublicKeyData
+{
+	pub fn get_public_key(&self) -> String
+	{
+		self.public_key.clone()
+	}
+
+	pub fn get_public_key_id(&self) -> String
+	{
+		self.public_key_id.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub struct UserVerifyKeyData
+{
+	verify_key: String,
+	verify_key_id: String,
+}
+
+#[wasm_bindgen]
+impl UserVerifyKeyData
+{
+	pub fn get_verify_key(&self) -> String
+	{
+		self.verify_key.clone()
+	}
+
+	pub fn get_verify_key_id(&self) -> String
+	{
+		self.verify_key_id.clone()
 	}
 }
 
@@ -380,22 +434,35 @@ pub async fn update_user(base_url: String, auth_token: String, jwt: String, user
 #[wasm_bindgen]
 pub async fn user_fetch_public_data(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicData, JsValue>
 {
-	let (public_key, verify_key) = sentc_crypto_full::user::fetch_user_public_data(base_url, auth_token.as_str(), user_id.as_str()).await?;
+	let (public_key, public_key_id, verify_key, verify_key_id) =
+		sentc_crypto_full::user::fetch_user_public_data(base_url, auth_token.as_str(), user_id.as_str()).await?;
 
 	Ok(UserPublicData {
 		public_key,
+		public_key_id,
 		verify_key,
+		verify_key_id,
 	})
 }
 
 #[wasm_bindgen]
-pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<String, JsValue>
+pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicKeyData, JsValue>
 {
-	Ok(sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await?)
+	let (public_key, public_key_id) = sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await?;
+
+	Ok(UserPublicKeyData {
+		public_key,
+		public_key_id,
+	})
 }
 
 #[wasm_bindgen]
-pub async fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String) -> Result<String, JsValue>
+pub async fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String) -> Result<UserVerifyKeyData, JsValue>
 {
-	Ok(sentc_crypto_full::user::fetch_user_verify_key(base_url, auth_token.as_str(), user_id.as_str()).await?)
+	let (verify_key, verify_key_id) = sentc_crypto_full::user::fetch_user_verify_key(base_url, auth_token.as_str(), user_id.as_str()).await?;
+
+	Ok(UserVerifyKeyData {
+		verify_key,
+		verify_key_id,
+	})
 }

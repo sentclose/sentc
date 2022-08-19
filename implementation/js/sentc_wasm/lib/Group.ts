@@ -37,9 +37,16 @@ import {
 	leave_group
 } from "../pkg";
 import {Sentc} from "./Sentc";
-import {AbstractCrypto} from "./AbstractCrypto";
+import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 
-
+/**
+ * Get a group, from the storage or the server
+ *
+ * @param group_id
+ * @param base_url
+ * @param app_token
+ * @param parent
+ */
 export async function getGroup(group_id: string, base_url: string, app_token: string, parent = false)
 {
 	const storage = await Sentc.getStore();
@@ -112,7 +119,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 	return group_obj;
 }
 
-export class Group extends AbstractCrypto
+export class Group extends AbstractSymCrypto
 {
 	constructor(private data: GroupData, base_url: string, app_token: string) {
 		super(base_url, app_token);
@@ -187,7 +194,7 @@ export class Group extends AbstractCrypto
 
 		const key_string = JSON.stringify(keys);
 
-		return group_prepare_keys_for_new_member(public_key, key_string, key_count, this.data.rank);
+		return group_prepare_keys_for_new_member(public_key.key, key_string, key_count, this.data.rank);
 	}
 
 	public invite(user_id: string)
@@ -218,7 +225,7 @@ export class Group extends AbstractCrypto
 			key_count,
 			this.data.rank,
 			auto,
-			public_key,
+			public_key.key,
 			key_string
 		);
 
@@ -241,7 +248,7 @@ export class Group extends AbstractCrypto
 				jwt,
 				this.data.group_id,
 				session_id,
-				public_key,
+				public_key.key,
 				next_keys[0]
 			));
 
@@ -304,7 +311,7 @@ export class Group extends AbstractCrypto
 			user_id,
 			key_count,
 			this.data.rank,
-			public_key,
+			public_key.key,
 			key_string
 		);
 
@@ -326,7 +333,7 @@ export class Group extends AbstractCrypto
 				jwt,
 				this.data.group_id,
 				session_id,
-				public_key,
+				public_key.key,
 				next_keys[0]
 			));
 
