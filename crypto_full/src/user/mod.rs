@@ -106,7 +106,7 @@ pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_to
 {
 	let input = user::prepare_refresh_jwt(refresh_token)?;
 
-	let url = base_url.clone() + "/api/v1/refresh";
+	let url = base_url.clone() + "/api/v1/init";
 
 	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
