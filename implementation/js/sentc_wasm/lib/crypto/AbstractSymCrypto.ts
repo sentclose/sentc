@@ -1,22 +1,22 @@
-import {Sentc} from "./Sentc";
+import {CryptoHead, CryptoRawOutput} from "../Enities";
+import {Sentc} from "../Sentc";
 import {
 	decrypt_raw_symmetric, decrypt_string_symmetric, decrypt_symmetric,
 	deserialize_head_from_string,
 	encrypt_raw_symmetric, encrypt_string_symmetric,
 	encrypt_symmetric, generate_and_register_sym_key, generate_non_register_sym_key, get_sym_key_by_id,
 	split_head_and_encrypted_data, split_head_and_encrypted_string
-} from "../pkg";
-import {CryptoHead, CryptoRawOutput} from "./Enities";
+} from "../../pkg";
+import {AbstractCrypto} from "./AbstractCrypto";
+import {SymKey} from "./SymKey";
 
 /**
  * @author Jörn Heinemann <joernheinemann@gmx.de>
- * @since 2022/08/17
+ * @since 2022/08/19
  */
 
-export abstract class AbstractCrypto
+export abstract class AbstractSymCrypto extends AbstractCrypto
 {
-	protected constructor(protected base_url: string, protected app_token: string) {}
-
 	/**
 	 * The latest used key (e.g. the latest group key)
 	 *
@@ -139,6 +139,8 @@ export abstract class AbstractCrypto
 	 * This key is encrypted by the latest group key
 	 *
 	 * Save the key id too of the key which was used to encrypt this key!
+	 *
+	 * Not needed to return the encrypted key, because the other member can fetch this key by fetchKey function
 	 */
 	public async registerKey()
 	{
@@ -152,7 +154,7 @@ export abstract class AbstractCrypto
 		const key = key_out.get_key();
 
 		//return the group key id which was used to encrypt this key
-		return [key, key_id, key_data[1]];
+		return new SymKey(this.base_url, this.app_token, key, key_id, key_data[1]);
 	}
 
 	public async generateNonRegisteredKey()
@@ -164,41 +166,17 @@ export abstract class AbstractCrypto
 		const encrypted_key = key_out.get_encrypted_key();
 		const key = key_out.get_key();
 
-		return [key, encrypted_key, key_data[1]];
+		return [new SymKey(this.base_url, this.app_token, key, "non_register", key_data[1]), encrypted_key];
 	}
 
 	public async fetchKey(key_id: string, master_key_id: string)
 	{
 		const key = await this.getSymKeyById(master_key_id);
 
-		return get_sym_key_by_id(this.base_url, this.app_token, key_id, key[0]);
+		const key_out = await get_sym_key_by_id(this.base_url, this.app_token, key_id, key[0]);
+
+		return new SymKey(this.base_url, this.app_token, key_out, key_id, master_key_id);
 	}
 
 	//__________________________________________________________________________________________________________________
-
-	public encryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
-
-	public encryptByGeneratedKey(data: Uint8Array, generated_key: string, sign: true): Promise<Uint8Array>;
-
-	public async encryptByGeneratedKey(data: Uint8Array, generated_key: string, sign = false)
-	{
-		let sign_key = "";
-
-		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
-		}
-
-		return encrypt_symmetric(generated_key, data, sign_key);
-	}
-
-	public decryptByGeneratedKey(data: Uint8Array, generated_key: string): Promise<Uint8Array>;
-
-	public decryptByGeneratedKey(data: Uint8Array, generated_key: string, verify_key: string): Promise<Uint8Array>;
-
-	public decryptByGeneratedKey(data: Uint8Array, generated_key: string, verify_key = ""): Promise<Uint8Array>
-	{
-		return Promise.resolve(decrypt_symmetric(generated_key, data, verify_key));
-	}
 }
