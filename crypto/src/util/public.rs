@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{UserPublicData, UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
-use sentc_crypto_common::ServerOutput;
+use sentc_crypto_common::{EncryptionKeyPairId, ServerOutput, SignKeyPairId};
 use sentc_crypto_core::generate_salt;
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use serde::{Deserialize, Serialize};
@@ -111,7 +111,7 @@ pub fn import_verify_key_from_string_into_format(verify_key: &str) -> Result<Use
 }
 
 #[cfg(not(feature = "rust"))]
-pub fn import_public_data_from_string_into_export_string(public_data: &str) -> Result<(String, String), String>
+pub fn import_public_data_from_string_into_export_string(public_data: &str) -> Result<(String, EncryptionKeyPairId, String, SignKeyPairId), String>
 {
 	let (public_key, verify_key) = import_public_data_from_string_into_format(public_data).map_err(|e| err_to_msg(e))?;
 
@@ -119,28 +119,36 @@ pub fn import_public_data_from_string_into_export_string(public_data: &str) -> R
 		public_key
 			.to_string()
 			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+		public_key.public_key_id,
 		verify_key
 			.to_string()
 			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+		verify_key.verify_key_id,
 	))
 }
 
 #[cfg(not(feature = "rust"))]
-pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<String, String>
+pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<(String, EncryptionKeyPairId), String>
 {
 	let public_key = import_public_key_from_string_into_format(public_key).map_err(|e| err_to_msg(e))?;
 
-	Ok(public_key
-		.to_string()
-		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?)
+	Ok((
+		public_key
+			.to_string()
+			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+		public_key.public_key_id,
+	))
 }
 
 #[cfg(not(feature = "rust"))]
-pub fn import_verify_key_from_string_into_export_string(verify_key: &str) -> Result<String, String>
+pub fn import_verify_key_from_string_into_export_string(verify_key: &str) -> Result<(String, SignKeyPairId), String>
 {
 	let public_key = import_verify_key_from_string_into_format(verify_key).map_err(|e| err_to_msg(e))?;
 
-	Ok(public_key
-		.to_string()
-		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?)
+	Ok((
+		public_key
+			.to_string()
+			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+		public_key.verify_key_id,
+	))
 }
