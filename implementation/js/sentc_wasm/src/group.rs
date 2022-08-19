@@ -389,6 +389,7 @@ pub async fn group_invite_user(
 	user_id: String,
 	key_count: i32,
 	admin_rank: i32,
+	auto_invite: bool,
 	user_public_key: String,
 	group_keys: String,
 ) -> Result<String, JsValue>
@@ -401,6 +402,7 @@ pub async fn group_invite_user(
 		user_id.as_str(),
 		key_count,
 		admin_rank,
+		auto_invite,
 		user_public_key.as_str(),
 		group_keys.as_str(),
 	)
