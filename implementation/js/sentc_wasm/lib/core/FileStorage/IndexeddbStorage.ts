@@ -75,6 +75,11 @@ export class IndexeddbStorage implements StorageInterface
 		}
 	}
 
+	public delete(key: string): Promise<void>
+	{
+		return this.db.delete(this.storeName, key);
+	}
+
 	public getItem(key: string)
 	{
 		return this.db.get(this.storeName, key);
