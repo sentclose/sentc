@@ -122,7 +122,7 @@ pub async fn get_group_keys(
 	last_fetched_key_id: &str,
 ) -> KeyFetchRes
 {
-	let url = base_url + "/api/v1/group/" + id + "/keys" + last_fetched_time + "/" + last_fetched_key_id;
+	let url = base_url + "/api/v1/group/" + id + "/keys/" + last_fetched_time + "/" + last_fetched_key_id;
 
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
