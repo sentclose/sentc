@@ -4,7 +4,9 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{UserPublicData, UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
-use sentc_crypto_common::{EncryptionKeyPairId, ServerOutput, SignKeyPairId};
+use sentc_crypto_common::ServerOutput;
+#[cfg(not(feature = "rust"))]
+use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
 use sentc_crypto_core::generate_salt;
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use serde::{Deserialize, Serialize};
