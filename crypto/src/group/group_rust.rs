@@ -6,10 +6,10 @@ use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
 
 use crate::group::{
+	decrypt_group_keys_internally,
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
 	get_group_keys_from_server_output_internally,
-	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
 	prepare_create_internally,
@@ -57,9 +57,9 @@ pub fn done_key_rotation(
 	done_key_rotation_internally(&private_key, &public_key, &previous_group_key, server_output)
 }
 
-pub fn get_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
+pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
 {
-	get_group_keys_internally(private_key, server_output)
+	decrypt_group_keys_internally(private_key, server_output)
 }
 
 pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<GroupKeyServerOutput>, SdkError>

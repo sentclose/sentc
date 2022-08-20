@@ -32,10 +32,10 @@ mod group_rust;
 
 #[cfg(not(feature = "rust"))]
 pub use self::group::{
+	decrypt_group_keys,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
-	get_group_keys,
 	get_group_keys_from_server_output,
 	key_rotation,
 	prepare_change_rank,
@@ -56,10 +56,10 @@ pub use self::group_rank_check::{
 };
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
+	decrypt_group_keys,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
-	get_group_keys,
 	get_group_keys_from_server_output,
 	key_rotation,
 	prepare_change_rank,
@@ -207,8 +207,10 @@ fn get_group_keys_from_server_output_internally(server_output: &str) -> Result<V
 /**
 Call this fn for each key, with the right private key
 */
-fn get_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput)
-	-> Result<DoneGettingGroupKeysOutput, SdkError>
+fn decrypt_group_keys_internally(
+	private_key: &PrivateKeyFormatInt,
+	server_output: &GroupKeyServerOutput,
+) -> Result<DoneGettingGroupKeysOutput, SdkError>
 {
 	//the user_public_key_id is used to get the right private key
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
@@ -409,7 +411,7 @@ pub(crate) mod test_fn
 		let mut group_keys = Vec::with_capacity(out.keys.len());
 
 		for key in &out.keys {
-			group_keys.push(get_group_keys(&user.private_key, &key).unwrap());
+			group_keys.push(decrypt_group_keys(&user.private_key, &key).unwrap());
 		}
 
 		(
@@ -465,7 +467,7 @@ pub(crate) mod test_fn
 		let mut group_keys = Vec::with_capacity(group_data.keys.len());
 
 		for key in &group_data.keys {
-			group_keys.push(get_group_keys(user.private_key.as_str(), &key.key_data).unwrap());
+			group_keys.push(decrypt_group_keys(user.private_key.as_str(), &key.key_data).unwrap());
 		}
 
 		(
