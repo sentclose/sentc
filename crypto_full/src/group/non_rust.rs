@@ -10,6 +10,7 @@ pub type Res = Result<String, String>;
 pub type VoidRes = Result<(), String>;
 pub type DataRes = Result<GroupOutData, String>;
 pub type KeyFetchRes = Result<Vec<GroupOutDataKeys>, String>;
+pub type SingleKeyRes = Result<GroupOutDataKeys, String>;
 pub type KeyRes = Result<GroupKeyData, String>;
 pub type SessionRes = Result<Option<String>, String>;
 pub type InviteListRes = Result<Vec<GroupInviteReqList>, String>;
@@ -22,6 +23,7 @@ pub type UserUpdateCheckRes = Result<GroupDataCheckUpdateServerOutput, String>;
 pub struct KeyRotationGetOut
 {
 	pub pre_group_key_id: String,
+	pub new_group_key_id: String,
 	pub encrypted_eph_key_key_id: EncryptionKeyPairId,
 	pub server_output: String,
 }

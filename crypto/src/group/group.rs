@@ -8,10 +8,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
 use crate::group::{
+	decrypt_group_keys_internally,
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
+	get_group_key_from_server_output_internally,
 	get_group_keys_from_server_output_internally,
-	get_group_keys_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
 	prepare_create_internally,
@@ -120,13 +121,13 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 	)?)
 }
 
-pub fn get_group_keys(private_key: &str, server_key_output: &str) -> Result<GroupKeyData, String>
+pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<GroupKeyData, String>
 {
 	let private_key = import_private_key(private_key)?;
 
 	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(|e| SdkError::JsonParseFailed(e))?;
 
-	let result = get_group_keys_internally(&private_key, &server_key_output)?;
+	let result = decrypt_group_keys_internally(&private_key, &server_key_output)?;
 
 	let group_key_id = result.group_key.key_id.to_string();
 
@@ -166,6 +167,18 @@ pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<Grou
 	}
 
 	Ok(keys)
+}
+
+pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupOutDataKeys, String>
+{
+	let out = get_group_key_from_server_output_internally(server_output)?;
+
+	let key_data = out.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
+
+	Ok(GroupOutDataKeys {
+		private_key_id: out.user_public_key_id,
+		key_data,
+	})
 }
 
 /**
@@ -325,6 +338,15 @@ mod test
 
 		let keys = group_server_out.keys;
 
+		let single_fetch = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(&keys[0]),
+		};
+
+		let single_fetch = to_string(&single_fetch).unwrap();
+
 		let server_key_out = ServerOutput {
 			status: true,
 			err_msg: None,
@@ -336,7 +358,7 @@ mod test
 
 		let group_keys_from_server_out = get_group_keys_from_server_output(server_key_out.as_str()).unwrap();
 
-		let group_keys_from_server_out = get_group_keys(
+		let group_keys_from_server_out = decrypt_group_keys(
 			user.keys.private_key.as_str(),
 			&group_keys_from_server_out[0].key_data,
 		)
@@ -346,6 +368,16 @@ mod test
 		assert_eq!(
 			key_data[0].group_key.to_string(),
 			group_keys_from_server_out.group_key.to_string()
+		);
+
+		//fetch the key single
+		let key = get_group_key_from_server_output(single_fetch.as_str()).unwrap();
+
+		let group_keys_from_single_server_out = decrypt_group_keys(user.keys.private_key.as_str(), &key.key_data).unwrap();
+
+		assert_eq!(
+			key_data[0].group_key.to_string(),
+			group_keys_from_single_server_out.group_key.to_string()
 		);
 	}
 
@@ -390,7 +422,7 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = get_group_keys(
+		let group_key_user_0 = decrypt_group_keys(
 			user.keys.private_key.as_str(),
 			group_data_user_0.keys[0].key_data.as_str(),
 		)
@@ -433,7 +465,7 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = get_group_keys(
+		let group_key_user_1 = decrypt_group_keys(
 			user1.keys.private_key.as_str(),
 			group_data_user_1.keys[0].key_data.as_str(),
 		)
@@ -492,7 +524,7 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = get_group_keys(
+		let group_key_user_0 = decrypt_group_keys(
 			user.keys.private_key.as_str(),
 			group_data_user_0.keys[0].key_data.as_str(),
 		)
@@ -536,7 +568,7 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = get_group_keys(
+		let group_key_user_1 = decrypt_group_keys(
 			user1.keys.private_key.as_str(),
 			group_data_user_1.keys[0].key_data.as_str(),
 		)
@@ -577,7 +609,7 @@ mod test
 			time: 0,
 		};
 
-		let new_group_key_direct = get_group_keys(
+		let new_group_key_direct = decrypt_group_keys(
 			user.keys.private_key.as_str(),
 			&server_key_output_direct.to_string().unwrap(),
 		)
@@ -625,7 +657,7 @@ mod test
 			time: 0,
 		};
 
-		let out = get_group_keys(
+		let out = decrypt_group_keys(
 			user.keys.private_key.as_str(),
 			&server_key_output.to_string().unwrap(),
 		)

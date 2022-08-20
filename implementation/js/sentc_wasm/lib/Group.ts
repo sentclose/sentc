@@ -20,8 +20,11 @@ import {
 	group_finish_key_rotation,
 	group_get_done_key_rotation_server_input,
 	group_get_group_data,
-	group_get_group_keys, group_get_group_updates,
-	group_get_join_reqs, group_get_member,
+	group_get_group_key,
+	group_get_group_keys,
+	group_get_group_updates,
+	group_get_join_reqs,
+	group_get_member,
 	group_invite_user,
 	group_invite_user_session,
 	group_join_user_session,
@@ -116,7 +119,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 export class Group extends AbstractSymCrypto
 {
-	constructor(private data: GroupData, base_url: string, app_token: string, private user: User) {
+	constructor(public data: GroupData, base_url: string, app_token: string, private user: User) {
 		super(base_url, app_token);
 	}
 
@@ -208,8 +211,6 @@ export class Group extends AbstractSymCrypto
 
 		const key_count = this.data.keys.length;
 		const [key_string] = this.prepareKeys();
-
-		console.log("key string: " + key_string);
 
 		const jwt = await this.user.getJwt();
 
@@ -471,7 +472,9 @@ export class Group extends AbstractSymCrypto
 
 		const public_key = await this.getPublicKey();
 
-		return group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[this.data.keys.length - 1].group_key);
+		const key_id = await group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[this.data.keys.length - 1].group_key);
+
+		return this.getGroupKey(key_id);
 	}
 
 	public async finishKeyRotation()
@@ -493,14 +496,17 @@ export class Group extends AbstractSymCrypto
 			for (let i = 0; i < keys.length; i++) {
 				const key = keys[i];
 
-				const pre_key_index = this.data.key_map.get(key.pre_group_key_id);
-				if (!pre_key_index) {
-					left_keys.push(key);
-					continue;
+				let pre_key;
+
+				try {
+					// eslint-disable-next-line no-await-in-loop
+					pre_key = await this.getGroupKey(key.pre_group_key_id);
+					// eslint-disable-next-line no-empty
+				} catch (e) {
+					//key not found -> try the next round
 				}
 
-				const pre_key = this.data.keys[pre_key_index];
-				if (!pre_key) {
+				if (pre_key === undefined) {
 					left_keys.push(key);
 					continue;
 				}
@@ -521,14 +527,14 @@ export class Group extends AbstractSymCrypto
 					public_key,
 					private_key
 				);
+				
+				//now get the new key and safe it
+				// eslint-disable-next-line no-await-in-loop
+				await this.getGroupKey(key.new_group_key_id);
 			}
 
 			//when it runs 10 times and there are still left -> break up
 			rounds_left--;
-
-			//fetch the new keys, when there are still keys left, maybe they are there after the key fetch -> must be in loop too
-			// eslint-disable-next-line no-await-in-loop
-			await this.fetchKeys(jwt);
 
 			if (left_keys.length > 0) {
 				keys = [];
@@ -692,10 +698,21 @@ export class Group extends AbstractSymCrypto
 	{
 		let key_index = this.data.key_map.get(key_id);
 
-		if (!key_index) {
+		if (key_index === undefined) {
 			const jwt = await this.user.getJwt();
 
-			this.data = await this.fetchKeys(jwt);
+			const fetched_key = await group_get_group_key(this.base_url, this.app_token, jwt, this.data.group_id, key_id);
+
+			const key: GroupOutDataKeys = {
+				key_data: fetched_key.get_key_data(),
+				private_key_id: fetched_key.get_private_key_id()
+			};
+
+			const decrypted_key = await this.decryptKey([key]);
+
+			const last_inserted_key_index = this.data.keys.length;
+			this.data.keys.push(decrypted_key[0]);
+			this.data.key_map.set(decrypted_key[0].group_key_id, last_inserted_key_index);
 
 			const storage = await Sentc.getStore();
 			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
