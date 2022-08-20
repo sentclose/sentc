@@ -32,6 +32,7 @@ pub(crate) use self::non_rust::{
 	MemberRes,
 	Res,
 	SessionRes,
+	SingleKeyRes,
 	UserUpdateCheckRes,
 	VoidRes,
 };
@@ -46,6 +47,7 @@ pub(crate) use self::rust::{
 	MemberRes,
 	Res,
 	SessionRes,
+	SingleKeyRes,
 	UserUpdateCheckRes,
 	VoidRes,
 };
@@ -131,6 +133,17 @@ pub async fn get_group_keys(
 	Ok(group_keys)
 }
 
+pub async fn get_group_key(base_url: String, auth_token: &str, jwt: &str, id: &str, key_id: &str) -> SingleKeyRes
+{
+	let url = base_url + "/api/v1/group/" + id + "/key/" + key_id;
+
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	let group_key = sentc_crypto::group::get_group_key_from_server_output(res.as_str())?;
+
+	Ok(group_key)
+}
+
 pub fn decrypt_key(
 	#[cfg(not(feature = "rust"))] server_key_output: &str,
 	#[cfg(feature = "rust")] server_key_output: &sentc_crypto_common::group::GroupKeyServerOutput,
@@ -138,7 +151,10 @@ pub fn decrypt_key(
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 ) -> KeyRes
 {
-	Ok(sentc_crypto::group::get_group_keys(private_key, server_key_output)?)
+	Ok(sentc_crypto::group::decrypt_group_keys(
+		private_key,
+		server_key_output,
+	)?)
 }
 
 pub async fn get_member(base_url: String, auth_token: &str, jwt: &str, id: &str, last_fetched_time: &str, last_fetched_id: &str) -> MemberRes

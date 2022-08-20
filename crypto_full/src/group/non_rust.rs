@@ -10,6 +10,7 @@ pub type Res = Result<String, String>;
 pub type VoidRes = Result<(), String>;
 pub type DataRes = Result<GroupOutData, String>;
 pub type KeyFetchRes = Result<Vec<GroupOutDataKeys>, String>;
+pub type SingleKeyRes = Result<GroupOutDataKeys, String>;
 pub type KeyRes = Result<GroupKeyData, String>;
 pub type SessionRes = Result<Option<String>, String>;
 pub type InviteListRes = Result<Vec<GroupInviteReqList>, String>;

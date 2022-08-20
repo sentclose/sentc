@@ -18,6 +18,7 @@ pub type VoidRes = Result<(), SdkFullError>;
 pub type DataRes = Result<GroupOutData, SdkFullError>;
 pub type KeyRes = Result<GroupKeyData, SdkFullError>;
 pub type KeyFetchRes = Result<Vec<GroupKeyServerOutput>, SdkFullError>;
+pub type SingleKeyRes = Result<GroupKeyServerOutput, SdkFullError>;
 pub type SessionRes = Result<Option<String>, SdkFullError>;
 pub type InviteListRes = Result<Vec<GroupInviteReqList>, SdkFullError>;
 pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, SdkFullError>;
