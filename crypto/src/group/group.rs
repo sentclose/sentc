@@ -30,7 +30,7 @@ use crate::util::{
 	SymKeyFormat,
 	SymKeyFormatInt,
 };
-use crate::{err_to_msg, SdkError};
+use crate::SdkError;
 
 /**
 The decrypted and exported values
@@ -124,7 +124,7 @@ pub fn get_group_keys(private_key: &str, server_key_output: &str) -> Result<Grou
 {
 	let private_key = import_private_key(private_key)?;
 
-	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(|_| SdkError::JsonParseFailed)?;
+	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let result = get_group_keys_internally(&private_key, &server_key_output)?;
 
@@ -157,7 +157,7 @@ pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<Grou
 		let private_key_id = key.user_public_key_id.clone();
 
 		//call with this string the get group keys fn
-		let key_data = key.to_string().map_err(|_| SdkError::JsonParseFailed)?;
+		let key_data = key.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
 
 		keys.push(GroupOutDataKeys {
 			private_key_id,
@@ -189,7 +189,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		let private_key_id = key.user_public_key_id.clone();
 
 		//call with this string the get group keys fn
-		let key_data = key.to_string().map_err(|_| SdkError::JsonParseFailed)?;
+		let key_data = key.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
 
 		keys.push(GroupOutDataKeys {
 			private_key_id,
@@ -210,9 +210,9 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str, key_session: bool) -> Result<String, String>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
-	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 
@@ -234,9 +234,9 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 
 pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
-	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 

@@ -18,17 +18,17 @@ use crate::util::client_random_value_from_string;
 
 pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de str) -> Result<T, SdkError>
 {
-	let server_output = ServerOutput::<T>::from_string(res).map_err(|_| SdkError::JsonParseFailed)?;
+	let server_output = ServerOutput::<T>::from_string(res).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	if !server_output.status {
 		let err_code = match server_output.err_code {
 			Some(c) => c,
-			None => return Err(SdkError::JsonParseFailed),
+			None => return Err(SdkError::JsonParse),
 		};
 
 		let err_msg = match server_output.err_msg {
 			Some(m) => m,
-			None => return Err(SdkError::JsonParseFailed),
+			None => return Err(SdkError::JsonParse),
 		};
 
 		return Err(SdkError::ServerErr(err_code, err_msg));
@@ -36,7 +36,7 @@ pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de st
 
 	match server_output.result {
 		Some(r) => Ok(r),
-		None => Err(SdkError::JsonParseFailed),
+		None => Err(SdkError::JsonParse),
 	}
 }
 

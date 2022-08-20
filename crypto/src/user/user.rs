@@ -34,7 +34,7 @@ use crate::util::{
 	UserData,
 	UserDataInt,
 };
-use crate::{err_to_msg, SdkError};
+use crate::SdkError;
 
 #[derive(Serialize, Deserialize)]
 pub enum MasterKeyFormat
@@ -98,7 +98,7 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 		auth_key,
 		master_key_encryption_key
 			.to_string()
-			.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?,
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
 	))
 }
 
@@ -107,16 +107,14 @@ pub fn done_login(
 	server_output: &str,
 ) -> Result<UserData, String>
 {
-	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let master_key_encryption = match master_key_encryption {
 		MasterKeyFormat::Argon2(mk) => {
-			let mk = Base64::decode_vec(mk.as_str()).map_err(|_e| err_to_msg(SdkError::KeyDecryptFailed))?;
+			let mk = Base64::decode_vec(mk.as_str()).map_err(|_e| SdkError::KeyDecryptFailed)?;
 
 			//if it was encrypted by a key which was derived by argon
-			let master_key_encryption_key: [u8; 32] = mk
-				.try_into()
-				.map_err(|_e| err_to_msg(SdkError::KeyDecryptFailed))?;
+			let master_key_encryption_key: [u8; 32] = mk.try_into().map_err(|_e| SdkError::KeyDecryptFailed)?;
 
 			DeriveMasterKeyForAuth::Argon2(master_key_encryption_key)
 		},
@@ -162,7 +160,7 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 
 pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<String, String>
 {
-	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let out = prepare_update_user_keys_internally(password, &server_output)?;
 
@@ -176,7 +174,7 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 	}
 
 	//now this keys can be used to new encrypt the old content
-	to_string(&output_arr).map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))
+	Ok(to_string(&output_arr).map_err(|_e| SdkError::JsonToStringFailed)?)
 }
 
 fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
@@ -211,11 +209,11 @@ fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 		exported_public_key: key_data
 			.exported_public_key
 			.to_string()
-			.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?,
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
 		exported_verify_key: key_data
 			.exported_verify_key
 			.to_string()
-			.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?,
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
 	})
 }
 
