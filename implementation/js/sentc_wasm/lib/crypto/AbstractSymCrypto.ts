@@ -1,5 +1,4 @@
 import {CryptoHead, CryptoRawOutput} from "../Enities";
-import {Sentc} from "../Sentc";
 import {
 	decrypt_raw_symmetric, decrypt_string_symmetric, decrypt_symmetric,
 	deserialize_head_from_string,
@@ -26,6 +25,10 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 
 	abstract getSymKeyById(key_id: string): Promise<string>;
 
+	abstract getSignKey(): Promise<string>;
+
+	abstract getJwt(): Promise<string>;
+
 	public encryptRaw(data: Uint8Array): Promise<CryptoRawOutput>;
 
 	public encryptRaw(data: Uint8Array, sign: true): Promise<CryptoRawOutput>;
@@ -37,9 +40,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		let sign_key = "";
 
 		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
+			sign_key = await this.getSignKey();
 		}
 
 		const out = encrypt_raw_symmetric(key[0], data, sign_key);
@@ -76,9 +77,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		let sign_key = "";
 
 		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
+			sign_key = await this.getSignKey();
 		}
 
 		return encrypt_symmetric(key[0], data, sign_key);
@@ -110,9 +109,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		let sign_key = "";
 
 		if (sign) {
-			const user = await Sentc.getActualUser();
-
-			sign_key = user.sign_key;
+			sign_key = await this.getSignKey();
 		}
 
 		return encrypt_string_symmetric(key[0], data, sign_key);
@@ -146,7 +143,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 	{
 		const key_data = await this.getSymKeyToEncrypt();
 
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.getJwt();
 
 		const key_out = await generate_and_register_sym_key(this.base_url, this.app_token, jwt, key_data[0]);
 
@@ -154,7 +151,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		const key = key_out.get_key();
 
 		//return the group key id which was used to encrypt this key
-		return new SymKey(this.base_url, this.app_token, key, key_id, key_data[1]);
+		return new SymKey(this.base_url, this.app_token, key, key_id, key_data[1], await this.getSignKey());
 	}
 
 	public async generateNonRegisteredKey()
@@ -166,7 +163,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 		const encrypted_key = key_out.get_encrypted_key();
 		const key = key_out.get_key();
 
-		return [new SymKey(this.base_url, this.app_token, key, "non_register", key_data[1]), encrypted_key];
+		return [new SymKey(this.base_url, this.app_token, key, "non_register", key_data[1], await this.getSignKey()), encrypted_key];
 	}
 
 	public async fetchKey(key_id: string, master_key_id: string)
@@ -175,7 +172,7 @@ export abstract class AbstractSymCrypto extends AbstractCrypto
 
 		const key_out = await get_sym_key_by_id(this.base_url, this.app_token, key_id, key[0]);
 
-		return new SymKey(this.base_url, this.app_token, key_out, key_id, master_key_id);
+		return new SymKey(this.base_url, this.app_token, key_out, key_id, master_key_id, await this.getSignKey());
 	}
 
 	//__________________________________________________________________________________________________________________
