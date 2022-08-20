@@ -1,24 +1,26 @@
+import {CryptoRawOutput} from "../Enities";
+import {Sentc} from "../Sentc";
+import {
+	decrypt_raw_symmetric, decrypt_string_symmetric, decrypt_symmetric,
+	encrypt_raw_symmetric, encrypt_string_symmetric,
+	encrypt_symmetric
+} from "../../pkg";
+
 /**
  * @author Jörn Heinemann <joernheinemann@gmx.de>
  * @since 2022/08/19
  */
-import {AbstractSymCrypto} from "./AbstractSymCrypto";
 
-export class SymKey extends AbstractSymCrypto
+export class SymKey
 {
 	constructor(
-		base_url:string,
-		app_token: string,
+		private base_url:string,
+		private app_token: string,
 		private key: string,
 		private key_id: string,
 		public master_key_id: string	//this is important to save it to decrypt this key later
 	) {
-		super(base_url, app_token);
-	}
 
-	getSymKeyById(): Promise<string>
-	{
-		return Promise.resolve(this.key);
 	}
 
 	getSymKeyToEncrypt(): Promise<[string, string]>
@@ -26,15 +28,90 @@ export class SymKey extends AbstractSymCrypto
 		return Promise.resolve([this.key, this.key_id]);
 	}
 
-	registerKey(): Promise<SymKey> {
-		throw new Error("Register key is not Supported for generated key");
+	public encryptRaw(data: Uint8Array): Promise<CryptoRawOutput>;
+
+	public encryptRaw(data: Uint8Array, sign: true): Promise<CryptoRawOutput>;
+
+	public async encryptRaw(data: Uint8Array, sign = false): Promise<CryptoRawOutput>
+	{
+		let sign_key = "";
+
+		if (sign) {
+			const user = await Sentc.getActualUser();
+
+			sign_key = user.sign_key;
+		}
+
+		const out = encrypt_raw_symmetric(this.key, data, sign_key);
+
+		return {
+			head: out.get_head(),
+			data: out.get_data()
+		};
 	}
 
-	generateNonRegisteredKey(): Promise<[string, string, string]> {
-		throw new Error("Register key is not Supported for generated key");
+	public decryptRaw(head: string, encrypted_data: Uint8Array): Uint8Array;
+
+	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key: string): Uint8Array;
+
+	public decryptRaw(head: string, encrypted_data: Uint8Array, verify_key = ""): Uint8Array
+	{
+		return decrypt_raw_symmetric(this.key, encrypted_data, head, verify_key);
 	}
 
-	fetchKey(): Promise<SymKey> {
-		throw new Error("Fetching the key again is not supported");
+	//__________________________________________________________________________________________________________________
+
+	public async encrypt(data: Uint8Array): Promise<Uint8Array>
+
+	public async encrypt(data: Uint8Array, sign: true): Promise<Uint8Array>
+
+	public async encrypt(data: Uint8Array, sign = false): Promise<Uint8Array>
+	{
+		let sign_key = "";
+
+		if (sign) {
+			const user = await Sentc.getActualUser();
+
+			sign_key = user.sign_key;
+		}
+
+		return encrypt_symmetric(this.key, data, sign_key);
+	}
+
+	public decrypt(data: Uint8Array): Uint8Array;
+
+	public decrypt(data: Uint8Array, verify_key: string): Uint8Array;
+
+	public decrypt(data: Uint8Array, verify_key = ""): Uint8Array
+	{
+		return decrypt_symmetric(this.key, data, verify_key);
+	}
+
+	//__________________________________________________________________________________________________________________
+
+	public encryptString(data: string): Promise<string>;
+
+	public encryptString(data: string, sign: true): Promise<string>;
+
+	public async encryptString(data: string, sign = false): Promise<string>
+	{
+		let sign_key = "";
+
+		if (sign) {
+			const user = await Sentc.getActualUser();
+
+			sign_key = user.sign_key;
+		}
+
+		return encrypt_string_symmetric(this.key, data, sign_key);
+	}
+
+	public decryptString(data: string): string;
+
+	public decryptString(data: string, verify_key: string): string;
+
+	public decryptString(data: string, verify_key = ""): string
+	{
+		return decrypt_string_symmetric(this.key, data, verify_key);
 	}
 }
