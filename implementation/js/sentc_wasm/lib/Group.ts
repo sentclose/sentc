@@ -38,26 +38,21 @@ import {
 } from "../pkg";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
+import {User} from "./User";
 
 /**
  * Get a group, from the storage or the server
  *
- * @param group_id
- * @param base_url
- * @param app_token
- * @param parent
  */
-export async function getGroup(group_id: string, base_url: string, app_token: string, parent = false)
+export async function getGroup(group_id: string, base_url: string, app_token: string, user: User, parent = false)
 {
 	const storage = await Sentc.getStore();
 
-	const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + group_id;
+	const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + user.user_data.user_id + "_id_" + group_id;
 
 	const group: GroupData = await storage.getItem(group_key);
 
-	const user = await Sentc.getActualUser(true);
-
-	const jwt = user.jwt;
+	const jwt = await user.getJwt();
 
 	if (group) {
 		const update = await group_get_group_updates(base_url, app_token, jwt, group_id);
@@ -65,7 +60,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		group.rank = update.get_rank();
 		group.key_update = update.get_key_update();
 
-		return new Group(group, base_url, app_token);
+		return new Group(group, base_url, app_token, user);
 	}
 
 	const out = await group_get_group_data(
@@ -90,7 +85,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 		key_map: new Map()
 	};
 
-	const group_obj = new Group(group_data, base_url, app_token);
+	const group_obj = new Group(group_data, base_url, app_token, user);
 
 	//update the group obj and the group data (which we saved in store) with the decrypted keys.
 	//it is ok to use the private key with an empty array,
@@ -121,7 +116,7 @@ export async function getGroup(group_id: string, base_url: string, app_token: st
 
 export class Group extends AbstractSymCrypto
 {
-	constructor(private data: GroupData, base_url: string, app_token: string) {
+	constructor(private data: GroupData, base_url: string, app_token: string, private user: User) {
 		super(base_url, app_token);
 	}
 
@@ -139,7 +134,7 @@ export class Group extends AbstractSymCrypto
 
 	public getChildGroup(group_id: string)
 	{
-		return getGroup(group_id, this.base_url, this.app_token, true);
+		return getGroup(group_id, this.base_url, this.app_token, this.user, true);
 	}
 
 	public prepareCreateChildGroup()
@@ -155,17 +150,17 @@ export class Group extends AbstractSymCrypto
 	{
 		const latest_key = this.data.keys[this.data.keys.length - 1].public_group_key;
 
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 
 		return group_create_child_group(this.base_url, this.app_token, jwt, latest_key, this.data.group_id, this.data.rank);
 	}
 
 	public async getMember(last_fetched_item: GroupUserListItem | null = null)
 	{
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 
-		const last_fetched_time = last_fetched_item.joined_time.toString() ?? "0";
-		const last_id = last_fetched_item.user_id ?? "none";
+		const last_fetched_time = last_fetched_item?.joined_time.toString() ?? "0";
+		const last_id = last_fetched_item?.user_id ?? "none";
 
 		const list: GroupUserListItem[] = await group_get_member(
 			this.base_url,
@@ -212,9 +207,11 @@ export class Group extends AbstractSymCrypto
 		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
 		const key_count = this.data.keys.length;
-		const [key_string] = this.prepareKeyString();
+		const [key_string] = this.prepareKeys();
 
-		const jwt = await Sentc.getJwt();
+		console.log("key string: " + key_string);
+
+		const jwt = await this.user.getJwt();
 
 		const session_id = await group_invite_user(
 			this.base_url,
@@ -239,7 +236,7 @@ export class Group extends AbstractSymCrypto
 		const p = [];
 
 		while (next_page) {
-			const next_keys = this.prepareKeyString(i);
+			const next_keys = this.prepareKeys(i);
 			next_page = next_keys[1];
 
 			p.push(group_invite_user_session(
@@ -263,10 +260,10 @@ export class Group extends AbstractSymCrypto
 
 	public async getJoinRequests(last_fetched_item: GroupJoinReqListItem | null = null)
 	{
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 
-		const last_fetched_time = last_fetched_item.time.toString() ?? "0";
-		const last_id = last_fetched_item.user_id ?? "none";
+		const last_fetched_time = last_fetched_item?.time.toString() ?? "0";
+		const last_id = last_fetched_item?.user_id ?? "none";
 
 		const reqs: GroupJoinReqListItem[] = await group_get_join_reqs(
 			this.base_url,
@@ -283,7 +280,7 @@ export class Group extends AbstractSymCrypto
 
 	public async rejectJoinRequest(user_id: string)
 	{
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 
 		return group_reject_join_req(
 			this.base_url,
@@ -297,9 +294,9 @@ export class Group extends AbstractSymCrypto
 
 	public async acceptJoinRequest(user_id: string)
 	{
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 		const key_count = this.data.keys.length;
-		const [key_string] = this.prepareKeyString();
+		const [key_string] = this.prepareKeys();
 
 		const public_key = await Sentc.getUserPublicKeyData(this.base_url, this.app_token, user_id);
 
@@ -324,7 +321,7 @@ export class Group extends AbstractSymCrypto
 		const p = [];
 
 		while (next_page) {
-			const next_keys = this.prepareKeyString(i);
+			const next_keys = this.prepareKeys(i);
 			next_page = next_keys[1];
 
 			p.push(group_join_user_session(
@@ -347,7 +344,7 @@ export class Group extends AbstractSymCrypto
 
 	public async leave()
 	{
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 
 		return leave_group(
 			this.base_url,
@@ -364,6 +361,8 @@ export class Group extends AbstractSymCrypto
 	 * Get the actual used public key.
 	 * For the user, or if user joined via parent group the parent group public key
 	 *
+	 * Returns only the public key format, not the exported public key!
+	 *
 	 * @private
 	 */
 	private async getPublicKey()
@@ -371,13 +370,11 @@ export class Group extends AbstractSymCrypto
 		let public_key;
 
 		if (!this.data.from_parent) {
-			const user = await Sentc.getActualUser(true);
-
-			public_key = user.public_key;
+			public_key = this.user.user_data.public_key;
 		} else {
 			//get parent group public key
 			const storage = await Sentc.getStore();
-			const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.parent_group_id;
+			const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.parent_group_id;
 			const parent_group: GroupData = await storage.getItem(parent_group_key);
 
 			if (!parent_group) {
@@ -405,13 +402,12 @@ export class Group extends AbstractSymCrypto
 	private async getPrivateKey(private_key_id: string)
 	{
 		if (!this.data.from_parent) {
-			const user = await Sentc.getActualUser(true);
-			return user.private_key;
+			return this.user.getPrivateKey();
 		}
 
 		//get parent group private key
 		const storage = await Sentc.getStore();
-		const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.parent_group_id;
+		const parent_group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.parent_group_id;
 		const parent_group_data: GroupData = await storage.getItem(parent_group_key);
 
 		if (!parent_group_data) {
@@ -419,7 +415,7 @@ export class Group extends AbstractSymCrypto
 			throw new Error();
 		}
 
-		const parent_group = new Group(parent_group_data, this.base_url, this.app_token);
+		const parent_group = new Group(parent_group_data, this.base_url, this.app_token, this.user);
 
 		//private key id got the same id as the group key
 		const group_key = await parent_group.getGroupKey(private_key_id);
@@ -471,18 +467,18 @@ export class Group extends AbstractSymCrypto
 
 	public async keyRotation()
 	{
-		const user = await Sentc.getActualUser(true);
+		const jwt = await this.user.getJwt();
 
 		const public_key = await this.getPublicKey();
 
-		return group_key_rotation(this.base_url, this.app_token, user.jwt, this.data.group_id, public_key, this.data.keys[this.data.keys.length - 1].group_key);
+		return group_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id, public_key, this.data.keys[this.data.keys.length - 1].group_key);
 	}
 
 	public async finishKeyRotation()
 	{
-		const user = await Sentc.getActualUser(true);
+		const jwt = await this.user.getJwt();
 
-		let keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url, this.app_token, user.jwt, this.data.group_id);
+		let keys: GroupKeyRotationOut[] = await group_pre_done_key_rotation(this.base_url, this.app_token, jwt, this.data.group_id);
 
 		let next_round = false;
 		let rounds_left = 10;
@@ -518,7 +514,7 @@ export class Group extends AbstractSymCrypto
 				await group_finish_key_rotation(
 					this.base_url,
 					this.app_token,
-					user.jwt,
+					jwt,
 					this.data.group_id,
 					key.server_output,
 					pre_key.group_key,
@@ -532,7 +528,7 @@ export class Group extends AbstractSymCrypto
 
 			//fetch the new keys, when there are still keys left, maybe they are there after the key fetch -> must be in loop too
 			// eslint-disable-next-line no-await-in-loop
-			await this.fetchKeys(user.jwt);
+			await this.fetchKeys(jwt);
 
 			if (left_keys.length > 0) {
 				keys = [];
@@ -547,7 +543,7 @@ export class Group extends AbstractSymCrypto
 
 		//after a key rotation -> save the new group data in the store
 		const storage = await Sentc.getStore();
-		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
+		const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
 		return storage.set(group_key, this.data);
 	}
 
@@ -560,15 +556,15 @@ export class Group extends AbstractSymCrypto
 
 	public async updateRank(user_id: string, new_rank: number)
 	{
-		const user = await Sentc.getActualUser(true);
+		const jwt = await this.user.getJwt();
 
 		//check if the updated user is the actual user -> then update the group store
 
-		await group_update_rank(this.base_url, this.app_token, user.jwt, this.data.group_id, user_id, new_rank, this.data.rank);
+		await group_update_rank(this.base_url, this.app_token, jwt, this.data.group_id, user_id, new_rank, this.data.rank);
 		
-		if (user.user_id === user_id) {
+		if (this.user.user_data.user_id === user_id) {
 			const storage = await Sentc.getStore();
-			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
+			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
 
 			this.data.rank = new_rank;
 
@@ -578,7 +574,7 @@ export class Group extends AbstractSymCrypto
 
 	public async kickUser(user_id: string)
 	{
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 
 		return group_kick_user(this.base_url, this.app_token, jwt, this.data.group_id, user_id, this.data.rank);
 	}
@@ -587,7 +583,7 @@ export class Group extends AbstractSymCrypto
 
 	public async deleteGroup()
 	{
-		const jwt = await Sentc.getJwt();
+		const jwt = await this.user.getJwt();
 
 		return group_delete_group(this.base_url, this.app_token, jwt, this.data.group_id, this.data.rank);
 	}
@@ -650,8 +646,6 @@ export class Group extends AbstractSymCrypto
 		for (let i = 0; i < fetchedKeys.length; i++) {
 			const fetched_key = fetchedKeys[i];
 
-			//TODO check for fetched key if the the  key_data is still a string and was not deserialize by json
-
 			// eslint-disable-next-line no-await-in-loop
 			const private_key = await this.getPrivateKey(fetched_key.private_key_id);
 
@@ -669,22 +663,29 @@ export class Group extends AbstractSymCrypto
 		return keys;
 	}
 
-	private prepareKeyString(page = 0): [string, boolean]
+	private prepareKeys(page = 0): [string, boolean]
 	{
 		const offset = page * 50;
-		const end = (offset + 50 > this.data.keys.length - 1) ? this.data.keys.length - 1 : offset + 50;
+		const end = offset + 50;
 
 		const key_slice = this.data.keys.slice(offset, end);
 
-		const keys = [];
+		let str = "[";
 
 		for (let i = 0; i < key_slice.length; i++) {
 			const key = this.data.keys[i].group_key;
 
-			keys.push(key);
+			str += key + ",";
 		}
 
-		return [JSON.stringify(keys), end < this.data.keys.length - 1];
+		//remove the trailing comma
+		str = str.slice(0, -1);
+
+		str += "]";
+
+		//it must be this string: [{"Aes":{"key":"D29y+nli2g4wn1GawdVmeGyo+W8HKc1cllkzqdEA2bA=","key_id":"123"}}]
+
+		return [str, end < this.data.keys.length - 1];
 	}
 
 	private async getGroupKey(key_id: string)
@@ -692,12 +693,12 @@ export class Group extends AbstractSymCrypto
 		let key_index = this.data.key_map.get(key_id);
 
 		if (!key_index) {
-			const user = await Sentc.getActualUser(true);
+			const jwt = await this.user.getJwt();
 
-			this.data = await this.fetchKeys(user.jwt);
+			this.data = await this.fetchKeys(jwt);
 
 			const storage = await Sentc.getStore();
-			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_id_" + this.data.group_id;
+			const group_key = USER_KEY_STORAGE_NAMES.groupData + "_user_" + this.user.user_data.user_id + "_id_" + this.data.group_id;
 
 			await storage.set(group_key, this.data);
 
@@ -731,5 +732,16 @@ export class Group extends AbstractSymCrypto
 		const key = await this.getGroupKey(key_id);
 
 		return key.group_key;
+	}
+
+	getJwt(): Promise<string>
+	{
+		return this.user.getJwt();
+	}
+
+	getSignKey(): Promise<string>
+	{
+		//always use the users sign key
+		return this.user.getSignKey();
 	}
 }
