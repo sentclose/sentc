@@ -58,6 +58,10 @@ export async function run()
 
 	const group = await user.getGroup(group_id);
 
+	console.log("test encrypt with std group key");
+
+	const encrypted_by_user_1 = await group.encryptString("hello there");
+
 	try {
 		console.log("invite user");
 
@@ -82,8 +86,23 @@ export async function run()
 
 		await group.keyRotation();
 
+		console.log("get group keys after rotation for user 1");
+
+		console.log(group.data);
+
 		console.log("finish the key rotation for user 2");
 		await group_for_user_2.finishKeyRotation();
+
+		console.log("get group keys after rotation for user 2");
+
+		console.log(group_for_user_2.data);
+
+		console.log("test decrypt with older key");
+
+		const decrypted_user_2 = await group_for_user_2.decryptString(encrypted_by_user_1);
+
+		console.log("encrypt result: ", decrypted_user_2);
+
 		// eslint-disable-next-line no-empty
 	} catch (e) {
 		console.error(e);
