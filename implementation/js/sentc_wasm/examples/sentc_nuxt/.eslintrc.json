@@ -1,0 +1,67 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "node": true
+  },
+  "extends": [
+    "@joernheinemann/eslint-config-typescript",
+    "@nuxtjs/eslint-config-typescript",
+    "plugin:nuxt/recommended"
+  ],
+  "plugins": [
+  ],
+  "rules": {
+    "no-tabs": "off",
+    "indent": [
+      "error",
+      "tab",
+      {"SwitchCase": 1, "MemberExpression": 1, "ObjectExpression": 1}
+    ],
+    "no-mixed-spaces-and-tabs": "error",
+    "object-curly-spacing": [
+      "error",
+      "never"
+    ],
+    "quotes": [
+      "error",
+      "double",
+      { "allowTemplateLiterals": true }
+    ],
+    "semi": ["error", "always"],
+    "semi-style": ["error", "last"],
+    "semi-spacing": [
+      "error",
+      {"before": false, "after": true}
+    ],
+    "dot-notation": "off",
+    "spaced-comment": "off",
+    "import/order": "off",
+    "space-before-function-paren": [
+      "error",
+      {"anonymous": "never", "named": "never", "asyncArrow": "always"}
+    ],
+    "brace-style": "off",
+    "eol-last": "off",
+    "object-shorthand": "off",
+    "vue/html-indent": ["error", "tab", {
+      "attribute": 1,
+      "baseIndent": 1,
+      "closeBracket": 0,
+      "alignAttributesVertically": true,
+      "ignores": []
+    }],
+    "vue/singleline-html-element-content-newline": "off",
+    "no-useless-constructor": "off",
+    "camelcase": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "no-trailing-spaces": "off",
+    "no-use-before-define": "off",
+    "prefer-promise-reject-errors": "off",
+    "no-fallthrough": "off",
+    "vue/attribute-hyphenation": "off",
+    "import/no-mutable-exports": "off",
+    "vue/require-v-for-key": "off",
+    "no-dupe-class-members": "off"
+  }
+}
