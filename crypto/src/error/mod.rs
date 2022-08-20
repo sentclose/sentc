@@ -8,7 +8,8 @@ pub enum SdkError
 {
 	Base(Error),
 	JsonToStringFailed,
-	JsonParseFailed,
+	JsonParseFailed(serde_json::Error),
+	JsonParse,
 
 	DecodeSaltFailed,
 	DecodeRandomValueFailed,
@@ -77,7 +78,10 @@ pub fn err_to_msg(error: SdkError) -> String
 		},
 		SdkError::AlgNotFound => out_error("client_1", "The algorithms for this action was not found."),
 		SdkError::JsonToStringFailed => out_error("client_100", "Cannot create a string from this object"),
-		SdkError::JsonParseFailed => out_error("client_101", "Cannot create an object from the input string"),
+		SdkError::JsonParse => out_error("client_102", "Cannot create an object from the input string"),
+		SdkError::JsonParseFailed(err) => {
+			format!("{{\"status\": {}, \"error_message\": \"{}\"}}", "client_101", err)
+		},
 		//key decode error (from base64 string to the enum
 		SdkError::DerivedKeyWrongFormat => out_error("client_2", "The encrypted key has a wrong format."),
 		//salt decode error (from base64 string to bytes)
