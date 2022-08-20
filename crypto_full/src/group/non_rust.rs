@@ -23,6 +23,7 @@ pub type UserUpdateCheckRes = Result<GroupDataCheckUpdateServerOutput, String>;
 pub struct KeyRotationGetOut
 {
 	pub pre_group_key_id: String,
+	pub new_group_key_id: String,
 	pub encrypted_eph_key_key_id: EncryptionKeyPairId,
 	pub server_output: String,
 }
