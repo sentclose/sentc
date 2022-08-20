@@ -70,6 +70,38 @@ impl GroupOutData
 	}
 }
 
+#[wasm_bindgen]
+pub struct GroupOutDataKeys
+{
+	private_key_id: String,
+	key_data: String, //serde string
+}
+
+impl From<group::GroupOutDataKeys> for GroupOutDataKeys
+{
+	fn from(key: group::GroupOutDataKeys) -> Self
+	{
+		Self {
+			private_key_id: key.private_key_id,
+			key_data: key.key_data,
+		}
+	}
+}
+
+#[wasm_bindgen]
+impl GroupOutDataKeys
+{
+	pub fn get_private_key_id(&self) -> String
+	{
+		self.private_key_id.clone()
+	}
+
+	pub fn get_key_data(&self) -> String
+	{
+		self.key_data.clone()
+	}
+}
+
 /**
 Keys after decrypt each key
 */
@@ -311,6 +343,21 @@ pub async fn group_get_group_keys(
 	.await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
+pub async fn group_get_group_key(base_url: String, auth_token: String, jwt: String, id: String, key_id: String) -> Result<GroupOutDataKeys, JsValue>
+{
+	let out = sentc_crypto_full::group::get_group_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		key_id.as_str(),
+	)
+	.await?;
+
+	Ok(out.into())
 }
 
 #[wasm_bindgen]
