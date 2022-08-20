@@ -30,7 +30,7 @@ use crate::util::{
 	SymKeyFormat,
 	SymKeyFormatInt,
 };
-use crate::{err_to_msg, SdkError};
+use crate::SdkError;
 
 /**
 The decrypted and exported values
@@ -80,22 +80,6 @@ pub struct GroupOutDataKeys
 	pub key_data: String, //serde string
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct GroupKeys(Vec<SymKeyFormat>);
-
-impl GroupKeys
-{
-	pub fn from_string(v: &str) -> serde_json::Result<Self>
-	{
-		from_str::<Self>(v)
-	}
-
-	pub fn to_string(&self) -> serde_json::Result<String>
-	{
-		to_string(self)
-	}
-}
-
 pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 {
 	let creators_public_key = import_public_key(creators_public_key)?;
@@ -140,7 +124,7 @@ pub fn get_group_keys(private_key: &str, server_key_output: &str) -> Result<Grou
 {
 	let private_key = import_private_key(private_key)?;
 
-	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(|_| SdkError::JsonParseFailed)?;
+	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let result = get_group_keys_internally(&private_key, &server_key_output)?;
 
@@ -173,7 +157,7 @@ pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<Grou
 		let private_key_id = key.user_public_key_id.clone();
 
 		//call with this string the get group keys fn
-		let key_data = key.to_string().map_err(|_| SdkError::JsonParseFailed)?;
+		let key_data = key.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
 
 		keys.push(GroupOutDataKeys {
 			private_key_id,
@@ -205,7 +189,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		let private_key_id = key.user_public_key_id.clone();
 
 		//call with this string the get group keys fn
-		let key_data = key.to_string().map_err(|_| SdkError::JsonParseFailed)?;
+		let key_data = key.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
 
 		keys.push(GroupOutDataKeys {
 			private_key_id,
@@ -226,11 +210,9 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str, key_session: bool) -> Result<String, String>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
-	let group_keys = GroupKeys::from_string(group_keys)
-		.map_err(|_| err_to_msg(SdkError::JsonParseFailed))?
-		.0;
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 
@@ -252,11 +234,9 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 
 pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
-	let group_keys = GroupKeys::from_string(group_keys)
-		.map_err(|_| err_to_msg(SdkError::JsonParseFailed))?
-		.0;
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 
@@ -416,15 +396,10 @@ mod test
 		)
 		.unwrap();
 
-		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]);
+		let group_keys = to_string(&vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(
-			user1.keys.exported_public_key.as_str(),
-			group_keys.to_string().unwrap().as_str(),
-			false,
-		)
-		.unwrap();
+		let out = prepare_group_keys_for_new_member(user1.keys.exported_public_key.as_str(), group_keys.as_str(), false).unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.keys[0]; //this group only got one key
 
@@ -523,14 +498,10 @@ mod test
 		)
 		.unwrap();
 
-		let group_keys = GroupKeys(vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]);
+		let group_keys = to_string(&vec![SymKeyFormat::from_string(&group_key_user_0.group_key).unwrap()]).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member_via_session(
-			user1.keys.exported_public_key.as_str(),
-			group_keys.to_string().unwrap().as_str(),
-		)
-		.unwrap();
+		let out = prepare_group_keys_for_new_member_via_session(user1.keys.exported_public_key.as_str(), group_keys.as_str()).unwrap();
 
 		let out: Vec<GroupKeysForNewMember> = from_str(out.as_str()).unwrap();
 		let out_group_1 = &out[0]; //this group only got one key

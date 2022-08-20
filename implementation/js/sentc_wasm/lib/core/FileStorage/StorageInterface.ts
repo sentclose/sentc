@@ -19,6 +19,8 @@ export interface StorageInterface
 
 	storePart(chunk: ArrayBuffer): Promise<void>;
 
+	delete(key: string): Promise<void>;
+
 	getItem(key: string): Promise<any | undefined>;
 
 	set(key: string, item: any): Promise<void | any>;

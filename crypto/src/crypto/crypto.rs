@@ -33,7 +33,7 @@ use crate::crypto::{
 	split_head_and_encrypted_string_internally,
 };
 use crate::util::{export_sym_key_to_string, import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
-use crate::{err_to_msg, SdkError};
+use crate::SdkError;
 
 fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, SdkError>
 {
@@ -54,7 +54,7 @@ fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>
 	let verify_key = match verify_key_data {
 		"" => None,
 		_ => {
-			let k = UserVerifyKeyData::from_string(verify_key_data).map_err(|_| SdkError::JsonParseFailed)?;
+			let k = UserVerifyKeyData::from_string(verify_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 			Some(k)
 		},
@@ -92,7 +92,7 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(
 
 	let head = head
 		.to_string()
-		.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?;
+		.map_err(|_e| SdkError::JsonToStringFailed)?;
 
 	Ok((head, encrypted))
 }
@@ -103,7 +103,7 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
-	let head = EncryptedHead::from_string(head).map_err(|_e| err_to_msg(SdkError::JsonParseFailed))?;
+	let head = EncryptedHead::from_string(head).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let decrypted = match verify_key {
 		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None)?,
@@ -115,7 +115,7 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
 {
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -127,7 +127,7 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 
 	let head = head
 		.to_string()
-		.map_err(|_e| err_to_msg(SdkError::JsonToStringFailed))?;
+		.map_err(|_e| SdkError::JsonToStringFailed)?;
 
 	Ok((head, encrypted))
 }
@@ -138,7 +138,7 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
-	let head = EncryptedHead::from_string(head).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let head = EncryptedHead::from_string(head).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let decrypted = match verify_key {
 		None => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None)?,
@@ -179,7 +179,7 @@ pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: &str
 
 pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<Vec<u8>, String>
 {
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -237,7 +237,7 @@ pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data
 
 pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_key: &str) -> Result<String, String>
 {
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -275,7 +275,7 @@ pub fn prepare_register_sym_key(master_key: &str) -> Result<(String, String), St
 
 pub fn prepare_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
 {
-	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let (server_input, key) = prepare_register_sym_key_by_public_key_internally(&reply_public_key)?;
 
@@ -328,7 +328,7 @@ pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> 
 {
 	let master_key = import_sym_key(master_key)?;
 	let encrypted_symmetric_key_info =
-		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let out = decrypt_sym_key_internally(&master_key, &encrypted_symmetric_key_info)?;
 
@@ -340,7 +340,7 @@ pub fn decrypt_sym_key_by_private_key(private_key: &str, encrypted_symmetric_key
 	let private_key = import_private_key(private_key)?;
 
 	let encrypted_symmetric_key_info =
-		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let out = decrypt_sym_key_by_private_key_internally(&private_key, &encrypted_symmetric_key_info)?;
 
@@ -357,14 +357,14 @@ pub fn generate_non_register_sym_key(master_key: &str) -> Result<(String, String
 
 	let exported_encrypted_key = encrypted_key
 		.to_string()
-		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?;
+		.map_err(|_| SdkError::JsonToStringFailed)?;
 
 	Ok((exported_key, exported_encrypted_key))
 }
 
 pub fn generate_non_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
 {
-	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(|_| err_to_msg(SdkError::JsonParseFailed))?;
+	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	let (key, encrypted_key) = generate_non_register_sym_key_by_public_key_internally(&reply_public_key)?;
 
@@ -372,7 +372,7 @@ pub fn generate_non_register_sym_key_by_public_key(reply_public_key: &str) -> Re
 
 	let exported_encrypted_key = encrypted_key
 		.to_string()
-		.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?;
+		.map_err(|_| SdkError::JsonToStringFailed)?;
 
 	Ok((exported_key, exported_encrypted_key))
 }

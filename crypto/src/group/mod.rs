@@ -43,7 +43,6 @@ pub use self::group::{
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_via_session,
 	GroupKeyData,
-	GroupKeys,
 	GroupOutData,
 	GroupOutDataKeys,
 };

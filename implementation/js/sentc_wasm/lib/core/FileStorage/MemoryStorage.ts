@@ -38,6 +38,13 @@ export class MemoryStorage implements StorageInterface
 		return Promise.resolve();
 	}
 
+	public delete(key: string): Promise<void>
+	{
+		this.store.delete(key);
+
+		return Promise.resolve(undefined);
+	}
+
 	public getItem(key: string): Promise<any | undefined>
 	{
 		return Promise.resolve(this.store.get(key));
