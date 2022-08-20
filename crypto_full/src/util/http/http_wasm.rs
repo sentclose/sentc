@@ -19,7 +19,7 @@ pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 
 	let mut opts = RequestInit::new();
 	opts.method(method);
-	opts.mode(RequestMode::NoCors);
+	opts.mode(RequestMode::Cors);
 
 	match body {
 		Some(b) => {
