@@ -398,12 +398,21 @@ export class Sentc extends AbstractAsymCrypto
 			throw Error();
 		}
 
-		return delete_user(
+		await delete_user(
 			Sentc.options.base_url,
 			Sentc.options.app_token,
 			user[1],
 			password
 		);
+
+		return this.logOut();
+	}
+
+	public async logOut()
+	{
+		const storage = await Sentc.getStore();
+
+		await storage.cleanStorage();
 	}
 
 	public async updateUser(newIdentifier: string)
@@ -434,7 +443,7 @@ export class Sentc extends AbstractAsymCrypto
 
 		const exp = jwt_data.get_exp();
 
-		if (exp <= Date.now() + 30 * 1000) {
+		if (exp <= Date.now() / 1000 + 30) {
 			//refresh even when the jwt is valid for 30 sec
 			jwt = await this.refreshJwt(jwt, refresh_token);
 
