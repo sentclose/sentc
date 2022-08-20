@@ -11,6 +11,7 @@ use crate::group::{
 	decrypt_group_keys_internally,
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
+	get_group_key_from_server_output_internally,
 	get_group_keys_from_server_output_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
@@ -166,6 +167,18 @@ pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<Grou
 	}
 
 	Ok(keys)
+}
+
+pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupOutDataKeys, String>
+{
+	let out = get_group_key_from_server_output_internally(server_output)?;
+
+	let key_data = out.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
+
+	Ok(GroupOutDataKeys {
+		private_key_id: out.user_public_key_id,
+		key_data,
+	})
 }
 
 /**
@@ -325,6 +338,15 @@ mod test
 
 		let keys = group_server_out.keys;
 
+		let single_fetch = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(&keys[0]),
+		};
+
+		let single_fetch = to_string(&single_fetch).unwrap();
+
 		let server_key_out = ServerOutput {
 			status: true,
 			err_msg: None,
@@ -346,6 +368,16 @@ mod test
 		assert_eq!(
 			key_data[0].group_key.to_string(),
 			group_keys_from_server_out.group_key.to_string()
+		);
+
+		//fetch the key single
+		let key = get_group_key_from_server_output(single_fetch.as_str()).unwrap();
+
+		let group_keys_from_single_server_out = decrypt_group_keys(user.keys.private_key.as_str(), &key.key_data).unwrap();
+
+		assert_eq!(
+			key_data[0].group_key.to_string(),
+			group_keys_from_single_server_out.group_key.to_string()
 		);
 	}
 

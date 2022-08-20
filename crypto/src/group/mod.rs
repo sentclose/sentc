@@ -36,6 +36,7 @@ pub use self::group::{
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
+	get_group_key_from_server_output,
 	get_group_keys_from_server_output,
 	key_rotation,
 	prepare_change_rank,
@@ -60,6 +61,7 @@ pub use self::group_rust::{
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
+	get_group_key_from_server_output,
 	get_group_keys_from_server_output,
 	key_rotation,
 	prepare_change_rank,
@@ -200,6 +202,13 @@ Get the key data from str
 fn get_group_keys_from_server_output_internally(server_output: &str) -> Result<Vec<GroupKeyServerOutput>, SdkError>
 {
 	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
+
+	Ok(server_output)
+}
+
+fn get_group_key_from_server_output_internally(server_output: &str) -> Result<GroupKeyServerOutput, SdkError>
+{
+	let server_output: GroupKeyServerOutput = handle_server_response(server_output)?;
 
 	Ok(server_output)
 }

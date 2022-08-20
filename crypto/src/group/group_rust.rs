@@ -9,6 +9,7 @@ use crate::group::{
 	decrypt_group_keys_internally,
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
+	get_group_key_from_server_output_internally,
 	get_group_keys_from_server_output_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
@@ -65,6 +66,11 @@ pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: &Gro
 pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<GroupKeyServerOutput>, SdkError>
 {
 	get_group_keys_from_server_output_internally(server_output)
+}
+
+pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupKeyServerOutput, SdkError>
+{
+	get_group_key_from_server_output_internally(server_output)
 }
 
 pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
@@ -153,6 +159,16 @@ mod test
 
 		let keys = group_server_out.keys;
 
+		//server output for one key
+		let single_fetch = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(&keys[0]),
+		};
+		let single_fetch = serde_json::to_string(&single_fetch).unwrap();
+
+		//server output for multiple keys
 		let server_key_out = ServerOutput {
 			status: true,
 			err_msg: None,
@@ -167,6 +183,20 @@ mod test
 		let group_keys_from_server_out = decrypt_group_keys(&user.keys.private_key, &group_keys_from_server_out[0]).unwrap();
 
 		match (&key_data[0].group_key.key, &group_keys_from_server_out.group_key.key) {
+			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
+				assert_eq!(*k1, *k2);
+			},
+		}
+
+		//fetch the key single
+		let key = get_group_key_from_server_output(single_fetch.as_str()).unwrap();
+
+		let group_keys_from_single_server_out = decrypt_group_keys(&user.keys.private_key, &key).unwrap();
+
+		match (
+			&key_data[0].group_key.key,
+			&group_keys_from_single_server_out.group_key.key,
+		) {
 			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
 				assert_eq!(*k1, *k2);
 			},
