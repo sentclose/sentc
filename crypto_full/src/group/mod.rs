@@ -426,14 +426,14 @@ pub async fn prepare_done_key_rotation(base_url: String, auth_token: &str, jwt: 
 		let mut out_vec = Vec::with_capacity(out.len());
 
 		for key in out {
-			let (out_item, out_id, encrypted_eph_key_key_id) = (
+			let (out_item, pre_group_key_id, encrypted_eph_key_key_id) = (
 				serde_json::to_string(&key).map_err(|_| sentc_crypto::SdkError::JsonToStringFailed)?,
-				key.new_group_key_id,
+				key.previous_group_key_id,
 				key.encrypted_eph_key_key_id,
 			);
 
 			out_vec.push(KeyRotationGetOut {
-				pre_group_key_id: out_id,
+				pre_group_key_id,
 				encrypted_eph_key_key_id,
 				server_output: out_item,
 			});
