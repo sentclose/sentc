@@ -60,7 +60,7 @@ export async function run()
 
 	console.log("test encrypt with std group key");
 
-	const encrypted_by_user_1 = await group.encryptString("hello there");
+	const encrypted_by_user_1 = await group.encryptString("hello there £ Я a a");
 
 	try {
 		console.log("invite user");
