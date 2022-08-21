@@ -2,7 +2,7 @@
 const path = require("path");
 
 module.exports = {
-	entry: ["./lib/index.ts", "./tests/web_test/web/index.ts"],
+	entry: ["./src/index.ts", "./tests/web_test/web/index.ts"],
 	devtool: "inline-source-map",
 	mode: "production",
 	module: {
@@ -24,6 +24,7 @@ module.exports = {
 		]
 	},
 	resolve: {
+		//mainFields: ["browser", "main"],	//activate this to build the web test with cjs
 		extensions: [".tsx", ".ts", ".js"]
 	},
 	output: {

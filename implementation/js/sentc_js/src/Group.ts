@@ -38,7 +38,7 @@ import {
 	group_reject_join_req,
 	group_update_rank,
 	leave_group
-} from "../pkg";
+} from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {AbstractSymCrypto} from "./crypto/AbstractSymCrypto";
 import {User} from "./User";

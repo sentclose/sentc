@@ -5,7 +5,7 @@ import {
 	encrypt_raw_symmetric, encrypt_string_symmetric,
 	encrypt_symmetric, generate_and_register_sym_key, generate_non_register_sym_key, get_sym_key_by_id,
 	split_head_and_encrypted_data, split_head_and_encrypted_string
-} from "../../pkg";
+} from "sentc_wasm";
 import {AbstractCrypto} from "./AbstractCrypto";
 import {SymKey} from "./SymKey";
 

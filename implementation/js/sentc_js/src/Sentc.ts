@@ -17,7 +17,7 @@ import init, {
 	prepare_login_start,
 	prepare_login,
 	done_login, refresh_jwt, init_user
-} from "../pkg";
+} from "sentc_wasm";
 import {USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
 import {User} from "./User";

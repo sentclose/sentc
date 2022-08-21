@@ -3,7 +3,7 @@ import {
 	decrypt_raw_symmetric, decrypt_string_symmetric, decrypt_symmetric,
 	encrypt_raw_symmetric, encrypt_string_symmetric,
 	encrypt_symmetric
-} from "../../pkg";
+} from "sentc_wasm";
 
 /**
  * @author Jörn Heinemann <joernheinemann@gmx.de>

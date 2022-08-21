@@ -7,7 +7,7 @@ import {
 	group_join_req, group_prepare_create_group,
 	group_reject_invite, reset_password,
 	update_user
-} from "../pkg";
+} from "sentc_wasm";
 import {Sentc} from "./Sentc";
 import {getGroup} from "./Group";
 

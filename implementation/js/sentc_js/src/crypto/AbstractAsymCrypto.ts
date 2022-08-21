@@ -17,7 +17,7 @@ import {
 	get_sym_key_by_id_by_private_key,
 	split_head_and_encrypted_data,
 	split_head_and_encrypted_string
-} from "../../pkg";
+} from "sentc_wasm";
 import {SymKey} from "./SymKey";
 
 export abstract class AbstractAsymCrypto extends AbstractCrypto
