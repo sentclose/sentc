@@ -110,6 +110,13 @@ export async function run()
 		console.error(e);
 	}
 
+	console.log("member of group");
+	const member = await group.getMember();
+	console.log(member);
+
+	const member_user_2 = await group_for_user_2.getMember();
+	console.log(member_user_2);
+
 	try {
 		console.log("create and get child group");
 		
@@ -131,6 +138,13 @@ export async function run()
 		const decrypted_user_2 = await child_group_user_2.decryptString(encrypted_by_user_1);
 
 		console.log("encrypt result: ", decrypted_user_2);
+
+		console.log("member of child group");
+		const member = await child_group.getMember();
+		console.log(member);
+
+		const member_user_2 = await child_group_user_2.getMember();
+		console.log(member_user_2);
 	} catch (e) {
 		console.log(e);
 	}
