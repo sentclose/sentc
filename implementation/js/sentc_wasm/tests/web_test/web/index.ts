@@ -1,4 +1,5 @@
 import {Sentc} from "../../../lib";
+import {Group} from "../../../lib/Group";
 
 export async function run()
 {
@@ -62,6 +63,8 @@ export async function run()
 
 	const encrypted_by_user_1 = await group.encryptString("hello there £ Я a a");
 
+	let group_for_user_2: Group;
+
 	try {
 		console.log("invite user");
 
@@ -80,7 +83,7 @@ export async function run()
 
 		console.log("get group for the 2nd user");
 
-		const group_for_user_2 = await user_2.getGroup(group_id);
+		group_for_user_2 = await user_2.getGroup(group_id);
 
 		console.log("group key rotation");
 
@@ -106,6 +109,31 @@ export async function run()
 		// eslint-disable-next-line no-empty
 	} catch (e) {
 		console.error(e);
+	}
+
+	try {
+		console.log("create and get child group");
+		
+		const child_group_id = await group.createChildGroup();
+
+		//both get the child group and should test key rotation
+		const child_group = await group.getChildGroup(child_group_id);
+
+		const child_group_user_2 = await group_for_user_2.getChildGroup(child_group_id);
+
+		console.log("key rotation in child group");
+		//done key rotation is not needed for the 2nd user because he got already the keys from parent
+		await child_group.keyRotation();
+
+		console.log("test encrypt after key rotation in child group");
+
+		const encrypted_by_user_1 = await child_group.encryptString("hello there £ Я a a");
+
+		const decrypted_user_2 = await child_group_user_2.decryptString(encrypted_by_user_1);
+
+		console.log("encrypt result: ", decrypted_user_2);
+	} catch (e) {
+		console.log(e);
 	}
 
 	console.log("group delete");
