@@ -3,7 +3,7 @@
  * @since 2022/07/16
  */
 
-import {
+import init, {
 	register,
 	check_user_identifier_available,
 	prepare_register,
@@ -77,9 +77,7 @@ export class Sentc
 			return this.getActualUser(true);
 		}
 
-		//await init();	//init wasm
-
-		await import("sentc_wasm");
+		await init();	//init wasm
 
 		const base_url = options?.base_url ?? "http://127.0.0.1:3002";	//TODO change base url
 
