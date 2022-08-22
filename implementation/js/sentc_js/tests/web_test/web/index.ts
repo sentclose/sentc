@@ -7,6 +7,7 @@ export async function run()
 
 	await Sentc.init({
 		app_token: "RKXSJBwZu9Wrql3zyHxKkm3AbUqKrlpO2UU2XDBn"
+		//wasm_path: "http://localhost:8000/tests/web_test/web/dist/sentc_wasm_bg.wasm"
 	});
 
 	console.log("_________________________________");
