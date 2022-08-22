@@ -16,7 +16,9 @@ import init, {
 	user_fetch_verify_key,
 	prepare_login_start,
 	prepare_login,
-	done_login, refresh_jwt, init_user
+	done_login, refresh_jwt,
+	init_user,
+	InitInput
 } from "sentc_wasm";
 import {USER_KEY_STORAGE_NAMES, UserData, UserId} from "./Enities";
 import {ResCallBack, StorageFactory, StorageInterface} from "./core";
@@ -42,7 +44,8 @@ export interface SentcOptions {
 	base_url?: string,
 	app_token: string,
 	refresh?: RefreshOptions,
-	storage?: StorageOptions
+	storage?: StorageOptions,
+	wasm_path?: InitInput | Promise<InitInput>
 }
 
 export class Sentc
@@ -77,7 +80,7 @@ export class Sentc
 			return this.getActualUser(true);
 		}
 
-		await init();	//init wasm
+		await init(options.wasm_path);	//init wasm
 
 		const base_url = options?.base_url ?? "http://127.0.0.1:3002";	//TODO change base url
 
