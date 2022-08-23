@@ -28,7 +28,7 @@ module.exports = {
 		extensions: [".tsx", ".ts", ".js"]
 	},
 	output: {
-		filename: "[name].min.js",
+		filename: "sentc.min.js",
 		library: "Sentc",
 		libraryTarget: "umd",
 		clean: true,

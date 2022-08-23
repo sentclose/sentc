@@ -28,7 +28,7 @@ module.exports = {
 		extensions: [".tsx", ".ts", ".js"]
 	},
 	output: {
-		filename: "main.js",
+		filename: "sentc.js",
 		path: path.resolve(__dirname, "../tests/web_test/web/dist")
 	}
 };
