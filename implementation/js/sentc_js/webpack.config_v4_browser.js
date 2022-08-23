@@ -1,16 +1,16 @@
 /*
-Webpack config for webpack v4
+Webpack config for webpack v4 with only browser (no ssr):
 
-Problem in webpack v4:
-- can't handle import.meta.url which is used in sentc_wasm.js
-- won't bundle wasm files which are async fetched
-
-Solution:
-- use the cjs version (set resolve.mainFields: ["main"]) (this is important!)
-- use copy-webpack-plugin to copy the wasm file from your node_modules folder to your dist folder
-- finally use the url path to your dist folder in the sentc_options with wasm_path
+- use babel with babel-plugin-bundled-import-meta to change the import.meta.url
+- now the same as v4 in node solution
 
 Dependencies:
+"babel-loader": "^8.2.5",
+"@babel/preset-env": "^7.18.10",
+"@babel/core": "^7.18.10",
+
+"babel-plugin-bundled-import-meta": "^0.3.2",
+
 "copy-webpack-plugin": "^6.4.1",
 "webpack": "^4.46.0",
  */
@@ -38,6 +38,24 @@ module.exports = {
 					}
 				}],
 				exclude: /node_modules/
+			},
+			{
+				test: /\.m?js$/,
+				use: {
+					loader: "babel-loader",
+					options: {
+						presets: ["@babel/preset-env"],
+						plugins: [
+							[
+								"babel-plugin-bundled-import-meta",
+								{
+									"bundleDir": wasmOutDir,
+									"importStyle": "cjs"
+								}
+							]
+						]
+					}
+				}
 			}
 		]
 	},
@@ -49,7 +67,7 @@ module.exports = {
 		})
 	],
 	resolve: {
-		mainFields: ["main"],	//use common js
+		mainFields: ["browser", "main"],	//use common js
 		extensions: [".tsx", ".ts", ".js", ".wasm"]
 	},
 	output: {

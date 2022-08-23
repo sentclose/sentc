@@ -1,4 +1,4 @@
-import {Group, Sentc} from "../../../src";
+import Sentc, {Group} from "../../../src";
 
 export async function run()
 {
