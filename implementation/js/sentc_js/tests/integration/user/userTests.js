@@ -26,9 +26,11 @@ describe("User tests", () => {
 	it("should register and login a user", async function() {
 		const sentc = window.Sentc.default;
 
-		await sentc.register(username, pw);
+		const user_id = await sentc.register(username, pw);
 
 		user = await sentc.login(username, pw);
+
+		chai.assert.equal(user_id, user.user_data.user_id);
 	});
 
 	it("should delete the user", async function() {
