@@ -2,7 +2,7 @@
 const path = require("path");
 
 module.exports = {
-	entry: ["./src/index.ts", "./tests/web_test/web/index.ts"],
+	entry: ["./src/index.ts"],
 	devtool: "inline-source-map",
 	mode: "production",
 	module: {
@@ -12,7 +12,7 @@ module.exports = {
 				use: [{
 					loader: "ts-loader",
 					options: {
-						configFile: path.resolve(__dirname, "tsconfig.spec.json")
+						configFile: path.resolve(__dirname, "../tsconfig.spec.json")
 					}
 				}],
 				exclude: /node_modules/
@@ -28,7 +28,10 @@ module.exports = {
 		extensions: [".tsx", ".ts", ".js"]
 	},
 	output: {
-		filename: "main.js",
-		path: path.resolve(__dirname, "tests/web_test/web/dist")
+		filename: "[name].min.js",
+		library: "Sentc",
+		libraryTarget: "umd",
+		clean: true,
+		path: path.resolve(__dirname, "../tests/web_test/web_cdn/dist")
 	}
 };

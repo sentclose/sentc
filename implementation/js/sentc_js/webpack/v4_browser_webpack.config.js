@@ -18,6 +18,9 @@ Dependencies:
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
 
+/*
+Your path to the wasm file
+ */
 const wasmOutDir = path.resolve(__dirname, "../sentc_wasm/pkg");
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
