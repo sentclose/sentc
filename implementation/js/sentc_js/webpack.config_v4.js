@@ -6,17 +6,11 @@ Problem in webpack v4:
 - won't bundle wasm files which are async fetched
 
 Solution:
-- use babel with babel-plugin-bundled-import-meta to change the import.meta.url
+- use the cjs version (set resolve.mainFields: ["main"]) (this is important!)
 - use copy-webpack-plugin to copy the wasm file from your node_modules folder to your dist folder
 - finally use the url path to your dist folder in the sentc_options with wasm_path
 
 Dependencies:
-"babel-loader": "^8.2.5",
-"@babel/preset-env": "^7.18.10",
-"@babel/core": "^7.18.10",
-
-"babel-plugin-bundled-import-meta": "^0.3.2",
-
 "copy-webpack-plugin": "^6.4.1",
 "webpack": "^4.46.0",
  */
@@ -44,27 +38,6 @@ module.exports = {
 					}
 				}],
 				exclude: /node_modules/
-			},
-			{
-				test: /\.m?js$/,
-				use: {
-					loader: "babel-loader",
-					options: {
-						presets: ["@babel/preset-env"],
-						plugins: [
-							[
-								"babel-plugin-bundled-import-meta",
-								{
-									"mappings": {
-										"node_modules": "/assets"
-									},
-									"bundleDir": wasmOutDir,
-									"importStyle": "cjs"
-								}
-							]
-						]
-					}
-				}
 			}
 		]
 	},
@@ -76,7 +49,7 @@ module.exports = {
 		})
 	],
 	resolve: {
-		//mainFields: ["browser", "main"],	//activate this to build the web test with cjs
+		mainFields: ["main"],	//use common js
 		extensions: [".tsx", ".ts", ".js", ".wasm"]
 	},
 	output: {
