@@ -108,5 +108,5 @@ pub(crate) fn out_error(code: &str, message: &str) -> String
 {
 	//create the error in json to communicate with the other implementations, so they can use their own error handling
 
-	format!("{{\"status\": {}, \"error_message\": \"{}\"}}", code, message)
+	format!("{{\"status\": \"{}\", \"error_message\": \"{}\"}}", code, message)
 }
