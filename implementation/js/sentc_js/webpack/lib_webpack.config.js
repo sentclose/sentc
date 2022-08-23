@@ -12,7 +12,7 @@ module.exports = {
 				use: [{
 					loader: "ts-loader",
 					options: {
-						configFile: path.resolve(__dirname, "tsconfig.spec.json")
+						configFile: path.resolve(__dirname, "../tsconfig.spec.json")
 					}
 				}],
 				exclude: /node_modules/
@@ -29,6 +29,6 @@ module.exports = {
 	},
 	output: {
 		filename: "main.js",
-		path: path.resolve(__dirname, "tests/web_test/web/dist")
+		path: path.resolve(__dirname, "../tests/web_test/web/dist")
 	}
 };
