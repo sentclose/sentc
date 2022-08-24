@@ -1,3 +1,6 @@
 [submodule "sdk-common"]
 	path = sdk-common
 	url = git@gitlab.com:sentclose/sentc/sdk-common.git
+[submodule "implementation/js/sentc_js"]
+	path = implementation/js/sentc_js
+	url = git@gitlab.com:sentclose/sentc/sdk-implementations/sentc-javascript.git
