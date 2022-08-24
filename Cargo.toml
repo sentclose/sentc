@@ -5,7 +5,7 @@ members = [
     "crypto_full",
     "sdk-common",
     "implementation/js/sentc_wasm",
-    "implementation/dart/sentc/rust"
+    "implementation/dart/sentc_flutter_rust"
 ]
 
 [profile.release]
