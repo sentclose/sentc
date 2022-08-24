@@ -12,7 +12,8 @@
     "sentc_wasm_bjs.js",
     "sentc_wasm_bg.wasm",
     "sentc_wasm.js",
-    "sentc_wasm.d.ts"
+    "sentc_wasm.d.ts",
+    "LICENSE"
   ],
   "main": "sentc_wasm_cjs.js",
   "browser": "sentc_wasm_bjs.js",
