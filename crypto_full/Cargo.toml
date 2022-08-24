@@ -13,7 +13,7 @@ sentc-crypto-common = {version = "0.1.0", path = "../sdk-common"}
 
 #_______________________________________________________________________________________________________________________
 # req handling
-reqwest = {version = "0.11.11", optional = true}
+reqwest = {version = "0.11.11", optional = true, default-features = false}
 
 wasm-bindgen = {version = "0.2.74", optional = true}
 
@@ -28,7 +28,12 @@ serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
 
 [features]
-default = ["sentc-crypto/default","reqwest"]
-rust = ["sentc-crypto/rust","reqwest"]
+default = ["sentc-crypto/default","reqwest/default"]
+
+default_rustls = ["sentc-crypto/default","reqwest/rustls-tls"]
+
+rust = ["sentc-crypto/rust","reqwest/default"]
+
+rust_rustls = ["sentc-crypto/rust","reqwest/rustls-tls"]
 
 wasm = ["sentc-crypto/default","wasm-bindgen","wasm-bindgen-futures","web-sys"]
