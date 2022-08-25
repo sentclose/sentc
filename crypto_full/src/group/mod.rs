@@ -18,11 +18,13 @@ use sentc_crypto_common::group::{
 	GroupUserListItem,
 	KeyRotationInput,
 	KeyRotationStartServerOutput,
+	ListGroups,
 };
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{
 	DataRes,
+	GroupListRes,
 	InviteListRes,
 	JoinReqListRes,
 	KeyFetchRes,
@@ -39,6 +41,7 @@ pub(crate) use self::non_rust::{
 #[cfg(feature = "rust")]
 pub(crate) use self::rust::{
 	DataRes,
+	GroupListRes,
 	InviteListRes,
 	JoinReqListRes,
 	KeyFetchRes,
@@ -177,6 +180,18 @@ pub async fn get_group_updates(base_url: String, auth_token: &str, jwt: &str, id
 	let out: GroupDataCheckUpdateServerOutput = handle_server_response(res.as_str())?;
 
 	Ok(out)
+}
+
+pub async fn get_groups_for_user(base_url: String, auth_token: &str, jwt: &str, last_fetched_time: &str, last_fetched_group_id: &str)
+	-> GroupListRes
+{
+	let url = base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_fetched_group_id;
+
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	let list: Vec<ListGroups> = handle_server_response(res.as_str())?;
+
+	Ok(list)
 }
 
 //__________________________________________________________________________________________________
