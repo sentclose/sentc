@@ -54,10 +54,33 @@ impl From<sentc_crypto::util::UserData> for UserData
 	}
 }
 
-//real usage
-pub fn register(user_identifier: String, password: String) -> Result<String>
+pub fn prepare_register(user_identifier: String, password: String) -> Result<String>
 {
 	user::register(user_identifier.as_str(), password.as_str()).map_err(|err| anyhow!(err))
+}
+
+pub fn done_register(server_output: String) -> Result<String>
+{
+	user::done_register(server_output.as_str()).map_err(|err| anyhow!(err))
+}
+
+pub fn register(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String>
+{
+	let rt = Runtime::new().unwrap();
+
+	let data = rt
+		.block_on(async {
+			sentc_crypto_full::user::register(
+				base_url,
+				auth_token.as_str(),
+				user_identifier.as_str(),
+				password.as_str(),
+			)
+			.await
+		})
+		.map_err(|err| anyhow!(err))?;
+
+	Ok(data)
 }
 
 pub fn prepare_login(user_identifier: String, password: String, server_output: String) -> Result<PrepareLoginOutput>

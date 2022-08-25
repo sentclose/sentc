@@ -18,7 +18,44 @@ use flutter_rust_bridge::*;
 // Section: wire functions
 
 #[no_mangle]
-pub extern "C" fn wire_register(port_: i64, user_identifier: *mut wire_uint_8_list, password: *mut wire_uint_8_list) {
+pub extern "C" fn wire_prepare_register(port_: i64, user_identifier: *mut wire_uint_8_list, password: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "prepare_register",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_user_identifier = user_identifier.wire2api();
+			let api_password = password.wire2api();
+			move |task_callback| prepare_register(api_user_identifier, api_password)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_done_register(port_: i64, server_output: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "done_register",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_server_output = server_output.wire2api();
+			move |task_callback| done_register(api_server_output)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_register(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	user_identifier: *mut wire_uint_8_list,
+	password: *mut wire_uint_8_list,
+) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
 			debug_name: "register",
@@ -26,9 +63,11 @@ pub extern "C" fn wire_register(port_: i64, user_identifier: *mut wire_uint_8_li
 			mode: FfiCallMode::Normal,
 		},
 		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
 			let api_user_identifier = user_identifier.wire2api();
 			let api_password = password.wire2api();
-			move |task_callback| register(api_user_identifier, api_password)
+			move |task_callback| register(api_base_url, api_auth_token, api_user_identifier, api_password)
 		},
 	)
 }
