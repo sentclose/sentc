@@ -407,6 +407,27 @@ pub async fn group_get_group_updates(
 	})
 }
 
+#[wasm_bindgen]
+pub async fn group_get_groups_for_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<JsValue, JsValue>
+{
+	let out = sentc_crypto_full::group::get_groups_for_user(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_group_id.as_str(),
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
+}
+
 //__________________________________________________________________________________________________
 //invite
 
