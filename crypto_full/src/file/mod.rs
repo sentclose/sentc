@@ -74,16 +74,17 @@ pub async fn upload_part(
 	jwt: &str,
 	session_id: &str,
 	end: bool,
-	part: &[u8],
+	sequence: i32,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
 	#[cfg(not(feature = "rust"))] sign_key: &str,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
+	part: &[u8],
 ) -> VoidRes
 {
 	let encrypted = sentc_crypto::crypto::encrypt_symmetric(content_key, part, sign_key)?;
 
-	let url = base_url + "/api/v1/file/part/" + session_id + "/end/" + end.to_string().as_str();
+	let url = base_url + "/api/v1/file/part/" + session_id + "/seq/" + sequence.to_string().as_str() + "/end/" + end.to_string().as_str();
 
 	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt)).await?;
 
