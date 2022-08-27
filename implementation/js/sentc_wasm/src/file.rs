@@ -105,6 +105,7 @@ pub async fn file_upload_part(
 	jwt: String,
 	session_id: String,
 	end: bool,
+	sequence: i32,
 	content_key: String,
 	sign_key: String,
 	part: Vec<u8>,
@@ -116,9 +117,10 @@ pub async fn file_upload_part(
 		jwt.as_str(),
 		session_id.as_str(),
 		end,
-		&part,
+		sequence,
 		content_key.as_str(),
 		sign_key.as_str(),
+		&part,
 	)
 	.await?;
 
