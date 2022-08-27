@@ -29,6 +29,32 @@ pub async fn make_req_buffer(
 	Ok(buffer)
 }
 
+pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &str, body: Vec<u8>, jwt: Option<&str>) -> Result<String, SdkFullError>
+{
+	let client = reqwest::Client::new();
+
+	let builder = match method {
+		HttpMethod::GET => client.get(url),
+		HttpMethod::POST => client.post(url),
+		HttpMethod::PUT => client.put(url),
+		HttpMethod::PATCH => client.patch(url),
+		HttpMethod::DELETE => client.delete(url),
+	};
+
+	let builder = builder.header("x-sentc-app-token", auth_token);
+
+	let builder = match jwt {
+		Some(j) => builder.header(AUTHORIZATION, auth_header(j)),
+		None => builder,
+	};
+
+	let builder = builder.body(body);
+
+	let res = builder.send().await.map_err(|e| handle_req_err(e))?;
+
+	res.text().await.map_err(|e| handle_req_err(e))
+}
+
 async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<Response, SdkFullError>
 {
 	let client = reqwest::Client::new();
