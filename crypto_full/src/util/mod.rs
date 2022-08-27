@@ -9,4 +9,4 @@ pub fn auth_header(jwt: &str) -> String
 	format!("Bearer {}", jwt)
 }
 
-pub use self::http::{make_non_auth_req, make_req, HttpMethod};
+pub use self::http::{make_non_auth_req, make_req, make_req_buffer, HttpMethod};

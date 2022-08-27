@@ -7,9 +7,9 @@ use alloc::string::String;
 use core::future::Future;
 
 #[cfg(not(feature = "wasm"))]
-pub use self::http_reqwest::make_req;
+pub use self::http_reqwest::{make_req, make_req_buffer};
 #[cfg(feature = "wasm")]
-pub use self::http_wasm::make_req;
+pub use self::http_wasm::{make_req, make_req_buffer};
 use crate::error::SdkFullError;
 
 pub fn make_non_auth_req<'a>(

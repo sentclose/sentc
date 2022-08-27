@@ -21,6 +21,8 @@ wasm-bindgen-futures = {version = "0.4.31", optional = true}
 
 web-sys = {version = "0.3.4", optional = true, features = ['Headers', 'Request','RequestInit','RequestMode', 'Response','Window']}
 
+js-sys = {version = "0.3.58", optional = true}
+
 #_______________________________________________________________________________________________________________________
 # to decode the jwt to check the exp
 base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}
@@ -36,4 +38,4 @@ rust = ["sentc-crypto/rust","reqwest/default"]
 
 rust_rustls = ["sentc-crypto/rust","reqwest/rustls-tls"]
 
-wasm = ["sentc-crypto/default","wasm-bindgen","wasm-bindgen-futures","web-sys"]
+wasm = ["sentc-crypto/default","wasm-bindgen","wasm-bindgen-futures","web-sys","js-sys"]

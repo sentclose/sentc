@@ -1,11 +1,35 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use reqwest::header::AUTHORIZATION;
+use reqwest::Response;
 
 use crate::error::SdkFullError;
 use crate::util::{auth_header, HttpMethod};
 
 pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<String, SdkFullError>
+{
+	let res = make_req_raw(method, url, auth_token, body, jwt).await?;
+
+	res.text().await.map_err(|e| handle_req_err(e))
+}
+
+pub async fn make_req_buffer(
+	method: HttpMethod,
+	url: &str,
+	auth_token: &str,
+	body: Option<String>,
+	jwt: Option<&str>,
+) -> Result<Vec<u8>, SdkFullError>
+{
+	let res = make_req_raw(method, url, auth_token, body, jwt).await?;
+
+	let buffer = res.bytes().await.map_err(|e| handle_req_err(e))?.to_vec();
+
+	Ok(buffer)
+}
+
+async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<Response, SdkFullError>
 {
 	let client = reqwest::Client::new();
 
@@ -31,7 +55,7 @@ pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 
 	let res = builder.send().await.map_err(|e| handle_req_err(e))?;
 
-	res.text().await.map_err(|e| handle_req_err(e))
+	Ok(res)
 }
 
 fn handle_req_err(error: reqwest::Error) -> SdkFullError
