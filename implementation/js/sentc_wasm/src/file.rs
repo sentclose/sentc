@@ -89,3 +89,38 @@ pub async fn file_download_and_decrypt_file_part(
 	//fastest way to convert vec to Uint8Array
 	Ok(unsafe { Uint8Array::view(&out) })
 }
+
+//__________________________________________________________________________________________________
+
+#[wasm_bindgen]
+pub async fn file_register_file(base_url: String, auth_token: String, jwt: String, content_key: String) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto_full::file::register_file(base_url, auth_token.as_str(), jwt.as_str(), content_key.as_str()).await?)
+}
+
+#[wasm_bindgen]
+pub async fn file_upload_part(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	session_id: String,
+	end: bool,
+	content_key: String,
+	sign_key: String,
+	part: Vec<u8>,
+) -> Result<(), JsValue>
+{
+	sentc_crypto_full::file::upload_part(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		session_id.as_str(),
+		end,
+		&part,
+		content_key.as_str(),
+		sign_key.as_str(),
+	)
+	.await?;
+
+	Ok(())
+}
