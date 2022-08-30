@@ -1,5 +1,6 @@
 use alloc::string::String;
 
+use crate::file::{done_register_file_internally, prepare_register_file_internally};
 use crate::{SdkError, SymKeyFormat};
 
 pub fn prepare_register_file(key: &SymKeyFormat) -> Result<String, SdkError>
