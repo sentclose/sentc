@@ -17,7 +17,7 @@ pub use self::rust::{ByteRes, FileRegRes, FileRes, VoidRes};
 
 pub async fn download_file_meta(base_url: String, auth_token: &str, jwt: &str, file_id: &str) -> FileRes
 {
-	let url = base_url + "/api/v1/file/meta/" + file_id;
+	let url = base_url + "/api/v1/file/" + file_id;
 
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
