@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use js_sys::Uint8Array;
-use sentc_crypto_common::file::BelongsToType;
+use sentc_crypto_common::file::{BelongsToType, FilePartListItem};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -12,7 +12,7 @@ pub struct FileData
 	belongs_to: Option<String>,
 	belongs_to_type: BelongsToType,
 	key_id: String,
-	part_list: Vec<String>,
+	part_list: Vec<FilePartListItem>,
 }
 
 impl From<sentc_crypto_common::file::FileData> for FileData
@@ -93,9 +93,24 @@ pub async fn file_download_and_decrypt_file_part(
 //__________________________________________________________________________________________________
 
 #[wasm_bindgen]
-pub async fn file_register_file(base_url: String, auth_token: String, jwt: String, content_key: String) -> Result<String, JsValue>
+pub async fn file_register_file(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	content_key: String,
+	belongs_to_id: String,
+	belongs_to_type: String,
+) -> Result<String, JsValue>
 {
-	Ok(sentc_crypto_full::file::register_file(base_url, auth_token.as_str(), jwt.as_str(), content_key.as_str()).await?)
+	Ok(sentc_crypto_full::file::register_file(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		content_key.as_str(),
+		belongs_to_id.as_str(),
+		belongs_to_type.as_str(),
+	)
+	.await?)
 }
 
 #[wasm_bindgen]

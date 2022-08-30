@@ -55,9 +55,13 @@ pub async fn register_file(
 	jwt: &str,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
+	#[cfg(not(feature = "rust"))] belongs_to_id: &str,
+	#[cfg(feature = "rust")] belongs_to_id: Option<String>,
+	#[cfg(not(feature = "rust"))] belongs_to_type: &str,
+	#[cfg(feature = "rust")] belongs_to_type: sentc_crypto_common::file::BelongsToType,
 ) -> FileRegRes
 {
-	let input = sentc_crypto::file::prepare_register_file(content_key)?;
+	let input = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type)?;
 
 	let url = base_url + "/api/v1/file/";
 

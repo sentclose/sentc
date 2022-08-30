@@ -5,7 +5,7 @@ mod file_rust;
 
 use alloc::string::String;
 
-use sentc_crypto_common::file::{FileRegisterInput, FileRegisterOutput};
+use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::FileSessionId;
 
 #[cfg(not(feature = "rust"))]
@@ -16,12 +16,15 @@ use crate::util::public::handle_server_response;
 use crate::util::SymKeyFormatInt;
 use crate::SdkError;
 
-fn prepare_register_file_internally(key: &SymKeyFormatInt) -> Result<String, SdkError>
+fn prepare_register_file_internally(key: &SymKeyFormatInt, belongs_to_id: Option<String>, belongs_to_type: BelongsToType)
+	-> Result<String, SdkError>
 {
 	let key_id = key.key_id.clone();
 
 	serde_json::to_string(&FileRegisterInput {
 		key_id,
+		belongs_to_id,
+		belongs_to_type,
 	})
 	.map_err(|_e| SdkError::JsonToStringFailed)
 }
