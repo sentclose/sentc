@@ -9,4 +9,4 @@ pub type FileRes = Result<FileData, SdkFullError>;
 pub type ByteRes = Result<Vec<u8>, SdkFullError>;
 pub type VoidRes = Result<(), SdkFullError>;
 
-pub type FileRegRes = Result<String, SdkFullError>;
+pub type FileRegRes = Result<(String, String), SdkFullError>;

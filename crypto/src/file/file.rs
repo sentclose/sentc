@@ -24,7 +24,7 @@ pub fn prepare_register_file(key: &str, belongs_to_id: &str, belongs_to_type: &s
 	)?)
 }
 
-pub fn done_register_file(server_output: &str) -> Result<String, String>
+pub fn done_register_file(server_output: &str) -> Result<(String, String), String>
 {
 	Ok(done_register_file_internally(server_output)?)
 }

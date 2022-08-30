@@ -59,6 +59,27 @@ impl FileData
 }
 
 #[wasm_bindgen]
+pub struct FileRegisterOutput
+{
+	file_id: String,
+	session_id: String,
+}
+
+#[wasm_bindgen]
+impl FileRegisterOutput
+{
+	pub fn get_file_id(&self) -> String
+	{
+		self.file_id.clone()
+	}
+
+	pub fn get_session_id(&self) -> String
+	{
+		self.session_id.clone()
+	}
+}
+
+#[wasm_bindgen]
 pub async fn file_download_file_meta(base_url: String, auth_token: String, jwt: String, id: String) -> Result<FileData, JsValue>
 {
 	let out = sentc_crypto_full::file::download_file_meta(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
@@ -100,9 +121,9 @@ pub async fn file_register_file(
 	content_key: String,
 	belongs_to_id: String,
 	belongs_to_type: String,
-) -> Result<String, JsValue>
+) -> Result<FileRegisterOutput, JsValue>
 {
-	Ok(sentc_crypto_full::file::register_file(
+	let (file_id, session_id) = sentc_crypto_full::file::register_file(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -110,7 +131,12 @@ pub async fn file_register_file(
 		belongs_to_id.as_str(),
 		belongs_to_type.as_str(),
 	)
-	.await?)
+	.await?;
+
+	Ok(FileRegisterOutput {
+		file_id,
+		session_id,
+	})
 }
 
 #[wasm_bindgen]

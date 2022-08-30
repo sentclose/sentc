@@ -6,7 +6,7 @@ mod file_rust;
 use alloc::string::String;
 
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
-use sentc_crypto_common::FileSessionId;
+use sentc_crypto_common::{FileId, FileSessionId};
 
 #[cfg(not(feature = "rust"))]
 pub use self::file::{done_register_file, prepare_register_file};
@@ -29,9 +29,9 @@ fn prepare_register_file_internally(key: &SymKeyFormatInt, belongs_to_id: Option
 	.map_err(|_e| SdkError::JsonToStringFailed)
 }
 
-fn done_register_file_internally(server_output: &str) -> Result<FileSessionId, SdkError>
+fn done_register_file_internally(server_output: &str) -> Result<(FileId, FileSessionId), SdkError>
 {
 	let out: FileRegisterOutput = handle_server_response(server_output)?;
 
-	Ok(out.session_id)
+	Ok((out.file_id, out.session_id))
 }
