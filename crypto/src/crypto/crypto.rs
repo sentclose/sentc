@@ -398,7 +398,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
 		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), "").unwrap();
 
@@ -415,7 +415,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
 		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), user.keys.sign_key.as_str()).unwrap();
 
@@ -427,7 +427,7 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_asym_raw()
 	{
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let user = create_user();
 
 		let (head, encrypted) = encrypt_raw_asymmetric(user.keys.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
@@ -440,7 +440,7 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_asym_raw_with_sig()
 	{
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let user = create_user();
 
 		let (head, encrypted) = encrypt_raw_asymmetric(
@@ -468,7 +468,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
 		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), "").unwrap();
 
@@ -485,7 +485,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
 		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), user.keys.sign_key.as_str()).unwrap();
 
@@ -497,7 +497,7 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_asym()
 	{
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let user = create_user();
 
 		let encrypted = encrypt_asymmetric(user.keys.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
@@ -510,7 +510,7 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_asym_with_sig()
 	{
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let user = create_user();
 
 		let encrypted = encrypt_asymmetric(
@@ -537,7 +537,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
 		let encrypted = encrypt_string_symmetric(group_key, text, "").unwrap();
 
@@ -554,7 +554,7 @@ mod test
 		let (_, key_data, _) = create_group(&user.keys);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
 		let encrypted = encrypt_string_symmetric(group_key, text, user.keys.sign_key.as_str()).unwrap();
 
@@ -566,7 +566,7 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_string_asym()
 	{
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍";
 		let user = create_user();
 
 		let encrypted = encrypt_string_asymmetric(user.keys.exported_public_key.as_str(), text, "").unwrap();
@@ -579,7 +579,7 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_string_asym_with_sig()
 	{
-		let text = "123*+^êéèüöß@€&$";
+		let text = "123*+^êéèüöß@€&$ 👍";
 		let user = create_user();
 
 		let encrypted = encrypt_string_asymmetric(
