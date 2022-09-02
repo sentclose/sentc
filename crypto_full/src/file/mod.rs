@@ -1,7 +1,8 @@
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto_common::file::FileData;
+use sentc_crypto_common::file::{FileData, FilePartListItem};
 
 use crate::util::{make_req, make_req_buffer, make_req_buffer_body, HttpMethod};
 
@@ -11,25 +12,62 @@ mod non_rust;
 mod rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::non_rust::{ByteRes, FileRegRes, FileRes, VoidRes};
+pub use self::non_rust::{ByteRes, FilePartRes, FileRegRes, FileRes, VoidRes};
 #[cfg(feature = "rust")]
-pub use self::rust::{ByteRes, FileRegRes, FileRes, VoidRes};
+pub use self::rust::{ByteRes, FilePartRes, FileRegRes, FileRes, VoidRes};
 
-pub async fn download_file_meta(base_url: String, auth_token: &str, jwt: &str, file_id: &str) -> FileRes
+pub async fn download_file_meta(
+	base_url: String,
+	auth_token: &str,
+	file_id: &str,
+	#[cfg(not(feature = "rust"))] jwt: &str,
+	#[cfg(feature = "rust")] jwt: Option<&str>,
+	#[cfg(not(feature = "rust"))] group_id: &str,
+	#[cfg(feature = "rust")] group_id: Option<&str>,
+) -> FileRes
 {
-	let url = base_url + "/api/v1/file/" + file_id;
+	#[cfg(not(feature = "rust"))]
+	let jwt = {
+		match jwt {
+			"" => None,
+			_ => Some(jwt),
+		}
+	};
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	#[cfg(not(feature = "rust"))]
+	let group_id = {
+		match group_id {
+			"" => None,
+			_ => Some(group_id),
+		}
+	};
+
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/file/" + file_id,
+		None => base_url + "/api/v1/file/" + file_id,
+	};
+
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, jwt).await?;
 
 	let file_data: FileData = handle_server_response(res.as_str())?;
 
 	Ok(file_data)
 }
 
+pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &str, last_sequence: &str) -> FilePartRes
+{
+	let url = base_url + "/api/v1/file/" + file_id + "/part_fetch/" + last_sequence;
+
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, None).await?;
+
+	let file_parts: Vec<FilePartListItem> = handle_server_response(res.as_str())?;
+
+	Ok(file_parts)
+}
+
 pub async fn download_and_decrypt_file_part(
 	base_url: String,
 	auth_token: &str,
-	jwt: &str,
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
@@ -39,7 +77,7 @@ pub async fn download_and_decrypt_file_part(
 {
 	let url = base_url + "/api/v1/file/part/" + part_id;
 
-	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None).await?;
 
 	//decrypt the part
 	let decrypted = sentc_crypto::crypto::decrypt_symmetric(content_key, &res, verify_key_data)?;
@@ -59,11 +97,26 @@ pub async fn register_file(
 	#[cfg(feature = "rust")] belongs_to_id: Option<String>,
 	#[cfg(not(feature = "rust"))] belongs_to_type: &str,
 	#[cfg(feature = "rust")] belongs_to_type: sentc_crypto_common::file::BelongsToType,
+	#[cfg(not(feature = "rust"))] file_name: &str,
+	#[cfg(feature = "rust")] file_name: Option<String>,
+	#[cfg(not(feature = "rust"))] group_id: &str,
+	#[cfg(feature = "rust")] group_id: Option<&str>,
 ) -> FileRegRes
 {
-	let input = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type)?;
+	let input = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
 
-	let url = base_url + "/api/v1/file/";
+	#[cfg(not(feature = "rust"))]
+	let group_id = {
+		match group_id {
+			"" => None,
+			_ => Some(group_id),
+		}
+	};
+
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/file",
+		None => base_url + "/api/v1/file",
+	};
 
 	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
