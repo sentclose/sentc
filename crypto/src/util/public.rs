@@ -11,8 +11,6 @@ use sentc_crypto_core::generate_salt;
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use serde::{Deserialize, Serialize};
 
-#[cfg(not(feature = "rust"))]
-use crate::err_to_msg;
 use crate::error::SdkError;
 use crate::util::client_random_value_from_string;
 
@@ -54,7 +52,7 @@ pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
 #[cfg(not(feature = "rust"))]
 pub fn handle_general_server_response(res: &str) -> Result<(), String>
 {
-	handle_server_response::<ServerSuccessOutput>(res).map_err(|e| err_to_msg(e))?;
+	handle_server_response::<ServerSuccessOutput>(res)?;
 
 	Ok(())
 }
@@ -115,16 +113,16 @@ pub fn import_verify_key_from_string_into_format(verify_key: &str) -> Result<Use
 #[cfg(not(feature = "rust"))]
 pub fn import_public_data_from_string_into_export_string(public_data: &str) -> Result<(String, EncryptionKeyPairId, String, SignKeyPairId), String>
 {
-	let (public_key, verify_key) = import_public_data_from_string_into_format(public_data).map_err(|e| err_to_msg(e))?;
+	let (public_key, verify_key) = import_public_data_from_string_into_format(public_data)?;
 
 	Ok((
 		public_key
 			.to_string()
-			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+			.map_err(|_| SdkError::JsonToStringFailed)?,
 		public_key.public_key_id,
 		verify_key
 			.to_string()
-			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+			.map_err(|_| SdkError::JsonToStringFailed)?,
 		verify_key.verify_key_id,
 	))
 }
@@ -132,12 +130,12 @@ pub fn import_public_data_from_string_into_export_string(public_data: &str) -> R
 #[cfg(not(feature = "rust"))]
 pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<(String, EncryptionKeyPairId), String>
 {
-	let public_key = import_public_key_from_string_into_format(public_key).map_err(|e| err_to_msg(e))?;
+	let public_key = import_public_key_from_string_into_format(public_key)?;
 
 	Ok((
 		public_key
 			.to_string()
-			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+			.map_err(|_| SdkError::JsonToStringFailed)?,
 		public_key.public_key_id,
 	))
 }
@@ -145,12 +143,12 @@ pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Res
 #[cfg(not(feature = "rust"))]
 pub fn import_verify_key_from_string_into_export_string(verify_key: &str) -> Result<(String, SignKeyPairId), String>
 {
-	let public_key = import_verify_key_from_string_into_format(verify_key).map_err(|e| err_to_msg(e))?;
+	let public_key = import_verify_key_from_string_into_format(verify_key)?;
 
 	Ok((
 		public_key
 			.to_string()
-			.map_err(|_| err_to_msg(SdkError::JsonToStringFailed))?,
+			.map_err(|_| SdkError::JsonToStringFailed)?,
 		public_key.verify_key_id,
 	))
 }

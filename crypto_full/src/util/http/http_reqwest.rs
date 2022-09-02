@@ -3,6 +3,8 @@ use alloc::vec::Vec;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::Response;
+use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 
 use crate::error::SdkFullError;
 use crate::util::{auth_header, HttpMethod};
@@ -23,6 +25,12 @@ pub async fn make_req_buffer(
 ) -> Result<Vec<u8>, SdkFullError>
 {
 	let res = make_req_raw(method, url, auth_token, body, jwt).await?;
+
+	if res.status().as_u16() >= 400 {
+		let text = res.text().await.map_err(|e| handle_req_err(e))?;
+		handle_server_response::<ServerSuccessOutput>(text.as_str())?;
+		return Ok(Vec::new());
+	}
 
 	let buffer = res.bytes().await.map_err(|e| handle_req_err(e))?.to_vec();
 

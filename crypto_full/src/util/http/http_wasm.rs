@@ -2,6 +2,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use js_sys::Uint8Array;
+use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
@@ -32,6 +34,25 @@ pub async fn make_req_buffer(
 ) -> Result<Vec<u8>, SdkFullError>
 {
 	let resp = make_req_raw(method, url, auth_token, body, jwt).await?;
+
+	let status = resp.status();
+
+	if status >= 400 {
+		//don't download part when there is an error
+		let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErr)?)
+			.await
+			.map_err(|_| SdkFullError::ResponseErr)?;
+
+		let text = match text.as_string() {
+			Some(v) => v,
+			None => return Err(SdkFullError::ResponseErr),
+		};
+
+		//when status is 400 then there is an error and handle server response will return the error
+
+		handle_server_response::<ServerSuccessOutput>(text.as_str())?;
+		return Ok(Vec::new());
+	}
 
 	let buffer = JsFuture::from(resp.array_buffer().map_err(|_| SdkFullError::ResponseErr)?)
 		.await
