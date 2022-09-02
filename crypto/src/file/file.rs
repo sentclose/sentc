@@ -6,7 +6,7 @@ use crate::file::{done_register_file_internally, prepare_register_file_internall
 use crate::util::import_sym_key;
 use crate::SdkError;
 
-pub fn prepare_register_file(key: &str, belongs_to_id: &str, belongs_to_type: &str) -> Result<String, String>
+pub fn prepare_register_file(key: &str, belongs_to_id: &str, belongs_to_type: &str, file_name: &str) -> Result<String, String>
 {
 	let key = import_sym_key(key)?;
 
@@ -15,12 +15,18 @@ pub fn prepare_register_file(key: &str, belongs_to_id: &str, belongs_to_type: &s
 		_ => Some(belongs_to_id.to_string()),
 	};
 
+	let file_name = match file_name {
+		"" => None,
+		_ => Some(file_name.to_string()),
+	};
+
 	let belongs_to_type: BelongsToType = serde_json::from_str(belongs_to_type).map_err(|e| SdkError::JsonParseFailed(e))?;
 
 	Ok(prepare_register_file_internally(
 		&key,
 		belongs_to_id,
 		belongs_to_type,
+		file_name,
 	)?)
 }
 
