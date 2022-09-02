@@ -330,7 +330,8 @@ fn decrypt_asymmetric_internally(
 	)?)
 }
 
-fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &str, sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
+pub(crate) fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &str, sign_key: Option<&SignKeyFormatInt>)
+	-> Result<String, SdkError>
 {
 	let encrypted = encrypt_symmetric_internally(key, data.as_bytes(), sign_key)?;
 

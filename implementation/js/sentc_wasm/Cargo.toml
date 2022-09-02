@@ -1,6 +1,6 @@
 [package]
 name = "sentc_wasm"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "Wasm for sentc. End-to-end encryption sdk"
@@ -17,12 +17,14 @@ sentc-crypto = {version = "0.1.0", path = "../../../crypto"}
 
 sentc-crypto-full = {version = "0.1.0", path = "../../../crypto_full", default-features = false, features = ["wasm"]}
 
+sentc-crypto-common = {version = "0.1.0", path = "../../../sdk-common"}
+
 # must be js feature for wasm
 getrandom = { version = "0.2", features = ["js"] }
 
 # wasm dep
 wasm-bindgen = {version = "0.2.74", features = ["serde-serialize"]}
-#js-sys = "0.3.58"
+js-sys = "0.3.58"
 
 # sha2 with non std
 sha2 = { version = "0.10", default-features = false }

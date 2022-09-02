@@ -170,6 +170,22 @@ pub struct KeyRotationInput
 	new_group_key_id: String,
 }
 
+impl From<sentc_crypto_common::group::KeyRotationInput> for KeyRotationInput
+{
+	fn from(out: sentc_crypto_common::group::KeyRotationInput) -> Self
+	{
+		Self {
+			encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
+			encrypted_group_key_by_ephemeral: out.encrypted_group_key_by_ephemeral,
+			ephemeral_alg: out.ephemeral_alg,
+			encrypted_eph_key_key_id: out.encrypted_eph_key_key_id,
+			previous_group_key_id: out.previous_group_key_id,
+			time: out.time,
+			new_group_key_id: out.new_group_key_id,
+		}
+	}
+}
+
 #[wasm_bindgen]
 impl KeyRotationInput
 {
@@ -730,15 +746,7 @@ pub fn group_get_done_key_rotation_server_input(server_output: &str) -> Result<K
 {
 	let out = group::get_done_key_rotation_server_input(server_output)?;
 
-	Ok(KeyRotationInput {
-		encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
-		encrypted_group_key_by_ephemeral: out.encrypted_group_key_by_ephemeral,
-		ephemeral_alg: out.ephemeral_alg,
-		encrypted_eph_key_key_id: out.encrypted_eph_key_key_id,
-		previous_group_key_id: out.previous_group_key_id,
-		time: out.time,
-		new_group_key_id: out.new_group_key_id,
-	})
+	Ok(out.into())
 }
 
 #[wasm_bindgen]

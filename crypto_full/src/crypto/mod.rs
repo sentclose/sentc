@@ -22,7 +22,7 @@ pub async fn register_sym_key(
 	#[cfg(feature = "rust")] master_key: &sentc_crypto::util::SymKeyFormat,
 ) -> GenKeyRes
 {
-	let url = base_url.clone() + "/api/v1/keys/sym_key";
+	let url = base_url + "/api/v1/keys/sym_key";
 	let (server_input, encoded_key) = sentc_crypto::crypto::prepare_register_sym_key(master_key)?;
 
 	let res = make_req(
@@ -62,7 +62,7 @@ pub async fn get_sym_key_by_id(
 	#[cfg(feature = "rust")] master_key: &sentc_crypto::util::SymKeyFormat,
 ) -> KeyRes
 {
-	let url = base_url + "api/v1/keys/sym_key/" + key_id;
+	let url = base_url + "/api/v1/keys/sym_key/" + key_id;
 
 	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
@@ -81,7 +81,7 @@ pub async fn get_keys_for_master_key(
 	#[cfg(feature = "rust")] master_key: &sentc_crypto::util::SymKeyFormat,
 ) -> KeysRes
 {
-	let url = base_url + "api/v1/keys/sym_key/" + master_key_id + "/" + last_fetched_time + "/" + last_key_id;
+	let url = base_url + "/api/v1/keys/sym_key/" + master_key_id + "/" + last_fetched_time + "/" + last_key_id;
 
 	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
@@ -92,7 +92,7 @@ pub async fn get_keys_for_master_key(
 
 pub async fn delete_key(base_url: String, auth_token: &str, jwt: &str, key_id: &str) -> VoidRes
 {
-	let url = base_url + "api/v1/keys/sym_key/" + key_id;
+	let url = base_url + "/api/v1/keys/sym_key/" + key_id;
 
 	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
 
@@ -109,7 +109,7 @@ pub async fn register_key_by_public_key(
 	#[cfg(feature = "rust")] public_key: &sentc_crypto_common::user::UserPublicKeyData,
 ) -> GenKeyRes
 {
-	let url = base_url.clone() + "/api/v1/keys/sym_key";
+	let url = base_url + "/api/v1/keys/sym_key";
 
 	let (server_input, encoded_key) = sentc_crypto::crypto::prepare_register_sym_key_by_public_key(public_key)?;
 
@@ -150,7 +150,7 @@ pub async fn get_sym_key_by_id_by_private_key(
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 ) -> KeyRes
 {
-	let url = base_url + "api/v1/keys/sym_key/" + key_id;
+	let url = base_url + "/api/v1/keys/sym_key/" + key_id;
 
 	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
