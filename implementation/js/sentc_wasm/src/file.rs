@@ -220,3 +220,18 @@ pub async fn file_file_name_update(
 
 	Ok(())
 }
+
+#[wasm_bindgen]
+pub async fn file_delete_file(base_url: String, auth_token: String, jwt: String, file_id: String, group_id: String) -> Result<(), JsValue>
+{
+	sentc_crypto_full::file::delete_file(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		file_id.as_str(),
+		group_id.as_str(),
+	)
+	.await?;
+
+	Ok(())
+}

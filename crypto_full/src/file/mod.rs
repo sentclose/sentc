@@ -167,3 +167,30 @@ pub async fn update_file_name(
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
+
+pub async fn delete_file(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	file_id: &str,
+	#[cfg(not(feature = "rust"))] group_id: &str,
+	#[cfg(feature = "rust")] group_id: Option<&str>,
+) -> VoidRes
+{
+	#[cfg(not(feature = "rust"))]
+	let group_id = {
+		match group_id {
+			"" => None,
+			_ => Some(group_id),
+		}
+	};
+
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/file/" + file_id,
+		None => base_url + "/api/v1/file/" + file_id,
+	};
+
+	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
