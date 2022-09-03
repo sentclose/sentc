@@ -147,3 +147,23 @@ pub async fn upload_part(
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
+
+pub async fn update_file_name(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	file_id: &str,
+	#[cfg(not(feature = "rust"))] content_key: &str,
+	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
+	#[cfg(not(feature = "rust"))] file_name: &str,
+	#[cfg(feature = "rust")] file_name: Option<String>,
+) -> VoidRes
+{
+	let input = sentc_crypto::file::prepare_file_name_update(content_key, file_name)?;
+
+	let url = base_url + "/api/v1/file/" + file_id;
+
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
