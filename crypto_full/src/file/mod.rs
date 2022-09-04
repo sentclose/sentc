@@ -103,7 +103,7 @@ pub async fn register_file(
 	#[cfg(feature = "rust")] group_id: Option<&str>,
 ) -> FileRegRes
 {
-	let input = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
+	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
 
 	#[cfg(not(feature = "rust"))]
 	let group_id = {
@@ -120,9 +120,9 @@ pub async fn register_file(
 
 	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
-	let out = sentc_crypto::file::done_register_file(res.as_str())?;
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(res.as_str())?;
 
-	Ok(out)
+	Ok((file_id, session_id, encrypted_file_name))
 }
 
 pub async fn upload_part(

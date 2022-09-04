@@ -70,6 +70,7 @@ pub struct FileRegisterOutput
 {
 	file_id: String,
 	session_id: String,
+	encrypted_file_name: String,
 }
 
 #[wasm_bindgen]
@@ -83,6 +84,11 @@ impl FileRegisterOutput
 	pub fn get_session_id(&self) -> String
 	{
 		self.session_id.clone()
+	}
+
+	pub fn get_encrypted_file_name(&self) -> String
+	{
+		self.encrypted_file_name.clone()
 	}
 }
 
@@ -151,7 +157,7 @@ pub async fn file_register_file(
 	group_id: String,
 ) -> Result<FileRegisterOutput, JsValue>
 {
-	let (file_id, session_id) = sentc_crypto_full::file::register_file(
+	let (file_id, session_id, encrypted_file_name) = sentc_crypto_full::file::register_file(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -166,6 +172,7 @@ pub async fn file_register_file(
 	Ok(FileRegisterOutput {
 		file_id,
 		session_id,
+		encrypted_file_name,
 	})
 }
 
