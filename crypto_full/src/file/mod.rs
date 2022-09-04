@@ -141,7 +141,7 @@ pub async fn upload_part(
 {
 	let encrypted = sentc_crypto::crypto::encrypt_symmetric(content_key, part, sign_key)?;
 
-	let url = base_url + "/api/v1/file/part/" + session_id + "/seq/" + sequence.to_string().as_str() + "/end/" + end.to_string().as_str();
+	let url = base_url + "/api/v1/file/part/" + session_id + "/" + sequence.to_string().as_str() + "/" + end.to_string().as_str();
 
 	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt)).await?;
 
