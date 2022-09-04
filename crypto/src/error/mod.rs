@@ -73,7 +73,47 @@ pub fn err_to_msg(error: SdkError) -> String
 				Error::AlgNotFound => out_error("client_1", "The algorithms for this action was not found."),
 
 				Error::DecodePrivateKeyFailed => out_error("client_3", "The private key has a wrong format."),
-				_ => out_error("client_0", "other"),
+				Error::DecryptionFailedCiphertextShort => out_error("client_10", "cipher is too short."),
+				Error::KeyCreationFailed => {
+					out_error(
+						"client_11",
+						"Can't create a key. This normally happened when the used system has no mechanisms to create random numbers",
+					)
+				},
+				Error::EncryptionFailed => out_error("client_12", "Can't encrypt symmetrically."),
+				Error::EncryptionFailedRng => {
+					out_error(
+						"client_13",
+						"Can't create random numbers. This normally happened when the used system has no mechanisms to create random numbers",
+					)
+				},
+				Error::DecryptionFailed => {
+					out_error(
+						"client_14",
+						"Can't decrypt the cipher. This happened when using a wrong key to decrypt",
+					)
+				},
+
+				Error::PwHashFailed => {
+					out_error(
+						"client_20",
+						"Can't hash the password. This happened when using a wrong algorithm or the output is wrong.",
+					)
+				},
+				Error::PwSplitFailedLeft => out_error("client_21", "Can't hash the password. The input is too short"),
+				Error::PwSplitFailedRight => out_error("client_21", "Can't hash the password. The input is too short"),
+				Error::HashAuthKeyFailed => out_error("client_22", "Can't hash the password"),
+
+				Error::KeyDecryptFailed => {
+					out_error(
+						"client_30",
+						"Can't decrypt the key. Maybe a wrong master key was used.",
+					)
+				},
+				Error::SignKeyCreateFailed => out_error("client_40", "Can't create a sign key from given bytes"),
+				Error::InitSignFailed => out_error("client_41", "Can't create a sign"),
+				Error::DataToSignTooShort => out_error("client_42", "This data doesn't contains a sign"),
+				Error::InitVerifyFailed => out_error("client_43", "Can't verify the data"),
 			}
 		},
 		SdkError::AlgNotFound => out_error("client_1", "The algorithms for this action was not found."),
@@ -86,6 +126,24 @@ pub fn err_to_msg(error: SdkError) -> String
 		SdkError::DerivedKeyWrongFormat => out_error("client_2", "The encrypted key has a wrong format."),
 		//salt decode error (from base64 string to bytes)
 		SdkError::DecodeSaltFailed => out_error("client_4", "The salt has a wrong format"),
+
+		//import error
+		SdkError::ImportingSignKeyFailed => out_error("client_110", "Can't import the sign key"),
+		SdkError::ImportingPrivateKeyFailed => out_error("client_111", "Can't import the private key"),
+		SdkError::ImportSymmetricKeyFailed => out_error("client_112", "Can't import symmetric key"),
+		SdkError::ImportPublicKeyFailed => out_error("client_113", "Can't import public key"),
+		SdkError::ImportVerifyKeyFailed => out_error("client_114", "Can't import verify key"),
+		SdkError::ImportingKeyFromPemFailed => out_error("client_115", "Can't import this key. It has a wrong format"),
+
+		//exporting error
+		SdkError::ExportingPublicKeyFailed => {
+			out_error(
+				"client_120",
+				"Can't export the public key. It doesn't fit in a pem format",
+			)
+		},
+
+		//group error
 		SdkError::GroupRank => {
 			out_error(
 				"client_200",

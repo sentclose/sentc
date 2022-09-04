@@ -11,7 +11,7 @@ pub fn prepare_register_file(
 	belongs_to_id: Option<String>,
 	belongs_to_type: BelongsToType,
 	file_name: Option<String>,
-) -> Result<String, SdkError>
+) -> Result<(String, Option<String>), SdkError>
 {
 	prepare_register_file_internally(&key, belongs_to_id, belongs_to_type, file_name)
 }

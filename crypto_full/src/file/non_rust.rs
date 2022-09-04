@@ -8,4 +8,4 @@ pub type FilePartRes = Result<Vec<FilePartListItem>, String>;
 pub type ByteRes = Result<Vec<u8>, String>;
 pub type VoidRes = Result<(), String>;
 
-pub type FileRegRes = Result<(String, String), String>;
+pub type FileRegRes = Result<(String, String, String), String>;

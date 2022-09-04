@@ -21,7 +21,7 @@ fn prepare_register_file_internally(
 	belongs_to_id: Option<String>,
 	belongs_to_type: BelongsToType,
 	file_name: Option<String>,
-) -> Result<String, SdkError>
+) -> Result<(String, Option<String>), SdkError>
 {
 	let key_id = key.key_id.clone();
 
@@ -47,13 +47,16 @@ fn prepare_register_file_internally(
 		},
 	};
 
-	serde_json::to_string(&FileRegisterInput {
-		key_id,
-		belongs_to_id,
-		belongs_to_type,
+	Ok((
+		serde_json::to_string(&FileRegisterInput {
+			key_id,
+			belongs_to_id,
+			belongs_to_type,
+			encrypted_file_name: encrypted_file_name.clone(),
+		})
+		.map_err(|_e| SdkError::JsonToStringFailed)?,
 		encrypted_file_name,
-	})
-	.map_err(|_e| SdkError::JsonToStringFailed)
+	))
 }
 
 fn done_register_file_internally(server_output: &str) -> Result<(FileId, FileSessionId), SdkError>

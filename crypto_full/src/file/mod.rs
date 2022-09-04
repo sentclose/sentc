@@ -103,7 +103,7 @@ pub async fn register_file(
 	#[cfg(feature = "rust")] group_id: Option<&str>,
 ) -> FileRegRes
 {
-	let input = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
+	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
 
 	#[cfg(not(feature = "rust"))]
 	let group_id = {
@@ -120,9 +120,9 @@ pub async fn register_file(
 
 	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
-	let out = sentc_crypto::file::done_register_file(res.as_str())?;
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(res.as_str())?;
 
-	Ok(out)
+	Ok((file_id, session_id, encrypted_file_name))
 }
 
 pub async fn upload_part(
@@ -141,7 +141,7 @@ pub async fn upload_part(
 {
 	let encrypted = sentc_crypto::crypto::encrypt_symmetric(content_key, part, sign_key)?;
 
-	let url = base_url + "/api/v1/file/part/" + session_id + "/seq/" + sequence.to_string().as_str() + "/end/" + end.to_string().as_str();
+	let url = base_url + "/api/v1/file/part/" + session_id + "/" + sequence.to_string().as_str() + "/" + end.to_string().as_str();
 
 	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt)).await?;
 
@@ -164,6 +164,33 @@ pub async fn update_file_name(
 	let url = base_url + "/api/v1/file/" + file_id;
 
 	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
+
+pub async fn delete_file(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	file_id: &str,
+	#[cfg(not(feature = "rust"))] group_id: &str,
+	#[cfg(feature = "rust")] group_id: Option<&str>,
+) -> VoidRes
+{
+	#[cfg(not(feature = "rust"))]
+	let group_id = {
+		match group_id {
+			"" => None,
+			_ => Some(group_id),
+		}
+	};
+
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/file/" + file_id,
+		None => base_url + "/api/v1/file/" + file_id,
+	};
+
+	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
