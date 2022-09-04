@@ -66,6 +66,48 @@ impl FileData
 }
 
 #[wasm_bindgen]
+pub struct FilePrepareRegister
+{
+	encrypted_file_name: String,
+	server_input: String,
+}
+
+#[wasm_bindgen]
+impl FilePrepareRegister
+{
+	pub fn get_encrypted_file_name(&self) -> String
+	{
+		self.encrypted_file_name.clone()
+	}
+
+	pub fn get_server_input(&self) -> String
+	{
+		self.server_input.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub struct FileDoneRegister
+{
+	file_id: String,
+	session_id: String,
+}
+
+#[wasm_bindgen]
+impl FileDoneRegister
+{
+	pub fn get_file_id(&self) -> String
+	{
+		self.file_id.clone()
+	}
+
+	pub fn get_session_id(&self) -> String
+	{
+		self.session_id.clone()
+	}
+}
+
+#[wasm_bindgen]
 pub struct FileRegisterOutput
 {
 	file_id: String,
@@ -173,6 +215,33 @@ pub async fn file_register_file(
 		file_id,
 		session_id,
 		encrypted_file_name,
+	})
+}
+
+#[wasm_bindgen]
+pub fn file_prepare_register_file(
+	content_key: &str,
+	belongs_to_id: &str,
+	belongs_to_type: &str,
+	file_name: &str,
+) -> Result<FilePrepareRegister, JsValue>
+{
+	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
+
+	Ok(FilePrepareRegister {
+		encrypted_file_name,
+		server_input: input,
+	})
+}
+
+#[wasm_bindgen]
+pub fn file_done_register_file(server_output: &str) -> Result<FileDoneRegister, JsValue>
+{
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(server_output)?;
+
+	Ok(FileDoneRegister {
+		file_id,
+		session_id,
 	})
 }
 
