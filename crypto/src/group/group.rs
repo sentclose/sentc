@@ -95,7 +95,11 @@ pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> Resul
 
 	let invoker_public_key = import_public_key(invoker_public_key)?;
 
-	Ok(key_rotation_internally(&previous_group_key, &invoker_public_key)?)
+	Ok(key_rotation_internally(
+		&previous_group_key,
+		&invoker_public_key,
+		false,
+	)?)
 }
 
 pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, String>
@@ -401,6 +405,10 @@ mod test
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -445,6 +453,10 @@ mod test
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -503,6 +515,10 @@ mod test
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -548,6 +564,10 @@ mod test
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -607,6 +627,10 @@ mod test
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: "abc".to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let new_group_key_direct = decrypt_group_keys(
@@ -655,6 +679,10 @@ mod test
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: done_key_rotation.public_key_id.to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let out = decrypt_group_keys(

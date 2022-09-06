@@ -40,7 +40,7 @@ pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, S
 
 pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat) -> Result<String, SdkError>
 {
-	key_rotation_internally(&previous_group_key, &invoker_public_key)
+	key_rotation_internally(&previous_group_key, &invoker_public_key, false)
 }
 
 pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, SdkError>
