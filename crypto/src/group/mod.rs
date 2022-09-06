@@ -286,7 +286,7 @@ fn get_group_key_from_server_output_internally(server_output: &str) -> Result<Gr
 /**
 Call this fn for each key, with the right private key
 */
-fn decrypt_group_keys_internally(
+pub(crate) fn decrypt_group_keys_internally(
 	private_key: &PrivateKeyFormatInt,
 	server_output: &GroupKeyServerOutput,
 ) -> Result<DoneGettingGroupKeysOutput, SdkError>
@@ -443,10 +443,10 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
-	use crate::util::KeyData;
+	use crate::util::DeviceKeyData;
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &DeviceKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -505,7 +505,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &DeviceKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.as_str()).unwrap();
