@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
@@ -26,13 +26,16 @@ use crate::util::{
 	export_private_key_to_string,
 	export_public_key_to_string,
 	export_sign_key_to_string,
+	export_sym_key_to_string,
 	export_verify_key_to_string,
 	import_private_key,
 	import_sign_key,
-	KeyData,
-	KeyDataInt,
+	DeviceKeyData,
+	DeviceKeyDataInt,
 	UserData,
 	UserDataInt,
+	UserKeyData,
+	UserKeyDataInt,
 };
 use crate::SdkError;
 
@@ -158,6 +161,7 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 	)?)
 }
 
+//TODO remove
 pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<String, String>
 {
 	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|e| SdkError::JsonParseFailed(e))?;
@@ -168,7 +172,7 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 
 	for result in out {
 		//like done login but for all keys
-		let output = export_key_data(result)?;
+		let output = export_device_key_data(result)?;
 
 		output_arr.push(output);
 	}
@@ -183,17 +187,53 @@ fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 	let refresh_token = user_data.refresh_token;
 	let user_id = user_data.user_id;
 
-	let keys = export_key_data(user_data.keys)?;
+	let device_keys = export_device_key_data(user_data.device_keys)?;
+	let user_keys = export_user_key_data(user_data.user_keys)?;
 
 	Ok(UserData {
-		keys,
+		user_keys,
+		device_keys,
 		jwt,
 		refresh_token,
 		user_id,
 	})
 }
 
-fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
+fn export_user_key_data(user_keys: Vec<UserKeyDataInt>) -> Result<Vec<UserKeyData>, String>
+{
+	let mut keys = Vec::with_capacity(user_keys.len());
+
+	for user_key in user_keys {
+		let private_key = export_private_key_to_string(user_key.private_key)?;
+		let public_key = export_public_key_to_string(user_key.public_key)?;
+		let sign_key = export_sign_key_to_string(user_key.sign_key)?;
+		let verify_key = export_verify_key_to_string(user_key.verify_key)?;
+		let group_key_id = user_key.group_key.key_id.to_string();
+		let group_key = export_sym_key_to_string(user_key.group_key)?;
+
+		keys.push(UserKeyData {
+			private_key,
+			public_key,
+			group_key,
+			time: user_key.time,
+			group_key_id,
+			sign_key,
+			verify_key,
+			exported_public_key: user_key
+				.exported_public_key
+				.to_string()
+				.map_err(|_e| SdkError::JsonToStringFailed)?,
+			exported_verify_key: user_key
+				.exported_verify_key
+				.to_string()
+				.map_err(|_e| SdkError::JsonToStringFailed)?,
+		})
+	}
+
+	Ok(keys)
+}
+
+fn export_device_key_data(key_data: DeviceKeyDataInt) -> Result<DeviceKeyData, String>
 {
 	let private_key = export_private_key_to_string(key_data.private_key)?;
 	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
@@ -201,7 +241,7 @@ fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 	let sign_key = export_sign_key_to_string(key_data.sign_key)?;
 	let verify_key = export_verify_key_to_string(key_data.verify_key)?;
 
-	Ok(KeyData {
+	Ok(DeviceKeyData {
 		private_key,
 		public_key,
 		sign_key,
@@ -249,7 +289,7 @@ mod test
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
-		let server_output = simulate_server_prepare_login(&out.derived);
+		let server_output = simulate_server_prepare_login(&out.device.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
 		let (_auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.as_str()).unwrap();
@@ -285,7 +325,7 @@ mod test
 		let out_new = RegisterData::from_string(out.as_str()).unwrap();
 		let out_old = RegisterData::from_string(out.as_str()).unwrap();
 
-		let prep_server_output = simulate_server_prepare_login(&out_new.derived);
+		let prep_server_output = simulate_server_prepare_login(&out_new.device.derived);
 		let done_server_output = simulate_server_done_login(out_new);
 
 		let pw_change_out = change_password(
@@ -300,12 +340,12 @@ mod test
 
 		assert_ne!(
 			pw_change_out.new_client_random_value,
-			out_old.derived.client_random_value
+			out_old.device.derived.client_random_value
 		);
 
 		assert_ne!(
 			pw_change_out.new_encrypted_master_key,
-			out_old.master_key.encrypted_master_key
+			out_old.device.master_key.encrypted_master_key
 		);
 	}
 }

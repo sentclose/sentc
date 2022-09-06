@@ -1,4 +1,5 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
@@ -116,8 +117,8 @@ pub struct DeviceKeyData
 #[derive(Serialize, Deserialize)]
 pub struct UserKeyData
 {
-	pub private_group_key: String,
-	pub public_group_key: String,
+	pub private_key: String,
+	pub public_key: String,
 	pub group_key: String,
 	pub time: u128,
 	pub group_key_id: SymKeyId,
@@ -130,7 +131,7 @@ pub struct UserKeyData
 #[derive(Serialize, Deserialize)]
 pub struct UserData
 {
-	pub user_keys: UserKeyData,
+	pub user_keys: Vec<UserKeyData>,
 	pub device_keys: DeviceKeyData,
 	pub jwt: String,
 	pub refresh_token: String,
