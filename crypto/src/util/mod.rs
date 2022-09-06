@@ -39,16 +39,17 @@ pub(crate) use self::util_non_rust::{
 	import_sym_key_from_format,
 };
 #[cfg(not(feature = "rust"))]
-pub use self::util_non_rust::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, UserData, VerifyKeyFormat};
+pub use self::util_non_rust::{DeviceKeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, UserData, VerifyKeyFormat};
 //if rust feature is enabled export the internally functions as externally
 #[cfg(feature = "rust")]
 pub use self::{
-	KeyDataInt as KeyData,
+	DeviceKeyDataInt as DeviceKeyData,
 	PrivateKeyFormatInt as PrivateKeyFormat,
 	PublicKeyFormatInt as PublicKeyFormat,
 	SignKeyFormatInt as SignKeyFormat,
 	SymKeyFormatInt as SymKeyFormat,
 	UserDataInt as UserData,
+	UserKeyDataInt as UserKeyData,
 	VerifyKeyFormatInt as VerifyKeyFormat,
 };
 use crate::SdkError;
@@ -91,7 +92,7 @@ It can be used with other rust programs.
 The different to the internally DoneLoginOutput ist that,
 the KeyFormat is sued for each where, were the key id is saved too
  */
-pub struct KeyDataInt
+pub struct DeviceKeyDataInt
 {
 	pub private_key: PrivateKeyFormatInt,
 	pub sign_key: SignKeyFormatInt,
@@ -101,12 +102,26 @@ pub struct KeyDataInt
 	pub exported_verify_key: UserVerifyKeyData,
 }
 
+pub struct UserKeyDataInt
+{
+	pub group_key: SymKeyFormatInt,
+	pub private_key: PrivateKeyFormatInt,
+	pub public_key: PublicKeyFormatInt,
+	pub time: u128,
+	pub sign_key: SignKeyFormatInt,
+	pub verify_key: VerifyKeyFormatInt,
+	pub exported_public_key: UserPublicKeyData,
+	pub exported_verify_key: UserVerifyKeyData,
+}
+
 pub struct UserDataInt
 {
-	pub keys: KeyDataInt,
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
+
+	pub user_keys: Vec<UserKeyDataInt>,
+	pub device_keys: DeviceKeyDataInt,
 }
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, SdkError>

@@ -103,7 +103,7 @@ impl VerifyKeyFormat
 This data must be serialized for exporting and deserialized for import
  */
 #[derive(Serialize, Deserialize)]
-pub struct KeyData
+pub struct DeviceKeyData
 {
 	pub private_key: String, //Base64 exported keys
 	pub public_key: String,
@@ -114,9 +114,24 @@ pub struct KeyData
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct UserKeyData
+{
+	pub private_group_key: String,
+	pub public_group_key: String,
+	pub group_key: String,
+	pub time: u128,
+	pub group_key_id: SymKeyId,
+	pub sign_key: String,
+	pub verify_key: String,
+	pub exported_public_key: String,
+	pub exported_verify_key: String,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct UserData
 {
-	pub keys: KeyData,
+	pub user_keys: UserKeyData,
+	pub device_keys: DeviceKeyData,
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
