@@ -3,6 +3,8 @@ use alloc::vec::Vec;
 use crate::alg::{asym, pw_hash, sign, sym};
 use crate::error::Error;
 use crate::{
+	decrypt_private_key,
+	decrypt_sing_key,
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	DeriveKeysForAuthOutput,
@@ -171,34 +173,9 @@ pub fn done_login(
 		DeriveMasterKeyForAuth::Argon2(k) => pw_hash::argon2::get_master_key(k, encrypted_master_key)?,
 	};
 
-	//decrypt the private keys
-	let (private, sign) = match master_key {
-		SymKey::Aes(k) => {
-			let decrypted_private_key = sym::aes_gcm::decrypt_with_generated_key(&k, encrypted_private_key)?;
-			let decrypted_sign_key = sym::aes_gcm::decrypt_with_generated_key(&k, encrypted_sign_key)?;
-
-			(decrypted_private_key, decrypted_sign_key)
-		},
-	};
-
 	//decode the private keys to the enums to use them later
-	let private_key = match keypair_encrypt_alg {
-		asym::ecies::ECIES_OUTPUT => {
-			let private = private
-				.try_into()
-				.map_err(|_| Error::DecodePrivateKeyFailed)?;
-			Sk::Ecies(private)
-		},
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	let sign_key = match keypair_sign_alg {
-		sign::ed25519::ED25519_OUTPUT => {
-			let sign = sign.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?;
-			SignK::Ed25519(sign)
-		},
-		_ => return Err(Error::AlgNotFound),
-	};
+	let private_key = decrypt_private_key(encrypted_private_key, &master_key, keypair_encrypt_alg)?;
+	let sign_key = decrypt_sing_key(encrypted_sign_key, &master_key, keypair_sign_alg)?;
 
 	Ok(LoginDoneOutput {
 		private_key,
