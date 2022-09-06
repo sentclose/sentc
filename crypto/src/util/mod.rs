@@ -39,7 +39,16 @@ pub(crate) use self::util_non_rust::{
 	import_sym_key_from_format,
 };
 #[cfg(not(feature = "rust"))]
-pub use self::util_non_rust::{DeviceKeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, UserData, VerifyKeyFormat};
+pub use self::util_non_rust::{
+	DeviceKeyData,
+	PrivateKeyFormat,
+	PublicKeyFormat,
+	SignKeyFormat,
+	SymKeyFormat,
+	UserData,
+	UserKeyData,
+	VerifyKeyFormat,
+};
 //if rust feature is enabled export the internally functions as externally
 #[cfg(feature = "rust")]
 pub use self::{
