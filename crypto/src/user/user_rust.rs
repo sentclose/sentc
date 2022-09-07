@@ -19,7 +19,7 @@ use crate::user::{
 	register_internally,
 	reset_password_internally,
 };
-use crate::util::{KeyData, PrivateKeyFormat, SignKeyFormat, UserData};
+use crate::util::{DeviceKeyData, PrivateKeyFormat, SignKeyFormat, UserData};
 use crate::SdkError;
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
@@ -77,7 +77,7 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyForm
 	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
 }
 
-pub fn prepare_update_user_keys(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<KeyData>, SdkError>
+pub fn prepare_update_user_keys(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<DeviceKeyData>, SdkError>
 {
 	prepare_update_user_keys_internally(password, server_output)
 }
@@ -114,7 +114,7 @@ mod test
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
-		let server_output = simulate_server_prepare_login(&out.derived);
+		let server_output = simulate_server_prepare_login(&out.device.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
 		let (_, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
@@ -124,7 +124,7 @@ mod test
 		//now save the values
 		let login_out = done_login(&master_key_encryption_key, &server_output).unwrap();
 
-		let private_key = match login_out.keys.private_key.key {
+		let private_key = match login_out.user_keys[0].private_key.key {
 			Sk::Ecies(k) => k,
 		};
 
@@ -149,7 +149,7 @@ mod test
 		let out_new = RegisterData::from_string(out.as_str()).unwrap();
 		let out_old = RegisterData::from_string(out.as_str()).unwrap();
 
-		let prep_server_output = simulate_server_prepare_login(&out_new.derived);
+		let prep_server_output = simulate_server_prepare_login(&out_new.device.derived);
 		let done_server_output = simulate_server_done_login(out_new);
 
 		let pw_change_out = change_password(
@@ -164,12 +164,12 @@ mod test
 
 		assert_ne!(
 			pw_change_out.new_client_random_value,
-			out_old.derived.client_random_value
+			out_old.device.derived.client_random_value
 		);
 
 		assert_ne!(
 			pw_change_out.new_encrypted_master_key,
-			out_old.master_key.encrypted_master_key
+			out_old.device.master_key.encrypted_master_key
 		);
 	}
 }

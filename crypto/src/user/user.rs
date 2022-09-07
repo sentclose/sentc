@@ -303,7 +303,7 @@ mod test
 		)
 		.unwrap();
 
-		let private_key = match PrivateKeyFormat::from_string(login_out.keys.private_key.as_str()).unwrap() {
+		let private_key = match PrivateKeyFormat::from_string(login_out.user_keys[0].private_key.as_str()).unwrap() {
 			PrivateKeyFormat::Ecies {
 				key_id: _,
 				key,

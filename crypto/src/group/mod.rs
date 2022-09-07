@@ -443,10 +443,10 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
-	use crate::util::DeviceKeyData;
+	use crate::UserKeyData;
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &DeviceKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -505,7 +505,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &DeviceKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.as_str()).unwrap();
