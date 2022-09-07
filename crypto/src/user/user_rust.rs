@@ -20,7 +20,7 @@ use crate::user::{
 	register_internally,
 	reset_password_internally,
 };
-use crate::util::{DeviceKeyData, PrivateKeyFormat, SignKeyFormat, UserData};
+use crate::util::{DeviceKeyData, PrivateKeyFormat, SignKeyFormat, UserData, UserKeyData};
 use crate::SdkError;
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
@@ -58,7 +58,7 @@ pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output:
 	done_login_internally(&master_key_encryption, server_output)
 }
 
-pub fn done_key_fetch(private_key: &PrivateKeyFormat, server_output: &str)
+pub fn done_key_fetch(private_key: &PrivateKeyFormat, server_output: &str) -> Result<UserKeyData, SdkError>
 {
 	done_key_fetch_internally(private_key, server_output)
 }
