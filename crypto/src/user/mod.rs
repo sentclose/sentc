@@ -64,6 +64,7 @@ mod user;
 pub use self::user::{
 	change_password,
 	done_check_user_identifier_available,
+	done_key_fetch,
 	done_login,
 	done_register,
 	prepare_check_user_identifier_available,
@@ -81,6 +82,7 @@ pub use self::user::{
 pub use self::user_rust::{
 	change_password,
 	done_check_user_identifier_available,
+	done_key_fetch,
 	done_login,
 	done_register,
 	prepare_check_user_identifier_available,
@@ -244,7 +246,11 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 
 	let device_keys = done_login_internally_with_device_out(master_key_encryption, &device_data)?;
 
-	let user_keys = done_login_internally_with_user_out(&device_keys.private_key, &user_data)?;
+	let mut user_keys = Vec::with_capacity(user_data.len());
+
+	for datum in &user_data {
+		user_keys.push(done_login_internally_with_user_out(&device_keys.private_key, datum)?)
+	}
 
 	let out = UserDataInt {
 		user_keys,
@@ -257,73 +263,73 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 	Ok(out)
 }
 
+fn done_key_fetch_internally(private_key: &PrivateKeyFormatInt, server_output: &str) -> Result<UserKeyDataInt, SdkError>
+{
+	let out: GroupKeyServerOutput = handle_server_response(server_output)?;
+
+	let key = done_login_internally_with_user_out(private_key, &out)?;
+
+	Ok(key)
+}
+
 /**
 # Get the user keys from the user group
 
 Decrypt it like group decrypt keys (which is used here)
 But decrypt the sign key too
 */
-fn done_login_internally_with_user_out(
-	private_key: &PrivateKeyFormatInt,
-	server_output: &Vec<GroupKeyServerOutput>,
-) -> Result<Vec<UserKeyDataInt>, SdkError>
+fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_group_key: &GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
 {
-	let mut user_keys = Vec::with_capacity(server_output.len());
+	let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
-	for user_group_key in server_output {
-		let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
+	let exported_public_key = UserPublicKeyData {
+		public_key_pem: user_group_key.public_group_key.to_string(),
+		public_key_alg: user_group_key.keypair_encrypt_alg.to_string(),
+		public_key_id: user_group_key.key_pair_id.clone(),
+	};
 
-		let exported_public_key = UserPublicKeyData {
-			public_key_pem: user_group_key.public_group_key.to_string(),
-			public_key_alg: user_group_key.keypair_encrypt_alg.to_string(),
-			public_key_id: user_group_key.key_pair_id.clone(),
-		};
+	//now get the verify key
+	let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (
+		&user_group_key.encrypted_sign_key,
+		&user_group_key.verify_key,
+		&user_group_key.keypair_sign_alg,
+		&user_group_key.keypair_sign_id,
+	) {
+		(Some(encrypted_sign_key), Some(server_verify_key), Some(keypair_sign_alg), Some(keypair_sign_id)) => {
+			//handle it, only for user group
+			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
-		//now get the verify key
-		let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (
-			&user_group_key.encrypted_sign_key,
-			&user_group_key.verify_key,
-			&user_group_key.keypair_sign_alg,
-			&user_group_key.keypair_sign_id,
-		) {
-			(Some(encrypted_sign_key), Some(server_verify_key), Some(keypair_sign_alg), Some(keypair_sign_id)) => {
-				//handle it, only for user group
-				let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+			let sign_key = sentc_crypto_core::decrypt_sing_key(&encrypted_sign_key, &keys.group_key.key, keypair_sign_alg)?;
 
-				let sign_key = sentc_crypto_core::decrypt_sing_key(&encrypted_sign_key, &keys.group_key.key, keypair_sign_alg)?;
+			let verify_key = import_verify_key_from_pem_with_alg(server_verify_key.as_str(), keypair_sign_alg.as_str())?;
 
-				let verify_key = import_verify_key_from_pem_with_alg(server_verify_key.as_str(), keypair_sign_alg.as_str())?;
+			let exported_verify_key = UserVerifyKeyData {
+				verify_key_pem: server_verify_key.to_string(),
+				verify_key_alg: keypair_sign_alg.to_string(),
+				verify_key_id: keypair_sign_id.clone(),
+			};
 
-				let exported_verify_key = UserVerifyKeyData {
-					verify_key_pem: server_verify_key.to_string(),
-					verify_key_alg: keypair_sign_alg.to_string(),
-					verify_key_id: keypair_sign_id.clone(),
-				};
+			(sign_key, verify_key, exported_verify_key, keypair_sign_id)
+		},
+		_ => return Err(SdkError::LoginServerOutputWrong),
+	};
 
-				(sign_key, verify_key, exported_verify_key, keypair_sign_id)
-			},
-			_ => return Err(SdkError::LoginServerOutputWrong),
-		};
-
-		user_keys.push(UserKeyDataInt {
-			group_key: keys.group_key,
-			private_key: keys.private_group_key,
-			public_key: keys.public_group_key,
-			time: keys.time,
-			sign_key: SignKeyFormatInt {
-				key: sign_key,
-				key_id: keypair_sign_id.to_string(),
-			},
-			verify_key: VerifyKeyFormatInt {
-				key: verify_key,
-				key_id: keypair_sign_id.to_string(),
-			},
-			exported_public_key,
-			exported_verify_key,
-		})
-	}
-
-	Ok(user_keys)
+	Ok(UserKeyDataInt {
+		group_key: keys.group_key,
+		private_key: keys.private_group_key,
+		public_key: keys.public_group_key,
+		time: keys.time,
+		sign_key: SignKeyFormatInt {
+			key: sign_key,
+			key_id: keypair_sign_id.to_string(),
+		},
+		verify_key: VerifyKeyFormatInt {
+			key: verify_key,
+			key_id: keypair_sign_id.to_string(),
+		},
+		exported_public_key,
+		exported_verify_key,
+	})
 }
 
 fn done_login_internally_with_device_out(

@@ -11,6 +11,7 @@ use serde_json::{from_str, to_string};
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
+	done_key_fetch_internally,
 	done_login_internally,
 	done_register_internally,
 	prepare_check_user_identifier_available_internally,
@@ -128,6 +129,17 @@ pub fn done_login(
 	export_user_data(result)
 }
 
+pub fn done_key_fetch(private_key: &str, server_output: &str) -> Result<UserKeyData, String>
+{
+	let private_key = import_private_key(private_key)?;
+
+	let key = done_key_fetch_internally(&private_key, server_output)?;
+
+	let user_keys = export_user_key_data(key)?;
+
+	Ok(user_keys)
+}
+
 pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, String>
 {
 	Ok(prepare_user_identifier_update_internally(user_identifier)?)
@@ -188,7 +200,12 @@ fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 	let user_id = user_data.user_id;
 
 	let device_keys = export_device_key_data(user_data.device_keys)?;
-	let user_keys = export_user_key_data(user_data.user_keys)?;
+
+	let mut user_keys = Vec::with_capacity(user_data.user_keys.len());
+
+	for user_key in user_data.user_keys {
+		user_keys.push(export_user_key_data(user_key)?)
+	}
 
 	Ok(UserData {
 		user_keys,
@@ -199,38 +216,32 @@ fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 	})
 }
 
-fn export_user_key_data(user_keys: Vec<UserKeyDataInt>) -> Result<Vec<UserKeyData>, String>
+fn export_user_key_data(user_key: UserKeyDataInt) -> Result<UserKeyData, String>
 {
-	let mut keys = Vec::with_capacity(user_keys.len());
+	let private_key = export_private_key_to_string(user_key.private_key)?;
+	let public_key = export_public_key_to_string(user_key.public_key)?;
+	let sign_key = export_sign_key_to_string(user_key.sign_key)?;
+	let verify_key = export_verify_key_to_string(user_key.verify_key)?;
+	let group_key_id = user_key.group_key.key_id.to_string();
+	let group_key = export_sym_key_to_string(user_key.group_key)?;
 
-	for user_key in user_keys {
-		let private_key = export_private_key_to_string(user_key.private_key)?;
-		let public_key = export_public_key_to_string(user_key.public_key)?;
-		let sign_key = export_sign_key_to_string(user_key.sign_key)?;
-		let verify_key = export_verify_key_to_string(user_key.verify_key)?;
-		let group_key_id = user_key.group_key.key_id.to_string();
-		let group_key = export_sym_key_to_string(user_key.group_key)?;
-
-		keys.push(UserKeyData {
-			private_key,
-			public_key,
-			group_key,
-			time: user_key.time,
-			group_key_id,
-			sign_key,
-			verify_key,
-			exported_public_key: user_key
-				.exported_public_key
-				.to_string()
-				.map_err(|_e| SdkError::JsonToStringFailed)?,
-			exported_verify_key: user_key
-				.exported_verify_key
-				.to_string()
-				.map_err(|_e| SdkError::JsonToStringFailed)?,
-		})
-	}
-
-	Ok(keys)
+	Ok(UserKeyData {
+		private_key,
+		public_key,
+		group_key,
+		time: user_key.time,
+		group_key_id,
+		sign_key,
+		verify_key,
+		exported_public_key: user_key
+			.exported_public_key
+			.to_string()
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
+		exported_verify_key: user_key
+			.exported_verify_key
+			.to_string()
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
+	})
 }
 
 fn export_device_key_data(key_data: DeviceKeyDataInt) -> Result<DeviceKeyData, String>

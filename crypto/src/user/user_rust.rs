@@ -8,6 +8,7 @@ use sentc_crypto_core::DeriveMasterKeyForAuth;
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
+	done_key_fetch_internally,
 	done_login_internally,
 	done_register_internally,
 	prepare_check_user_identifier_available_internally,
@@ -55,6 +56,11 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserData, SdkError>
 {
 	done_login_internally(&master_key_encryption, server_output)
+}
+
+pub fn done_key_fetch(private_key: &PrivateKeyFormat, server_output: &str)
+{
+	done_key_fetch_internally(private_key, server_output)
 }
 
 pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, SdkError>
