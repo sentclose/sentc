@@ -10,9 +10,9 @@ use sentc_crypto::util::public::{handle_general_server_response, handle_server_r
 use sentc_crypto_common::user::{DoneLoginLightServerOutput, UserInitServerOutput};
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{BoolRes, InitRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::non_rust::{BoolRes, InitRes, LoginRes, Res, UserKeyFetchRes, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{BoolRes, InitRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::rust::{BoolRes, InitRes, LoginRes, Res, UserKeyFetchRes, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -84,6 +84,24 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 	let server_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
 
 	let keys = user::done_login(&master_key_encryption_key, server_out.as_str())?;
+
+	Ok(keys)
+}
+
+pub async fn fetch_user_key(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	key_id: &str,
+	#[cfg(not(feature = "rust"))] private_key: &str,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
+) -> UserKeyFetchRes
+{
+	let url = base_url + "/api/v1/user/user_key/" + key_id;
+
+	let server_out = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	let keys = user::done_key_fetch(private_key, server_out.as_str())?;
 
 	Ok(keys)
 }
