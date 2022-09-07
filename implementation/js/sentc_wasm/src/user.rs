@@ -4,7 +4,7 @@ use sentc_crypto::user;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub struct KeyData
+pub struct DeviceKeyData
 {
 	private_key: String, //Base64 exported keys
 	public_key: String,
@@ -14,9 +14,9 @@ pub struct KeyData
 	exported_verify_key: String,
 }
 
-impl From<sentc_crypto::util::KeyData> for KeyData
+impl From<sentc_crypto::util::DeviceKeyData> for DeviceKeyData
 {
-	fn from(key: sentc_crypto::KeyData) -> Self
+	fn from(key: sentc_crypto::DeviceKeyData) -> Self
 	{
 		Self {
 			private_key: key.private_key,
@@ -32,7 +32,9 @@ impl From<sentc_crypto::util::KeyData> for KeyData
 #[wasm_bindgen]
 pub struct UserData
 {
-	keys: KeyData,
+	device_keys: DeviceKeyData,
+	user_keys: JsValue,
+
 	jwt: String,
 	refresh_token: String,
 	user_id: String,
@@ -43,10 +45,11 @@ impl From<sentc_crypto::util::UserData> for UserData
 	fn from(data: sentc_crypto::util::UserData) -> Self
 	{
 		Self {
+			device_keys: data.device_keys.into(),
+			user_keys: JsValue::from_serde(&data.user_keys).unwrap(),
 			jwt: data.jwt,
 			refresh_token: data.refresh_token,
 			user_id: data.user_id,
-			keys: data.keys.into(),
 		}
 	}
 }
@@ -54,34 +57,39 @@ impl From<sentc_crypto::util::UserData> for UserData
 #[wasm_bindgen]
 impl UserData
 {
-	pub fn get_private_key(&self) -> String
+	pub fn get_user_keys(&self) -> JsValue
 	{
-		self.keys.private_key.clone()
+		self.user_keys.clone()
 	}
 
-	pub fn get_public_key(&self) -> String
+	pub fn get_device_private_key(&self) -> String
 	{
-		self.keys.public_key.clone()
+		self.device_keys.private_key.clone()
 	}
 
-	pub fn get_sign_key(&self) -> String
+	pub fn get_device_public_key(&self) -> String
 	{
-		self.keys.sign_key.clone()
+		self.device_keys.public_key.clone()
 	}
 
-	pub fn get_verify_key(&self) -> String
+	pub fn get_device_sign_key(&self) -> String
 	{
-		self.keys.verify_key.clone()
+		self.device_keys.sign_key.clone()
 	}
 
-	pub fn get_exported_public_key(&self) -> String
+	pub fn get_device_verify_key(&self) -> String
 	{
-		self.keys.exported_public_key.clone()
+		self.device_keys.verify_key.clone()
 	}
 
-	pub fn get_exported_verify_key(&self) -> String
+	pub fn get_device_exported_public_key(&self) -> String
 	{
-		self.keys.exported_verify_key.clone()
+		self.device_keys.exported_public_key.clone()
+	}
+
+	pub fn get_device_exported_verify_key(&self) -> String
+	{
+		self.device_keys.exported_verify_key.clone()
 	}
 
 	pub fn get_jwt(&self) -> String
@@ -424,7 +432,7 @@ pub async fn delete_user(base_url: String, auth_token: String, user_identifier: 
 }
 
 #[wasm_bindgen]
-pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<String, JsValue>
+pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<(), JsValue>
 {
 	Ok(sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await?)
 }
