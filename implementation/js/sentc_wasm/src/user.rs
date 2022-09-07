@@ -359,6 +359,29 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 }
 
 #[wasm_bindgen]
+pub fn done_fetch_user_key(private_key: &str, server_output: &str) -> Result<JsValue, JsValue>
+{
+	let data = user::done_key_fetch(private_key, server_output)?;
+
+	Ok(JsValue::from_serde(&data).unwrap())
+}
+
+#[wasm_bindgen]
+pub async fn fetch_user_key(base_url: String, auth_token: String, jwt: String, key_id: String, private_key: String) -> Result<JsValue, JsValue>
+{
+	let data = sentc_crypto_full::user::fetch_user_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		key_id.as_str(),
+		private_key.as_str(),
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&data).unwrap())
+}
+
+#[wasm_bindgen]
 pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::user::refresh_jwt(base_url, auth_token.as_str(), jwt.as_str(), refresh_token.as_str()).await?;
