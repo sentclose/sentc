@@ -551,6 +551,7 @@ fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleL
 pub(crate) mod test_fn
 {
 	use alloc::string::ToString;
+	use alloc::vec;
 
 	use sentc_crypto_common::user::{DoneLoginServerOutput, KeyDerivedData, RegisterData};
 	use sentc_crypto_common::ServerOutput;
@@ -602,11 +603,27 @@ pub(crate) mod test_fn
 			user_group_id: "abc".to_string(),
 		};
 
+		let user_keys = vec![GroupKeyServerOutput {
+			encrypted_group_key: group.encrypted_group_key,
+			group_key_alg: group.group_key_alg,
+			group_key_id: "abc".to_string(),
+			encrypted_private_group_key: group.encrypted_private_group_key,
+			public_group_key: group.public_group_key,
+			keypair_encrypt_alg: group.keypair_encrypt_alg,
+			key_pair_id: "".to_string(),
+			user_public_key_id: "abc".to_string(),
+			time: 0,
+			encrypted_sign_key: group.encrypted_sign_key,
+			verify_key: group.verify_key,
+			keypair_sign_alg: group.keypair_sign_alg,
+			keypair_sign_id: Some("hello".to_string()),
+		}];
+
 		let out = DoneLoginServerOutput {
 			device_keys,
 			jwt: "abc".to_string(),
 			refresh_token: "abc".to_string(),
-			user_keys: Vec::new(),
+			user_keys,
 		};
 
 		ServerOutput {
@@ -628,7 +645,7 @@ pub(crate) mod test_fn
 		let out_string = register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
-		let server_output = simulate_server_prepare_login(&out.derived);
+		let server_output = simulate_server_prepare_login(&out.device.derived);
 		#[cfg(feature = "rust")]
 		let (_, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
 
