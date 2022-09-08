@@ -332,6 +332,19 @@ fn prepare_group_keys_for_new_member_internally(
 	key_session: bool, //this value must be set form each sdk impl from key storage when more than 100 keys are used
 ) -> Result<String, SdkError>
 {
+	let server_input = prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session)?;
+
+	Ok(server_input
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)?)
+}
+
+pub(crate) fn prepare_group_keys_for_new_member_private_internally(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormatInt],
+	key_session: bool,
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
+{
 	let public_key = import_public_key_from_pem_with_alg(
 		requester_public_key_data.public_key_pem.as_str(),
 		requester_public_key_data.public_key_alg.as_str(),
@@ -348,9 +361,7 @@ fn prepare_group_keys_for_new_member_internally(
 		key_session,
 	};
 
-	Ok(server_input
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+	Ok(server_input)
 }
 
 /**
