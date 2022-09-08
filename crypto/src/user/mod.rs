@@ -24,7 +24,9 @@ use sentc_crypto_common::user::{
 	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
+	UserDeviceDoneRegisterInput,
 	UserDeviceRegisterInput,
+	UserDeviceRegisterOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserPublicKeyData,
@@ -32,7 +34,7 @@ use sentc_crypto_common::user::{
 	UserVerifyKeyData,
 };
 use sentc_crypto_common::UserId;
-use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth};
+use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, Pk};
 
 use crate::util::public::{generate_salt_from_base64, handle_server_response};
 use crate::util::{
@@ -47,6 +49,7 @@ use crate::util::{
 	PrivateKeyFormatInt,
 	PublicKeyFormatInt,
 	SignKeyFormatInt,
+	SymKeyFormatInt,
 	UserDataInt,
 	UserKeyDataInt,
 	VerifyKeyFormatInt,
@@ -119,6 +122,61 @@ fn done_check_user_identifier_available_internally(server_output: &str) -> Resul
 */
 fn register_internally(user_identifier: &str, password: &str) -> Result<String, SdkError>
 {
+	let (device, raw_public_key) = prepare_register_device_private_internally(user_identifier, password)?;
+
+	//6. create the user group
+	//6.1 get a "fake" public key from the register data for group create
+	//the public key id will be set later after the registration on the server
+	let group_public_key = PublicKeyFormatInt {
+		key: raw_public_key,
+		key_id: "non_registered".to_string(),
+	};
+
+	//6.2 create a group
+	let group = group::prepare_create_private_internally(&group_public_key, true)?;
+
+	let register_out = RegisterData {
+		device,
+		group,
+	};
+
+	//use always to string, even for rust feature enable because this data is for the server
+	Ok(register_out
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)?)
+}
+
+fn done_register_internally(server_output: &str) -> Result<UserId, SdkError>
+{
+	let out: RegisterServerOutput = handle_server_response(server_output)?;
+
+	Ok(out.user_id)
+}
+
+/**
+Call this fn before the register device request in the new device
+*/
+fn prepare_register_device_start_internally(device_identifier: &str, password: &str) -> Result<String, SdkError>
+{
+	let (device, _) = prepare_register_device_private_internally(device_identifier, password)?;
+
+	serde_json::to_string(&device).map_err(|_| SdkError::JsonToStringFailed)
+}
+
+/**
+Call this fn after the register device request in the new device to get the token.
+
+Transfer the token and the public key to the active device to get the user group keys
+*/
+fn done_register_device_start_internally(server_output: &str) -> Result<(String, String), SdkError>
+{
+	let out: UserDeviceRegisterOutput = handle_server_response(server_output)?;
+
+	Ok((out.token, out.public_key))
+}
+
+fn prepare_register_device_private_internally(device_identifier: &str, password: &str) -> Result<(UserDeviceRegisterInput, Pk), SdkError>
+{
 	let out = core_user::register(password)?;
 
 	//transform the register output into json
@@ -158,38 +216,32 @@ fn register_internally(user_identifier: &str, password: &str) -> Result<String, 
 		hashed_authentication_key,
 	};
 
-	//6. create the user group
-	//6.1 get a "fake" public key from the register data for group create
-	//the public key id will be set later after the registration on the server
-	let group_public_key = PublicKeyFormatInt {
-		key: out.public_key,
-		key_id: "non_registered".to_string(),
-	};
-
-	//6.2 create a group
-	let group = group::prepare_create_private_internally(&group_public_key, true)?;
-
-	let register_out = RegisterData {
-		device: UserDeviceRegisterInput {
+	Ok((
+		UserDeviceRegisterInput {
 			master_key,
 			derived,
-			device_identifier: user_identifier.to_string(),
+			device_identifier: device_identifier.to_string(),
 		},
-		group,
-	};
-
-	//use always to string, even for rust feature enable because this data is for the server
-	Ok(register_out
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+		out.public_key, //needed for register
+	))
 }
 
-fn done_register_internally(server_output: &str) -> Result<UserId, SdkError>
+fn prepare_register_device(
+	new_device_token: &str,
+	new_device_public_key: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormatInt],
+	key_session: bool,
+) -> Result<UserDeviceDoneRegisterInput, SdkError>
 {
-	let out: RegisterServerOutput = handle_server_response(server_output)?;
+	let user_keys = group::prepare_group_keys_for_new_member_private_internally(new_device_public_key, group_keys, key_session)?;
 
-	Ok(out.user_id)
+	Ok(UserDeviceDoneRegisterInput {
+		user_keys,
+		token: new_device_token.to_string(),
+	})
 }
+
+//__________________________________________________________________________________________________
 
 /**
 # prepare the data for the server req
@@ -395,6 +447,8 @@ fn done_login_internally_with_device_out(
 		exported_verify_key,
 	})
 }
+
+//__________________________________________________________________________________________________
 
 fn prepare_user_identifier_update_internally(user_identifier: String) -> Result<String, SdkError>
 {
