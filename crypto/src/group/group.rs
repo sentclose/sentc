@@ -272,7 +272,7 @@ pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: 
 	)?)
 }
 
-fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>) -> Vec<&SymKeyFormatInt>
+pub(crate) fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>) -> Vec<&SymKeyFormatInt>
 {
 	//this is needed because we need only ref of the group key not the group key itself.
 	//but for the non rust version the key is just a string which gets

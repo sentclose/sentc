@@ -38,6 +38,8 @@ mod group_rank_check;
 mod group_rust;
 
 #[cfg(not(feature = "rust"))]
+pub(crate) use self::group::prepare_group_keys_for_new_member_with_ref;
+#[cfg(not(feature = "rust"))]
 pub use self::group::{
 	decrypt_group_keys,
 	done_key_rotation,
