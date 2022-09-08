@@ -13,11 +13,14 @@ use crate::user::{
 	done_check_user_identifier_available_internally,
 	done_key_fetch_internally,
 	done_login_internally,
+	done_register_device_start_internally,
 	done_register_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
 	prepare_refresh_jwt_internally,
+	prepare_register_device_internally,
+	prepare_register_device_start_internally,
 	prepare_update_user_keys_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
@@ -31,6 +34,7 @@ use crate::util::{
 	export_verify_key_to_string,
 	import_private_key,
 	import_sign_key,
+	import_sym_key_from_format,
 	DeviceKeyData,
 	DeviceKeyDataInt,
 	UserData,
@@ -38,7 +42,7 @@ use crate::util::{
 	UserKeyData,
 	UserKeyDataInt,
 };
-use crate::SdkError;
+use crate::{group, SdkError, SymKeyFormat};
 
 #[derive(Serialize, Deserialize)]
 pub enum MasterKeyFormat
@@ -77,6 +81,37 @@ pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
 pub fn done_register(server_output: &str) -> Result<UserId, String>
 {
 	Ok(done_register_internally(server_output)?)
+}
+
+pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, String>
+{
+	Ok(prepare_register_device_start_internally(device_identifier, password)?)
+}
+
+pub fn done_register_device_start(server_output: &str) -> Result<(), String>
+{
+	Ok(done_register_device_start_internally(server_output)?)
+}
+
+pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session: bool) -> Result<String, String>
+{
+	let user_keys: Vec<SymKeyFormat> = from_str(user_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
+
+	let mut saved_keys = Vec::with_capacity(user_keys.len());
+
+	for user_key in user_keys {
+		let key = import_sym_key_from_format(&user_key)?;
+
+		saved_keys.push(key);
+	}
+
+	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
+
+	Ok(prepare_register_device_internally(
+		server_output,
+		&split_group_keys,
+		key_session,
+	)?)
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, String>

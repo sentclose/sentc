@@ -10,17 +10,20 @@ use crate::user::{
 	done_check_user_identifier_available_internally,
 	done_key_fetch_internally,
 	done_login_internally,
+	done_register_device_start_internally,
 	done_register_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
 	prepare_refresh_jwt_internally,
+	prepare_register_device_internally,
+	prepare_register_device_start_internally,
 	prepare_update_user_keys_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
 	reset_password_internally,
 };
-use crate::util::{DeviceKeyData, PrivateKeyFormat, SignKeyFormat, UserData, UserKeyData};
+use crate::util::{DeviceKeyData, PrivateKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData};
 use crate::SdkError;
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
@@ -41,6 +44,21 @@ pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkErro
 pub fn done_register(server_output: &str) -> Result<UserId, SdkError>
 {
 	done_register_internally(server_output)
+}
+
+pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, SdkError>
+{
+	prepare_register_device_start_internally(device_identifier, password)
+}
+
+pub fn done_register_device_start(server_output: &str) -> Result<(), SdkError>
+{
+	done_register_device_start_internally(server_output)
+}
+
+pub fn prepare_register_device(server_output: &str, user_keys: &[&SymKeyFormat], key_session: bool) -> Result<String, SdkError>
+{
+	prepare_register_device_internally(server_output, user_keys, key_session)
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, SdkError>
