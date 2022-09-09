@@ -18,9 +18,9 @@ pub struct KeyData
 	pub exported_verify_key: String,
 }
 
-impl From<sentc_crypto::util::KeyData> for KeyData
+impl From<sentc_crypto::util::DeviceKeyData> for KeyData
 {
-	fn from(keys: sentc_crypto::KeyData) -> Self
+	fn from(keys: sentc_crypto::DeviceKeyData) -> Self
 	{
 		Self {
 			private_key: keys.private_key,
@@ -49,7 +49,7 @@ impl From<sentc_crypto::util::UserData> for UserData
 			jwt: data.jwt,
 			user_id: data.user_id,
 			refresh_token: data.refresh_token,
-			keys: data.keys.into(),
+			keys: data.device_keys.into(),
 		}
 	}
 }
