@@ -309,6 +309,68 @@ pub async fn register(base_url: String, auth_token: String, user_identifier: Str
 }
 
 #[wasm_bindgen]
+pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, JsValue>
+{
+	Ok(user::prepare_register_device_start(device_identifier, password)?)
+}
+
+#[wasm_bindgen]
+pub fn done_register_device_start(server_output: &str) -> Result<(), JsValue>
+{
+	Ok(user::done_register_device_start(server_output)?)
+}
+
+#[wasm_bindgen]
+pub async fn register_device_start(base_url: String, auth_token: String, device_identifier: String, password: String) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::register_device_start(
+		base_url,
+		auth_token.as_str(),
+		device_identifier.as_str(),
+		password.as_str(),
+	)
+	.await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub fn prepare_register_device(server_output: &str, user_keys: &str, key_count: i32) -> Result<String, JsValue>
+{
+	let key_session = if key_count > 50 { true } else { false };
+
+	let out = user::prepare_register_device(server_output, user_keys, key_session)?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub async fn register_device(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	server_output: String,
+	key_count: i32,
+	user_keys: String,
+) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::register_device(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		server_output.as_str(),
+		key_count,
+		user_keys.as_str(),
+	)
+	.await?;
+
+	match out {
+		Some(id) => Ok(id),
+		None => Ok(String::from("")),
+	}
+}
+
+#[wasm_bindgen]
 pub async fn prepare_login_start(base_url: String, auth_token: String, user_identifier: String) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::user::prepare_login_start(base_url, auth_token.as_str(), user_identifier.as_str()).await?;
