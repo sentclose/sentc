@@ -7,12 +7,35 @@ use alloc::string::String;
 
 use sentc_crypto::user;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto_common::group::GroupAcceptJoinReqServerOutput;
 use sentc_crypto_common::user::{DoneLoginLightServerOutput, UserInitServerOutput};
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{BoolRes, InitRes, LoginRes, Res, UserKeyFetchRes, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::non_rust::{
+	BoolRes,
+	InitRes,
+	LoginRes,
+	Res,
+	SessionRes,
+	UserKeyFetchRes,
+	UserPublicDataRes,
+	UserPublicKeyRes,
+	UserVerifyKeyRes,
+	VoidRes,
+};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{BoolRes, InitRes, LoginRes, Res, UserKeyFetchRes, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::rust::{
+	BoolRes,
+	InitRes,
+	LoginRes,
+	Res,
+	SessionRes,
+	UserKeyFetchRes,
+	UserPublicDataRes,
+	UserPublicKeyRes,
+	UserVerifyKeyRes,
+	VoidRes,
+};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -39,6 +62,43 @@ pub async fn register(base_url: String, auth_token: &str, user_identifier: &str,
 	let out = user::done_register(res.as_str())?;
 
 	Ok(out)
+}
+
+pub async fn register_device_start(base_url: String, auth_token: &str, device_identifier: &str, password: &str) -> Res
+{
+	let url = base_url + "/api/v1/user/prepare_register_device";
+
+	let input = user::prepare_register_device_start(device_identifier, password)?;
+
+	let res = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
+
+	//check the server output
+	user::done_register_device_start(res.as_str())?;
+
+	Ok(res)
+}
+
+pub async fn register_device(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	server_output: &str,
+	key_count: i32,
+	#[cfg(not(feature = "rust"))] user_keys: &str,
+	#[cfg(feature = "rust")] user_keys: &[&sentc_crypto::util::SymKeyFormat],
+) -> SessionRes
+{
+	let url = base_url + "/api/v1/user/done_register_device";
+
+	let key_session = if key_count > 50 { true } else { false };
+
+	let input = user::prepare_register_device(server_output, user_keys, key_session)?;
+
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	let out: GroupAcceptJoinReqServerOutput = handle_server_response(res.as_str())?;
+
+	Ok(out.session_id)
 }
 
 //__________________________________________________________________________________________________

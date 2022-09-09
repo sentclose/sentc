@@ -13,4 +13,5 @@ pub type UserKeyFetchRes = Result<UserKeyData, SdkFullError>;
 pub type UserPublicDataRes = Result<(UserPublicKeyData, UserVerifyKeyData), SdkFullError>;
 pub type UserPublicKeyRes = Result<UserPublicKeyData, SdkFullError>;
 pub type UserVerifyKeyRes = Result<UserVerifyKeyData, SdkFullError>;
-pub type InitRes = Result<UserInitServerOutput, String>;
+pub type InitRes = Result<UserInitServerOutput, SdkFullError>;
+pub type SessionRes = Result<Option<String>, SdkFullError>;

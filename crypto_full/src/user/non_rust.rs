@@ -13,3 +13,4 @@ pub type UserPublicDataRes = Result<(String, EncryptionKeyPairId, String, SignKe
 pub type UserPublicKeyRes = Result<(String, EncryptionKeyPairId), String>;
 pub type UserVerifyKeyRes = Result<(String, SignKeyPairId), String>;
 pub type InitRes = Result<UserInitServerOutput, String>;
+pub type SessionRes = Result<Option<String>, String>;
