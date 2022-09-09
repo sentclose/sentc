@@ -517,6 +517,25 @@ pub async fn delete_user(base_url: String, auth_token: String, user_identifier: 
 }
 
 #[wasm_bindgen]
+pub async fn delete_device(
+	base_url: String,
+	auth_token: String,
+	device_identifier: String,
+	password: String,
+	device_id: String,
+) -> Result<(), JsValue>
+{
+	Ok(sentc_crypto_full::user::delete_device(
+		base_url,
+		auth_token.as_str(),
+		device_identifier.as_str(),
+		password.as_str(),
+		device_id.as_str(),
+	)
+	.await?)
+}
+
+#[wasm_bindgen]
 pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<(), JsValue>
 {
 	Ok(sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await?)
