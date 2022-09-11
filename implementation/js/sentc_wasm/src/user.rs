@@ -38,6 +38,7 @@ pub struct UserData
 	jwt: String,
 	refresh_token: String,
 	user_id: String,
+	device_id: String,
 }
 
 impl From<sentc_crypto::util::UserData> for UserData
@@ -50,6 +51,7 @@ impl From<sentc_crypto::util::UserData> for UserData
 			jwt: data.jwt,
 			refresh_token: data.refresh_token,
 			user_id: data.user_id,
+			device_id: data.device_id,
 		}
 	}
 }
@@ -105,6 +107,11 @@ impl UserData
 	pub fn get_id(&self) -> String
 	{
 		self.user_id.clone()
+	}
+
+	pub fn get_device_id(&self) -> String
+	{
+		self.device_id.clone()
 	}
 }
 
