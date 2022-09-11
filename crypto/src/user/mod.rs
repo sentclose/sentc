@@ -327,6 +327,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		jwt: server_output.jwt,
 		refresh_token: server_output.refresh_token,
 		user_id: device_data.user_id,
+		device_id: device_data.device_id,
 	};
 
 	Ok(out)

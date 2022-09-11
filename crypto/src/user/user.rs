@@ -230,10 +230,6 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 
 fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 {
-	let jwt = user_data.jwt;
-	let refresh_token = user_data.refresh_token;
-	let user_id = user_data.user_id;
-
 	let device_keys = export_device_key_data(user_data.device_keys)?;
 
 	let mut user_keys = Vec::with_capacity(user_data.user_keys.len());
@@ -245,9 +241,10 @@ fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 	Ok(UserData {
 		user_keys,
 		device_keys,
-		jwt,
-		refresh_token,
-		user_id,
+		jwt: user_data.jwt,
+		refresh_token: user_data.refresh_token,
+		user_id: user_data.user_id,
+		device_id: user_data.device_id,
 	})
 }
 

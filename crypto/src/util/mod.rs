@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
+use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
 use sentc_crypto_core::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
@@ -128,6 +128,7 @@ pub struct UserDataInt
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
+	pub device_id: DeviceId,
 
 	pub user_keys: Vec<UserKeyDataInt>,
 	pub device_keys: DeviceKeyDataInt,

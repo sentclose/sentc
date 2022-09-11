@@ -2,7 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
+use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
 use sentc_crypto_core::{Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
@@ -136,6 +136,7 @@ pub struct UserData
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
+	pub device_id: DeviceId,
 }
 
 #[derive(Serialize, Deserialize)]
