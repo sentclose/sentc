@@ -1,7 +1,8 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
+use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
 use sentc_crypto_core::{Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
@@ -103,7 +104,7 @@ impl VerifyKeyFormat
 This data must be serialized for exporting and deserialized for import
  */
 #[derive(Serialize, Deserialize)]
-pub struct KeyData
+pub struct DeviceKeyData
 {
 	pub private_key: String, //Base64 exported keys
 	pub public_key: String,
@@ -114,12 +115,28 @@ pub struct KeyData
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct UserKeyData
+{
+	pub private_key: String,
+	pub public_key: String,
+	pub group_key: String,
+	pub time: u128,
+	pub group_key_id: SymKeyId,
+	pub sign_key: String,
+	pub verify_key: String,
+	pub exported_public_key: String,
+	pub exported_verify_key: String,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct UserData
 {
-	pub keys: KeyData,
+	pub user_keys: Vec<UserKeyData>,
+	pub device_keys: DeviceKeyData,
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
+	pub device_id: DeviceId,
 }
 
 #[derive(Serialize, Deserialize)]

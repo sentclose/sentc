@@ -7,13 +7,35 @@ use alloc::string::String;
 
 use sentc_crypto::user;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-pub use sentc_crypto::KeyData;
-use sentc_crypto_common::user::{DoneLoginLightServerOutput, UserInitServerOutput, UserUpdateServerOut};
+use sentc_crypto_common::group::GroupAcceptJoinReqServerOutput;
+use sentc_crypto_common::user::{DoneLoginLightServerOutput, UserInitServerOutput};
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{BoolRes, InitRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::non_rust::{
+	BoolRes,
+	InitRes,
+	LoginRes,
+	Res,
+	SessionRes,
+	UserKeyFetchRes,
+	UserPublicDataRes,
+	UserPublicKeyRes,
+	UserVerifyKeyRes,
+	VoidRes,
+};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{BoolRes, InitRes, LoginRes, Res, UserPublicDataRes, UserPublicKeyRes, UserVerifyKeyRes, VoidRes};
+pub(crate) use self::rust::{
+	BoolRes,
+	InitRes,
+	LoginRes,
+	Res,
+	SessionRes,
+	UserKeyFetchRes,
+	UserPublicDataRes,
+	UserPublicKeyRes,
+	UserVerifyKeyRes,
+	VoidRes,
+};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -40,6 +62,43 @@ pub async fn register(base_url: String, auth_token: &str, user_identifier: &str,
 	let out = user::done_register(res.as_str())?;
 
 	Ok(out)
+}
+
+pub async fn register_device_start(base_url: String, auth_token: &str, device_identifier: &str, password: &str) -> Res
+{
+	let url = base_url + "/api/v1/user/prepare_register_device";
+
+	let input = user::prepare_register_device_start(device_identifier, password)?;
+
+	let res = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
+
+	//check the server output
+	user::done_register_device_start(res.as_str())?;
+
+	Ok(res)
+}
+
+pub async fn register_device(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	server_output: &str,
+	key_count: i32,
+	#[cfg(not(feature = "rust"))] user_keys: &str,
+	#[cfg(feature = "rust")] user_keys: &[&sentc_crypto::util::SymKeyFormat],
+) -> SessionRes
+{
+	let url = base_url + "/api/v1/user/done_register_device";
+
+	let key_session = if key_count > 50 { true } else { false };
+
+	let input = user::prepare_register_device(server_output, user_keys, key_session)?;
+
+	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+
+	let out: GroupAcceptJoinReqServerOutput = handle_server_response(res.as_str())?;
+
+	Ok(out.session_id)
 }
 
 //__________________________________________________________________________________________________
@@ -85,6 +144,24 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 	let server_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
 
 	let keys = user::done_login(&master_key_encryption_key, server_out.as_str())?;
+
+	Ok(keys)
+}
+
+pub async fn fetch_user_key(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	key_id: &str,
+	#[cfg(not(feature = "rust"))] private_key: &str,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
+) -> UserKeyFetchRes
+{
+	let url = base_url + "/api/v1/user/user_key/" + key_id;
+
+	let server_out = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	let keys = user::done_key_fetch(private_key, server_out.as_str())?;
 
 	Ok(keys)
 }
@@ -201,9 +278,42 @@ pub async fn delete(base_url: String, auth_token: &str, user_identifier: &str, p
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
+/**
+# Remove a device from the user group.
+
+This can only be done when the actual device got a fresh jwt,
+to make sure that no hacker can remove devices.
+*/
+pub async fn delete_device(base_url: String, auth_token: &str, device_identifier: &str, password: &str, device_id: &str) -> VoidRes
+{
+	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, device_identifier).await?;
+
+	let (auth_key, master_key_encryption_key) = user::prepare_login(device_identifier, password, prep_login_out.as_str())?;
+
+	//make done login req again to get a fresh jwt
+	let url = base_url.clone() + "/api/v1/done_login";
+
+	let done_login_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+
+	let keys = user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
+
+	let url = base_url + "/api/v1/user/device/" + device_id;
+
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(keys.jwt.as_str()),
+	)
+	.await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
+
 //__________________________________________________________________________________________________
 
-pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifier: String) -> Res
+pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifier: String) -> VoidRes
 {
 	let url = base_url + "/api/v1/user";
 
@@ -211,9 +321,7 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 
 	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
-	let out: UserUpdateServerOut = handle_server_response(res.as_str())?;
-
-	Ok(out.user_identifier)
+	Ok(handle_general_server_response(res.as_str())?)
 }
 
 //__________________________________________________________________________________________________

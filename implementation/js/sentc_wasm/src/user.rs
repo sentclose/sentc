@@ -4,7 +4,7 @@ use sentc_crypto::user;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub struct KeyData
+pub struct DeviceKeyData
 {
 	private_key: String, //Base64 exported keys
 	public_key: String,
@@ -14,9 +14,9 @@ pub struct KeyData
 	exported_verify_key: String,
 }
 
-impl From<sentc_crypto::util::KeyData> for KeyData
+impl From<sentc_crypto::util::DeviceKeyData> for DeviceKeyData
 {
-	fn from(key: sentc_crypto::KeyData) -> Self
+	fn from(key: sentc_crypto::DeviceKeyData) -> Self
 	{
 		Self {
 			private_key: key.private_key,
@@ -32,10 +32,13 @@ impl From<sentc_crypto::util::KeyData> for KeyData
 #[wasm_bindgen]
 pub struct UserData
 {
-	keys: KeyData,
+	device_keys: DeviceKeyData,
+	user_keys: JsValue,
+
 	jwt: String,
 	refresh_token: String,
 	user_id: String,
+	device_id: String,
 }
 
 impl From<sentc_crypto::util::UserData> for UserData
@@ -43,10 +46,12 @@ impl From<sentc_crypto::util::UserData> for UserData
 	fn from(data: sentc_crypto::util::UserData) -> Self
 	{
 		Self {
+			device_keys: data.device_keys.into(),
+			user_keys: JsValue::from_serde(&data.user_keys).unwrap(),
 			jwt: data.jwt,
 			refresh_token: data.refresh_token,
 			user_id: data.user_id,
-			keys: data.keys.into(),
+			device_id: data.device_id,
 		}
 	}
 }
@@ -54,34 +59,39 @@ impl From<sentc_crypto::util::UserData> for UserData
 #[wasm_bindgen]
 impl UserData
 {
-	pub fn get_private_key(&self) -> String
+	pub fn get_user_keys(&self) -> JsValue
 	{
-		self.keys.private_key.clone()
+		self.user_keys.clone()
 	}
 
-	pub fn get_public_key(&self) -> String
+	pub fn get_device_private_key(&self) -> String
 	{
-		self.keys.public_key.clone()
+		self.device_keys.private_key.clone()
 	}
 
-	pub fn get_sign_key(&self) -> String
+	pub fn get_device_public_key(&self) -> String
 	{
-		self.keys.sign_key.clone()
+		self.device_keys.public_key.clone()
 	}
 
-	pub fn get_verify_key(&self) -> String
+	pub fn get_device_sign_key(&self) -> String
 	{
-		self.keys.verify_key.clone()
+		self.device_keys.sign_key.clone()
 	}
 
-	pub fn get_exported_public_key(&self) -> String
+	pub fn get_device_verify_key(&self) -> String
 	{
-		self.keys.exported_public_key.clone()
+		self.device_keys.verify_key.clone()
 	}
 
-	pub fn get_exported_verify_key(&self) -> String
+	pub fn get_device_exported_public_key(&self) -> String
 	{
-		self.keys.exported_verify_key.clone()
+		self.device_keys.exported_public_key.clone()
+	}
+
+	pub fn get_device_exported_verify_key(&self) -> String
+	{
+		self.device_keys.exported_verify_key.clone()
 	}
 
 	pub fn get_jwt(&self) -> String
@@ -97,6 +107,11 @@ impl UserData
 	pub fn get_id(&self) -> String
 	{
 		self.user_id.clone()
+	}
+
+	pub fn get_device_id(&self) -> String
+	{
+		self.device_id.clone()
 	}
 }
 
@@ -301,6 +316,68 @@ pub async fn register(base_url: String, auth_token: String, user_identifier: Str
 }
 
 #[wasm_bindgen]
+pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, JsValue>
+{
+	Ok(user::prepare_register_device_start(device_identifier, password)?)
+}
+
+#[wasm_bindgen]
+pub fn done_register_device_start(server_output: &str) -> Result<(), JsValue>
+{
+	Ok(user::done_register_device_start(server_output)?)
+}
+
+#[wasm_bindgen]
+pub async fn register_device_start(base_url: String, auth_token: String, device_identifier: String, password: String) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::register_device_start(
+		base_url,
+		auth_token.as_str(),
+		device_identifier.as_str(),
+		password.as_str(),
+	)
+	.await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub fn prepare_register_device(server_output: &str, user_keys: &str, key_count: i32) -> Result<String, JsValue>
+{
+	let key_session = if key_count > 50 { true } else { false };
+
+	let out = user::prepare_register_device(server_output, user_keys, key_session)?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub async fn register_device(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	server_output: String,
+	key_count: i32,
+	user_keys: String,
+) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::register_device(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		server_output.as_str(),
+		key_count,
+		user_keys.as_str(),
+	)
+	.await?;
+
+	match out {
+		Some(id) => Ok(id),
+		None => Ok(String::from("")),
+	}
+}
+
+#[wasm_bindgen]
 pub async fn prepare_login_start(base_url: String, auth_token: String, user_identifier: String) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::user::prepare_login_start(base_url, auth_token.as_str(), user_identifier.as_str()).await?;
@@ -348,6 +425,29 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 	.await?;
 
 	Ok(data.into())
+}
+
+#[wasm_bindgen]
+pub fn done_fetch_user_key(private_key: &str, server_output: &str) -> Result<JsValue, JsValue>
+{
+	let data = user::done_key_fetch(private_key, server_output)?;
+
+	Ok(JsValue::from_serde(&data).unwrap())
+}
+
+#[wasm_bindgen]
+pub async fn fetch_user_key(base_url: String, auth_token: String, jwt: String, key_id: String, private_key: String) -> Result<JsValue, JsValue>
+{
+	let data = sentc_crypto_full::user::fetch_user_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		key_id.as_str(),
+		private_key.as_str(),
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&data).unwrap())
 }
 
 #[wasm_bindgen]
@@ -424,7 +524,26 @@ pub async fn delete_user(base_url: String, auth_token: String, user_identifier: 
 }
 
 #[wasm_bindgen]
-pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<String, JsValue>
+pub async fn delete_device(
+	base_url: String,
+	auth_token: String,
+	device_identifier: String,
+	password: String,
+	device_id: String,
+) -> Result<(), JsValue>
+{
+	Ok(sentc_crypto_full::user::delete_device(
+		base_url,
+		auth_token.as_str(),
+		device_identifier.as_str(),
+		password.as_str(),
+		device_id.as_str(),
+	)
+	.await?)
+}
+
+#[wasm_bindgen]
+pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<(), JsValue>
 {
 	Ok(sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await?)
 }

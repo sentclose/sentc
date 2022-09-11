@@ -68,3 +68,39 @@ fn get_rand() -> impl CryptoRng + RngCore
 	#[cfg(feature = "default_env")]
 	OsRng
 }
+
+pub fn decrypt_private_key(encrypted_private_key: &[u8], master_key: &SymKey, keypair_encrypt_alg: &str) -> Result<Sk, Error>
+{
+	let private_key = match master_key {
+		SymKey::Aes(k) => alg::sym::aes_gcm::decrypt_with_generated_key(k, encrypted_private_key)?,
+	};
+
+	match keypair_encrypt_alg {
+		ECIES_OUTPUT => {
+			let private = private_key
+				.try_into()
+				.map_err(|_| Error::DecodePrivateKeyFailed)?;
+
+			Ok(Sk::Ecies(private))
+		},
+		_ => Err(Error::AlgNotFound),
+	}
+}
+
+pub fn decrypt_sing_key(encrypted_sign_key: &[u8], master_key: &SymKey, keypair_sign_alg: &str) -> Result<SignK, Error>
+{
+	let sign_key = match master_key {
+		SymKey::Aes(k) => alg::sym::aes_gcm::decrypt_with_generated_key(k, encrypted_sign_key)?,
+	};
+
+	match keypair_sign_alg {
+		ED25519_OUTPUT => {
+			let sign = sign_key
+				.try_into()
+				.map_err(|_| Error::DecodePrivateKeyFailed)?;
+
+			Ok(SignK::Ed25519(sign))
+		},
+		_ => Err(Error::AlgNotFound),
+	}
+}

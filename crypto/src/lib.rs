@@ -17,4 +17,4 @@ because using common from path via submodule resolve in version conflicts when u
 pub use sentc_crypto_common as sdk_common;
 
 pub use self::error::{err_to_msg, SdkError};
-pub use self::util::{KeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, UserData, VerifyKeyFormat};
+pub use self::util::{DeviceKeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData, VerifyKeyFormat};

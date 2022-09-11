@@ -20,7 +20,14 @@ use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
 use crate::util::public::handle_server_response;
-use crate::util::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
+use crate::util::{
+	export_raw_public_key_to_pem,
+	export_raw_verify_key_to_pem,
+	import_public_key_from_pem_with_alg,
+	PrivateKeyFormatInt,
+	PublicKeyFormatInt,
+	SymKeyFormatInt,
+};
 use crate::SdkError;
 
 #[cfg(not(feature = "rust"))]
@@ -30,6 +37,8 @@ mod group_rank_check;
 #[cfg(feature = "rust")]
 mod group_rust;
 
+#[cfg(not(feature = "rust"))]
+pub(crate) use self::group::prepare_group_keys_for_new_member_with_ref;
 #[cfg(not(feature = "rust"))]
 pub use self::group::{
 	decrypt_group_keys,
@@ -81,15 +90,22 @@ pub struct DoneGettingGroupKeysOutput
 	pub time: u128,
 }
 
+fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
+{
+	let out = prepare_create_private_internally(creators_public_key, false)?;
+
+	Ok(out.to_string().map_err(|_| SdkError::JsonToStringFailed)?)
+}
+
 /**
 Prepare the server input for the group creation.
 
 Use the public key of the group for creating a child group.
 */
-fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
+pub(crate) fn prepare_create_private_internally(creators_public_key: &PublicKeyFormatInt, user_group: bool) -> Result<CreateData, SdkError>
 {
 	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
-	let out = core_group::prepare_create(&creators_public_key.key)?;
+	let out = core_group::prepare_create(&creators_public_key.key, user_group)?;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
@@ -97,6 +113,28 @@ fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result
 
 	//2. export the public key
 	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
+
+	//3. user group values
+	let (encrypted_sign_key, verify_key, keypair_sign_alg) = if !user_group {
+		(None, None, None)
+	} else {
+		let encrypted_sign_key = match &out.encrypted_sign_key {
+			None => None,
+			Some(k) => Some(Base64::encode_string(k)),
+		};
+
+		let verify_key = match &out.verify_key {
+			None => None,
+			Some(k) => Some(export_raw_verify_key_to_pem(k)?),
+		};
+
+		let keypair_sign_alg = match out.keypair_sign_alg {
+			None => None,
+			Some(alg) => Some(alg.to_string()),
+		};
+
+		(encrypted_sign_key, verify_key, keypair_sign_alg)
+	};
 
 	let create_out = CreateData {
 		public_group_key,
@@ -106,16 +144,23 @@ fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result
 		group_key_alg: out.group_key_alg.to_string(),
 		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
 		creator_public_key_id: creators_public_key.key_id.clone(),
+
+		//user group values
+		encrypted_sign_key,
+		verify_key,
+		keypair_sign_alg,
 	};
 
-	Ok(create_out
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+	Ok(create_out)
 }
 
-fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
+fn key_rotation_internally(
+	previous_group_key: &SymKeyFormatInt,
+	invoker_public_key: &PublicKeyFormatInt,
+	user_group: bool,
+) -> Result<String, SdkError>
 {
-	let out = core_group::key_rotation(&previous_group_key.key, &invoker_public_key.key)?;
+	let out = core_group::key_rotation(&previous_group_key.key, &invoker_public_key.key, user_group)?;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key_by_user = Base64::encode_string(&out.encrypted_group_key_by_user);
@@ -125,6 +170,28 @@ fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_
 
 	//2. export the public key
 	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
+
+	//3. user group values
+	let (encrypted_sign_key, verify_key, keypair_sign_alg) = if !user_group {
+		(None, None, None)
+	} else {
+		let encrypted_sign_key = match &out.encrypted_sign_key {
+			None => None,
+			Some(k) => Some(Base64::encode_string(k)),
+		};
+
+		let verify_key = match &out.verify_key {
+			None => None,
+			Some(k) => Some(export_raw_verify_key_to_pem(k)?),
+		};
+
+		let keypair_sign_alg = match out.keypair_sign_alg {
+			None => None,
+			Some(alg) => Some(alg.to_string()),
+		};
+
+		(encrypted_sign_key, verify_key, keypair_sign_alg)
+	};
 
 	let rotation_out = KeyRotationData {
 		encrypted_group_key_by_user,
@@ -138,6 +205,11 @@ fn key_rotation_internally(previous_group_key: &SymKeyFormatInt, invoker_public_
 		encrypted_ephemeral_key,
 		previous_group_key_id: previous_group_key.key_id.clone(),
 		invoker_public_key_id: invoker_public_key.key_id.clone(),
+
+		//user group
+		encrypted_sign_key,
+		verify_key,
+		keypair_sign_alg,
 	};
 
 	Ok(rotation_out
@@ -216,7 +288,7 @@ fn get_group_key_from_server_output_internally(server_output: &str) -> Result<Gr
 /**
 Call this fn for each key, with the right private key
 */
-fn decrypt_group_keys_internally(
+pub(crate) fn decrypt_group_keys_internally(
 	private_key: &PrivateKeyFormatInt,
 	server_output: &GroupKeyServerOutput,
 ) -> Result<DoneGettingGroupKeysOutput, SdkError>
@@ -262,6 +334,19 @@ fn prepare_group_keys_for_new_member_internally(
 	key_session: bool, //this value must be set form each sdk impl from key storage when more than 100 keys are used
 ) -> Result<String, SdkError>
 {
+	let server_input = prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session)?;
+
+	Ok(server_input
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)?)
+}
+
+pub(crate) fn prepare_group_keys_for_new_member_private_internally(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormatInt],
+	key_session: bool,
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
+{
 	let public_key = import_public_key_from_pem_with_alg(
 		requester_public_key_data.public_key_pem.as_str(),
 		requester_public_key_data.public_key_alg.as_str(),
@@ -278,9 +363,7 @@ fn prepare_group_keys_for_new_member_internally(
 		key_session,
 	};
 
-	Ok(server_input
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+	Ok(server_input)
 }
 
 /**
@@ -373,10 +456,10 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
-	use crate::util::KeyData;
+	use crate::UserKeyData;
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -392,6 +475,10 @@ pub(crate) mod test_fn
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let group_server_output = GroupServerData {
@@ -431,7 +518,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &KeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.as_str()).unwrap();
@@ -447,6 +534,10 @@ pub(crate) mod test_fn
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
 		};
 
 		let group_server_output = GroupServerData {

@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
@@ -11,12 +11,16 @@ use serde_json::{from_str, to_string};
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
+	done_key_fetch_internally,
 	done_login_internally,
+	done_register_device_start_internally,
 	done_register_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
 	prepare_refresh_jwt_internally,
+	prepare_register_device_internally,
+	prepare_register_device_start_internally,
 	prepare_update_user_keys_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
@@ -26,15 +30,19 @@ use crate::util::{
 	export_private_key_to_string,
 	export_public_key_to_string,
 	export_sign_key_to_string,
+	export_sym_key_to_string,
 	export_verify_key_to_string,
 	import_private_key,
 	import_sign_key,
-	KeyData,
-	KeyDataInt,
+	import_sym_key_from_format,
+	DeviceKeyData,
+	DeviceKeyDataInt,
 	UserData,
 	UserDataInt,
+	UserKeyData,
+	UserKeyDataInt,
 };
-use crate::SdkError;
+use crate::{group, SdkError, SymKeyFormat};
 
 #[derive(Serialize, Deserialize)]
 pub enum MasterKeyFormat
@@ -73,6 +81,37 @@ pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
 pub fn done_register(server_output: &str) -> Result<UserId, String>
 {
 	Ok(done_register_internally(server_output)?)
+}
+
+pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, String>
+{
+	Ok(prepare_register_device_start_internally(device_identifier, password)?)
+}
+
+pub fn done_register_device_start(server_output: &str) -> Result<(), String>
+{
+	Ok(done_register_device_start_internally(server_output)?)
+}
+
+pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session: bool) -> Result<String, String>
+{
+	let user_keys: Vec<SymKeyFormat> = from_str(user_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
+
+	let mut saved_keys = Vec::with_capacity(user_keys.len());
+
+	for user_key in user_keys {
+		let key = import_sym_key_from_format(&user_key)?;
+
+		saved_keys.push(key);
+	}
+
+	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
+
+	Ok(prepare_register_device_internally(
+		server_output,
+		&split_group_keys,
+		key_session,
+	)?)
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, String>
@@ -125,6 +164,17 @@ pub fn done_login(
 	export_user_data(result)
 }
 
+pub fn done_key_fetch(private_key: &str, server_output: &str) -> Result<UserKeyData, String>
+{
+	let private_key = import_private_key(private_key)?;
+
+	let key = done_key_fetch_internally(&private_key, server_output)?;
+
+	let user_keys = export_user_key_data(key)?;
+
+	Ok(user_keys)
+}
+
 pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, String>
 {
 	Ok(prepare_user_identifier_update_internally(user_identifier)?)
@@ -158,6 +208,7 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 	)?)
 }
 
+//TODO remove
 pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<String, String>
 {
 	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|e| SdkError::JsonParseFailed(e))?;
@@ -168,7 +219,7 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 
 	for result in out {
 		//like done login but for all keys
-		let output = export_key_data(result)?;
+		let output = export_device_key_data(result)?;
 
 		output_arr.push(output);
 	}
@@ -179,21 +230,53 @@ pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<S
 
 fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 {
-	let jwt = user_data.jwt;
-	let refresh_token = user_data.refresh_token;
-	let user_id = user_data.user_id;
+	let device_keys = export_device_key_data(user_data.device_keys)?;
 
-	let keys = export_key_data(user_data.keys)?;
+	let mut user_keys = Vec::with_capacity(user_data.user_keys.len());
+
+	for user_key in user_data.user_keys {
+		user_keys.push(export_user_key_data(user_key)?)
+	}
 
 	Ok(UserData {
-		keys,
-		jwt,
-		refresh_token,
-		user_id,
+		user_keys,
+		device_keys,
+		jwt: user_data.jwt,
+		refresh_token: user_data.refresh_token,
+		user_id: user_data.user_id,
+		device_id: user_data.device_id,
 	})
 }
 
-fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
+fn export_user_key_data(user_key: UserKeyDataInt) -> Result<UserKeyData, String>
+{
+	let private_key = export_private_key_to_string(user_key.private_key)?;
+	let public_key = export_public_key_to_string(user_key.public_key)?;
+	let sign_key = export_sign_key_to_string(user_key.sign_key)?;
+	let verify_key = export_verify_key_to_string(user_key.verify_key)?;
+	let group_key_id = user_key.group_key.key_id.to_string();
+	let group_key = export_sym_key_to_string(user_key.group_key)?;
+
+	Ok(UserKeyData {
+		private_key,
+		public_key,
+		group_key,
+		time: user_key.time,
+		group_key_id,
+		sign_key,
+		verify_key,
+		exported_public_key: user_key
+			.exported_public_key
+			.to_string()
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
+		exported_verify_key: user_key
+			.exported_verify_key
+			.to_string()
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
+	})
+}
+
+fn export_device_key_data(key_data: DeviceKeyDataInt) -> Result<DeviceKeyData, String>
 {
 	let private_key = export_private_key_to_string(key_data.private_key)?;
 	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
@@ -201,7 +284,7 @@ fn export_key_data(key_data: KeyDataInt) -> Result<KeyData, String>
 	let sign_key = export_sign_key_to_string(key_data.sign_key)?;
 	let verify_key = export_verify_key_to_string(key_data.verify_key)?;
 
-	Ok(KeyData {
+	Ok(DeviceKeyData {
 		private_key,
 		public_key,
 		sign_key,
@@ -222,7 +305,17 @@ mod test
 {
 	extern crate std;
 
-	use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
+	use alloc::vec;
+
+	use sentc_crypto_common::group::CreateData;
+	use sentc_crypto_common::user::{
+		ChangePasswordData,
+		RegisterData,
+		UserDeviceDoneRegisterInput,
+		UserDeviceRegisterInput,
+		UserDeviceRegisterOutput,
+	};
+	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
 	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
@@ -249,7 +342,7 @@ mod test
 
 		let out = RegisterData::from_string(out.as_str()).unwrap();
 
-		let server_output = simulate_server_prepare_login(&out.derived);
+		let server_output = simulate_server_prepare_login(&out.device.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
 		let (_auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.as_str()).unwrap();
@@ -263,7 +356,7 @@ mod test
 		)
 		.unwrap();
 
-		let private_key = match PrivateKeyFormat::from_string(login_out.keys.private_key.as_str()).unwrap() {
+		let private_key = match PrivateKeyFormat::from_string(login_out.user_keys[0].private_key.as_str()).unwrap() {
 			PrivateKeyFormat::Ecies {
 				key_id: _,
 				key,
@@ -285,7 +378,7 @@ mod test
 		let out_new = RegisterData::from_string(out.as_str()).unwrap();
 		let out_old = RegisterData::from_string(out.as_str()).unwrap();
 
-		let prep_server_output = simulate_server_prepare_login(&out_new.derived);
+		let prep_server_output = simulate_server_prepare_login(&out_new.device.derived);
 		let done_server_output = simulate_server_done_login(out_new);
 
 		let pw_change_out = change_password(
@@ -300,12 +393,99 @@ mod test
 
 		assert_ne!(
 			pw_change_out.new_client_random_value,
-			out_old.derived.client_random_value
+			out_old.device.derived.client_random_value
 		);
 
 		assert_ne!(
 			pw_change_out.new_encrypted_master_key,
-			out_old.master_key.encrypted_master_key
+			out_old.device.master_key.encrypted_master_key
 		);
+	}
+
+	#[test]
+	fn test_new_device()
+	{
+		//1. register the main device
+		let out_string = register("hello", "1234").unwrap();
+		let out = RegisterData::from_string(out_string.as_str()).unwrap();
+
+		let server_output = simulate_server_prepare_login(&out.device.derived);
+		let (_auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
+
+		let server_output = simulate_server_done_login(out);
+
+		//now save the values
+		let user = done_login(
+			master_key_encryption_key.as_str(), //the value comes from prepare login
+			server_output.as_str(),
+		)
+		.unwrap();
+
+		//2. prepare the device register
+		let device_id = "hello_device";
+		let device_pw = "12345";
+
+		let server_input = prepare_register_device_start(device_id, device_pw).unwrap();
+
+		//3. simulate server
+		let input: UserDeviceRegisterInput = from_str(&server_input).unwrap();
+
+		//4. server output
+		let server_output = UserDeviceRegisterOutput {
+			device_id: "abc".to_string(),
+			token: "1234567890".to_string(),
+			device_identifier: device_id.to_string(),
+			public_key_string: input.derived.public_key.to_string(),
+			keypair_encrypt_alg: input.derived.keypair_encrypt_alg.to_string(),
+		};
+
+		let server_output = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(server_output),
+		};
+
+		let server_output = to_string(&server_output).unwrap();
+
+		//5. check the server output
+		done_register_device_start(&server_output).unwrap();
+
+		//6. register the device with the main device
+		let user_keys = to_string(&vec![SymKeyFormat::from_string(&user.user_keys[0].group_key).unwrap()]).unwrap();
+
+		let out = prepare_register_device(&server_output, &user_keys, false).unwrap();
+
+		let out: UserDeviceDoneRegisterInput = from_str(&out).unwrap();
+		let user_keys = &out.user_keys.keys[0];
+
+		//7. check login with new device
+		let out_new_device = RegisterData::from_string(out_string.as_str()).unwrap();
+
+		let server_output = simulate_server_prepare_login(&input.derived);
+		let (_auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
+
+		let server_output = simulate_server_done_login(RegisterData {
+			device: input,
+			group: CreateData {
+				encrypted_group_key: user_keys.encrypted_group_key.to_string(),
+				group_key_alg: out_new_device.group.group_key_alg,
+				encrypted_group_key_alg: user_keys.encrypted_alg.to_string(),
+
+				//private and sign key are encrypted by group key and for all device the same
+				encrypted_private_group_key: out_new_device.group.encrypted_private_group_key,
+				public_group_key: out_new_device.group.public_group_key,
+				keypair_encrypt_alg: out_new_device.group.keypair_encrypt_alg,
+				creator_public_key_id: "abc".to_string(),
+				encrypted_sign_key: out_new_device.group.encrypted_sign_key,
+				verify_key: out_new_device.group.verify_key,
+				keypair_sign_alg: out_new_device.group.keypair_sign_alg,
+			},
+		});
+
+		let new_device_data = done_login(master_key_encryption_key.as_str(), server_output.as_str()).unwrap();
+
+		assert_eq!(user.user_keys[0].group_key, new_device_data.user_keys[0].group_key);
+		assert_ne!(user.device_keys.private_key, new_device_data.device_keys.private_key);
 	}
 }
