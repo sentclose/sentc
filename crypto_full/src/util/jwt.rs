@@ -29,7 +29,9 @@ pub struct Claims
 
 	//sentc
 	pub internal_user_id: String,
-	pub user_identifier: String,
+	pub group_id: String,
+	pub device_id: String,
+	pub device_identifier: String,
 	pub fresh: bool, //was this token from refresh jwt or from login
 }
 

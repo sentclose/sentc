@@ -13,7 +13,9 @@ pub struct Claims
 
 	//sentc
 	internal_user_id: String,
-	user_identifier: String,
+	group_id: String,
+	device_id: String,
+	device_identifier: String,
 	fresh: bool, //was this token from refresh jwt or from login
 }
 
@@ -45,9 +47,19 @@ impl Claims
 		self.internal_user_id.clone()
 	}
 
-	pub fn get_user_identifier(&self) -> String
+	pub fn get_device_id(&self) -> String
 	{
-		self.user_identifier.clone()
+		self.device_id.clone()
+	}
+
+	pub fn get_group_id(&self) -> String
+	{
+		self.group_id.clone()
+	}
+
+	pub fn get_device_identifier(&self) -> String
+	{
+		self.device_identifier.clone()
 	}
 
 	pub fn get_fresh(&self) -> bool
@@ -66,7 +78,9 @@ impl From<sentc_crypto_full::jwt::Claims> for Claims
 			exp: claims.exp,
 			iat: claims.iat,
 			internal_user_id: claims.internal_user_id,
-			user_identifier: claims.user_identifier,
+			group_id: claims.group_id,
+			device_id: claims.device_id,
+			device_identifier: claims.device_identifier,
 			fresh: claims.fresh,
 		}
 	}
