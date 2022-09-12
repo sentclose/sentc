@@ -71,6 +71,7 @@ pub use self::user::{
 	done_login,
 	done_register,
 	done_register_device_start,
+	generate_user_register_data,
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
@@ -92,6 +93,7 @@ pub use self::user_rust::{
 	done_login,
 	done_register,
 	done_register_device_start,
+	generate_user_register_data,
 	prepare_check_user_identifier_available,
 	prepare_login,
 	prepare_login_start,
@@ -121,6 +123,16 @@ fn done_check_user_identifier_available_internally(server_output: &str) -> Resul
 	let server_output: UserIdentifierAvailableServerOutput = handle_server_response(server_output)?;
 
 	Ok(server_output.available)
+}
+
+fn generate_user_register_data_internally() -> Result<(String, String), SdkError>
+{
+	let (identifier, password) = sentc_crypto_core::generate_user_register_data()?;
+
+	let encoded_identifier = Base64::encode_string(&identifier);
+	let encoded_password = Base64::encode_string(&password);
+
+	Ok((encoded_identifier, encoded_password))
 }
 
 /**
@@ -369,7 +381,7 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 			//handle it, only for user group
 			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
-			let sign_key = sentc_crypto_core::decrypt_sing_key(&encrypted_sign_key, &keys.group_key.key, keypair_sign_alg)?;
+			let sign_key = sentc_crypto_core::decrypt_sign_key(&encrypted_sign_key, &keys.group_key.key, keypair_sign_alg)?;
 
 			let verify_key = import_verify_key_from_pem_with_alg(server_verify_key.as_str(), keypair_sign_alg.as_str())?;
 
