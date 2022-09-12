@@ -12,6 +12,7 @@ use crate::user::{
 	done_login_internally,
 	done_register_device_start_internally,
 	done_register_internally,
+	generate_user_register_data_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_internally,
 	prepare_login_start_internally,
@@ -34,6 +35,11 @@ pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<
 pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, SdkError>
 {
 	done_check_user_identifier_available_internally(server_output)
+}
+
+pub fn generate_user_register_data() -> Result<(String, String), SdkError>
+{
+	generate_user_register_data_internally()
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
@@ -137,6 +143,14 @@ mod test
 		let out = register(username, password).unwrap();
 
 		std::println!("rust: {}", out);
+	}
+
+	#[test]
+	fn test_register_with_generated_data()
+	{
+		let (username, password) = generate_user_register_data().unwrap();
+
+		register(&username, &password).unwrap();
 	}
 
 	#[test]

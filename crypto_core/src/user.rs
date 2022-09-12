@@ -4,7 +4,7 @@ use crate::alg::{asym, pw_hash, sign, sym};
 use crate::error::Error;
 use crate::{
 	decrypt_private_key,
-	decrypt_sing_key,
+	decrypt_sign_key,
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	DeriveKeysForAuthOutput,
@@ -175,7 +175,7 @@ pub fn done_login(
 
 	//decode the private keys to the enums to use them later
 	let private_key = decrypt_private_key(encrypted_private_key, &master_key, keypair_encrypt_alg)?;
-	let sign_key = decrypt_sing_key(encrypted_sign_key, &master_key, keypair_sign_alg)?;
+	let sign_key = decrypt_sign_key(encrypted_sign_key, &master_key, keypair_sign_alg)?;
 
 	Ok(LoginDoneOutput {
 		private_key,

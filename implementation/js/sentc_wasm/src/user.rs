@@ -4,6 +4,27 @@ use sentc_crypto::user;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+pub struct GeneratedRegisterData
+{
+	identifier: String,
+	password: String,
+}
+
+#[wasm_bindgen]
+impl GeneratedRegisterData
+{
+	pub fn get_identifier(&self) -> String
+	{
+		self.identifier.clone()
+	}
+
+	pub fn get_password(&self) -> String
+	{
+		self.password.clone()
+	}
+}
+
+#[wasm_bindgen]
 pub struct DeviceKeyData
 {
 	private_key: String, //Base64 exported keys
@@ -267,6 +288,17 @@ pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool,
 	let out = user::done_check_user_identifier_available(server_output)?;
 
 	Ok(out)
+}
+
+#[wasm_bindgen]
+pub fn generate_user_register_data() -> Result<GeneratedRegisterData, JsValue>
+{
+	let (identifier, password) = user::generate_user_register_data()?;
+
+	Ok(GeneratedRegisterData {
+		identifier,
+		password,
+	})
 }
 
 /**

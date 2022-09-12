@@ -87,7 +87,7 @@ pub fn decrypt_private_key(encrypted_private_key: &[u8], master_key: &SymKey, ke
 	}
 }
 
-pub fn decrypt_sing_key(encrypted_sign_key: &[u8], master_key: &SymKey, keypair_sign_alg: &str) -> Result<SignK, Error>
+pub fn decrypt_sign_key(encrypted_sign_key: &[u8], master_key: &SymKey, keypair_sign_alg: &str) -> Result<SignK, Error>
 {
 	let sign_key = match master_key {
 		SymKey::Aes(k) => alg::sym::aes_gcm::decrypt_with_generated_key(k, encrypted_sign_key)?,
@@ -103,4 +103,20 @@ pub fn decrypt_sing_key(encrypted_sign_key: &[u8], master_key: &SymKey, keypair_
 		},
 		_ => Err(Error::AlgNotFound),
 	}
+}
+
+pub fn generate_user_register_data() -> Result<([u8; 20], [u8; 40]), Error>
+{
+	let mut identifier = [0u8; 20];
+	let mut password = [0u8; 40];
+
+	let mut rng = get_rand();
+
+	rng.try_fill_bytes(&mut identifier)
+		.map_err(|_| Error::KeyCreationFailed)?;
+
+	rng.try_fill_bytes(&mut password)
+		.map_err(|_| Error::KeyCreationFailed)?;
+
+	Ok((identifier, password))
 }
