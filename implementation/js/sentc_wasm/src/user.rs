@@ -502,6 +502,27 @@ pub async fn init_user(base_url: String, auth_token: String, jwt: String, refres
 }
 
 #[wasm_bindgen]
+pub async fn get_user_devices(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	last_fetched_time: String,
+	last_fetched_id: String,
+) -> Result<JsValue, JsValue>
+{
+	let out = sentc_crypto_full::user::get_user_devices(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_id.as_str(),
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
 pub async fn reset_password(
 	base_url: String,
 	auth_token: String,

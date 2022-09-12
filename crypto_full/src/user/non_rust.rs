@@ -1,7 +1,8 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use sentc_crypto::{UserData, UserKeyData};
-use sentc_crypto_common::user::UserInitServerOutput;
+use sentc_crypto_common::user::{UserDeviceList, UserInitServerOutput};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
 
 pub type Res = Result<String, String>;
@@ -14,3 +15,4 @@ pub type UserPublicKeyRes = Result<(String, EncryptionKeyPairId), String>;
 pub type UserVerifyKeyRes = Result<(String, SignKeyPairId), String>;
 pub type InitRes = Result<UserInitServerOutput, String>;
 pub type SessionRes = Result<Option<String>, String>;
+pub type DeviceListRes = Result<Vec<UserDeviceList>, String>;
