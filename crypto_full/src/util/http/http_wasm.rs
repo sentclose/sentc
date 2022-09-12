@@ -15,13 +15,13 @@ pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 {
 	let resp = make_req_raw(method, url, auth_token, body, jwt).await?;
 
-	let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErr)?)
+	let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErrText)?)
 		.await
-		.map_err(|_| SdkFullError::ResponseErr)?;
+		.map_err(|_| SdkFullError::ResponseErrText)?;
 
 	match text.as_string() {
 		Some(v) => Ok(v),
-		None => return Err(SdkFullError::ResponseErr),
+		None => return Err(SdkFullError::ResponseErrText),
 	}
 }
 
@@ -39,13 +39,13 @@ pub async fn make_req_buffer(
 
 	if status >= 400 {
 		//don't download part when there is an error
-		let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErr)?)
+		let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErrText)?)
 			.await
-			.map_err(|_| SdkFullError::ResponseErr)?;
+			.map_err(|_| SdkFullError::ResponseErrText)?;
 
 		let text = match text.as_string() {
 			Some(v) => v,
-			None => return Err(SdkFullError::ResponseErr),
+			None => return Err(SdkFullError::ResponseErrText),
 		};
 
 		//when status is 400 then there is an error and handle server response will return the error
@@ -54,9 +54,12 @@ pub async fn make_req_buffer(
 		return Ok(Vec::new());
 	}
 
-	let buffer = JsFuture::from(resp.array_buffer().map_err(|_| SdkFullError::ResponseErr)?)
-		.await
-		.map_err(|_| SdkFullError::ResponseErr)?;
+	let buffer = JsFuture::from(
+		resp.array_buffer()
+			.map_err(|_| SdkFullError::ResponseErrBytes)?,
+	)
+	.await
+	.map_err(|_| SdkFullError::ResponseErrBytes)?;
 
 	let type_buf = Uint8Array::new(&buffer);
 	let bytes: Vec<u8> = type_buf.to_vec();
@@ -108,19 +111,19 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 	let window = web_sys::window().unwrap();
 	let resp_value = JsFuture::from(window.fetch_with_request(&request))
 		.await
-		.map_err(|_| SdkFullError::ResponseErr)?;
+		.map_err(|_| SdkFullError::RequestErr)?;
 
 	let resp: Response = resp_value
 		.dyn_into()
-		.map_err(|_| SdkFullError::ResponseErr)?;
+		.map_err(|_| SdkFullError::ResponseErrText)?;
 
-	let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErr)?)
+	let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErrText)?)
 		.await
-		.map_err(|_| SdkFullError::ResponseErr)?;
+		.map_err(|_| SdkFullError::ResponseErrText)?;
 
 	match text.as_string() {
 		Some(v) => Ok(v),
-		None => return Err(SdkFullError::ResponseErr),
+		None => return Err(SdkFullError::ResponseErrText),
 	}
 }
 
@@ -170,11 +173,11 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 	let window = web_sys::window().unwrap();
 	let resp_value = JsFuture::from(window.fetch_with_request(&request))
 		.await
-		.map_err(|_| SdkFullError::ResponseErr)?;
+		.map_err(|_| SdkFullError::RequestErr)?;
 
 	let resp: Response = resp_value
 		.dyn_into()
-		.map_err(|_| SdkFullError::ResponseErr)?;
+		.map_err(|_| SdkFullError::RequestErr)?;
 
 	return Ok(resp);
 }

@@ -13,7 +13,7 @@ pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 {
 	let res = make_req_raw(method, url, auth_token, body, jwt).await?;
 
-	res.text().await.map_err(|e| handle_req_err(e))
+	res.text().await.map_err(|_e| SdkFullError::ResponseErrText)
 }
 
 pub async fn make_req_buffer(
@@ -27,12 +27,19 @@ pub async fn make_req_buffer(
 	let res = make_req_raw(method, url, auth_token, body, jwt).await?;
 
 	if res.status().as_u16() >= 400 {
-		let text = res.text().await.map_err(|e| handle_req_err(e))?;
+		let text = res
+			.text()
+			.await
+			.map_err(|_e| SdkFullError::ResponseErrText)?;
 		handle_server_response::<ServerSuccessOutput>(text.as_str())?;
 		return Ok(Vec::new());
 	}
 
-	let buffer = res.bytes().await.map_err(|e| handle_req_err(e))?.to_vec();
+	let buffer = res
+		.bytes()
+		.await
+		.map_err(|_e| SdkFullError::ResponseErrBytes)?
+		.to_vec();
 
 	Ok(buffer)
 }
@@ -58,9 +65,12 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 
 	let builder = builder.body(body);
 
-	let res = builder.send().await.map_err(|e| handle_req_err(e))?;
+	let res = builder
+		.send()
+		.await
+		.map_err(|_e| SdkFullError::RequestErr)?;
 
-	res.text().await.map_err(|e| handle_req_err(e))
+	res.text().await.map_err(|_e| SdkFullError::ResponseErrText)
 }
 
 async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<Response, SdkFullError>
@@ -87,14 +97,10 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 		Some(b) => builder.body(b),
 	};
 
-	let res = builder.send().await.map_err(|e| handle_req_err(e))?;
+	let res = builder
+		.send()
+		.await
+		.map_err(|_e| SdkFullError::RequestErr)?;
 
 	Ok(res)
-}
-
-fn handle_req_err(error: reqwest::Error) -> SdkFullError
-{
-	//TODO handle the different err of reqwest
-
-	SdkFullError::RequestErr
 }
