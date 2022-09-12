@@ -1,4 +1,5 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use sentc_crypto::{UserData, UserKeyData};
 use sentc_crypto_common::user::{UserDeviceList, UserInitServerOutput, UserPublicKeyData, UserVerifyKeyData};

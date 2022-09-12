@@ -386,6 +386,17 @@ pub fn join_user_session<'a>(
 	)
 }
 
+pub async fn stop_group_invites(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32) -> VoidRes
+{
+	sentc_crypto::group::check_create_sub_group(admin_rank)?;
+
+	let url = base_url + "/api/v1/group/" + group_id + "/change_invite";
+
+	let res = make_req(HttpMethod::PATCH, url.as_str(), auth_token, None, Some(jwt)).await?;
+
+	Ok(handle_general_server_response(res.as_str())?)
+}
+
 //__________________________________________________________________________________________________
 
 pub async fn leave_group(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> VoidRes
