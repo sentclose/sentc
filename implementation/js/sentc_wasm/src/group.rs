@@ -676,6 +676,14 @@ pub async fn group_join_user_session(
 	Ok(())
 }
 
+#[wasm_bindgen]
+pub async fn group_stop_group_invites(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32) -> Result<(), JsValue>
+{
+	sentc_crypto_full::group::stop_group_invites(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), admin_rank).await?;
+
+	Ok(())
+}
+
 //__________________________________________________________________________________________________
 
 #[wasm_bindgen]
