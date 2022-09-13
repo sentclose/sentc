@@ -7,6 +7,6 @@ mod error;
 pub mod file;
 pub mod group;
 pub mod user;
-mod util;
+pub mod util;
 
 pub use self::util::jwt;
