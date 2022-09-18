@@ -152,6 +152,7 @@ pub async fn file_download_file_meta(base_url: String, auth_token: String, jwt: 
 #[wasm_bindgen]
 pub async fn file_download_and_decrypt_file_part(
 	base_url: String,
+	url_prefix: String,
 	auth_token: String,
 	part_id: String,
 	content_key: String,
@@ -160,6 +161,7 @@ pub async fn file_download_and_decrypt_file_part(
 {
 	let out = sentc_crypto_full::file::download_and_decrypt_file_part(
 		base_url,
+		url_prefix,
 		auth_token.as_str(),
 		part_id.as_str(),
 		content_key.as_str(),
@@ -248,6 +250,7 @@ pub fn file_done_register_file(server_output: &str) -> Result<FileDoneRegister, 
 #[wasm_bindgen]
 pub async fn file_upload_part(
 	base_url: String,
+	url_prefix: String,
 	auth_token: String,
 	jwt: String,
 	session_id: String,
@@ -260,6 +263,7 @@ pub async fn file_upload_part(
 {
 	sentc_crypto_full::file::upload_part(
 		base_url,
+		url_prefix,
 		auth_token.as_str(),
 		jwt.as_str(),
 		session_id.as_str(),
