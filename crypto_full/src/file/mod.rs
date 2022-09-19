@@ -67,6 +67,8 @@ pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &st
 
 pub async fn download_and_decrypt_file_part(
 	base_url: String,
+	#[cfg(not(feature = "rust"))] url_prefix: String,
+	#[cfg(feature = "rust")] url_prefix: Option<String>,
 	auth_token: &str,
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] content_key: &str,
@@ -75,7 +77,18 @@ pub async fn download_and_decrypt_file_part(
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
 {
-	let url = base_url + "/api/v1/file/part/" + part_id;
+	#[cfg(not(feature = "rust"))]
+	let url_prefix = match url_prefix.as_str() {
+		"" => None,
+		_ => Some(url_prefix),
+	};
+
+	let url_prefix = match url_prefix {
+		Some(p) => p,
+		None => base_url + "/api/v1/file/part",
+	};
+
+	let url = url_prefix + "/" + part_id;
 
 	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None).await?;
 
@@ -127,6 +140,8 @@ pub async fn register_file(
 
 pub async fn upload_part(
 	base_url: String,
+	#[cfg(not(feature = "rust"))] url_prefix: String,
+	#[cfg(feature = "rust")] url_prefix: Option<String>,
 	auth_token: &str,
 	jwt: &str,
 	session_id: &str,
@@ -139,9 +154,20 @@ pub async fn upload_part(
 	part: &[u8],
 ) -> VoidRes
 {
+	#[cfg(not(feature = "rust"))]
+	let url_prefix = match url_prefix.as_str() {
+		"" => None,
+		_ => Some(url_prefix),
+	};
+
+	let url_prefix = match url_prefix {
+		Some(p) => p,
+		None => base_url + "/api/v1/file/part",
+	};
+
 	let encrypted = sentc_crypto::crypto::encrypt_symmetric(content_key, part, sign_key)?;
 
-	let url = base_url + "/api/v1/file/part/" + session_id + "/" + sequence.to_string().as_str() + "/" + end.to_string().as_str();
+	let url = url_prefix + "/" + session_id + "/" + sequence.to_string().as_str() + "/" + end.to_string().as_str();
 
 	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt)).await?;
 
