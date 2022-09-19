@@ -64,15 +64,15 @@ Build with flutter rust bridge and cargo-ndk.
 1. In the current workspace, generate the flutter code
 
 ````shell
-flutter_rust_bridge_codegen --rust-input implementation/dart/sentc/rust/src/sentc.rs --dart-output implementation/dart/sentc/lib/generated.dart --llvm-path <path-to-your-llvm>
+flutter_rust_bridge_codegen --rust-input implementation/dart/sentc_flutter_rust/src/sentc.rs --dart-output implementation/dart/sentc/lib/generated.dart --llvm-path <path-to-your-llvm>
 ````
 
-2. build the android code with cargo-ndk in `implementation/dart/sentc/rust`
+2. build the android code with cargo-ndk in `implementation/dart/sentc_flutter_rust`
 
 ````shell
-cd ./implementation/dart/sentc/rust
+cd ./implementation/dart/sentc_flutter_rust
 ````
 
 ````shell
-cargo ndk -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 -o ../android/src/main/jniLibs build --release
+cargo ndk -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 -o ../sentc/android/src/main/jniLibs build --release
 ````
