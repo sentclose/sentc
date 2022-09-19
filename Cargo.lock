@@ -1060,7 +1060,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_wasm"
-version = "0.3.0"
+version = "0.3.2"
 dependencies = [
  "getrandom",
  "js-sys",
