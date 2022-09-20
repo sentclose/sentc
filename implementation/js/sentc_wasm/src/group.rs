@@ -504,6 +504,7 @@ pub async fn group_invite_user_session(
 	auth_token: String,
 	jwt: String,
 	id: String,
+	auto_invite: bool,
 	session_id: String,
 	user_public_key: String,
 	group_keys: String,
@@ -515,6 +516,7 @@ pub async fn group_invite_user_session(
 		jwt.as_str(),
 		id.as_str(),
 		session_id.as_str(),
+		auto_invite,
 		user_public_key.as_str(),
 		group_keys.as_str(),
 	)

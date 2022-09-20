@@ -236,18 +236,25 @@ pub fn invite_user_session<'a>(
 	jwt: &'a str,
 	group_id: &'a str,
 	session_id: &'a str,
+	auto: bool,
 	#[cfg(not(feature = "rust"))] user_public_key: &'a str,
 	#[cfg(feature = "rust")] user_public_key: &'a sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &'a str,
 	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::util::SymKeyFormat],
 ) -> impl Future<Output = VoidRes> + 'a
 {
+	//use the join session for auto invited user
+	let kind = match auto {
+		true => SessionKind::Join,
+		false => SessionKind::Invite,
+	};
+
 	insert_session_keys(
 		base_url,
 		auth_token,
 		jwt,
 		group_id,
-		SessionKind::Invite,
+		kind,
 		session_id,
 		user_public_key,
 		group_keys,
