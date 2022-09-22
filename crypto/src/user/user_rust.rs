@@ -1,7 +1,5 @@
 use alloc::string::String;
-use alloc::vec::Vec;
 
-use sentc_crypto_common::user::MultipleLoginServerOutput;
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
@@ -19,12 +17,11 @@ use crate::user::{
 	prepare_refresh_jwt_internally,
 	prepare_register_device_internally,
 	prepare_register_device_start_internally,
-	prepare_update_user_keys_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
 	reset_password_internally,
 };
-use crate::util::{DeviceKeyData, PrivateKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData};
+use crate::util::{PrivateKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData};
 use crate::SdkError;
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
@@ -105,11 +102,6 @@ pub fn prepare_refresh_jwt(refresh_token: &str) -> Result<String, SdkError>
 pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, SdkError>
 {
 	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
-}
-
-pub fn prepare_update_user_keys(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<DeviceKeyData>, SdkError>
-{
-	prepare_update_user_keys_internally(password, server_output)
 }
 
 #[cfg(test)]

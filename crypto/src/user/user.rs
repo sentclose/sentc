@@ -2,7 +2,6 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::user::MultipleLoginServerOutput;
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
@@ -22,7 +21,6 @@ use crate::user::{
 	prepare_refresh_jwt_internally,
 	prepare_register_device_internally,
 	prepare_register_device_start_internally,
-	prepare_update_user_keys_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
 	reset_password_internally,
@@ -212,26 +210,6 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 		&decrypted_private_key,
 		&decrypted_sign_key,
 	)?)
-}
-
-//TODO remove
-pub fn prepare_update_user_keys(password: &str, server_output: &str) -> Result<String, String>
-{
-	let server_output = MultipleLoginServerOutput::from_string(server_output).map_err(|e| SdkError::JsonParseFailed(e))?;
-
-	let out = prepare_update_user_keys_internally(password, &server_output)?;
-
-	let mut output_arr = Vec::with_capacity(out.len());
-
-	for result in out {
-		//like done login but for all keys
-		let output = export_device_key_data(result)?;
-
-		output_arr.push(output);
-	}
-
-	//now this keys can be used to new encrypt the old content
-	Ok(to_string(&output_arr).map_err(|_e| SdkError::JsonToStringFailed)?)
 }
 
 fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
