@@ -97,7 +97,7 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), String>
 	Ok(done_register_device_start_internally(server_output)?)
 }
 
-pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session: bool) -> Result<String, String>
+pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session: bool) -> Result<(String, String), String>
 {
 	let user_keys: Vec<SymKeyFormat> = from_str(user_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
 
@@ -111,11 +111,14 @@ pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session
 
 	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	Ok(prepare_register_device_internally(
-		server_output,
-		&split_group_keys,
-		key_session,
-	)?)
+	let (input, exported_public_key) = prepare_register_device_internally(server_output, &split_group_keys, key_session)?;
+
+	Ok((
+		input,
+		exported_public_key
+			.to_string()
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
+	))
 }
 
 pub fn prepare_login_start(user_id: &str) -> Result<String, String>
@@ -446,7 +449,7 @@ mod test
 		//6. register the device with the main device
 		let user_keys = to_string(&vec![SymKeyFormat::from_string(&user.user_keys[0].group_key).unwrap()]).unwrap();
 
-		let out = prepare_register_device(&server_output, &user_keys, false).unwrap();
+		let (out, _) = prepare_register_device(&server_output, &user_keys, false).unwrap();
 
 		let out: UserDeviceDoneRegisterInput = from_str(&out).unwrap();
 		let user_keys = &out.user_keys.keys[0];

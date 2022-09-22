@@ -247,8 +247,14 @@ fn prepare_register_device_private_internally(device_identifier: &str, password:
 Prepare the user group keys for the new device.
 
 Call this fn from the active device with the server output from register device
+
+Return the public key of the device, for the key session
 */
-fn prepare_register_device_internally(server_output: &str, group_keys: &[&SymKeyFormatInt], key_session: bool) -> Result<String, SdkError>
+fn prepare_register_device_internally(
+	server_output: &str,
+	group_keys: &[&SymKeyFormatInt],
+	key_session: bool,
+) -> Result<(String, UserPublicKeyData), SdkError>
 {
 	let out: UserDeviceRegisterOutput = handle_server_response(server_output)?;
 
@@ -260,11 +266,14 @@ fn prepare_register_device_internally(server_output: &str, group_keys: &[&SymKey
 
 	let user_keys = group::prepare_group_keys_for_new_member_private_internally(&exported_public_key, group_keys, key_session)?;
 
-	serde_json::to_string(&UserDeviceDoneRegisterInput {
-		user_keys,
-		token: out.token,
-	})
-	.map_err(|_| SdkError::JsonToStringFailed)
+	Ok((
+		serde_json::to_string(&UserDeviceDoneRegisterInput {
+			user_keys,
+			token: out.token,
+		})
+		.map_err(|_| SdkError::JsonToStringFailed)?,
+		exported_public_key,
+	))
 }
 
 //__________________________________________________________________________________________________
