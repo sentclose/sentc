@@ -1,5 +1,6 @@
 use alloc::string::String;
 
+use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
@@ -59,7 +60,7 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), SdkError>
 	done_register_device_start_internally(server_output)
 }
 
-pub fn prepare_register_device(server_output: &str, user_keys: &[&SymKeyFormat], key_session: bool) -> Result<String, SdkError>
+pub fn prepare_register_device(server_output: &str, user_keys: &[&SymKeyFormat], key_session: bool) -> Result<(String, UserPublicKeyData), SdkError>
 {
 	prepare_register_device_internally(server_output, user_keys, key_session)
 }
@@ -265,7 +266,7 @@ mod test
 
 		//6. register the device with the main device
 
-		let out = prepare_register_device(&server_output, &[&user.user_keys[0].group_key], false).unwrap();
+		let (out, _) = prepare_register_device(&server_output, &[&user.user_keys[0].group_key], false).unwrap();
 
 		let out: UserDeviceDoneRegisterInput = serde_json::from_str(&out).unwrap();
 		let user_keys = &out.user_keys.keys[0];

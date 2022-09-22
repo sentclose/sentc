@@ -566,13 +566,15 @@ pub async fn delete_group(base_url: String, auth_token: &str, jwt: &str, group_i
 
 //__________________________________________________________________________________________________
 
-enum SessionKind
+pub(crate) enum SessionKind
 {
 	Invite,
 	Join,
+	UserGroup,
 }
 
-async fn insert_session_keys(
+#[inline(never)]
+pub(crate) async fn insert_session_keys(
 	base_url: String,
 	auth_token: &str,
 	jwt: &str,
@@ -590,6 +592,7 @@ async fn insert_session_keys(
 	let url = match kind {
 		SessionKind::Join => base_url + "/api/v1/group/" + group_id + "/join_req/session/" + session_id,
 		SessionKind::Invite => base_url + "/api/v1/group/" + group_id + "/invite/session/" + session_id,
+		SessionKind::UserGroup => base_url + "/api/v1/user/user_keys/session/" + session_id,
 	};
 
 	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;

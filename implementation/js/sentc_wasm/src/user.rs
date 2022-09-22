@@ -376,13 +376,58 @@ pub async fn register_device_start(base_url: String, auth_token: String, device_
 }
 
 #[wasm_bindgen]
-pub fn prepare_register_device(server_output: &str, user_keys: &str, key_count: i32) -> Result<String, JsValue>
+pub struct PreRegisterDeviceData
+{
+	input: String,
+	exported_public_key: String,
+}
+
+#[wasm_bindgen]
+impl PreRegisterDeviceData
+{
+	pub fn get_input(&self) -> String
+	{
+		self.input.clone()
+	}
+
+	pub fn get_public_key(&self) -> String
+	{
+		self.exported_public_key.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub struct RegisterDeviceData
+{
+	session_id: String,
+	exported_public_key: String,
+}
+
+#[wasm_bindgen]
+impl RegisterDeviceData
+{
+	pub fn get_session_id(&self) -> String
+	{
+		self.session_id.clone()
+	}
+
+	pub fn get_public_key(&self) -> String
+	{
+		self.exported_public_key.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub fn prepare_register_device(server_output: &str, user_keys: &str, key_count: i32) -> Result<PreRegisterDeviceData, JsValue>
 {
 	let key_session = if key_count > 50 { true } else { false };
 
-	let out = user::prepare_register_device(server_output, user_keys, key_session)?;
+	let (input, exported_public_key) = user::prepare_register_device(server_output, user_keys, key_session)?;
 
-	Ok(out)
+	Ok(PreRegisterDeviceData {
+		input,
+		exported_public_key,
+	})
 }
 
 #[wasm_bindgen]
@@ -393,9 +438,9 @@ pub async fn register_device(
 	server_output: String,
 	key_count: i32,
 	user_keys: String,
-) -> Result<String, JsValue>
+) -> Result<RegisterDeviceData, JsValue>
 {
-	let out = sentc_crypto_full::user::register_device(
+	let (out, exported_public_key) = sentc_crypto_full::user::register_device(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -405,10 +450,38 @@ pub async fn register_device(
 	)
 	.await?;
 
-	match out {
-		Some(id) => Ok(id),
-		None => Ok(String::from("")),
-	}
+	let session_id = match out {
+		Some(id) => id,
+		None => String::from(""),
+	};
+
+	Ok(RegisterDeviceData {
+		session_id,
+		exported_public_key,
+	})
+}
+
+#[wasm_bindgen]
+pub async fn user_device_key_session_upload(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	session_id: String,
+	user_public_key: String,
+	group_keys: String,
+) -> Result<(), JsValue>
+{
+	sentc_crypto_full::user::device_key_session(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		session_id.as_str(),
+		user_public_key.as_str(),
+		group_keys.as_str(),
+	)
+	.await?;
+
+	Ok(())
 }
 
 #[wasm_bindgen]
