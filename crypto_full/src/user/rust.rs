@@ -15,5 +15,5 @@ pub type UserPublicDataRes = Result<(UserPublicKeyData, UserVerifyKeyData), SdkF
 pub type UserPublicKeyRes = Result<UserPublicKeyData, SdkFullError>;
 pub type UserVerifyKeyRes = Result<UserVerifyKeyData, SdkFullError>;
 pub type InitRes = Result<UserInitServerOutput, SdkFullError>;
-pub type SessionRes = Result<Option<String>, SdkFullError>;
+pub type SessionRes = Result<(Option<String>, UserPublicKeyData), SdkFullError>;
 pub type DeviceListRes = Result<Vec<UserDeviceList>, SdkFullError>;

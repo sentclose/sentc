@@ -41,7 +41,7 @@ pub(crate) use self::rust::{
 	VoidRes,
 };
 use crate::group;
-use crate::group::KeyRotationRes;
+use crate::group::{KeyRotationRes, SessionKind};
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -98,13 +98,36 @@ pub async fn register_device(
 
 	let key_session = if key_count > 50 { true } else { false };
 
-	let input = user::prepare_register_device(server_output, user_keys, key_session)?;
+	let (input, exported_device_public_key) = user::prepare_register_device(server_output, user_keys, key_session)?;
 
 	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
 	let out: GroupAcceptJoinReqServerOutput = handle_server_response(res.as_str())?;
 
-	Ok(out.session_id)
+	Ok((out.session_id, exported_device_public_key))
+}
+
+pub fn device_key_session<'a>(
+	base_url: String,
+	auth_token: &'a str,
+	jwt: &'a str,
+	session_id: &'a str,
+	#[cfg(not(feature = "rust"))] user_public_key: &'a str,
+	#[cfg(feature = "rust")] user_public_key: &'a sentc_crypto_common::user::UserPublicKeyData,
+	#[cfg(not(feature = "rust"))] group_keys: &'a str,
+	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::util::SymKeyFormat],
+) -> impl Future<Output = VoidRes> + 'a
+{
+	group::insert_session_keys(
+		base_url,
+		auth_token,
+		jwt,
+		"",
+		SessionKind::UserGroup,
+		session_id,
+		user_public_key,
+		group_keys,
+	)
 }
 
 //__________________________________________________________________________________________________
