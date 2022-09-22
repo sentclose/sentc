@@ -160,7 +160,7 @@ pub async fn fetch_user_key(
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 ) -> UserKeyFetchRes
 {
-	let url = base_url + "/api/v1/user/user_key/" + key_id;
+	let url = base_url + "/api/v1/user/user_keys/key/" + key_id;
 
 	let server_out = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
