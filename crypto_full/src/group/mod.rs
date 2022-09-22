@@ -417,6 +417,7 @@ pub async fn leave_group(base_url: String, auth_token: &str, jwt: &str, group_id
 
 //__________________________________________________________________________________________________
 
+#[inline(never)]
 pub async fn key_rotation(
 	base_url: String,
 	auth_token: &str,
@@ -426,11 +427,15 @@ pub async fn key_rotation(
 	#[cfg(feature = "rust")] public_key: &sentc_crypto::util::PublicKeyFormat,
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
 	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
+	user_group: bool,
 ) -> Res
 {
-	let url = base_url + "/api/v1/group/" + group_id + "/key_rotation";
+	let url = match user_group {
+		true => base_url + "/api/v1/user/user_keys/rotation",
+		false => base_url + "/api/v1/group/" + group_id + "/key_rotation",
+	};
 
-	let input = sentc_crypto::group::key_rotation(pre_group_key, public_key)?;
+	let input = sentc_crypto::group::key_rotation(pre_group_key, public_key, user_group)?;
 
 	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
@@ -444,9 +449,13 @@ Get the keys for the key rotation for this group
 
 call with this arr the done key rotation fn for each key with the pre group key
 */
-pub async fn prepare_done_key_rotation(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> KeyRotationRes
+#[inline(never)]
+pub async fn prepare_done_key_rotation(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_group: bool) -> KeyRotationRes
 {
-	let url = base_url + "/api/v1/group/" + group_id + "/key_rotation";
+	let url = match user_group {
+		true => base_url + "/api/v1/user/user_keys/rotation",
+		false => base_url + "/api/v1/group/" + group_id + "/key_rotation",
+	};
 
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
@@ -478,6 +487,7 @@ Call this fn for each key.
 
 In two fn because we don't know yet if the user got the pre group key or must fetch it.
 */
+#[inline(never)]
 pub async fn done_key_rotation(
 	base_url: String,
 	auth_token: &str,
@@ -491,6 +501,7 @@ pub async fn done_key_rotation(
 	#[cfg(feature = "rust")] public_key: &sentc_crypto::util::PublicKeyFormat,
 	#[cfg(not(feature = "rust"))] private_key: &str,
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
+	user_group: bool,
 ) -> VoidRes
 {
 	#[cfg(not(feature = "rust"))]
@@ -503,9 +514,12 @@ pub async fn done_key_rotation(
 	#[cfg(feature = "rust")]
 	let key_id = server_output.new_group_key_id.as_str();
 
-	let input = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, server_output)?;
+	let url = match user_group {
+		false => base_url + "/api/v1/group/" + group_id + "/key_rotation/" + key_id,
+		true => base_url + "/api/v1/user/user_keys/rotation/" + key_id,
+	};
 
-	let url = base_url + "/api/v1/group/" + group_id + "/key_rotation/" + key_id;
+	let input = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, server_output)?;
 
 	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
 
