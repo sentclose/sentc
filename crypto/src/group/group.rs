@@ -88,7 +88,7 @@ pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 	Ok(prepare_create_internally(&creators_public_key)?)
 }
 
-pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> Result<String, String>
+pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str, user_group: bool) -> Result<String, String>
 {
 	//the ids comes from the storage of the current impl from the sdk, the group key id comes from get group
 	let previous_group_key = import_sym_key(previous_group_key)?;
@@ -98,7 +98,7 @@ pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str) -> Resul
 	Ok(key_rotation_internally(
 		&previous_group_key,
 		&invoker_public_key,
-		false,
+		user_group,
 	)?)
 }
 
@@ -621,7 +621,7 @@ mod test
 
 		let (_data, key_data, group_server_out) = create_group(user_keys);
 
-		let rotation_out = key_rotation(key_data[0].group_key.as_str(), user_keys.public_key.as_str()).unwrap();
+		let rotation_out = key_rotation(key_data[0].group_key.as_str(), user_keys.public_key.as_str(), false).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
