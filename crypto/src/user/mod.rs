@@ -18,7 +18,6 @@ use sentc_crypto_common::user::{
 	JwtRefreshInput,
 	KeyDerivedData,
 	MasterKey,
-	MultipleLoginServerOutput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	RegisterData,
@@ -36,7 +35,7 @@ use sentc_crypto_common::user::{
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, Pk};
 
-use crate::util::public::{generate_salt_from_base64, handle_server_response};
+use crate::util::public::handle_server_response;
 use crate::util::{
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
@@ -78,7 +77,6 @@ pub use self::user::{
 	prepare_refresh_jwt,
 	prepare_register_device,
 	prepare_register_device_start,
-	prepare_update_user_keys,
 	prepare_user_identifier_update,
 	register,
 	reset_password,
@@ -100,7 +98,6 @@ pub use self::user_rust::{
 	prepare_refresh_jwt,
 	prepare_register_device,
 	prepare_register_device_start,
-	prepare_update_user_keys,
 	prepare_user_identifier_update,
 	register,
 	reset_password,
@@ -583,58 +580,6 @@ fn reset_password_internally(
 	};
 
 	Ok(data.to_string().map_err(|_| SdkError::JsonToStringFailed)?)
-}
-
-/**
-# Prepare update user keys
-
-When changing the user keys so the user can update the old content which was encrypted by the old user keys.
-
-After this step the user got access to all old user keys and
-can start decrypting the content with the old keys and encrypt it with the new keys.
-
-This function is used when the user don't new encrypt all content as once but split it around days.
-When the user will start new encrypt the next chunks, this function is needed to get the old key too
-(because for login we only use the actual keys).
-
-Password change or reset is not possible during the key update.
-
-TODO remove this to the new user encrypt keys #10 in sentc api
-*/
-fn prepare_update_user_keys_internally(password: &str, server_output: &MultipleLoginServerOutput) -> Result<Vec<DeviceKeyDataInt>, SdkError>
-{
-	let mut encrypted_output = Vec::with_capacity(server_output.logins.len());
-
-	//decrypt all keys via the password, so the sdk can start to decrypt the content with the old keys and encrypt with the new
-
-	let mut i = 0;
-
-	for out in &server_output.logins {
-		//get the derived key from the password
-		//creat the salt in the client for the old keys. it is ok because the user is already auth
-		let salt = generate_salt_from_base64(
-			out.client_random_value.as_str(),
-			out.derived_encryption_key_alg.as_str(),
-			"",
-		)?;
-
-		let result = core_user::prepare_login(password, &salt, out.derived_encryption_key_alg.as_str())?;
-		let derived_key = result.master_key_encryption_key;
-
-		//now done login
-		//should everytime the same len
-		let done_login_server_output = match server_output.done_logins.get(i) {
-			Some(v) => v,
-			None => return Err(SdkError::KeyDecryptFailed),
-		};
-
-		let done_login = done_login_internally_with_device_out(&derived_key, done_login_server_output)?;
-		encrypted_output.push(done_login);
-
-		i += 1;
-	}
-
-	Ok(encrypted_output)
 }
 
 #[cfg(test)]

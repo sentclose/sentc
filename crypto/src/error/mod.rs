@@ -127,6 +127,27 @@ pub fn err_to_msg(error: SdkError) -> String
 		//salt decode error (from base64 string to bytes)
 		SdkError::DecodeSaltFailed => out_error("client_4", "The salt has a wrong format"),
 
+		SdkError::DecodeRandomValueFailed => out_error("client_5", "Can't decode the client random value from registration"),
+		SdkError::DecodeHashedAuthKey => out_error("client_6", "Can't decode the hashed authentication key"),
+		SdkError::DecodeAuthKey => out_error("client_7", "Can't decode the authentication key"),
+		SdkError::DecodePublicKeyFailed => out_error("client_8", "Can't decode the public key. Maybe the format is wrong"),
+		SdkError::DecodeSymKeyFailed => {
+			out_error(
+				"client_9",
+				"Can't decode the symmetric key. Maybe the format is wrong",
+			)
+		},
+		SdkError::DecodeEncryptedDataFailed => out_error("client_10", "Can't decode the encrypted data"),
+
+		SdkError::SigFoundNotKey => {
+			out_error(
+				"client_20",
+				"The verification key can't verify this signature. The signature was signed by another key pair.",
+			)
+		},
+		SdkError::KeyDecryptFailed => out_error("client_21", "Can't decrypt a key. Maybe the format is wrong"),
+		SdkError::VerifyFailed => out_error("client_22", "The verification failed. A wrong verify key was used"),
+
 		//import error
 		SdkError::ImportingSignKeyFailed => out_error("client_110", "Can't import the sign key"),
 		SdkError::ImportingPrivateKeyFailed => out_error("client_111", "Can't import the private key"),
@@ -143,6 +164,14 @@ pub fn err_to_msg(error: SdkError) -> String
 			)
 		},
 
+		//Login error
+		SdkError::LoginServerOutputWrong => {
+			out_error(
+				"client_130",
+				"Error in login. Missing user keys. Maybe the Key creation was wrong",
+			)
+		},
+
 		//group error
 		SdkError::GroupRank => {
 			out_error(
@@ -152,13 +181,13 @@ pub fn err_to_msg(error: SdkError) -> String
 		},
 		SdkError::GroupPermission => out_error("client_201", "No permission to fulfill this action"),
 		SdkError::GroupUserKickRank => out_error("client_202", "The user to delete has a higher rank"),
+		SdkError::KeyRotationServerOutputWrong => out_error("client_203", "The key rotation data is wrong and can't be decoded."),
 		SdkError::ServerErr(code, msg) => {
 			out_error(
 				(String::from("server_") + code.to_string().as_str()).as_str(),
 				msg.as_str(),
 			)
 		},
-		_ => out_error("client_0", "other"),
 	}
 }
 

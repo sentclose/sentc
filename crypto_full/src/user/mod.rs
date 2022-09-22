@@ -5,6 +5,7 @@ mod rust;
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::future::Future;
 
 use sentc_crypto::user;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
@@ -39,6 +40,8 @@ pub(crate) use self::rust::{
 	UserVerifyKeyRes,
 	VoidRes,
 };
+use crate::group;
+use crate::group::KeyRotationRes;
 use crate::util::{make_non_auth_req, make_req, HttpMethod};
 
 //Register
@@ -160,7 +163,7 @@ pub async fn fetch_user_key(
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 ) -> UserKeyFetchRes
 {
-	let url = base_url + "/api/v1/user/user_key/" + key_id;
+	let url = base_url + "/api/v1/user/user_keys/key/" + key_id;
 
 	let server_out = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
 
@@ -383,4 +386,51 @@ pub async fn fetch_user_verify_key(base_url: String, auth_token: &str, user_id: 
 	let public_data = sentc_crypto::util::public::import_verify_key_from_string_into_export_string(res.as_str())?;
 
 	Ok(public_data)
+}
+
+//__________________________________________________________________________________________________
+
+pub fn key_rotation<'a>(
+	base_url: String,
+	auth_token: &'a str,
+	jwt: &'a str,
+	#[cfg(not(feature = "rust"))] device_public_key: &'a str,
+	#[cfg(feature = "rust")] device_public_key: &'a sentc_crypto::util::PublicKeyFormat,
+	#[cfg(not(feature = "rust"))] pre_user_key: &'a str,
+	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::util::SymKeyFormat,
+) -> impl Future<Output = Res> + 'a
+{
+	group::key_rotation(base_url, auth_token, jwt, "", device_public_key, pre_user_key, true)
+}
+
+pub fn prepare_done_key_rotation<'a>(base_url: String, auth_token: &'a str, jwt: &'a str) -> impl Future<Output = KeyRotationRes> + 'a
+{
+	group::prepare_done_key_rotation(base_url, auth_token, jwt, "", true)
+}
+
+pub fn done_key_rotation<'a>(
+	base_url: String,
+	auth_token: &'a str,
+	jwt: &'a str,
+	#[cfg(not(feature = "rust"))] server_output: &'a str,
+	#[cfg(feature = "rust")] server_output: &'a sentc_crypto_common::group::KeyRotationInput,
+	#[cfg(not(feature = "rust"))] pre_user_key: &'a str,
+	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::util::SymKeyFormat,
+	#[cfg(not(feature = "rust"))] device_public_key: &'a str,
+	#[cfg(feature = "rust")] device_public_key: &'a sentc_crypto::util::PublicKeyFormat,
+	#[cfg(not(feature = "rust"))] device_private_key: &'a str,
+	#[cfg(feature = "rust")] device_private_key: &'a sentc_crypto::util::PrivateKeyFormat,
+) -> impl Future<Output = VoidRes> + 'a
+{
+	group::done_key_rotation(
+		base_url,
+		auth_token,
+		jwt,
+		"",
+		server_output,
+		pre_user_key,
+		device_public_key,
+		device_private_key,
+		true,
+	)
 }
