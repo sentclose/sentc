@@ -702,7 +702,7 @@ pub async fn leave_group(base_url: String, auth_token: String, jwt: String, id: 
 #[wasm_bindgen]
 pub fn group_prepare_key_rotation(pre_group_key: &str, public_key: &str) -> Result<String, JsValue>
 {
-	let out = group::key_rotation(pre_group_key, public_key)?;
+	let out = group::key_rotation(pre_group_key, public_key, false)?;
 
 	Ok(out)
 }
@@ -732,6 +732,7 @@ pub async fn group_key_rotation(
 		id.as_str(),
 		public_key.as_str(),
 		pre_group_key.as_str(),
+		false,
 	)
 	.await?;
 
@@ -746,7 +747,7 @@ Then call for each key rotation server output the finish_key_rotation fn
 #[wasm_bindgen]
 pub async fn group_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String, id: String) -> Result<JsValue, JsValue>
 {
-	let out = sentc_crypto_full::group::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+	let out = sentc_crypto_full::group::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), false).await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
 }
@@ -780,6 +781,7 @@ pub async fn group_finish_key_rotation(
 		pre_group_key.as_str(),
 		public_key.as_str(),
 		private_key.as_str(),
+		false,
 	)
 	.await?;
 

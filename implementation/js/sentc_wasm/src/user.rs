@@ -3,6 +3,8 @@ use alloc::string::String;
 use sentc_crypto::user;
 use wasm_bindgen::prelude::*;
 
+use crate::group;
+
 #[wasm_bindgen]
 pub struct GeneratedRegisterData
 {
@@ -637,4 +639,68 @@ pub async fn user_fetch_verify_key(base_url: String, auth_token: String, user_id
 		verify_key,
 		verify_key_id,
 	})
+}
+
+//__________________________________________________________________________________________________
+
+#[wasm_bindgen]
+pub async fn user_key_rotation(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	public_device_key: String,
+	pre_user_key: String,
+) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::user::key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		public_device_key.as_str(),
+		pre_user_key.as_str(),
+	)
+	.await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub async fn user_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String) -> Result<JsValue, JsValue>
+{
+	let out = sentc_crypto_full::user::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str()).await?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
+pub fn user_get_done_key_rotation_server_input(server_output: &str) -> Result<group::KeyRotationInput, JsValue>
+{
+	let out = sentc_crypto::group::get_done_key_rotation_server_input(server_output)?;
+
+	Ok(out.into())
+}
+
+#[wasm_bindgen]
+pub async fn user_finish_key_rotation(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	server_output: String,
+	pre_group_key: String,
+	public_key: String,
+	private_key: String,
+) -> Result<(), JsValue>
+{
+	sentc_crypto_full::user::done_key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		server_output.as_str(),
+		pre_group_key.as_str(),
+		public_key.as_str(),
+		private_key.as_str(),
+	)
+	.await?;
+
+	Ok(())
 }
