@@ -5,7 +5,7 @@
     "Jörn Heinemann <j.heinemann@sentclose.com>"
   ],
   "description": "Wasm for sentc. End-to-end encryption sdk",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "license": "MIT",
   "files": [
     "sentc_wasm_cjs.js",
