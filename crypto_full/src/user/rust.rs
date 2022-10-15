@@ -11,7 +11,6 @@ pub type VoidRes = Result<(), SdkFullError>;
 pub type BoolRes = Result<bool, SdkFullError>;
 pub type LoginRes = Result<UserData, SdkFullError>;
 pub type UserKeyFetchRes = Result<UserKeyData, SdkFullError>;
-pub type UserPublicDataRes = Result<(UserPublicKeyData, UserVerifyKeyData), SdkFullError>;
 pub type UserPublicKeyRes = Result<UserPublicKeyData, SdkFullError>;
 pub type UserVerifyKeyRes = Result<UserVerifyKeyData, SdkFullError>;
 pub type InitRes = Result<UserInitServerOutput, SdkFullError>;

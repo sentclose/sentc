@@ -21,7 +21,6 @@ pub(crate) use self::non_rust::{
 	Res,
 	SessionRes,
 	UserKeyFetchRes,
-	UserPublicDataRes,
 	UserPublicKeyRes,
 	UserVerifyKeyRes,
 	VoidRes,
@@ -35,7 +34,6 @@ pub(crate) use self::rust::{
 	Res,
 	SessionRes,
 	UserKeyFetchRes,
-	UserPublicDataRes,
 	UserPublicKeyRes,
 	UserVerifyKeyRes,
 	VoidRes,
@@ -366,21 +364,6 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 
 //__________________________________________________________________________________________________
 
-pub async fn fetch_user_public_data(base_url: String, auth_token: &str, user_id: &str) -> UserPublicDataRes
-{
-	let url = base_url + "/api/v1/user/" + user_id;
-
-	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
-
-	#[cfg(feature = "rust")]
-	let public_data = sentc_crypto::util::public::import_public_data_from_string_into_format(res.as_str())?;
-
-	#[cfg(not(feature = "rust"))]
-	let public_data = sentc_crypto::util::public::import_public_data_from_string_into_export_string(res.as_str())?;
-
-	Ok(public_data)
-}
-
 pub async fn fetch_user_public_key(base_url: String, auth_token: &str, user_id: &str) -> UserPublicKeyRes
 {
 	let url = base_url + "/api/v1/user/" + user_id + "/public_key";
@@ -396,9 +379,9 @@ pub async fn fetch_user_public_key(base_url: String, auth_token: &str, user_id: 
 	Ok(public_data)
 }
 
-pub async fn fetch_user_verify_key(base_url: String, auth_token: &str, user_id: &str) -> UserVerifyKeyRes
+pub async fn fetch_user_verify_key_by_id(base_url: String, auth_token: &str, user_id: &str, verify_key_id: &str) -> UserVerifyKeyRes
 {
-	let url = base_url + "/api/v1/user/" + user_id + "/verify_key";
+	let url = base_url + "/api/v1/user/" + user_id + "/verify_key/" + verify_key_id;
 
 	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
@@ -406,7 +389,7 @@ pub async fn fetch_user_verify_key(base_url: String, auth_token: &str, user_id: 
 	let public_data = sentc_crypto::util::public::import_verify_key_from_string_into_format(res.as_str())?;
 
 	#[cfg(not(feature = "rust"))]
-	let public_data = sentc_crypto::util::public::import_verify_key_from_string_into_export_string(res.as_str())?;
+	let (public_data, _) = sentc_crypto::util::public::import_verify_key_from_string_into_export_string(res.as_str())?;
 
 	Ok(public_data)
 }
