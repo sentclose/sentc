@@ -679,20 +679,6 @@ pub async fn update_user(base_url: String, auth_token: String, jwt: String, user
 //__________________________________________________________________________________________________
 
 #[wasm_bindgen]
-pub async fn user_fetch_public_data(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicData, JsValue>
-{
-	let (public_key, public_key_id, verify_key, verify_key_id) =
-		sentc_crypto_full::user::fetch_user_public_data(base_url, auth_token.as_str(), user_id.as_str()).await?;
-
-	Ok(UserPublicData {
-		public_key,
-		public_key_id,
-		verify_key,
-		verify_key_id,
-	})
-}
-
-#[wasm_bindgen]
 pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicKeyData, JsValue>
 {
 	let (public_key, public_key_id) = sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await?;
@@ -704,14 +690,17 @@ pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id
 }
 
 #[wasm_bindgen]
-pub async fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String) -> Result<UserVerifyKeyData, JsValue>
+pub async fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String, verify_key_id: String) -> Result<String, JsValue>
 {
-	let (verify_key, verify_key_id) = sentc_crypto_full::user::fetch_user_verify_key(base_url, auth_token.as_str(), user_id.as_str()).await?;
+	let verify_key = sentc_crypto_full::user::fetch_user_verify_key_by_id(
+		base_url,
+		auth_token.as_str(),
+		user_id.as_str(),
+		verify_key_id.as_str(),
+	)
+	.await?;
 
-	Ok(UserVerifyKeyData {
-		verify_key,
-		verify_key_id,
-	})
+	Ok(verify_key)
 }
 
 //__________________________________________________________________________________________________

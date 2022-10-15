@@ -3,7 +3,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use sentc_crypto_common::user::{UserPublicData, UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
+use sentc_crypto_common::user::{UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
 use sentc_crypto_common::ServerOutput;
 #[cfg(not(feature = "rust"))]
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
@@ -64,26 +64,6 @@ pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: 
 	Ok(generate_salt(client_random_value, add_str))
 }
 
-pub fn import_public_data_from_string_into_format(public_data: &str) -> Result<(UserPublicKeyData, UserVerifyKeyData), SdkError>
-{
-	//this is sued to handle the server output of public user data fetch from different user (not the same)
-	let out: UserPublicData = handle_server_response(public_data)?;
-
-	let public_key = UserPublicKeyData {
-		public_key_pem: out.public_key,
-		public_key_alg: out.public_key_alg,
-		public_key_id: out.public_key_id,
-	};
-
-	let verify_key = UserVerifyKeyData {
-		verify_key_pem: out.verify_key,
-		verify_key_alg: out.verify_alg,
-		verify_key_id: out.verify_key_id,
-	};
-
-	Ok((public_key, verify_key))
-}
-
 pub fn import_public_key_from_string_into_format(public_key: &str) -> Result<UserPublicKeyData, SdkError>
 {
 	let out: UserPublicKeyDataServerOutput = handle_server_response(public_key)?;
@@ -108,23 +88,6 @@ pub fn import_verify_key_from_string_into_format(verify_key: &str) -> Result<Use
 	};
 
 	Ok(verify_key)
-}
-
-#[cfg(not(feature = "rust"))]
-pub fn import_public_data_from_string_into_export_string(public_data: &str) -> Result<(String, EncryptionKeyPairId, String, SignKeyPairId), String>
-{
-	let (public_key, verify_key) = import_public_data_from_string_into_format(public_data)?;
-
-	Ok((
-		public_key
-			.to_string()
-			.map_err(|_| SdkError::JsonToStringFailed)?,
-		public_key.public_key_id,
-		verify_key
-			.to_string()
-			.map_err(|_| SdkError::JsonToStringFailed)?,
-		verify_key.verify_key_id,
-	))
 }
 
 #[cfg(not(feature = "rust"))]
