@@ -104,6 +104,7 @@ pub async fn register_file(
 	base_url: String,
 	auth_token: &str,
 	jwt: &str,
+	master_key_id: String,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
 	#[cfg(not(feature = "rust"))] belongs_to_id: &str,
@@ -116,7 +117,8 @@ pub async fn register_file(
 	#[cfg(feature = "rust")] group_id: Option<&str>,
 ) -> FileRegRes
 {
-	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
+	let (input, encrypted_file_name) =
+		sentc_crypto::file::prepare_register_file(master_key_id, content_key, belongs_to_id, belongs_to_type, file_name)?;
 
 	#[cfg(not(feature = "rust"))]
 	let group_id = {
