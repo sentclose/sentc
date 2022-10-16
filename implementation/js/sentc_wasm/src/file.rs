@@ -9,6 +9,7 @@ use wasm_bindgen::prelude::*;
 pub struct FileData
 {
 	file_id: String,
+	master_key_id: String,
 	belongs_to: Option<String>,
 	belongs_to_type: BelongsToType,
 	key_id: String,
@@ -22,6 +23,7 @@ impl From<sentc_crypto_common::file::FileData> for FileData
 	{
 		Self {
 			file_id: data.file_id,
+			master_key_id: data.master_key_id,
 			belongs_to: data.belongs_to,
 			belongs_to_type: data.belongs_to_type,
 			key_id: data.key_id,
@@ -37,6 +39,11 @@ impl FileData
 	pub fn get_key_id(&self) -> String
 	{
 		self.key_id.clone()
+	}
+
+	pub fn get_master_key_id(&self) -> String
+	{
+		self.master_key_id.clone()
 	}
 
 	pub fn get_part_list(&self) -> JsValue
@@ -194,6 +201,7 @@ pub async fn file_register_file(
 	base_url: String,
 	auth_token: String,
 	jwt: String,
+	master_key_id: String,
 	content_key: String,
 	belongs_to_id: String,
 	belongs_to_type: String,
@@ -205,6 +213,7 @@ pub async fn file_register_file(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
+		master_key_id,
 		content_key.as_str(),
 		belongs_to_id.as_str(),
 		belongs_to_type.as_str(),
@@ -222,13 +231,15 @@ pub async fn file_register_file(
 
 #[wasm_bindgen]
 pub fn file_prepare_register_file(
+	master_key_id: String,
 	content_key: &str,
 	belongs_to_id: &str,
 	belongs_to_type: &str,
 	file_name: &str,
 ) -> Result<FilePrepareRegister, JsValue>
 {
-	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(content_key, belongs_to_id, belongs_to_type, file_name)?;
+	let (input, encrypted_file_name) =
+		sentc_crypto::file::prepare_register_file(master_key_id, content_key, belongs_to_id, belongs_to_type, file_name)?;
 
 	Ok(FilePrepareRegister {
 		encrypted_file_name,

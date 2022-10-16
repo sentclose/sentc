@@ -17,6 +17,7 @@ use crate::util::SymKeyFormatInt;
 use crate::{crypto, SdkError};
 
 fn prepare_register_file_internally(
+	master_key_id: String,
 	key: &SymKeyFormatInt,
 	belongs_to_id: Option<String>,
 	belongs_to_type: BelongsToType,
@@ -49,6 +50,7 @@ fn prepare_register_file_internally(
 
 	Ok((
 		serde_json::to_string(&FileRegisterInput {
+			master_key_id,
 			key_id,
 			belongs_to_id,
 			belongs_to_type,
