@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use base64ct::Encoding;
+use sentc_crypto_common::{DeviceId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkFullError;
@@ -19,19 +20,15 @@ macro_rules! expect_two {
 /**
 Claims struct from the backend
 */
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Claims
 {
-	pub aud: String,
-	pub sub: String, //the app id
+	//jwt defaults
+	pub aud: UserId,   //the user id
+	pub sub: DeviceId, //the device id
 	pub exp: usize,
 	pub iat: usize,
-
-	//sentc
-	pub internal_user_id: String,
-	pub group_id: String,
-	pub device_id: String,
-	pub device_identifier: String,
+	pub group_id: GroupId,
 	pub fresh: bool, //was this token from refresh jwt or from login
 }
 
