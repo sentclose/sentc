@@ -4,3 +4,6 @@
 [submodule "implementation/js/sentc_js"]
 	path = implementation/js/sentc_js
 	url = git@gitlab.com:sentclose/sentc/sdk-implementations/sentc-javascript.git
+[submodule "implementation/dart/sentc_flutter"]
+	path = implementation/dart/sentc_flutter
+	url = git@gitlab.com:sentclose/sentc/sdk-implementations/sentc-flutter.git
