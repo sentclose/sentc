@@ -5,18 +5,21 @@ use sentc_crypto::user;
 use tokio::runtime::Runtime;
 
 //User
+#[repr(C)]
 pub struct GeneratedRegisterData
 {
 	pub identifier: String,
 	pub password: String,
 }
 
+#[repr(C)]
 pub struct PrepareLoginOutput
 {
 	pub auth_key: String,
 	pub master_key_encryption_key: String,
 }
 
+#[repr(C)]
 pub struct DeviceKeyData
 {
 	pub private_key: String, //Base64 exported keys
@@ -42,6 +45,7 @@ impl From<sentc_crypto::util::DeviceKeyData> for DeviceKeyData
 	}
 }
 
+#[repr(C)]
 pub struct UserKeyData
 {
 	pub private_key: String,
@@ -73,6 +77,7 @@ impl From<sentc_crypto::util::UserKeyData> for UserKeyData
 	}
 }
 
+#[repr(C)]
 pub struct UserData
 {
 	pub jwt: String,
@@ -237,12 +242,14 @@ pub fn register_device_start(base_url: String, auth_token: String, device_identi
 	Ok(out)
 }
 
+#[repr(C)]
 pub struct PreRegisterDeviceData
 {
 	pub input: String,
 	pub exported_public_key: String,
 }
 
+#[repr(C)]
 pub struct RegisterDeviceData
 {
 	pub session_id: String,
@@ -414,6 +421,7 @@ pub fn fetch_user_key(base_url: String, auth_token: String, jwt: String, key_id:
 
 //__________________________________________________________________________________________________
 
+#[repr(C)]
 pub struct UserInitServerOutput
 {
 	pub jwt: String,
@@ -463,9 +471,240 @@ pub fn init_user(base_url: String, auth_token: String, jwt: String, refresh_toke
 
 //__________________________________________________________________________________________________
 
+#[repr(C)]
+pub struct UserDeviceList
+{
+	pub device_id: String,
+	pub time: String,
+	pub device_identifier: String,
+}
+
+impl From<sentc_crypto_common::user::UserDeviceList> for UserDeviceList
+{
+	fn from(list: sentc_crypto_common::user::UserDeviceList) -> Self
+	{
+		Self {
+			device_id: list.device_id,
+			time: list.time.to_string(),
+			device_identifier: list.device_identifier,
+		}
+	}
+}
+
+pub fn get_user_devices(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	last_fetched_time: String,
+	last_fetched_id: String,
+) -> Result<Vec<UserDeviceList>>
+{
+	let out = rt(async {
+		sentc_crypto_full::user::get_user_devices(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			last_fetched_time.as_str(),
+			last_fetched_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut list = Vec::with_capacity(out.len());
+
+	for device in out {
+		list.push(device.into())
+	}
+
+	Ok(list)
+}
+
+pub fn reset_password(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	new_password: String,
+	decrypted_private_key: String,
+	decrypted_sign_key: String,
+) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::user::reset_password(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			new_password.as_str(),
+			decrypted_private_key.as_str(),
+			decrypted_sign_key.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn change_password(base_url: String, auth_token: String, user_identifier: String, old_password: String, new_password: String) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::user::change_password(
+			base_url,
+			auth_token.as_str(),
+			user_identifier.as_str(),
+			old_password.as_str(),
+			new_password.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn delete_user(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::user::delete(
+			base_url,
+			auth_token.as_str(),
+			user_identifier.as_str(),
+			password.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn delete_device(base_url: String, auth_token: String, device_identifier: String, password: String, device_id: String) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::user::delete_device(
+			base_url,
+			auth_token.as_str(),
+			device_identifier.as_str(),
+			password.as_str(),
+			device_id.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await
+	})
+}
+
+//__________________________________________________________________________________________________
+
+#[repr(C)]
+pub struct UserPublicKeyData
+{
+	pub public_key: String,
+	pub public_key_id: String,
+}
+
+pub fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicKeyData>
+{
+	let (public_key, public_key_id) = rt(async {
+		//
+		sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await
+	})?;
+
+	Ok(UserPublicKeyData {
+		public_key,
+		public_key_id,
+	})
+}
+
+pub fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String, verify_key_id: String) -> Result<String>
+{
+	let key = rt(async {
+		sentc_crypto_full::user::fetch_user_verify_key_by_id(
+			base_url,
+			auth_token.as_str(),
+			user_id.as_str(),
+			verify_key_id.as_str(),
+		)
+		.await
+	})?;
+
+	Ok(key)
+}
+
+//__________________________________________________________________________________________________
+
+#[repr(C)]
+pub struct KeyRotationGetOut
+{
+	pub pre_group_key_id: String,
+	pub new_group_key_id: String,
+	pub encrypted_eph_key_key_id: String,
+	pub server_output: String,
+}
+
+pub fn user_key_rotation(base_url: String, auth_token: String, jwt: String, public_device_key: String, pre_user_key: String) -> Result<String>
+{
+	rt(async {
+		sentc_crypto_full::user::key_rotation(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			public_device_key.as_str(),
+			pre_user_key.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn user_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String) -> Result<Vec<KeyRotationGetOut>>
+{
+	let out = rt(async { sentc_crypto_full::user::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str()).await })?;
+
+	let mut list = Vec::with_capacity(out.len());
+
+	for item in out {
+		list.push(KeyRotationGetOut {
+			pre_group_key_id: item.pre_group_key_id,
+			new_group_key_id: item.new_group_key_id,
+			encrypted_eph_key_key_id: item.encrypted_eph_key_key_id,
+			server_output: item.server_output,
+		});
+	}
+
+	Ok(list)
+}
+
+pub fn user_get_done_key_rotation_server_input(server_output: String) -> Result<KeyRotationInput>
+{
+	let out = sentc_crypto::group::get_done_key_rotation_server_input(server_output.as_str()).map_err(|err| anyhow!(err))?;
+
+	Ok(out.into())
+}
+
+pub fn user_finish_key_rotation(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	server_output: String,
+	pre_group_key: String,
+	public_key: String,
+	private_key: String,
+) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::user::done_key_rotation(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			server_output.as_str(),
+			pre_group_key.as_str(),
+			public_key.as_str(),
+			private_key.as_str(),
+		)
+		.await
+	})
+}
+
 //==================================================================================================
 //Group
 
+#[repr(C)]
 pub struct GroupInviteReqList
 {
 	pub group_id: String,
@@ -479,6 +718,34 @@ impl From<sentc_crypto_common::group::GroupInviteReqList> for GroupInviteReqList
 		Self {
 			group_id: list.group_id,
 			time: list.time.to_string(),
+		}
+	}
+}
+
+#[repr(C)]
+pub struct KeyRotationInput
+{
+	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
+	pub encrypted_group_key_by_ephemeral: String,
+	pub ephemeral_alg: String,
+	pub encrypted_eph_key_key_id: String, //the public key id which was used to encrypt the eph key on the server.
+	pub previous_group_key_id: String,
+	pub time: String,
+	pub new_group_key_id: String,
+}
+
+impl From<sentc_crypto_common::group::KeyRotationInput> for KeyRotationInput
+{
+	fn from(out: sentc_crypto_common::group::KeyRotationInput) -> Self
+	{
+		Self {
+			encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
+			encrypted_group_key_by_ephemeral: out.encrypted_group_key_by_ephemeral,
+			ephemeral_alg: out.ephemeral_alg,
+			encrypted_eph_key_key_id: out.encrypted_eph_key_key_id,
+			previous_group_key_id: out.previous_group_key_id,
+			time: out.time.to_string(),
+			new_group_key_id: out.new_group_key_id,
 		}
 	}
 }
