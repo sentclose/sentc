@@ -7,7 +7,7 @@ use sentc_crypto::SdkError;
 pub enum SdkFullError
 {
 	Base(SdkError),
-	RequestErr,
+	RequestErr(String),
 	ResponseErrText,
 	ResponseErrBytes,
 	InvalidJwt,
@@ -34,7 +34,7 @@ pub fn err_to_msg(error: SdkFullError) -> String
 {
 	match error {
 		SdkFullError::Base(base_error) => sentc_crypto::err_to_msg(base_error),
-		SdkFullError::RequestErr => out_error("client_1000", "Can't send the request."),
+		SdkFullError::RequestErr(e) => out_error("client_1000", format!("Can't send the request: {}", e).as_str()),
 		SdkFullError::ResponseErrText => out_error("client_1002", "Can't decode the response to text"),
 		SdkFullError::ResponseErrBytes => out_error("client_1003", "Can't get bytes from response"),
 		SdkFullError::InvalidJwt => out_error("client_1100", "Jwt is invalid"),
