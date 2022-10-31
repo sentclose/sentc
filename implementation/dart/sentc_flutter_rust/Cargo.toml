@@ -15,6 +15,8 @@ sentc-crypto = {version = "0.1.0", path = "../../../crypto"}
 
 sentc-crypto-full = {version = "0.1.0", path = "../../../crypto_full", default-features = false, features = ["default_rustls"]}
 
+sentc-crypto-common = {version = "0.1.0", path = "../../../sdk-common"}
+
 tokio = { version = "1.14.0", features = ["rt-multi-thread"] }
 
 # flutter ffi
