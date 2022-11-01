@@ -1881,3 +1881,290 @@ pub fn delete_sym_key(base_url: String, auth_token: String, jwt: String, key_id:
 }
 
 //==================================================================================================
+//file
+
+#[repr(C)]
+pub enum BelongsToType
+{
+	Group,
+	User,
+	None,
+}
+
+impl From<sentc_crypto_common::file::BelongsToType> for BelongsToType
+{
+	fn from(t: sentc_crypto_common::file::BelongsToType) -> Self
+	{
+		match t {
+			sentc_crypto_common::file::BelongsToType::None => Self::None,
+			sentc_crypto_common::file::BelongsToType::Group => Self::Group,
+			sentc_crypto_common::file::BelongsToType::User => Self::User,
+		}
+	}
+}
+
+#[repr(C)]
+pub struct FilePartListItem
+{
+	pub part_id: String,
+	pub sequence: i32,
+	pub extern_storage: bool,
+}
+
+impl From<sentc_crypto_common::file::FilePartListItem> for FilePartListItem
+{
+	fn from(item: sentc_crypto_common::file::FilePartListItem) -> Self
+	{
+		Self {
+			part_id: item.part_id,
+			sequence: item.sequence,
+			extern_storage: item.extern_storage,
+		}
+	}
+}
+
+#[repr(C)]
+pub struct FileData
+{
+	pub file_id: String,
+	pub master_key_id: String,
+	pub owner: String,
+	pub belongs_to: Option<String>, //can be a group or a user. if belongs to type is none then this is Option::None
+	pub belongs_to_type: BelongsToType,
+	pub key_id: String,
+	pub encrypted_file_name: Option<String>,
+	pub part_list: Vec<FilePartListItem>,
+}
+
+impl From<sentc_crypto_common::file::FileData> for FileData
+{
+	fn from(data: sentc_crypto_common::file::FileData) -> Self
+	{
+		let mut part_list = Vec::with_capacity(data.part_list.len());
+
+		for part in data.part_list {
+			part_list.push(part.into());
+		}
+
+		Self {
+			file_id: data.file_id,
+			master_key_id: data.master_key_id,
+			owner: data.owner,
+			belongs_to: data.belongs_to,
+			belongs_to_type: data.belongs_to_type.into(),
+			key_id: data.key_id,
+			encrypted_file_name: data.encrypted_file_name,
+			part_list,
+		}
+	}
+}
+
+pub fn file_download_file_meta(base_url: String, auth_token: String, jwt: String, id: String, group_id: String) -> Result<FileData>
+{
+	let out = rt(async {
+		sentc_crypto_full::file::download_file_meta(
+			base_url,
+			auth_token.as_str(),
+			id.as_str(),
+			jwt.as_str(),
+			group_id.as_str(),
+		)
+		.await
+	})?;
+
+	Ok(out.into())
+}
+
+pub fn file_download_and_decrypt_file_part(
+	base_url: String,
+	url_prefix: String,
+	auth_token: String,
+	part_id: String,
+	content_key: String,
+	verify_key_data: String,
+) -> Result<Vec<u8>>
+{
+	rt(async {
+		sentc_crypto_full::file::download_and_decrypt_file_part(
+			base_url,
+			url_prefix,
+			auth_token.as_str(),
+			part_id.as_str(),
+			content_key.as_str(),
+			verify_key_data.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn file_download_part_list(base_url: String, auth_token: String, file_id: String, last_sequence: String) -> Result<Vec<FilePartListItem>>
+{
+	let out = rt(async {
+		sentc_crypto_full::file::download_part_list(
+			base_url,
+			auth_token.as_str(),
+			file_id.as_str(),
+			last_sequence.as_str(),
+		)
+		.await
+	})?;
+
+	let mut part_list = Vec::with_capacity(out.len());
+
+	for part in out {
+		part_list.push(part.into());
+	}
+
+	Ok(part_list)
+}
+
+//__________________________________________________________________________________________________
+
+#[repr(C)]
+pub struct FileRegisterOutput
+{
+	pub file_id: String,
+	pub session_id: String,
+	pub encrypted_file_name: String,
+}
+
+#[repr(C)]
+pub struct FilePrepareRegister
+{
+	pub encrypted_file_name: String,
+	pub server_input: String,
+}
+
+#[repr(C)]
+pub struct FileDoneRegister
+{
+	pub file_id: String,
+	pub session_id: String,
+}
+
+pub fn file_register_file(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	master_key_id: String,
+	content_key: String,
+	belongs_to_id: String,
+	belongs_to_type: String,
+	file_name: String,
+	group_id: String,
+) -> Result<FileRegisterOutput>
+{
+	let (file_id, session_id, encrypted_file_name) = rt(async {
+		sentc_crypto_full::file::register_file(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			master_key_id,
+			content_key.as_str(),
+			belongs_to_id.as_str(),
+			belongs_to_type.as_str(),
+			file_name.as_str(),
+			group_id.as_str(),
+		)
+		.await
+	})?;
+
+	Ok(FileRegisterOutput {
+		file_id,
+		session_id,
+		encrypted_file_name,
+	})
+}
+
+pub fn file_prepare_register_file(
+	master_key_id: String,
+	content_key: String,
+	belongs_to_id: String,
+	belongs_to_type: String,
+	file_name: String,
+) -> Result<FilePrepareRegister>
+{
+	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(
+		master_key_id,
+		&content_key,
+		&belongs_to_id,
+		&belongs_to_type,
+		&file_name,
+	)
+	.map_err(|err| anyhow!(err))?;
+
+	Ok(FilePrepareRegister {
+		encrypted_file_name,
+		server_input: input,
+	})
+}
+
+pub fn file_done_register_file(server_output: String) -> Result<FileDoneRegister>
+{
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(&server_output).map_err(|err| anyhow!(err))?;
+
+	Ok(FileDoneRegister {
+		file_id,
+		session_id,
+	})
+}
+
+pub fn file_upload_part(
+	base_url: String,
+	url_prefix: String,
+	auth_token: String,
+	jwt: String,
+	session_id: String,
+	end: bool,
+	sequence: i32,
+	content_key: String,
+	sign_key: String,
+	part: Vec<u8>,
+) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::file::upload_part(
+			base_url,
+			url_prefix,
+			auth_token.as_str(),
+			jwt.as_str(),
+			session_id.as_str(),
+			end,
+			sequence,
+			content_key.as_str(),
+			sign_key.as_str(),
+			&part,
+		)
+		.await
+	})
+}
+
+pub fn file_file_name_update(base_url: String, auth_token: String, jwt: String, file_id: String, content_key: String, file_name: String)
+	-> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::file::update_file_name(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			file_id.as_str(),
+			content_key.as_str(),
+			file_name.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn file_delete_file(base_url: String, auth_token: String, jwt: String, file_id: String, group_id: String) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::file::delete_file(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			file_id.as_str(),
+			group_id.as_str(),
+		)
+		.await
+	})
+}

@@ -2359,6 +2359,300 @@ pub extern "C" fn wire_delete_sym_key(
 	)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_file_download_file_meta(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	group_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_download_file_meta",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_group_id = group_id.wire2api();
+			move |task_callback| file_download_file_meta(api_base_url, api_auth_token, api_jwt, api_id, api_group_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_download_and_decrypt_file_part(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	url_prefix: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	part_id: *mut wire_uint_8_list,
+	content_key: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_download_and_decrypt_file_part",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_url_prefix = url_prefix.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_part_id = part_id.wire2api();
+			let api_content_key = content_key.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| {
+				file_download_and_decrypt_file_part(
+					api_base_url,
+					api_url_prefix,
+					api_auth_token,
+					api_part_id,
+					api_content_key,
+					api_verify_key_data,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_download_part_list(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	file_id: *mut wire_uint_8_list,
+	last_sequence: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_download_part_list",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_file_id = file_id.wire2api();
+			let api_last_sequence = last_sequence.wire2api();
+			move |task_callback| file_download_part_list(api_base_url, api_auth_token, api_file_id, api_last_sequence)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_register_file(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	master_key_id: *mut wire_uint_8_list,
+	content_key: *mut wire_uint_8_list,
+	belongs_to_id: *mut wire_uint_8_list,
+	belongs_to_type: *mut wire_uint_8_list,
+	file_name: *mut wire_uint_8_list,
+	group_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_register_file",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_master_key_id = master_key_id.wire2api();
+			let api_content_key = content_key.wire2api();
+			let api_belongs_to_id = belongs_to_id.wire2api();
+			let api_belongs_to_type = belongs_to_type.wire2api();
+			let api_file_name = file_name.wire2api();
+			let api_group_id = group_id.wire2api();
+			move |task_callback| {
+				file_register_file(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_master_key_id,
+					api_content_key,
+					api_belongs_to_id,
+					api_belongs_to_type,
+					api_file_name,
+					api_group_id,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_prepare_register_file(
+	port_: i64,
+	master_key_id: *mut wire_uint_8_list,
+	content_key: *mut wire_uint_8_list,
+	belongs_to_id: *mut wire_uint_8_list,
+	belongs_to_type: *mut wire_uint_8_list,
+	file_name: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_prepare_register_file",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_master_key_id = master_key_id.wire2api();
+			let api_content_key = content_key.wire2api();
+			let api_belongs_to_id = belongs_to_id.wire2api();
+			let api_belongs_to_type = belongs_to_type.wire2api();
+			let api_file_name = file_name.wire2api();
+			move |task_callback| {
+				file_prepare_register_file(
+					api_master_key_id,
+					api_content_key,
+					api_belongs_to_id,
+					api_belongs_to_type,
+					api_file_name,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_done_register_file(port_: i64, server_output: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_done_register_file",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_server_output = server_output.wire2api();
+			move |task_callback| file_done_register_file(api_server_output)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_upload_part(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	url_prefix: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	session_id: *mut wire_uint_8_list,
+	end: bool,
+	sequence: i32,
+	content_key: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	part: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_upload_part",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_url_prefix = url_prefix.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_session_id = session_id.wire2api();
+			let api_end = end.wire2api();
+			let api_sequence = sequence.wire2api();
+			let api_content_key = content_key.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			let api_part = part.wire2api();
+			move |task_callback| {
+				file_upload_part(
+					api_base_url,
+					api_url_prefix,
+					api_auth_token,
+					api_jwt,
+					api_session_id,
+					api_end,
+					api_sequence,
+					api_content_key,
+					api_sign_key,
+					api_part,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_file_name_update(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	file_id: *mut wire_uint_8_list,
+	content_key: *mut wire_uint_8_list,
+	file_name: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_file_name_update",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_file_id = file_id.wire2api();
+			let api_content_key = content_key.wire2api();
+			let api_file_name = file_name.wire2api();
+			move |task_callback| {
+				file_file_name_update(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_file_id,
+					api_content_key,
+					api_file_name,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_delete_file(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	file_id: *mut wire_uint_8_list,
+	group_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_delete_file",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_file_id = file_id.wire2api();
+			let api_group_id = group_id.wire2api();
+			move |task_callback| file_delete_file(api_base_url, api_auth_token, api_jwt, api_file_id, api_group_id)
+		},
+	)
+}
+
 // Section: wire structs
 
 #[repr(C)]
@@ -2450,6 +2744,17 @@ impl<T> NewWithNullPtr for *mut T {
 
 // Section: impl IntoDart
 
+impl support::IntoDart for BelongsToType {
+	fn into_dart(self) -> support::DartCObject {
+		match self {
+			Self::Group => 0,
+			Self::User => 1,
+			Self::None => 2,
+		}
+		.into_dart()
+	}
+}
+
 impl support::IntoDart for Claims {
 	fn into_dart(self) -> support::DartCObject {
 		vec![
@@ -2493,6 +2798,56 @@ impl support::IntoDart for EncryptedHead {
 	}
 }
 impl support::IntoDartExceptPrimitive for EncryptedHead {}
+
+impl support::IntoDart for FileData {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.file_id.into_dart(),
+			self.master_key_id.into_dart(),
+			self.owner.into_dart(),
+			self.belongs_to.into_dart(),
+			self.belongs_to_type.into_dart(),
+			self.key_id.into_dart(),
+			self.encrypted_file_name.into_dart(),
+			self.part_list.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for FileData {}
+
+impl support::IntoDart for FileDoneRegister {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.file_id.into_dart(), self.session_id.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for FileDoneRegister {}
+
+impl support::IntoDart for FilePartListItem {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.part_id.into_dart(), self.sequence.into_dart(), self.extern_storage.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for FilePartListItem {}
+
+impl support::IntoDart for FilePrepareRegister {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.encrypted_file_name.into_dart(), self.server_input.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for FilePrepareRegister {}
+
+impl support::IntoDart for FileRegisterOutput {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.file_id.into_dart(),
+			self.session_id.into_dart(),
+			self.encrypted_file_name.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for FileRegisterOutput {}
 
 impl support::IntoDart for GeneratedRegisterData {
 	fn into_dart(self) -> support::DartCObject {
