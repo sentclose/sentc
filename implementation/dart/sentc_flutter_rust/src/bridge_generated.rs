@@ -800,6 +800,1024 @@ pub extern "C" fn wire_user_finish_key_rotation(
 	)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_group_prepare_create_group(port_: i64, creators_public_key: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_prepare_create_group",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_creators_public_key = creators_public_key.wire2api();
+			move |task_callback| group_prepare_create_group(api_creators_public_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_create_group(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	creators_public_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_create_group",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_creators_public_key = creators_public_key.wire2api();
+			move |task_callback| group_create_group(api_base_url, api_auth_token, api_jwt, api_creators_public_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_create_child_group(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	parent_public_key: *mut wire_uint_8_list,
+	parent_id: *mut wire_uint_8_list,
+	admin_rank: i32,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_create_child_group",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_parent_public_key = parent_public_key.wire2api();
+			let api_parent_id = parent_id.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			move |task_callback| {
+				group_create_child_group(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_parent_public_key,
+					api_parent_id,
+					api_admin_rank,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_extract_group_data(port_: i64, server_output: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_extract_group_data",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_server_output = server_output.wire2api();
+			move |task_callback| group_extract_group_data(api_server_output)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_extract_group_keys(port_: i64, server_output: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_extract_group_keys",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_server_output = server_output.wire2api();
+			move |task_callback| group_extract_group_keys(api_server_output)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_group_data(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_group_data",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| group_get_group_data(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_group_keys(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_key_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_group_keys",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_fetched_key_id = last_fetched_key_id.wire2api();
+			move |task_callback| {
+				group_get_group_keys(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_last_fetched_time,
+					api_last_fetched_key_id,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_group_key(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	key_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_group_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_key_id = key_id.wire2api();
+			move |task_callback| group_get_group_key(api_base_url, api_auth_token, api_jwt, api_id, api_key_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_decrypt_key(port_: i64, private_key: *mut wire_uint_8_list, server_key_data: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_decrypt_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_server_key_data = server_key_data.wire2api();
+			move |task_callback| group_decrypt_key(api_private_key, api_server_key_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_member(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_member",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_fetched_id = last_fetched_id.wire2api();
+			move |task_callback| {
+				group_get_member(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_last_fetched_time,
+					api_last_fetched_id,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_group_updates(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_group_updates",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| group_get_group_updates(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_groups_for_user(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_group_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_groups_for_user",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
+			move |task_callback| {
+				group_get_groups_for_user(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_last_fetched_time,
+					api_last_fetched_group_id,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_prepare_keys_for_new_member(
+	port_: i64,
+	user_public_key: *mut wire_uint_8_list,
+	group_keys: *mut wire_uint_8_list,
+	key_count: i32,
+	admin_rank: i32,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_prepare_keys_for_new_member",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_user_public_key = user_public_key.wire2api();
+			let api_group_keys = group_keys.wire2api();
+			let api_key_count = key_count.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			move |task_callback| group_prepare_keys_for_new_member(api_user_public_key, api_group_keys, api_key_count, api_admin_rank)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_invite_user(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	user_id: *mut wire_uint_8_list,
+	key_count: i32,
+	admin_rank: i32,
+	auto_invite: bool,
+	user_public_key: *mut wire_uint_8_list,
+	group_keys: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_invite_user",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_user_id = user_id.wire2api();
+			let api_key_count = key_count.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			let api_auto_invite = auto_invite.wire2api();
+			let api_user_public_key = user_public_key.wire2api();
+			let api_group_keys = group_keys.wire2api();
+			move |task_callback| {
+				group_invite_user(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_user_id,
+					api_key_count,
+					api_admin_rank,
+					api_auto_invite,
+					api_user_public_key,
+					api_group_keys,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_invite_user_session(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	auto_invite: bool,
+	session_id: *mut wire_uint_8_list,
+	user_public_key: *mut wire_uint_8_list,
+	group_keys: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_invite_user_session",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_auto_invite = auto_invite.wire2api();
+			let api_session_id = session_id.wire2api();
+			let api_user_public_key = user_public_key.wire2api();
+			let api_group_keys = group_keys.wire2api();
+			move |task_callback| {
+				group_invite_user_session(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_auto_invite,
+					api_session_id,
+					api_user_public_key,
+					api_group_keys,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_invites_for_user(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_group_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_invites_for_user",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
+			move |task_callback| {
+				group_get_invites_for_user(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_last_fetched_time,
+					api_last_fetched_group_id,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_accept_invite(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_accept_invite",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| group_accept_invite(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_reject_invite(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_reject_invite",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| group_reject_invite(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_join_req(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_join_req",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| group_join_req(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_join_reqs(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	admin_rank: i32,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_join_reqs",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_fetched_id = last_fetched_id.wire2api();
+			move |task_callback| {
+				group_get_join_reqs(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_admin_rank,
+					api_last_fetched_time,
+					api_last_fetched_id,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_reject_join_req(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	admin_rank: i32,
+	rejected_user_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_reject_join_req",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			let api_rejected_user_id = rejected_user_id.wire2api();
+			move |task_callback| {
+				group_reject_join_req(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_admin_rank,
+					api_rejected_user_id,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_accept_join_req(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	user_id: *mut wire_uint_8_list,
+	key_count: i32,
+	admin_rank: i32,
+	user_public_key: *mut wire_uint_8_list,
+	group_keys: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_accept_join_req",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_user_id = user_id.wire2api();
+			let api_key_count = key_count.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			let api_user_public_key = user_public_key.wire2api();
+			let api_group_keys = group_keys.wire2api();
+			move |task_callback| {
+				group_accept_join_req(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_user_id,
+					api_key_count,
+					api_admin_rank,
+					api_user_public_key,
+					api_group_keys,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_join_user_session(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	session_id: *mut wire_uint_8_list,
+	user_public_key: *mut wire_uint_8_list,
+	group_keys: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_join_user_session",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_session_id = session_id.wire2api();
+			let api_user_public_key = user_public_key.wire2api();
+			let api_group_keys = group_keys.wire2api();
+			move |task_callback| {
+				group_join_user_session(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_session_id,
+					api_user_public_key,
+					api_group_keys,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_stop_group_invites(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	admin_rank: i32,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_stop_group_invites",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			move |task_callback| group_stop_group_invites(api_base_url, api_auth_token, api_jwt, api_id, api_admin_rank)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_leave_group(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "leave_group",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| leave_group(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_prepare_key_rotation(port_: i64, pre_group_key: *mut wire_uint_8_list, public_key: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_prepare_key_rotation",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_pre_group_key = pre_group_key.wire2api();
+			let api_public_key = public_key.wire2api();
+			move |task_callback| group_prepare_key_rotation(api_pre_group_key, api_public_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_done_key_rotation(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	public_key: *mut wire_uint_8_list,
+	pre_group_key: *mut wire_uint_8_list,
+	server_output: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_done_key_rotation",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_public_key = public_key.wire2api();
+			let api_pre_group_key = pre_group_key.wire2api();
+			let api_server_output = server_output.wire2api();
+			move |task_callback| group_done_key_rotation(api_private_key, api_public_key, api_pre_group_key, api_server_output)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_key_rotation(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	public_key: *mut wire_uint_8_list,
+	pre_group_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_key_rotation",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_public_key = public_key.wire2api();
+			let api_pre_group_key = pre_group_key.wire2api();
+			move |task_callback| {
+				group_key_rotation(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_public_key,
+					api_pre_group_key,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_pre_done_key_rotation(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_pre_done_key_rotation",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| group_pre_done_key_rotation(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_get_done_key_rotation_server_input(port_: i64, server_output: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_done_key_rotation_server_input",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_server_output = server_output.wire2api();
+			move |task_callback| group_get_done_key_rotation_server_input(api_server_output)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_finish_key_rotation(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	server_output: *mut wire_uint_8_list,
+	pre_group_key: *mut wire_uint_8_list,
+	public_key: *mut wire_uint_8_list,
+	private_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_finish_key_rotation",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_server_output = server_output.wire2api();
+			let api_pre_group_key = pre_group_key.wire2api();
+			let api_public_key = public_key.wire2api();
+			let api_private_key = private_key.wire2api();
+			move |task_callback| {
+				group_finish_key_rotation(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_server_output,
+					api_pre_group_key,
+					api_public_key,
+					api_private_key,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_prepare_update_rank(port_: i64, user_id: *mut wire_uint_8_list, rank: i32, admin_rank: i32) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_prepare_update_rank",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_user_id = user_id.wire2api();
+			let api_rank = rank.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			move |task_callback| group_prepare_update_rank(api_user_id, api_rank, api_admin_rank)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_update_rank(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	user_id: *mut wire_uint_8_list,
+	rank: i32,
+	admin_rank: i32,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_update_rank",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_user_id = user_id.wire2api();
+			let api_rank = rank.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			move |task_callback| {
+				group_update_rank(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_user_id,
+					api_rank,
+					api_admin_rank,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_kick_user(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	user_id: *mut wire_uint_8_list,
+	admin_rank: i32,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_kick_user",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_user_id = user_id.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			move |task_callback| {
+				group_kick_user(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_user_id,
+					api_admin_rank,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_group_delete_group(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	admin_rank: i32,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_delete_group",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			move |task_callback| group_delete_group(api_base_url, api_auth_token, api_jwt, api_id, api_admin_rank)
+		},
+	)
+}
+
 // Section: wire structs
 
 #[repr(C)]
@@ -847,6 +1865,12 @@ impl Wire2Api<String> for *mut wire_uint_8_list {
 	fn wire2api(self) -> String {
 		let vec: Vec<u8> = self.wire2api();
 		String::from_utf8_lossy(&vec).into_owned()
+	}
+}
+
+impl Wire2Api<bool> for bool {
+	fn wire2api(self) -> bool {
+		self
 	}
 }
 
@@ -907,12 +1931,70 @@ impl support::IntoDart for GeneratedRegisterData {
 }
 impl support::IntoDartExceptPrimitive for GeneratedRegisterData {}
 
+impl support::IntoDart for GroupDataCheckUpdateServerOutput {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.key_update.into_dart(), self.rank.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupDataCheckUpdateServerOutput {}
+
 impl support::IntoDart for GroupInviteReqList {
 	fn into_dart(self) -> support::DartCObject {
 		vec![self.group_id.into_dart(), self.time.into_dart()].into_dart()
 	}
 }
 impl support::IntoDartExceptPrimitive for GroupInviteReqList {}
+
+impl support::IntoDart for GroupJoinReqList {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.user_id.into_dart(), self.time.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupJoinReqList {}
+
+impl support::IntoDart for GroupKeyData {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.private_group_key.into_dart(),
+			self.public_group_key.into_dart(),
+			self.group_key.into_dart(),
+			self.time.into_dart(),
+			self.group_key_id.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupKeyData {}
+
+impl support::IntoDart for GroupOutData {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.group_id.into_dart(),
+			self.parent_group_id.into_dart(),
+			self.rank.into_dart(),
+			self.key_update.into_dart(),
+			self.created_time.into_dart(),
+			self.joined_time.into_dart(),
+			self.keys.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupOutData {}
+
+impl support::IntoDart for GroupOutDataKeys {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.private_key_id.into_dart(), self.key_data.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupOutDataKeys {}
+
+impl support::IntoDart for GroupUserListItem {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.user_id.into_dart(), self.rank.into_dart(), self.joined_time.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupUserListItem {}
 
 impl support::IntoDart for KeyRotationGetOut {
 	fn into_dart(self) -> support::DartCObject {
@@ -943,6 +2025,20 @@ impl support::IntoDart for KeyRotationInput {
 	}
 }
 impl support::IntoDartExceptPrimitive for KeyRotationInput {}
+
+impl support::IntoDart for ListGroups {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.group_id.into_dart(),
+			self.time.into_dart(),
+			self.joined_time.into_dart(),
+			self.rank.into_dart(),
+			self.parent.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for ListGroups {}
 
 impl support::IntoDart for PreRegisterDeviceData {
 	fn into_dart(self) -> support::DartCObject {

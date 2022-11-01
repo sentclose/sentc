@@ -654,7 +654,10 @@ pub fn user_key_rotation(base_url: String, auth_token: String, jwt: String, publ
 
 pub fn user_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String) -> Result<Vec<KeyRotationGetOut>>
 {
-	let out = rt(async { sentc_crypto_full::user::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str()).await })?;
+	let out = rt(async {
+		//
+		sentc_crypto_full::user::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str()).await
+	})?;
 
 	let mut list = Vec::with_capacity(out.len());
 
@@ -705,6 +708,82 @@ pub fn user_finish_key_rotation(
 //Group
 
 #[repr(C)]
+pub struct GroupKeyData
+{
+	pub private_group_key: String,
+	pub public_group_key: String,
+	pub group_key: String,
+	pub time: String,
+	pub group_key_id: String,
+}
+
+impl From<sentc_crypto::group::GroupKeyData> for GroupKeyData
+{
+	fn from(data: sentc_crypto::group::GroupKeyData) -> Self
+	{
+		Self {
+			private_group_key: data.private_group_key,
+			public_group_key: data.public_group_key,
+			group_key: data.group_key,
+			time: data.time.to_string(),
+			group_key_id: data.group_key_id,
+		}
+	}
+}
+
+#[repr(C)]
+pub struct GroupOutDataKeys
+{
+	pub private_key_id: String,
+	pub key_data: String, //serde string
+}
+
+impl From<sentc_crypto::group::GroupOutDataKeys> for GroupOutDataKeys
+{
+	fn from(key: sentc_crypto::group::GroupOutDataKeys) -> Self
+	{
+		Self {
+			private_key_id: key.private_key_id,
+			key_data: key.key_data,
+		}
+	}
+}
+
+#[repr(C)]
+pub struct GroupOutData
+{
+	pub group_id: String,
+	pub parent_group_id: String,
+	pub rank: i32,
+	pub key_update: bool,
+	pub created_time: String,
+	pub joined_time: String,
+	pub keys: Vec<GroupOutDataKeys>,
+}
+
+impl From<sentc_crypto::group::GroupOutData> for GroupOutData
+{
+	fn from(data: sentc_crypto::group::GroupOutData) -> Self
+	{
+		let mut keys = Vec::with_capacity(data.keys.len());
+
+		for key in data.keys {
+			keys.push(key.into())
+		}
+
+		Self {
+			group_id: data.group_id,
+			parent_group_id: data.parent_group_id,
+			rank: data.rank,
+			key_update: data.key_update,
+			created_time: data.created_time.to_string(),
+			joined_time: data.joined_time.to_string(),
+			keys,
+		}
+	}
+}
+
+#[repr(C)]
 pub struct GroupInviteReqList
 {
 	pub group_id: String,
@@ -749,3 +828,733 @@ impl From<sentc_crypto_common::group::KeyRotationInput> for KeyRotationInput
 		}
 	}
 }
+
+//__________________________________________________________________________________________________
+
+/**
+Create input for the server api.
+
+Use this for group and child group. For child group use the public key of the parent group!
+ */
+pub fn group_prepare_create_group(creators_public_key: String) -> Result<String>
+{
+	sentc_crypto::group::prepare_create(creators_public_key.as_str()).map_err(|err| anyhow!(err))
+}
+
+/**
+Create a group with request.
+
+Only the default values are send to the server, no extra data. If extra data is required, use prepare_create
+ */
+pub fn group_create_group(base_url: String, auth_token: String, jwt: String, creators_public_key: String) -> Result<String>
+{
+	rt(async {
+		sentc_crypto_full::group::create(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			creators_public_key.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn group_create_child_group(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	parent_public_key: String,
+	parent_id: String,
+	admin_rank: i32,
+) -> Result<String>
+{
+	rt(async {
+		sentc_crypto_full::group::create_child_group(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			parent_id.as_str(),
+			admin_rank,
+			parent_public_key.as_str(),
+		)
+		.await
+	})
+}
+
+//__________________________________________________________________________________________________
+
+/**
+Get the group data without request.
+
+Use the parent group private key when fetching child group data.
+ */
+pub fn group_extract_group_data(server_output: String) -> Result<GroupOutData>
+{
+	let out = sentc_crypto::group::get_group_data(server_output.as_str()).map_err(|err| anyhow!(err))?;
+
+	Ok(out.into())
+}
+
+/**
+Get keys from pagination.
+
+Call the group route with the last fetched key time and the last fetched key id. Get both from the key data.
+ */
+pub fn group_extract_group_keys(server_output: String) -> Result<Vec<GroupOutDataKeys>>
+{
+	let out = sentc_crypto::group::get_group_keys_from_server_output(server_output.as_str()).map_err(|err| anyhow!(err))?;
+
+	let mut keys = Vec::with_capacity(out.len());
+
+	for key in out {
+		keys.push(key.into());
+	}
+
+	Ok(keys)
+}
+
+pub fn group_get_group_data(base_url: String, auth_token: String, jwt: String, id: String) -> Result<GroupOutData>
+{
+	let out = rt(async {
+		//
+		sentc_crypto_full::group::get_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await
+	})?;
+
+	Ok(out.into())
+}
+
+pub fn group_get_group_keys(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	last_fetched_time: String,
+	last_fetched_key_id: String,
+) -> Result<Vec<GroupOutDataKeys>>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::get_group_keys(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			last_fetched_time.as_str(),
+			last_fetched_key_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut keys = Vec::with_capacity(out.len());
+
+	for key in out {
+		keys.push(key.into());
+	}
+
+	Ok(keys)
+}
+
+pub fn group_get_group_key(base_url: String, auth_token: String, jwt: String, id: String, key_id: String) -> Result<GroupOutDataKeys>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::get_group_key(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			key_id.as_str(),
+		)
+		.await
+	})?;
+
+	Ok(out.into())
+}
+
+pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result<GroupKeyData>
+{
+	let out = sentc_crypto_full::group::decrypt_key(server_key_data.as_str(), private_key.as_str()).map_err(|err| anyhow!(err))?;
+
+	Ok(out.into())
+}
+
+//__________________________________________________________________________________________________
+
+#[repr(C)]
+pub struct GroupUserListItem
+{
+	pub user_id: String,
+	pub rank: i32,
+	pub joined_time: String,
+}
+
+impl From<sentc_crypto_common::group::GroupUserListItem> for GroupUserListItem
+{
+	fn from(item: sentc_crypto_common::group::GroupUserListItem) -> Self
+	{
+		Self {
+			user_id: item.user_id,
+			rank: item.rank,
+			joined_time: item.joined_time.to_string(),
+		}
+	}
+}
+
+#[repr(C)]
+pub struct GroupDataCheckUpdateServerOutput
+{
+	pub key_update: bool,
+	pub rank: i32,
+}
+
+#[repr(C)]
+pub struct ListGroups
+{
+	pub group_id: String,
+	pub time: String,
+	pub joined_time: String,
+	pub rank: i32,
+	pub parent: Option<String>,
+}
+
+impl From<sentc_crypto_common::group::ListGroups> for ListGroups
+{
+	fn from(item: sentc_crypto_common::group::ListGroups) -> Self
+	{
+		Self {
+			group_id: item.group_id,
+			time: item.time.to_string(),
+			joined_time: item.joined_time.to_string(),
+			rank: item.rank,
+			parent: item.parent,
+		}
+	}
+}
+
+pub fn group_get_member(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	last_fetched_time: String,
+	last_fetched_id: String,
+) -> Result<Vec<GroupUserListItem>>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::get_member(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			last_fetched_time.as_str(),
+			last_fetched_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut items = Vec::with_capacity(out.len());
+
+	for item in out {
+		items.push(item.into());
+	}
+
+	Ok(items)
+}
+
+pub fn group_get_group_updates(base_url: String, auth_token: String, jwt: String, id: String) -> Result<GroupDataCheckUpdateServerOutput>
+{
+	let out = rt(async {
+		//
+		sentc_crypto_full::group::get_group_updates(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await
+	})?;
+
+	Ok(GroupDataCheckUpdateServerOutput {
+		key_update: out.key_update,
+		rank: out.rank,
+	})
+}
+
+pub fn group_get_groups_for_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<Vec<ListGroups>>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::get_groups_for_user(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			last_fetched_time.as_str(),
+			last_fetched_group_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut list = Vec::with_capacity(out.len());
+
+	for item in out {
+		list.push(item.into());
+	}
+
+	Ok(list)
+}
+
+//__________________________________________________________________________________________________
+//invite
+
+/**
+Prepare all group keys for a new member.
+
+Use the group keys from get group data or get group keys fn as string array
+ */
+pub fn group_prepare_keys_for_new_member(user_public_key: String, group_keys: String, key_count: i32, admin_rank: i32) -> Result<String>
+{
+	sentc_crypto::group::check_make_invite_req(admin_rank).map_err(|err| anyhow!(err))?;
+
+	let key_session = if key_count > 50 { true } else { false };
+
+	sentc_crypto::group::prepare_group_keys_for_new_member(
+		//
+		user_public_key.as_str(),
+		group_keys.as_str(),
+		key_session,
+	)
+	.map_err(|err| anyhow!(err))
+}
+
+pub fn group_invite_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	user_id: String,
+	key_count: i32,
+	admin_rank: i32,
+	auto_invite: bool,
+	user_public_key: String,
+	group_keys: String,
+) -> Result<String>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::invite_user(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			user_id.as_str(),
+			key_count,
+			admin_rank,
+			auto_invite,
+			user_public_key.as_str(),
+			group_keys.as_str(),
+		)
+		.await
+	})?;
+
+	match out {
+		Some(id) => Ok(id),
+		None => Ok(String::from("")),
+	}
+}
+
+pub fn group_invite_user_session(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	auto_invite: bool,
+	session_id: String,
+	user_public_key: String,
+	group_keys: String,
+) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::invite_user_session(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			session_id.as_str(),
+			auto_invite,
+			user_public_key.as_str(),
+			group_keys.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn group_get_invites_for_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<Vec<GroupInviteReqList>>
+{
+	let out = rt(async {
+		//
+		sentc_crypto_full::group::get_invites_for_user(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			last_fetched_time.as_str(),
+			last_fetched_group_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut invites = Vec::with_capacity(out.len());
+
+	for invite in out {
+		invites.push(invite.into());
+	}
+
+	Ok(invites)
+}
+
+pub fn group_accept_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::group::accept_invite(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn group_reject_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::group::reject_invite(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+		)
+		.await
+	})
+}
+
+//__________________________________________________________________________________________________
+//join req
+
+#[repr(C)]
+pub struct GroupJoinReqList
+{
+	pub user_id: String,
+	pub time: String,
+}
+
+impl From<sentc_crypto_common::group::GroupJoinReqList> for GroupJoinReqList
+{
+	fn from(list: sentc_crypto_common::group::GroupJoinReqList) -> Self
+	{
+		Self {
+			user_id: list.user_id,
+			time: list.time.to_string(),
+		}
+	}
+}
+
+pub fn group_join_req(base_url: String, auth_token: String, jwt: String, id: String) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::group::join_req(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn group_get_join_reqs(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	admin_rank: i32,
+	last_fetched_time: String,
+	last_fetched_id: String,
+) -> Result<Vec<GroupJoinReqList>>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::get_join_reqs(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			admin_rank,
+			last_fetched_time.as_str(),
+			last_fetched_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut list = Vec::with_capacity(out.len());
+
+	for item in out {
+		list.push(item.into());
+	}
+
+	Ok(list)
+}
+
+pub fn group_reject_join_req(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32, rejected_user_id: String) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::reject_join_req(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			admin_rank,
+			rejected_user_id.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn group_accept_join_req(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	user_id: String,
+	key_count: i32,
+	admin_rank: i32,
+	user_public_key: String,
+	group_keys: String,
+) -> Result<String>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::accept_join_req(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			user_id.as_str(),
+			key_count,
+			admin_rank,
+			user_public_key.as_str(),
+			group_keys.as_str(),
+		)
+		.await
+	})?;
+
+	match out {
+		Some(id) => Ok(id),
+		None => Ok(String::from("")),
+	}
+}
+
+pub fn group_join_user_session(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	session_id: String,
+	user_public_key: String,
+	group_keys: String,
+) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::join_user_session(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			session_id.as_str(),
+			user_public_key.as_str(),
+			group_keys.as_str(),
+		)
+		.await
+	})
+}
+
+pub fn group_stop_group_invites(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::group::stop_group_invites(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			admin_rank,
+		)
+		.await
+	})
+}
+
+//__________________________________________________________________________________________________
+
+pub fn leave_group(base_url: String, auth_token: String, jwt: String, id: String) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::group::leave_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await
+	})
+}
+
+//__________________________________________________________________________________________________
+//key rotation
+
+pub fn group_prepare_key_rotation(pre_group_key: String, public_key: String) -> Result<String>
+{
+	sentc_crypto::group::key_rotation(pre_group_key.as_str(), public_key.as_str(), false).map_err(|err| anyhow!(err))
+}
+
+pub fn group_done_key_rotation(private_key: String, public_key: String, pre_group_key: String, server_output: String) -> Result<String>
+{
+	sentc_crypto::group::done_key_rotation(
+		private_key.as_str(),
+		public_key.as_str(),
+		pre_group_key.as_str(),
+		server_output.as_str(),
+	)
+	.map_err(|err| anyhow!(err))
+}
+
+pub fn group_key_rotation(base_url: String, auth_token: String, jwt: String, id: String, public_key: String, pre_group_key: String)
+	-> Result<String>
+{
+	rt(async {
+		sentc_crypto_full::group::key_rotation(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			public_key.as_str(),
+			pre_group_key.as_str(),
+			false,
+		)
+		.await
+	})
+}
+
+pub fn group_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String, id: String) -> Result<Vec<KeyRotationGetOut>>
+{
+	let out = rt(async {
+		//
+		sentc_crypto_full::group::prepare_done_key_rotation(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			false,
+		)
+		.await
+	})?;
+
+	let mut list = Vec::with_capacity(out.len());
+
+	for item in out {
+		list.push(KeyRotationGetOut {
+			pre_group_key_id: item.pre_group_key_id,
+			new_group_key_id: item.new_group_key_id,
+			encrypted_eph_key_key_id: item.encrypted_eph_key_key_id,
+			server_output: item.server_output,
+		});
+	}
+
+	Ok(list)
+}
+
+pub fn group_get_done_key_rotation_server_input(server_output: String) -> Result<KeyRotationInput>
+{
+	let out = sentc_crypto::group::get_done_key_rotation_server_input(server_output.as_str()).map_err(|err| anyhow!(err))?;
+
+	Ok(out.into())
+}
+
+pub fn group_finish_key_rotation(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	server_output: String,
+	pre_group_key: String,
+	public_key: String,
+	private_key: String,
+) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::done_key_rotation(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			server_output.as_str(),
+			pre_group_key.as_str(),
+			public_key.as_str(),
+			private_key.as_str(),
+			false,
+		)
+		.await
+	})
+}
+
+//__________________________________________________________________________________________________
+//group update fn
+
+pub fn group_prepare_update_rank(user_id: String, rank: i32, admin_rank: i32) -> Result<String>
+{
+	sentc_crypto::group::prepare_change_rank(user_id.as_str(), rank, admin_rank).map_err(|err| anyhow!(err))
+}
+
+pub fn group_update_rank(base_url: String, auth_token: String, jwt: String, id: String, user_id: String, rank: i32, admin_rank: i32) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::update_rank(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			user_id.as_str(),
+			rank,
+			admin_rank,
+		)
+		.await
+	})
+}
+
+pub fn group_kick_user(base_url: String, auth_token: String, jwt: String, id: String, user_id: String, admin_rank: i32) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::kick_user(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			user_id.as_str(),
+			admin_rank,
+		)
+		.await
+	})
+}
+
+//__________________________________________________________________________________________________
+
+pub fn group_delete_group(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::group::delete_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), admin_rank).await
+	})
+}
+
+//==================================================================================================
