@@ -4,7 +4,56 @@ use anyhow::{anyhow, Result};
 use sentc_crypto::user;
 use tokio::runtime::Runtime;
 
+fn rt<T, Fut>(fun: Fut) -> Result<T>
+where
+	Fut: Future<Output = std::result::Result<T, String>>,
+{
+	let rt = Runtime::new().unwrap();
+
+	let data = rt.block_on(fun).map_err(|err| anyhow!(err))?;
+
+	Ok(data)
+}
+
+//==================================================================================================
+//Jwt
+
+#[repr(C)]
+pub struct Claims
+{
+	pub aud: String,
+	pub sub: String, //the app id
+	pub exp: usize,
+	pub iat: usize,
+	pub group_id: String,
+	pub fresh: bool, //was this token from refresh jwt or from login
+}
+
+impl From<sentc_crypto_full::jwt::Claims> for Claims
+{
+	fn from(claims: sentc_crypto_full::jwt::Claims) -> Self
+	{
+		Self {
+			aud: claims.aud,
+			sub: claims.sub,
+			exp: claims.exp,
+			iat: claims.iat,
+			group_id: claims.group_id,
+			fresh: claims.fresh,
+		}
+	}
+}
+
+pub fn decode_jwt(jwt: String) -> Result<Claims>
+{
+	let claims = sentc_crypto_full::jwt::decode_jwt(&jwt).map_err(|err| anyhow!(err))?;
+
+	Ok(claims.into())
+}
+
+//==================================================================================================
 //User
+
 #[repr(C)]
 pub struct GeneratedRegisterData
 {
@@ -107,17 +156,6 @@ impl From<sentc_crypto::util::UserData> for UserData
 			user_keys,
 		}
 	}
-}
-
-fn rt<T, Fut>(fun: Fut) -> Result<T>
-where
-	Fut: Future<Output = std::result::Result<T, String>>,
-{
-	let rt = Runtime::new().unwrap();
-
-	let data = rt.block_on(fun).map_err(|err| anyhow!(err))?;
-
-	Ok(data)
 }
 
 //__________________________________________________________________________________________________

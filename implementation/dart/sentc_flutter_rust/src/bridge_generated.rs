@@ -18,6 +18,21 @@ use flutter_rust_bridge::*;
 // Section: wire functions
 
 #[no_mangle]
+pub extern "C" fn wire_decode_jwt(port_: i64, jwt: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decode_jwt",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_jwt = jwt.wire2api();
+			move |task_callback| decode_jwt(api_jwt)
+		},
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_check_user_identifier_available(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -2434,6 +2449,21 @@ impl<T> NewWithNullPtr for *mut T {
 }
 
 // Section: impl IntoDart
+
+impl support::IntoDart for Claims {
+	fn into_dart(self) -> support::DartCObject {
+		vec![
+			self.aud.into_dart(),
+			self.sub.into_dart(),
+			self.exp.into_dart(),
+			self.iat.into_dart(),
+			self.group_id.into_dart(),
+			self.fresh.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for Claims {}
 
 impl support::IntoDart for CryptoRawOutput {
 	fn into_dart(self) -> support::DartCObject {
