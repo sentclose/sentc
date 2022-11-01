@@ -1558,3 +1558,288 @@ pub fn group_delete_group(base_url: String, auth_token: String, jwt: String, id:
 }
 
 //==================================================================================================
+//crypto
+
+#[repr(C)]
+pub struct SignHead
+{
+	pub id: String,
+	pub alg: String,
+}
+
+impl From<sentc_crypto_common::crypto::SignHead> for SignHead
+{
+	fn from(head: sentc_crypto_common::crypto::SignHead) -> Self
+	{
+		Self {
+			id: head.id,
+			alg: head.alg,
+		}
+	}
+}
+
+#[repr(C)]
+pub struct EncryptedHead
+{
+	pub id: String,
+	pub sign: Option<SignHead>,
+}
+
+#[repr(C)]
+pub struct CryptoRawOutput
+{
+	pub head: String,
+	pub data: Vec<u8>,
+}
+
+impl From<sentc_crypto_common::crypto::EncryptedHead> for EncryptedHead
+{
+	fn from(head: sentc_crypto_common::crypto::EncryptedHead) -> Self
+	{
+		let sign = match head.sign {
+			Some(s) => Some(s.into()),
+			None => None,
+		};
+
+		Self {
+			id: head.id,
+			sign,
+		}
+	}
+}
+
+pub fn split_head_and_encrypted_data(data: Vec<u8>) -> Result<EncryptedHead>
+{
+	let (head, _data) = sentc_crypto::crypto::split_head_and_encrypted_data(&data).map_err(|err| anyhow!(err))?;
+
+	Ok(head.into())
+}
+
+pub fn split_head_and_encrypted_string(data: String) -> Result<EncryptedHead>
+{
+	let head = sentc_crypto::crypto::split_head_and_encrypted_string(&data).map_err(|err| anyhow!(err))?;
+
+	Ok(head.into())
+}
+
+pub fn deserialize_head_from_string(head: String) -> Result<EncryptedHead>
+{
+	let head = sentc_crypto::crypto::deserialize_head_from_string(&head).map_err(|err| anyhow!(err))?;
+
+	Ok(head.into())
+}
+
+pub fn encrypt_raw_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Result<CryptoRawOutput>
+{
+	let (head, data) = sentc_crypto::crypto::encrypt_raw_symmetric(key.as_str(), &data, &sign_key).map_err(|err| anyhow!(err))?;
+
+	Ok(CryptoRawOutput {
+		head,
+		data,
+	})
+}
+
+pub fn decrypt_raw_symmetric(key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String) -> Result<Vec<u8>>
+{
+	sentc_crypto::crypto::decrypt_raw_symmetric(key.as_str(), &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))
+}
+
+pub fn encrypt_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Result<Vec<u8>>
+{
+	sentc_crypto::crypto::encrypt_symmetric(&key, &data, &sign_key).map_err(|err| anyhow!(err))
+}
+
+pub fn decrypt_symmetric(key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<Vec<u8>>
+{
+	sentc_crypto::crypto::decrypt_symmetric(&key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+}
+
+pub fn encrypt_string_symmetric(key: String, data: String, sign_key: String) -> Result<String>
+{
+	sentc_crypto::crypto::encrypt_string_symmetric(&key, &data, &sign_key).map_err(|err| anyhow!(err))
+}
+
+pub fn decrypt_string_symmetric(key: String, encrypted_data: String, verify_key_data: String) -> Result<String>
+{
+	sentc_crypto::crypto::decrypt_string_symmetric(&key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+}
+
+pub fn encrypt_raw_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: String) -> Result<CryptoRawOutput>
+{
+	let (head, data) = sentc_crypto::crypto::encrypt_raw_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))?;
+
+	Ok(CryptoRawOutput {
+		head,
+		data,
+	})
+}
+
+pub fn decrypt_raw_asymmetric(private_key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String) -> Result<Vec<u8>>
+{
+	sentc_crypto::crypto::decrypt_raw_asymmetric(&private_key, &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))
+}
+
+pub fn encrypt_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: String) -> Result<Vec<u8>>
+{
+	sentc_crypto::crypto::encrypt_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))
+}
+
+pub fn decrypt_asymmetric(private_key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<Vec<u8>>
+{
+	sentc_crypto::crypto::decrypt_asymmetric(&private_key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+}
+
+pub fn encrypt_string_asymmetric(reply_public_key_data: String, data: String, sign_key: String) -> Result<String>
+{
+	sentc_crypto::crypto::encrypt_string_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))
+}
+
+pub fn decrypt_string_asymmetric(private_key: String, encrypted_data: String, verify_key_data: String) -> Result<String>
+{
+	sentc_crypto::crypto::decrypt_string_asymmetric(&private_key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+}
+
+//__________________________________________________________________________________________________
+
+#[repr(C)]
+pub struct NonRegisteredKeyOutput
+{
+	pub key: String,
+	pub encrypted_key: String,
+}
+
+pub fn generate_non_register_sym_key(master_key: String) -> Result<NonRegisteredKeyOutput>
+{
+	let (key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&master_key).map_err(|err| anyhow!(err))?;
+
+	Ok(NonRegisteredKeyOutput {
+		key,
+		encrypted_key,
+	})
+}
+
+pub fn generate_non_register_sym_key_by_public_key(reply_public_key: String) -> Result<NonRegisteredKeyOutput>
+{
+	let (key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key_by_public_key(&reply_public_key).map_err(|err| anyhow!(err))?;
+
+	Ok(NonRegisteredKeyOutput {
+		key,
+		encrypted_key,
+	})
+}
+
+pub fn decrypt_sym_key(master_key: String, encrypted_symmetric_key_info: String) -> Result<String>
+{
+	sentc_crypto::crypto::decrypt_sym_key(&master_key, &encrypted_symmetric_key_info).map_err(|err| anyhow!(err))
+}
+
+pub fn decrypt_sym_key_by_private_key(private_key: String, encrypted_symmetric_key_info: String) -> Result<String>
+{
+	sentc_crypto::crypto::decrypt_sym_key_by_private_key(&private_key, &encrypted_symmetric_key_info).map_err(|err| anyhow!(err))
+}
+
+//__________________________________________________________________________________________________
+
+#[repr(C)]
+pub struct KeyGenOutput
+{
+	pub key: String,
+	pub key_id: String,
+}
+
+pub fn generate_and_register_sym_key(base_url: String, auth_token: String, jwt: String, master_key: String) -> Result<KeyGenOutput>
+{
+	let (key_id, key) = rt(async {
+		//
+		sentc_crypto_full::crypto::register_sym_key(base_url, auth_token.as_str(), jwt.as_str(), master_key.as_str()).await
+	})?;
+
+	Ok(KeyGenOutput {
+		key,
+		key_id,
+	})
+}
+
+pub fn generate_and_register_sym_key_by_public_key(base_url: String, auth_token: String, jwt: String, public_key: String) -> Result<KeyGenOutput>
+{
+	let (key_id, key) = rt(async {
+		//
+		sentc_crypto_full::crypto::register_key_by_public_key(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			public_key.as_str(),
+		)
+		.await
+	})?;
+
+	Ok(KeyGenOutput {
+		key,
+		key_id,
+	})
+}
+
+pub fn get_sym_key_by_id(base_url: String, auth_token: String, key_id: String, master_key: String) -> Result<String>
+{
+	rt(async {
+		//
+		sentc_crypto_full::crypto::get_sym_key_by_id(base_url, auth_token.as_str(), key_id.as_str(), master_key.as_str()).await
+	})
+}
+
+pub fn get_sym_key_by_id_by_private_key(base_url: String, auth_token: String, key_id: String, private_key: String) -> Result<String>
+{
+	rt(async {
+		//
+		sentc_crypto_full::crypto::get_sym_key_by_id_by_private_key(base_url, auth_token.as_str(), key_id.as_str(), private_key.as_str()).await
+	})
+}
+
+//__________________________________________________________________________________________________
+
+#[repr(C)]
+pub struct KeysToMasterKeyFetch
+{
+	pub last_fetched_time: String,
+	pub last_key_id: String,
+	pub keys: Vec<String>,
+}
+
+pub fn get_keys_for_master_key(
+	base_url: String,
+	auth_token: String,
+	master_key_id: String,
+	last_fetched_time: String,
+	last_key_id: String,
+	master_key: String,
+) -> Result<KeysToMasterKeyFetch>
+{
+	let (keys, last_fetched_time, last_key_id) = rt(async {
+		sentc_crypto_full::crypto::get_keys_for_master_key(
+			base_url,
+			auth_token.as_str(),
+			master_key_id.as_str(),
+			last_fetched_time.as_str(),
+			last_key_id.as_str(),
+			master_key.as_str(),
+		)
+		.await
+	})?;
+
+	Ok(KeysToMasterKeyFetch {
+		last_fetched_time: last_fetched_time.to_string(),
+		last_key_id,
+		keys,
+	})
+}
+
+pub fn delete_sym_key(base_url: String, auth_token: String, jwt: String, key_id: String) -> Result<()>
+{
+	rt(async {
+		//
+		sentc_crypto_full::crypto::delete_key(base_url, auth_token.as_str(), jwt.as_str(), key_id.as_str()).await
+	})
+}
+
+//==================================================================================================

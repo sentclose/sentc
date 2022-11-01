@@ -1818,6 +1818,532 @@ pub extern "C" fn wire_group_delete_group(
 	)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_split_head_and_encrypted_data(port_: i64, data: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "split_head_and_encrypted_data",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_data = data.wire2api();
+			move |task_callback| split_head_and_encrypted_data(api_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_split_head_and_encrypted_string(port_: i64, data: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "split_head_and_encrypted_string",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_data = data.wire2api();
+			move |task_callback| split_head_and_encrypted_string(api_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_deserialize_head_from_string(port_: i64, head: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "deserialize_head_from_string",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_head = head.wire2api();
+			move |task_callback| deserialize_head_from_string(api_head)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_raw_symmetric(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list, sign_key: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "encrypt_raw_symmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			move |task_callback| encrypt_raw_symmetric(api_key, api_data, api_sign_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_raw_symmetric(
+	port_: i64,
+	key: *mut wire_uint_8_list,
+	encrypted_data: *mut wire_uint_8_list,
+	head: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_raw_symmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_encrypted_data = encrypted_data.wire2api();
+			let api_head = head.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| decrypt_raw_symmetric(api_key, api_encrypted_data, api_head, api_verify_key_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_symmetric(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list, sign_key: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "encrypt_symmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			move |task_callback| encrypt_symmetric(api_key, api_data, api_sign_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_symmetric(
+	port_: i64,
+	key: *mut wire_uint_8_list,
+	encrypted_data: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_symmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_encrypted_data = encrypted_data.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| decrypt_symmetric(api_key, api_encrypted_data, api_verify_key_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_string_symmetric(
+	port_: i64,
+	key: *mut wire_uint_8_list,
+	data: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "encrypt_string_symmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			move |task_callback| encrypt_string_symmetric(api_key, api_data, api_sign_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_string_symmetric(
+	port_: i64,
+	key: *mut wire_uint_8_list,
+	encrypted_data: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_string_symmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_encrypted_data = encrypted_data.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| decrypt_string_symmetric(api_key, api_encrypted_data, api_verify_key_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_raw_asymmetric(
+	port_: i64,
+	reply_public_key_data: *mut wire_uint_8_list,
+	data: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "encrypt_raw_asymmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_reply_public_key_data = reply_public_key_data.wire2api();
+			let api_data = data.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			move |task_callback| encrypt_raw_asymmetric(api_reply_public_key_data, api_data, api_sign_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_raw_asymmetric(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	encrypted_data: *mut wire_uint_8_list,
+	head: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_raw_asymmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_encrypted_data = encrypted_data.wire2api();
+			let api_head = head.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| decrypt_raw_asymmetric(api_private_key, api_encrypted_data, api_head, api_verify_key_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_asymmetric(
+	port_: i64,
+	reply_public_key_data: *mut wire_uint_8_list,
+	data: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "encrypt_asymmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_reply_public_key_data = reply_public_key_data.wire2api();
+			let api_data = data.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			move |task_callback| encrypt_asymmetric(api_reply_public_key_data, api_data, api_sign_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_asymmetric(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	encrypted_data: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_asymmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_encrypted_data = encrypted_data.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| decrypt_asymmetric(api_private_key, api_encrypted_data, api_verify_key_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_string_asymmetric(
+	port_: i64,
+	reply_public_key_data: *mut wire_uint_8_list,
+	data: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "encrypt_string_asymmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_reply_public_key_data = reply_public_key_data.wire2api();
+			let api_data = data.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			move |task_callback| encrypt_string_asymmetric(api_reply_public_key_data, api_data, api_sign_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_string_asymmetric(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	encrypted_data: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_string_asymmetric",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_encrypted_data = encrypted_data.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| decrypt_string_asymmetric(api_private_key, api_encrypted_data, api_verify_key_data)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_generate_non_register_sym_key(port_: i64, master_key: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "generate_non_register_sym_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_master_key = master_key.wire2api();
+			move |task_callback| generate_non_register_sym_key(api_master_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_generate_non_register_sym_key_by_public_key(port_: i64, reply_public_key: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "generate_non_register_sym_key_by_public_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_reply_public_key = reply_public_key.wire2api();
+			move |task_callback| generate_non_register_sym_key_by_public_key(api_reply_public_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_sym_key(port_: i64, master_key: *mut wire_uint_8_list, encrypted_symmetric_key_info: *mut wire_uint_8_list) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_sym_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_master_key = master_key.wire2api();
+			let api_encrypted_symmetric_key_info = encrypted_symmetric_key_info.wire2api();
+			move |task_callback| decrypt_sym_key(api_master_key, api_encrypted_symmetric_key_info)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_decrypt_sym_key_by_private_key(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	encrypted_symmetric_key_info: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "decrypt_sym_key_by_private_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_encrypted_symmetric_key_info = encrypted_symmetric_key_info.wire2api();
+			move |task_callback| decrypt_sym_key_by_private_key(api_private_key, api_encrypted_symmetric_key_info)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_generate_and_register_sym_key(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	master_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "generate_and_register_sym_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_master_key = master_key.wire2api();
+			move |task_callback| generate_and_register_sym_key(api_base_url, api_auth_token, api_jwt, api_master_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_generate_and_register_sym_key_by_public_key(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	public_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "generate_and_register_sym_key_by_public_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_public_key = public_key.wire2api();
+			move |task_callback| generate_and_register_sym_key_by_public_key(api_base_url, api_auth_token, api_jwt, api_public_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_get_sym_key_by_id(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	key_id: *mut wire_uint_8_list,
+	master_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "get_sym_key_by_id",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_key_id = key_id.wire2api();
+			let api_master_key = master_key.wire2api();
+			move |task_callback| get_sym_key_by_id(api_base_url, api_auth_token, api_key_id, api_master_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_get_sym_key_by_id_by_private_key(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	key_id: *mut wire_uint_8_list,
+	private_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "get_sym_key_by_id_by_private_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_key_id = key_id.wire2api();
+			let api_private_key = private_key.wire2api();
+			move |task_callback| get_sym_key_by_id_by_private_key(api_base_url, api_auth_token, api_key_id, api_private_key)
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_get_keys_for_master_key(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	master_key_id: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_key_id: *mut wire_uint_8_list,
+	master_key: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "get_keys_for_master_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_master_key_id = master_key_id.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_key_id = last_key_id.wire2api();
+			let api_master_key = master_key.wire2api();
+			move |task_callback| {
+				get_keys_for_master_key(
+					api_base_url,
+					api_auth_token,
+					api_master_key_id,
+					api_last_fetched_time,
+					api_last_key_id,
+					api_master_key,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_delete_sym_key(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	key_id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "delete_sym_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_key_id = key_id.wire2api();
+			move |task_callback| delete_sym_key(api_base_url, api_auth_token, api_jwt, api_key_id)
+		},
+	)
+}
+
 // Section: wire structs
 
 #[repr(C)]
@@ -1909,6 +2435,13 @@ impl<T> NewWithNullPtr for *mut T {
 
 // Section: impl IntoDart
 
+impl support::IntoDart for CryptoRawOutput {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.head.into_dart(), self.data.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for CryptoRawOutput {}
+
 impl support::IntoDart for DeviceKeyData {
 	fn into_dart(self) -> support::DartCObject {
 		vec![
@@ -1923,6 +2456,13 @@ impl support::IntoDart for DeviceKeyData {
 	}
 }
 impl support::IntoDartExceptPrimitive for DeviceKeyData {}
+
+impl support::IntoDart for EncryptedHead {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.id.into_dart(), self.sign.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for EncryptedHead {}
 
 impl support::IntoDart for GeneratedRegisterData {
 	fn into_dart(self) -> support::DartCObject {
@@ -1996,6 +2536,13 @@ impl support::IntoDart for GroupUserListItem {
 }
 impl support::IntoDartExceptPrimitive for GroupUserListItem {}
 
+impl support::IntoDart for KeyGenOutput {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.key.into_dart(), self.key_id.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for KeyGenOutput {}
+
 impl support::IntoDart for KeyRotationGetOut {
 	fn into_dart(self) -> support::DartCObject {
 		vec![
@@ -2026,6 +2573,13 @@ impl support::IntoDart for KeyRotationInput {
 }
 impl support::IntoDartExceptPrimitive for KeyRotationInput {}
 
+impl support::IntoDart for KeysToMasterKeyFetch {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.last_fetched_time.into_dart(), self.last_key_id.into_dart(), self.keys.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for KeysToMasterKeyFetch {}
+
 impl support::IntoDart for ListGroups {
 	fn into_dart(self) -> support::DartCObject {
 		vec![
@@ -2039,6 +2593,13 @@ impl support::IntoDart for ListGroups {
 	}
 }
 impl support::IntoDartExceptPrimitive for ListGroups {}
+
+impl support::IntoDart for NonRegisteredKeyOutput {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.key.into_dart(), self.encrypted_key.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for NonRegisteredKeyOutput {}
 
 impl support::IntoDart for PreRegisterDeviceData {
 	fn into_dart(self) -> support::DartCObject {
@@ -2060,6 +2621,13 @@ impl support::IntoDart for RegisterDeviceData {
 	}
 }
 impl support::IntoDartExceptPrimitive for RegisterDeviceData {}
+
+impl support::IntoDart for SignHead {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.id.into_dart(), self.alg.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for SignHead {}
 
 impl support::IntoDart for UserData {
 	fn into_dart(self) -> support::DartCObject {
