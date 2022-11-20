@@ -13,10 +13,12 @@ use sentc_crypto_common::group::{
 	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
+	GroupUserAccessBy,
 	KeyRotationData,
 	KeyRotationInput,
 };
 use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_common::GroupId;
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
 use crate::util::public::handle_server_response;
@@ -88,6 +90,19 @@ pub struct DoneGettingGroupKeysOutput
 	pub private_group_key: PrivateKeyFormatInt,
 	pub public_group_key: PublicKeyFormatInt,
 	pub time: u128,
+}
+
+fn get_access_by(access_by: GroupUserAccessBy) -> (Option<GroupId>, Option<GroupId>)
+{
+	match access_by {
+		GroupUserAccessBy::User => (None, None),
+		GroupUserAccessBy::Parent(id) => (None, Some(id)),
+		GroupUserAccessBy::GroupAsUser(id) => (Some(id), None),
+		GroupUserAccessBy::GroupAsUserAsParent {
+			parent,
+			group_as_user,
+		} => (Some(group_as_user), Some(parent)),
+	}
 }
 
 fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
@@ -452,7 +467,7 @@ pub(crate) mod test_fn
 {
 	use alloc::vec;
 
-	use sentc_crypto_common::group::GroupServerData;
+	use sentc_crypto_common::group::{GroupServerData, GroupUserAccessBy};
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
@@ -489,6 +504,7 @@ pub(crate) mod test_fn
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
 		};
 
 		//to avoid the clone trait on the real type
@@ -548,6 +564,7 @@ pub(crate) mod test_fn
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
 		};
 
 		//to avoid the clone trait on the real type
