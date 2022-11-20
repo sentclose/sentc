@@ -10,6 +10,7 @@ use serde_json::{from_str, to_string};
 use crate::group::{
 	decrypt_group_keys_internally,
 	done_key_rotation_internally,
+	get_access_by,
 	get_done_key_rotation_server_input_internally,
 	get_group_key_from_server_output_internally,
 	get_group_keys_from_server_output_internally,
@@ -59,6 +60,8 @@ pub struct GroupOutData
 	pub created_time: u128,
 	pub joined_time: u128,
 	pub keys: Vec<GroupOutDataKeys>,
+	pub access_by_group_as_member: Option<GroupId>,
+	pub access_by_parent_group: Option<GroupId>,
 }
 
 impl GroupOutData
@@ -214,6 +217,8 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		});
 	}
 
+	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+
 	Ok(GroupOutData {
 		group_id: server_output.group_id,
 		parent_group_id,
@@ -222,6 +227,8 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		created_time: server_output.created_time,
 		joined_time: server_output.joined_time,
 		keys, //save the keys from server output to decrypt them later with get group keys
+		access_by_group_as_member,
+		access_by_parent_group,
 	})
 }
 
@@ -298,7 +305,14 @@ mod test
 	use alloc::vec;
 
 	use base64ct::{Base64, Encoding};
-	use sentc_crypto_common::group::{CreateData, DoneKeyRotationData, GroupKeysForNewMember, GroupKeysForNewMemberServerInput, KeyRotationData};
+	use sentc_crypto_common::group::{
+		CreateData,
+		DoneKeyRotationData,
+		GroupKeysForNewMember,
+		GroupKeysForNewMemberServerInput,
+		GroupUserAccessBy,
+		KeyRotationData,
+	};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::crypto::encrypt_asymmetric as encrypt_asymmetric_core;
 	use sentc_crypto_core::SymKey;
@@ -419,6 +433,7 @@ mod test
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
 		};
 
 		let server_output = ServerOutput {
@@ -472,6 +487,7 @@ mod test
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
 		};
 
 		let server_output = ServerOutput {
@@ -536,6 +552,7 @@ mod test
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
 		};
 
 		let server_output = ServerOutput {
@@ -585,6 +602,7 @@ mod test
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
 		};
 
 		let server_output = ServerOutput {
