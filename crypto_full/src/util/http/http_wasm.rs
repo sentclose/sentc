@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use js_sys::Uint8Array;
@@ -86,14 +86,14 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 
 	opts.body(Some(&body));
 
-	let request: Request = Request::new_with_str_and_init(url, &opts).map_err(|_| SdkFullError::RequestErr)?;
+	let request: Request = Request::new_with_str_and_init(url, &opts).map_err(|_| SdkFullError::RequestErr("Can't create request".to_string()))?;
 
 	match jwt {
 		Some(j) => {
 			request
 				.headers()
 				.set("Authorization", auth_header(j).as_str())
-				.map_err(|_| SdkFullError::RequestErr)?;
+				.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 		},
 		None => {},
 	}
@@ -101,17 +101,17 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 	request
 		.headers()
 		.set("Content-Type", "application/json")
-		.map_err(|_| SdkFullError::RequestErr)?;
+		.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 
 	request
 		.headers()
 		.set("x-sentc-app-token", auth_token)
-		.map_err(|_| SdkFullError::RequestErr)?;
+		.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 
 	let window = web_sys::window().unwrap();
 	let resp_value = JsFuture::from(window.fetch_with_request(&request))
 		.await
-		.map_err(|_| SdkFullError::RequestErr)?;
+		.map_err(|e| SdkFullError::RequestErr(e.as_string().unwrap_or("Request failed".to_string())))?;
 
 	let resp: Response = resp_value
 		.dyn_into()
@@ -148,14 +148,14 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 		None => {},
 	}
 
-	let request: Request = Request::new_with_str_and_init(url, &opts).map_err(|_| SdkFullError::RequestErr)?;
+	let request: Request = Request::new_with_str_and_init(url, &opts).map_err(|_| SdkFullError::RequestErr("Can't create request".to_string()))?;
 
 	match jwt {
 		Some(j) => {
 			request
 				.headers()
 				.set("Authorization", auth_header(j).as_str())
-				.map_err(|_| SdkFullError::RequestErr)?;
+				.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 		},
 		None => {},
 	}
@@ -163,21 +163,21 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 	request
 		.headers()
 		.set("Content-Type", "application/json")
-		.map_err(|_| SdkFullError::RequestErr)?;
+		.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 
 	request
 		.headers()
 		.set("x-sentc-app-token", auth_token)
-		.map_err(|_| SdkFullError::RequestErr)?;
+		.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 
 	let window = web_sys::window().unwrap();
 	let resp_value = JsFuture::from(window.fetch_with_request(&request))
 		.await
-		.map_err(|_| SdkFullError::RequestErr)?;
+		.map_err(|e| SdkFullError::RequestErr(e.as_string().unwrap_or("Request failed".to_string())))?;
 
 	let resp: Response = resp_value
 		.dyn_into()
-		.map_err(|_| SdkFullError::RequestErr)?;
+		.map_err(|e| SdkFullError::RequestErr(e.as_string().unwrap_or("Request failed".to_string())))?;
 
 	return Ok(resp);
 }

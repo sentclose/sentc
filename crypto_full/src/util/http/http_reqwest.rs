@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use reqwest::header::AUTHORIZATION;
@@ -68,7 +68,7 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 	let res = builder
 		.send()
 		.await
-		.map_err(|_e| SdkFullError::RequestErr)?;
+		.map_err(|e| SdkFullError::RequestErr(e.to_string()))?;
 
 	res.text().await.map_err(|_e| SdkFullError::ResponseErrText)
 }
@@ -100,7 +100,7 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 	let res = builder
 		.send()
 		.await
-		.map_err(|_e| SdkFullError::RequestErr)?;
+		.map_err(|e| SdkFullError::RequestErr(e.to_string()))?;
 
 	Ok(res)
 }
