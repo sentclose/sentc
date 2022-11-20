@@ -13,6 +13,8 @@ pub struct GroupOutData
 	created_time: u128,
 	joined_time: u128,
 	keys: JsValue,
+	access_by_group_as_member: Option<String>,
+	access_by_parent_group: Option<String>,
 }
 
 impl From<group::GroupOutData> for GroupOutData
@@ -27,6 +29,8 @@ impl From<group::GroupOutData> for GroupOutData
 			created_time: data.created_time,
 			joined_time: data.joined_time,
 			keys: JsValue::from_serde(&data.keys).unwrap(),
+			access_by_group_as_member: data.access_by_group_as_member,
+			access_by_parent_group: data.access_by_parent_group,
 		}
 	}
 }
@@ -67,6 +71,16 @@ impl GroupOutData
 	pub fn get_joined_time(&self) -> String
 	{
 		self.joined_time.to_string()
+	}
+
+	pub fn get_access_by_group_as_member(&self) -> Option<String>
+	{
+		self.access_by_group_as_member.clone()
+	}
+
+	pub fn get_access_by_parent_group(&self) -> Option<String>
+	{
+		self.access_by_parent_group.clone()
 	}
 }
 
