@@ -2901,6 +2901,8 @@ impl support::IntoDart for GroupOutData {
 			self.created_time.into_dart(),
 			self.joined_time.into_dart(),
 			self.keys.into_dart(),
+			self.access_by_group_as_member.into_dart(),
+			self.access_by_parent_group.into_dart(),
 		]
 		.into_dart()
 	}
