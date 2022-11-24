@@ -108,7 +108,12 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 	let window = web_sys::window().unwrap();
 	let resp_value = JsFuture::from(window.fetch_with_request(&request))
 		.await
-		.map_err(|e| SdkFullError::RequestErr(e.as_string().unwrap_or("Request failed".to_string())))?;
+		.map_err(|e| {
+			SdkFullError::RequestErr(
+				e.as_string()
+					.unwrap_or_else(|| "Request failed".to_string()),
+			)
+		})?;
 
 	let resp: Response = resp_value
 		.dyn_into()

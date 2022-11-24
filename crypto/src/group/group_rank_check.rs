@@ -67,3 +67,12 @@ pub fn check_create_sub_group(admin_rank: i32) -> VoidRes
 
 	Ok(())
 }
+
+pub fn check_sent_join_req_list(admin_rank: i32) -> VoidRes
+{
+	if admin_rank > 1 {
+		return Err(SdkError::GroupPermission)?;
+	}
+
+	Ok(())
+}

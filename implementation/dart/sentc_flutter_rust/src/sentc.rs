@@ -1306,10 +1306,111 @@ impl From<sentc_crypto_common::group::GroupJoinReqList> for GroupJoinReqList
 	}
 }
 
+pub fn group_get_sent_join_req_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<Vec<GroupInviteReqList>>
+{
+	let out = rt(async {
+		//
+		sentc_crypto_full::group::get_sent_join_req(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			None,
+			None,
+			last_fetched_time.as_str(),
+			last_fetched_group_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut invites = Vec::with_capacity(out.len());
+
+	for invite in out {
+		invites.push(invite.into());
+	}
+
+	Ok(invites)
+}
+
+pub fn group_get_sent_join_req(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	admin_rank: i32,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<Vec<GroupInviteReqList>>
+{
+	let out = rt(async {
+		//
+		sentc_crypto_full::group::get_sent_join_req(
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			Some(&id),
+			Some(admin_rank),
+			last_fetched_time.as_str(),
+			last_fetched_group_id.as_str(),
+		)
+		.await
+	})?;
+
+	let mut invites = Vec::with_capacity(out.len());
+
+	for invite in out {
+		invites.push(invite.into());
+	}
+
+	Ok(invites)
+}
+
+pub fn group_delete_sent_join_req_user(base_url: String, auth_token: String, jwt: String, join_req_group_id: String) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::delete_sent_join_req(
+			//
+			base_url,
+			&auth_token,
+			&jwt,
+			None,
+			None,
+			&join_req_group_id,
+		)
+		.await
+	})
+}
+
+pub fn group_delete_sent_join_req(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	admin_rank: i32,
+	join_req_group_id: String,
+) -> Result<()>
+{
+	rt(async {
+		sentc_crypto_full::group::delete_sent_join_req(
+			base_url,
+			&auth_token,
+			&jwt,
+			Some(&id),
+			Some(admin_rank),
+			&join_req_group_id,
+		)
+		.await
+	})
+}
+
 pub fn group_join_req(base_url: String, auth_token: String, jwt: String, id: String) -> Result<()>
 {
 	rt(async {
-		//
 		sentc_crypto_full::group::join_req(
 			//
 			base_url,

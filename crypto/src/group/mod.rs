@@ -65,6 +65,7 @@ pub use self::group_rank_check::{
 	check_group_delete,
 	check_kick_user,
 	check_make_invite_req,
+	check_sent_join_req_list,
 };
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
