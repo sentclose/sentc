@@ -132,7 +132,7 @@ pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<
 {
 	let private_key = import_private_key(private_key)?;
 
-	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(SdkError::JsonParseFailed)?;
 
 	let result = decrypt_group_keys_internally(&private_key, &server_key_output)?;
 
@@ -165,7 +165,7 @@ pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<Grou
 		let private_key_id = key.user_public_key_id.clone();
 
 		//call with this string the get group keys fn
-		let key_data = key.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
+		let key_data = key.to_string().map_err(SdkError::JsonParseFailed)?;
 
 		keys.push(GroupOutDataKeys {
 			private_key_id,
@@ -180,7 +180,7 @@ pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupOutD
 {
 	let out = get_group_key_from_server_output_internally(server_output)?;
 
-	let key_data = out.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
+	let key_data = out.to_string().map_err(SdkError::JsonParseFailed)?;
 
 	Ok(GroupOutDataKeys {
 		private_key_id: out.user_public_key_id,
@@ -209,7 +209,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		let private_key_id = key.user_public_key_id.clone();
 
 		//call with this string the get group keys fn
-		let key_data = key.to_string().map_err(|e| SdkError::JsonParseFailed(e))?;
+		let key_data = key.to_string().map_err(SdkError::JsonParseFailed)?;
 
 		keys.push(GroupOutDataKeys {
 			private_key_id,
@@ -234,9 +234,9 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str, key_session: bool) -> Result<String, String>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
 
-	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
 
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 
@@ -258,9 +258,9 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 
 pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
 
-	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
 
 	let mut saved_keys = Vec::with_capacity(group_keys.len());
 
@@ -327,7 +327,7 @@ mod test
 		//create a rust dummy user
 		let user = create_user();
 
-		let group = prepare_create(&user.user_keys[0].public_key.as_str()).unwrap();
+		let group = prepare_create(&user.user_keys[0].public_key).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let pk = import_public_key(user.user_keys[0].public_key.as_str()).unwrap();
@@ -385,7 +385,7 @@ mod test
 		//only one key
 		assert_eq!(
 			key_data[0].group_key.to_string(),
-			group_keys_from_server_out.group_key.to_string()
+			group_keys_from_server_out.group_key
 		);
 
 		//fetch the key single
@@ -395,7 +395,7 @@ mod test
 
 		assert_eq!(
 			key_data[0].group_key.to_string(),
-			group_keys_from_single_server_out.group_key.to_string()
+			group_keys_from_single_server_out.group_key
 		);
 	}
 
@@ -701,9 +701,9 @@ mod test
 			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
 			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
 			public_group_key: rotation_out.public_group_key.to_string(),
-			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg,
 			key_pair_id: "new_key_id_from_server".to_string(),
-			user_public_key_id: done_key_rotation.public_key_id.to_string(),
+			user_public_key_id: done_key_rotation.public_key_id,
 			time: 0,
 			encrypted_sign_key: None,
 			verify_key: None,
