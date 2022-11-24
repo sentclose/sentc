@@ -458,6 +458,37 @@ pub async fn group_get_groups_for_user(
 	Ok(JsValue::from_serde(&out).unwrap())
 }
 
+#[wasm_bindgen]
+pub async fn group_get_sent_join_req_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	last_fetched_time: String,
+	last_fetched_id: String,
+) -> Result<JsValue, JsValue>
+{
+	let out = sentc_crypto_full::group::get_sent_join_req(
+		base_url,
+		&auth_token,
+		&jwt,
+		None,
+		None,
+		&last_fetched_time,
+		&last_fetched_id,
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
+pub async fn group_delete_sent_join_req_user(base_url: String, auth_token: String, jwt: String, join_req_group_id: String) -> Result<(), JsValue>
+{
+	sentc_crypto_full::group::delete_sent_join_req(base_url, &auth_token, &jwt, None, None, &join_req_group_id).await?;
+
+	Ok(())
+}
+
 //__________________________________________________________________________________________________
 //invite
 
@@ -848,6 +879,54 @@ pub async fn group_kick_user(base_url: String, auth_token: String, jwt: String, 
 		id.as_str(),
 		user_id.as_str(),
 		admin_rank,
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[wasm_bindgen]
+pub async fn group_get_sent_join_req(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	admin_rank: i32,
+	last_fetched_time: String,
+	last_fetched_id: String,
+) -> Result<JsValue, JsValue>
+{
+	let out = sentc_crypto_full::group::get_sent_join_req(
+		base_url,
+		&auth_token,
+		&jwt,
+		Some(&id),
+		Some(admin_rank),
+		&last_fetched_time,
+		&last_fetched_id,
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
+pub async fn group_delete_sent_join_req(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	admin_rank: i32,
+	join_req_group_id: String,
+) -> Result<(), JsValue>
+{
+	sentc_crypto_full::group::delete_sent_join_req(
+		base_url,
+		&auth_token,
+		&jwt,
+		Some(&id),
+		Some(admin_rank),
+		&join_req_group_id,
 	)
 	.await?;
 

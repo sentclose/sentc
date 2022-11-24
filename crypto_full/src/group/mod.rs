@@ -553,6 +553,57 @@ pub async fn kick_user(base_url: String, auth_token: &str, jwt: &str, group_id: 
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
+#[inline(never)]
+pub async fn get_sent_join_req(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: Option<&str>,
+	admin_rank: Option<i32>,
+	last_fetched_time: &str,
+	last_fetched_id: &str,
+) -> InviteListRes
+{
+	//the join req the group or user sent
+
+	let url = match (group_id, admin_rank) {
+		(Some(id), Some(rank)) => {
+			sentc_crypto::group::check_sent_join_req_list(rank)?;
+			base_url + "/api/v1/group/" + id + "/joins/" + last_fetched_time + "/" + last_fetched_id
+		},
+		_ => base_url + "/api/v1/group/joins/" + last_fetched_time + "/" + last_fetched_id,
+	};
+
+	let res = make_req(HttpMethod::GET, &url, auth_token, None, Some(jwt)).await?;
+
+	let out: Vec<GroupInviteReqList> = handle_server_response(&res)?;
+
+	Ok(out)
+}
+
+#[inline(never)]
+pub async fn delete_sent_join_req(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: Option<&str>,
+	admin_rank: Option<i32>,
+	join_req_group_id: &str,
+) -> VoidRes
+{
+	let url = match (group_id, admin_rank) {
+		(Some(id), Some(rank)) => {
+			sentc_crypto::group::check_sent_join_req_list(rank)?;
+			base_url + "/api/v1/group/" + id + "/joins/" + join_req_group_id
+		},
+		_ => base_url + "/api/v1/group/joins/" + join_req_group_id,
+	};
+
+	let res = make_req(HttpMethod::DELETE, &url, auth_token, None, Some(jwt)).await?;
+
+	Ok(handle_general_server_response(&res)?)
+}
+
 //__________________________________________________________________________________________________
 
 pub async fn delete_group(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32) -> VoidRes
