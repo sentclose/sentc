@@ -147,6 +147,8 @@ pub async fn get_group_key(base_url: String, auth_token: &str, jwt: &str, id: &s
 	Ok(group_key)
 }
 
+//allowed because of the rust feature needs the ? for converting the err into sdk full err
+#[allow(clippy::needless_question_mark)]
 pub fn decrypt_key(
 	#[cfg(not(feature = "rust"))] server_key_output: &str,
 	#[cfg(feature = "rust")] server_key_output: &sentc_crypto_common::group::GroupKeyServerOutput,
