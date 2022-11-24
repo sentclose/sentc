@@ -99,7 +99,7 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), String>
 
 pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session: bool) -> Result<(String, String), String>
 {
-	let user_keys: Vec<SymKeyFormat> = from_str(user_keys).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let user_keys: Vec<SymKeyFormat> = from_str(user_keys).map_err(SdkError::JsonParseFailed)?;
 
 	let mut saved_keys = Vec::with_capacity(user_keys.len());
 
@@ -153,7 +153,7 @@ pub fn done_login(
 	server_output: &str,
 ) -> Result<UserData, String>
 {
-	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(SdkError::JsonParseFailed)?;
 
 	let master_key_encryption = match master_key_encryption {
 		MasterKeyFormat::Argon2(mk) => {

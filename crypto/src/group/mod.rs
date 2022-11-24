@@ -109,7 +109,7 @@ fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result
 {
 	let out = prepare_create_private_internally(creators_public_key, false)?;
 
-	Ok(out.to_string().map_err(|_| SdkError::JsonToStringFailed)?)
+	out.to_string().map_err(|_| SdkError::JsonToStringFailed)
 }
 
 /**
@@ -227,9 +227,9 @@ fn key_rotation_internally(
 		keypair_sign_alg,
 	};
 
-	Ok(rotation_out
+	rotation_out
 		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 /**
@@ -278,9 +278,9 @@ fn done_key_rotation_internally(
 		encrypted_alg,
 	};
 
-	Ok(done_rotation_out
+	done_rotation_out
 		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 /**
@@ -351,9 +351,9 @@ fn prepare_group_keys_for_new_member_internally(
 {
 	let server_input = prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session)?;
 
-	Ok(server_input
+	server_input
 		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 pub(crate) fn prepare_group_keys_for_new_member_private_internally(
@@ -400,7 +400,7 @@ fn prepare_group_keys_for_new_member_via_session_internally(
 		group_keys,
 	)?;
 
-	Ok(serde_json::to_string(&keys).map_err(|_| SdkError::JsonToStringFailed)?)
+	serde_json::to_string(&keys).map_err(|_| SdkError::JsonToStringFailed)
 }
 
 fn prepare_group_keys_for_new_member_internally_with_public_key(

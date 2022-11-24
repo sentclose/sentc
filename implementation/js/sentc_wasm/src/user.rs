@@ -420,7 +420,7 @@ impl RegisterDeviceData
 #[wasm_bindgen]
 pub fn prepare_register_device(server_output: &str, user_keys: &str, key_count: i32) -> Result<PreRegisterDeviceData, JsValue>
 {
-	let key_session = if key_count > 50 { true } else { false };
+	let key_session = key_count > 50;
 
 	let (input, exported_public_key) = user::prepare_register_device(server_output, user_keys, key_session)?;
 

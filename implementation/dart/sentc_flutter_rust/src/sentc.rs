@@ -296,7 +296,7 @@ pub struct RegisterDeviceData
 
 pub fn prepare_register_device(server_output: String, user_keys: String, key_count: i32) -> Result<PreRegisterDeviceData>
 {
-	let key_session = if key_count > 50 { true } else { false };
+	let key_session = key_count > 50;
 
 	let (input, exported_public_key) = user::prepare_register_device(
 		//
@@ -1154,7 +1154,7 @@ pub fn group_prepare_keys_for_new_member(user_public_key: String, group_keys: St
 {
 	sentc_crypto::group::check_make_invite_req(admin_rank).map_err(|err| anyhow!(err))?;
 
-	let key_session = if key_count > 50 { true } else { false };
+	let key_session = key_count > 50;
 
 	sentc_crypto::group::prepare_group_keys_for_new_member(
 		//

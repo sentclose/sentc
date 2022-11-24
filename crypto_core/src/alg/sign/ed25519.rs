@@ -9,7 +9,7 @@ use crate::{get_rand, SignK, SignOutput, VerifyK};
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
 
-pub const ED25519_OUTPUT: &'static str = "ED25519";
+pub const ED25519_OUTPUT: &str = "ED25519";
 
 pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
 {

@@ -471,7 +471,7 @@ pub fn group_prepare_keys_for_new_member(user_public_key: &str, group_keys: &str
 {
 	group::check_make_invite_req(admin_rank)?;
 
-	let key_session = if key_count > 50 { true } else { false };
+	let key_session = key_count > 50;
 
 	let input = group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
 

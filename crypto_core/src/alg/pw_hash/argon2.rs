@@ -31,7 +31,7 @@ const DERIVED_KEY_LENGTH: usize = 64;
 
 const HALF_DERIVED_KEY_LENGTH: usize = DERIVED_KEY_LENGTH / 2;
 
-pub const ARGON_2_OUTPUT: &'static str = "ARGON-2-SHA256";
+pub const ARGON_2_OUTPUT: &str = "ARGON-2-SHA256";
 
 /**
 # Prepare registration
@@ -255,7 +255,7 @@ fn get_derived_single_key(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Erro
 	let mut derived_key = [0u8; 32];
 
 	argon2
-		.hash_password_into(password, &salt, &mut derived_key)
+		.hash_password_into(password, salt, &mut derived_key)
 		.map_err(|_| Error::PwHashFailed)?;
 
 	Ok(derived_key)

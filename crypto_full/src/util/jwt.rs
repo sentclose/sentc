@@ -1,3 +1,4 @@
+#[cfg(not(feature = "rust"))]
 use alloc::string::String;
 
 use base64ct::Encoding;

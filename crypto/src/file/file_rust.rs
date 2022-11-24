@@ -14,7 +14,7 @@ pub fn prepare_register_file(
 	file_name: Option<String>,
 ) -> Result<(String, Option<String>), SdkError>
 {
-	prepare_register_file_internally(master_key_id, &key, belongs_to_id, belongs_to_type, file_name)
+	prepare_register_file_internally(master_key_id, key, belongs_to_id, belongs_to_type, file_name)
 }
 
 pub fn done_register_file(server_output: &str) -> Result<(FileId, FileSessionId), SdkError>

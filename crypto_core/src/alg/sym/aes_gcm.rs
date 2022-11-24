@@ -10,7 +10,7 @@ use crate::{get_rand, SymKey, SymKeyOutput};
 
 const AES_IV_LENGTH: usize = 12;
 
-pub const AES_GCM_OUTPUT: &'static str = "AES-GCM-256";
+pub const AES_GCM_OUTPUT: &str = "AES-GCM-256";
 
 pub(crate) type AesKey = [u8; 32];
 

@@ -133,23 +133,22 @@ pub fn key_rotation(previous_group_key: &SymKey, invoker_public_key: &Pk, user_g
 	key_rotation_aes_ecies_ed25519(previous_group_key, invoker_public_key, user_group)
 }
 
+type PrepareKeysAesEciesEd25519Tuple = (
+	Vec<u8>,
+	Vec<u8>,
+	&'static str,
+	Option<VerifyK>,
+	Option<Vec<u8>>,
+	Option<&'static str>,
+);
+
 #[cfg(feature = "argon2_aes_ecies_ed25519")]
 fn prepare_keys_aes_ecies_ed25519(
 	public_key: &Pk,
 	user_group: bool,
 	raw_group_key: &AesKey,
 	key_pair: &AsymKeyOutput,
-) -> Result<
-	(
-		Vec<u8>,
-		Vec<u8>,
-		&'static str,
-		Option<VerifyK>,
-		Option<Vec<u8>>,
-		Option<&'static str>,
-	),
-	Error,
->
+) -> Result<PrepareKeysAesEciesEd25519Tuple, Error>
 {
 	let private_key = match &key_pair.sk {
 		Sk::Ecies(k) => k,
@@ -284,7 +283,7 @@ use sentc_crypto_core::Pk;
 let group_keys = vec![&group_key, &new_group_key, &new_group_key_1, &new_group_key_2];
 
 //get the new users public key
-let user_pk = Pk::Ecies([0u8; 32]);	//get it from the server
+let user_pk = Pk::Ecies([0u8; 32]); //get it from the server
 
 let new_user_out = prepare_group_keys_for_new_member(&user_pk, &group_keys);
 ```
@@ -319,7 +318,7 @@ pub fn prepare_group_keys_for_new_member(requester_public_key: &Pk, group_keys: 
 		encrypted_group_keys.push(PrepareGroupKeysForNewMemberOutput {
 			encrypted_group_key,
 			alg: group_key_alg,
-			encrypted_group_key_alg: encrypted_group_key_alg.clone(),
+			encrypted_group_key_alg,
 		});
 	}
 

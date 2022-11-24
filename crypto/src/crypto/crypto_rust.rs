@@ -144,7 +144,7 @@ pub fn prepare_register_sym_key(master_key: &SymKeyFormat) -> Result<(String, Sy
 
 pub fn prepare_register_sym_key_by_public_key(reply_public_key: &UserPublicKeyData) -> Result<(String, SymKeyFormat), SdkError>
 {
-	prepare_register_sym_key_by_public_key_internally(&reply_public_key)
+	prepare_register_sym_key_by_public_key_internally(reply_public_key)
 }
 
 pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &mut SymKeyFormat)

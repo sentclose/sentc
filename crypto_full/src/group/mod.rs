@@ -218,7 +218,7 @@ pub async fn invite_user(
 
 	let url = base_url + "/api/v1/group/" + id + "/" + endpoint + "/" + user_to_invite_id;
 
-	let key_session = if key_count > 50 { true } else { false };
+	let key_session = key_count > 50;
 
 	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
 
@@ -357,7 +357,7 @@ pub async fn accept_join_req(
 
 	let url = base_url + "/api/v1/group/" + group_id + "/join_req/" + user_id;
 
-	let key_session = if key_count > 50 { true } else { false };
+	let key_session = key_count > 50;
 
 	let join = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
 

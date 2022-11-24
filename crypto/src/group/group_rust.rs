@@ -38,12 +38,12 @@ pub struct GroupOutData
 
 pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, SdkError>
 {
-	prepare_create_internally(&creators_public_key)
+	prepare_create_internally(creators_public_key)
 }
 
 pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat, user_group: bool) -> Result<String, SdkError>
 {
-	key_rotation_internally(&previous_group_key, &invoker_public_key, user_group)
+	key_rotation_internally(previous_group_key, invoker_public_key, user_group)
 }
 
 pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, SdkError>
@@ -58,7 +58,7 @@ pub fn done_key_rotation(
 	server_output: &KeyRotationInput,
 ) -> Result<String, SdkError>
 {
-	done_key_rotation_internally(&private_key, &public_key, &previous_group_key, server_output)
+	done_key_rotation_internally(private_key, public_key, previous_group_key, server_output)
 }
 
 pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
@@ -89,7 +89,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 		created_time: server_output.created_time,
 		joined_time: server_output.joined_time,
 		rank: server_output.rank,
-		group_id: server_output.group_id.clone(),
+		group_id: server_output.group_id,
 		access_by_group_as_member,
 		access_by_parent_group,
 	})
@@ -487,9 +487,9 @@ mod test
 			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
 			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
 			public_group_key: rotation_out.public_group_key.to_string(),
-			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg,
 			key_pair_id: "new_key_id_from_server".to_string(),
-			user_public_key_id: done_key_rotation.public_key_id.to_string(),
+			user_public_key_id: done_key_rotation.public_key_id,
 			time: 0,
 			encrypted_sign_key: None,
 			verify_key: None,

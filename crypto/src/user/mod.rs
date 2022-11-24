@@ -156,9 +156,9 @@ fn register_internally(user_identifier: &str, password: &str) -> Result<String, 
 	};
 
 	//use always to string, even for rust feature enable because this data is for the server
-	Ok(register_out
+	register_out
 		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 fn done_register_internally(server_output: &str) -> Result<UserId, SdkError>
@@ -430,7 +430,7 @@ fn done_login_internally_with_device_out(
 	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
 	let out = core_user::done_login(
-		&master_key_encryption,
+		master_key_encryption,
 		&encrypted_master_key,
 		&encrypted_private_key,
 		server_output.keypair_encrypt_alg.as_str(),
@@ -552,9 +552,9 @@ fn change_password_internally(old_pw: &str, new_pw: &str, server_output_prep_log
 		old_auth_key,
 	};
 
-	Ok(pw_change_out
+	pw_change_out
 		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?)
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 fn reset_password_internally(
@@ -588,7 +588,7 @@ fn reset_password_internally(
 		encrypted_private_key,
 	};
 
-	Ok(data.to_string().map_err(|_| SdkError::JsonToStringFailed)?)
+	data.to_string().map_err(|_| SdkError::JsonToStringFailed)
 }
 
 #[cfg(test)]

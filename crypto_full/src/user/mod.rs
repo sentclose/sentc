@@ -94,7 +94,7 @@ pub async fn register_device(
 {
 	let url = base_url + "/api/v1/user/done_register_device";
 
-	let key_session = if key_count > 50 { true } else { false };
+	let key_session = key_count > 50;
 
 	let (input, exported_device_public_key) = user::prepare_register_device(server_output, user_keys, key_session)?;
 
