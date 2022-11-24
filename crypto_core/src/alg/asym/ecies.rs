@@ -9,7 +9,7 @@ use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encryp
 use crate::error::Error;
 use crate::{get_rand, AsymKeyOutput, Pk, Sk};
 
-pub const ECIES_OUTPUT: &'static str = "ECIES-ed25519";
+pub const ECIES_OUTPUT: &str = "ECIES-ed25519";
 
 const HKDF_INFO: &[u8; 13] = b"ecies-ed25519";
 
@@ -29,7 +29,7 @@ pub(crate) fn generate_static_keypair() -> AsymKeyOutput
 pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
 {
 	let receiver_pub = match receiver_pub {
-		Pk::Ecies(pk) => PublicKey::from(pk.clone()),
+		Pk::Ecies(pk) => PublicKey::from(*pk),
 	};
 
 	encrypt_internally(&receiver_pub, data, &mut get_rand())
@@ -38,7 +38,7 @@ pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
 pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
 	let receiver_sec = match receiver_sec {
-		Sk::Ecies(sk) => StaticSecret::from(sk.clone()),
+		Sk::Ecies(sk) => StaticSecret::from(*sk),
 	};
 
 	decrypt_internally(&receiver_sec, ciphertext)
@@ -97,9 +97,9 @@ fn decrypt_internally(receiver_sec: &StaticSecret, ciphertext: &[u8]) -> Result<
 	let encrypted = &ciphertext[PUBLIC_KEY_LENGTH..];
 
 	//this works because we used the receiver static public key for encrypt
-	let aes_key = decapsulate(&receiver_sec, &ep_pk);
+	let aes_key = decapsulate(receiver_sec, &ep_pk);
 
-	let decrypted = aes_decrypt(&aes_key, &encrypted)?;
+	let decrypted = aes_decrypt(&aes_key, encrypted)?;
 
 	Ok(decrypted)
 }

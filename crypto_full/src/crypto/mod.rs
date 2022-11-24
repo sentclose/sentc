@@ -43,14 +43,14 @@ pub async fn register_sym_key(
 
 		sentc_crypto::crypto::done_register_sym_key(&key_id, &mut encoded_key);
 
-		return Ok((key_id, encoded_key));
+		Ok((key_id, encoded_key))
 	}
 
 	#[cfg(not(feature = "rust"))]
 	{
 		let key = sentc_crypto::crypto::done_register_sym_key(&key_id, &encoded_key)?;
 
-		return Ok((key_id, key));
+		Ok((key_id, key))
 	}
 }
 
@@ -131,14 +131,14 @@ pub async fn register_key_by_public_key(
 
 		sentc_crypto::crypto::done_register_sym_key(&key_id, &mut encoded_key);
 
-		return Ok((key_id, encoded_key));
+		Ok((key_id, encoded_key))
 	}
 
 	#[cfg(not(feature = "rust"))]
 	{
 		let key = sentc_crypto::crypto::done_register_sym_key(&key_id, &encoded_key)?;
 
-		return Ok((key_id, key));
+		Ok((key_id, key))
 	}
 }
 

@@ -100,7 +100,7 @@ fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8]
 	//verify the data with the right key
 	let (encrypted_data_without_sig, check) = crypto_core::verify(&verify_k, data_with_sig)?;
 
-	if check == false {
+	if !check {
 		return Err(SdkError::VerifyFailed);
 	}
 
@@ -125,7 +125,7 @@ fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(En
 		i += 1;
 	}
 
-	let head = EncryptedHead::from_slice(&data_with_head[..i]).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let head = EncryptedHead::from_slice(&data_with_head[..i]).map_err(SdkError::JsonParseFailed)?;
 
 	//ignore the zero byte
 	Ok((head, &data_with_head[i + 1..]))
@@ -165,7 +165,7 @@ This can be used to get the head struct when getting the head as string, like ra
 */
 fn deserialize_head_from_string_internally(head: &str) -> Result<EncryptedHead, SdkError>
 {
-	EncryptedHead::from_string(head).map_err(|e| SdkError::JsonParseFailed(e))
+	EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)
 }
 
 fn encrypt_raw_symmetric_internally(
@@ -214,7 +214,7 @@ fn decrypt_raw_symmetric_internally(
 					Ok(crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)?)
 				},
 				Some(vk) => {
-					let encrypted_data_without_sig = verify_internally(&vk, encrypted_data, h)?;
+					let encrypted_data_without_sig = verify_internally(vk, encrypted_data, h)?;
 					Ok(crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)?)
 				},
 			}
@@ -272,7 +272,7 @@ fn decrypt_raw_asymmetric_internally(
 					)?)
 				},
 				Some(vk) => {
-					let encrypted_data_without_sig = verify_internally(&vk, encrypted_data, h)?;
+					let encrypted_data_without_sig = verify_internally(vk, encrypted_data, h)?;
 					Ok(crypto_core::decrypt_asymmetric(
 						&private_key.key,
 						encrypted_data_without_sig,
@@ -287,7 +287,7 @@ fn encrypt_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Op
 {
 	let (head, encrypted) = encrypt_raw_symmetric_internally(key, data, sign_key)?;
 
-	Ok(put_head_and_encrypted_data_internally(&head, &encrypted)?)
+	put_head_and_encrypted_data_internally(&head, &encrypted)
 }
 
 fn decrypt_symmetric_internally(
@@ -298,12 +298,7 @@ fn decrypt_symmetric_internally(
 {
 	let (head, encrypted_data) = split_head_and_encrypted_data_internally(encrypted_data_with_head)?;
 
-	Ok(decrypt_raw_symmetric_internally(
-		key,
-		encrypted_data,
-		&head,
-		verify_key,
-	)?)
+	decrypt_raw_symmetric_internally(key, encrypted_data, &head, verify_key)
 }
 
 fn encrypt_asymmetric_internally(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormatInt>)
@@ -311,7 +306,7 @@ fn encrypt_asymmetric_internally(reply_public_key: &UserPublicKeyData, data: &[u
 {
 	let (head, encrypted_data) = encrypt_raw_asymmetric_internally(reply_public_key, data, sign_key)?;
 
-	Ok(put_head_and_encrypted_data_internally(&head, &encrypted_data)?)
+	put_head_and_encrypted_data_internally(&head, &encrypted_data)
 }
 
 fn decrypt_asymmetric_internally(
@@ -322,12 +317,7 @@ fn decrypt_asymmetric_internally(
 {
 	let (head, encrypted_data) = split_head_and_encrypted_data_internally(encrypted_data_with_head)?;
 
-	Ok(decrypt_raw_asymmetric_internally(
-		private_key,
-		&encrypted_data,
-		&head,
-		verify_key,
-	)?)
+	decrypt_raw_asymmetric_internally(private_key, encrypted_data, &head, verify_key)
 }
 
 pub(crate) fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &str, sign_key: Option<&SignKeyFormatInt>)
@@ -560,7 +550,7 @@ fn generate_non_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Res
 {
 	let (pre_out, _key) = prepare_register_sym_key_internally(master_key)?;
 
-	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(SdkError::JsonParseFailed)?;
 
 	let server_output = GeneratedSymKeyHeadServerOutput {
 		alg: server_input.alg,
@@ -581,7 +571,7 @@ fn generate_non_register_sym_key_by_public_key_internally(
 {
 	let (pre_out, mut key) = prepare_register_sym_key_by_public_key_internally(reply_public_key)?;
 
-	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(SdkError::JsonParseFailed)?;
 
 	let server_output = GeneratedSymKeyHeadServerOutput {
 		alg: server_input.alg,

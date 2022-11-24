@@ -26,7 +26,7 @@ pub fn prepare_register_file(
 		_ => Some(file_name.to_string()),
 	};
 
-	let belongs_to_type: BelongsToType = serde_json::from_str(belongs_to_type).map_err(|e| SdkError::JsonParseFailed(e))?;
+	let belongs_to_type: BelongsToType = serde_json::from_str(belongs_to_type).map_err(SdkError::JsonParseFailed)?;
 
 	let (server_input, encrypted_file_name) = prepare_register_file_internally(master_key_id, &key, belongs_to_id, belongs_to_type, file_name)?;
 

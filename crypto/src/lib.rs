@@ -1,4 +1,12 @@
 #![no_std]
+#![allow(
+	clippy::module_inception,
+	clippy::infallible_destructuring_match,
+	clippy::tabs_in_doc_comments,
+	clippy::manual_map,
+	clippy::explicit_counter_loop,
+	clippy::manual_range_contains
+)]
 
 extern crate alloc;
 

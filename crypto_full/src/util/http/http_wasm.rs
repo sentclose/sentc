@@ -21,7 +21,7 @@ pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 
 	match text.as_string() {
 		Some(v) => Ok(v),
-		None => return Err(SdkFullError::ResponseErrText),
+		None => Err(SdkFullError::ResponseErrText),
 	}
 }
 
@@ -88,14 +88,11 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 
 	let request: Request = Request::new_with_str_and_init(url, &opts).map_err(|_| SdkFullError::RequestErr("Can't create request".to_string()))?;
 
-	match jwt {
-		Some(j) => {
-			request
-				.headers()
-				.set("Authorization", auth_header(j).as_str())
-				.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
-		},
-		None => {},
+	if let Some(j) = jwt {
+		request
+			.headers()
+			.set("Authorization", auth_header(j).as_str())
+			.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 	}
 
 	request
@@ -123,7 +120,7 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 
 	match text.as_string() {
 		Some(v) => Ok(v),
-		None => return Err(SdkFullError::ResponseErrText),
+		None => Err(SdkFullError::ResponseErrText),
 	}
 }
 
@@ -141,23 +138,17 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 	opts.method(method);
 	opts.mode(RequestMode::Cors);
 
-	match body {
-		Some(b) => {
-			opts.body(Some(&JsValue::from_str(b.as_str())));
-		},
-		None => {},
+	if let Some(b) = body {
+		opts.body(Some(&JsValue::from_str(b.as_str())));
 	}
 
 	let request: Request = Request::new_with_str_and_init(url, &opts).map_err(|_| SdkFullError::RequestErr("Can't create request".to_string()))?;
 
-	match jwt {
-		Some(j) => {
-			request
-				.headers()
-				.set("Authorization", auth_header(j).as_str())
-				.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
-		},
-		None => {},
+	if let Some(j) = jwt {
+		request
+			.headers()
+			.set("Authorization", auth_header(j).as_str())
+			.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 	}
 
 	request
@@ -173,11 +164,19 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 	let window = web_sys::window().unwrap();
 	let resp_value = JsFuture::from(window.fetch_with_request(&request))
 		.await
-		.map_err(|e| SdkFullError::RequestErr(e.as_string().unwrap_or("Request failed".to_string())))?;
+		.map_err(|e| {
+			SdkFullError::RequestErr(
+				e.as_string()
+					.unwrap_or_else(|| "Request failed".to_string()),
+			)
+		})?;
 
-	let resp: Response = resp_value
-		.dyn_into()
-		.map_err(|e| SdkFullError::RequestErr(e.as_string().unwrap_or("Request failed".to_string())))?;
+	let resp: Response = resp_value.dyn_into().map_err(|e| {
+		SdkFullError::RequestErr(
+			e.as_string()
+				.unwrap_or_else(|| "Request failed".to_string()),
+		)
+	})?;
 
-	return Ok(resp);
+	Ok(resp)
 }

@@ -77,7 +77,7 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 
 pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserData, SdkError>
 {
-	done_login_internally(&master_key_encryption, server_output)
+	done_login_internally(master_key_encryption, server_output)
 }
 
 pub fn done_key_fetch(private_key: &PrivateKeyFormat, server_output: &str) -> Result<UserKeyData, SdkError>
