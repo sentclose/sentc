@@ -1293,6 +1293,7 @@ pub struct GroupJoinReqList
 {
 	pub user_id: String,
 	pub time: String,
+	pub user_type: i32,
 }
 
 impl From<sentc_crypto_common::group::GroupJoinReqList> for GroupJoinReqList
@@ -1302,6 +1303,7 @@ impl From<sentc_crypto_common::group::GroupJoinReqList> for GroupJoinReqList
 		Self {
 			user_id: list.user_id,
 			time: list.time.to_string(),
+			user_type: list.user_type,
 		}
 	}
 }
@@ -1695,8 +1697,34 @@ pub fn group_kick_user(base_url: String, auth_token: String, jwt: String, id: St
 pub fn group_delete_group(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32) -> Result<()>
 {
 	rt(async {
-		//
-		sentc_crypto_full::group::delete_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), admin_rank).await
+		sentc_crypto_full::group::delete_group(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			id.as_str(),
+			admin_rank,
+		)
+		.await
+	})
+}
+
+pub fn group_get_public_key_data(base_url: String, auth_token: String, jwt: String, id: String) -> Result<UserPublicKeyData>
+{
+	let (public_key, public_key_id) = rt(async {
+		sentc_crypto_full::group::get_public_key_data(
+			//
+			base_url,
+			auth_token.as_str(),
+			jwt.as_str(),
+			&id,
+		)
+		.await
+	})?;
+
+	Ok(UserPublicKeyData {
+		public_key,
+		public_key_id,
 	})
 }
 

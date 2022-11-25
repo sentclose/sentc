@@ -1969,6 +1969,30 @@ pub extern "C" fn wire_group_delete_group(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_group_get_public_key_data(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_public_key_data",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			move |task_callback| group_get_public_key_data(api_base_url, api_auth_token, api_jwt, api_id)
+		},
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_split_head_and_encrypted_data(port_: i64, data: *mut wire_uint_8_list) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -3007,7 +3031,7 @@ impl support::IntoDartExceptPrimitive for GroupInviteReqList {}
 
 impl support::IntoDart for GroupJoinReqList {
 	fn into_dart(self) -> support::DartCObject {
-		vec![self.user_id.into_dart(), self.time.into_dart()].into_dart()
+		vec![self.user_id.into_dart(), self.time.into_dart(), self.user_type.into_dart()].into_dart()
 	}
 }
 impl support::IntoDartExceptPrimitive for GroupJoinReqList {}
