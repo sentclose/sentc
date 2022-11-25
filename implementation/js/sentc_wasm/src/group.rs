@@ -944,3 +944,35 @@ pub async fn group_delete_group(base_url: String, auth_token: String, jwt: Strin
 }
 
 //__________________________________________________________________________________________________
+
+#[wasm_bindgen]
+pub struct GroupPublicKeyData
+{
+	public_key: String,
+	public_key_id: String,
+}
+
+#[wasm_bindgen]
+impl GroupPublicKeyData
+{
+	pub fn get_public_key(&self) -> String
+	{
+		self.public_key.clone()
+	}
+
+	pub fn get_public_key_id(&self) -> String
+	{
+		self.public_key_id.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub async fn group_get_public_key_data(base_url: String, auth_token: String, id: String) -> Result<GroupPublicKeyData, JsValue>
+{
+	let (public_key, public_key_id) = sentc_crypto_full::group::get_public_key_data(base_url, &auth_token, &id).await?;
+
+	Ok(GroupPublicKeyData {
+		public_key,
+		public_key_id,
+	})
+}

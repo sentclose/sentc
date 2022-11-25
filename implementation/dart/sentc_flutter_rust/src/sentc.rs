@@ -1709,14 +1709,13 @@ pub fn group_delete_group(base_url: String, auth_token: String, jwt: String, id:
 	})
 }
 
-pub fn group_get_public_key_data(base_url: String, auth_token: String, jwt: String, id: String) -> Result<UserPublicKeyData>
+pub fn group_get_public_key_data(base_url: String, auth_token: String, id: String) -> Result<UserPublicKeyData>
 {
 	let (public_key, public_key_id) = rt(async {
 		sentc_crypto_full::group::get_public_key_data(
 			//
 			base_url,
 			auth_token.as_str(),
-			jwt.as_str(),
 			&id,
 		)
 		.await
