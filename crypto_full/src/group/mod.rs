@@ -54,6 +54,7 @@ pub(crate) use self::rust::{
 	UserUpdateCheckRes,
 	VoidRes,
 };
+use crate::user::UserPublicKeyRes;
 use crate::util::{make_req, HttpMethod};
 
 async fn create_group(
@@ -618,6 +619,21 @@ pub async fn delete_group(base_url: String, auth_token: &str, jwt: &str, group_i
 }
 
 //__________________________________________________________________________________________________
+
+pub async fn get_public_key_data(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> UserPublicKeyRes
+{
+	let url = base_url + "/api/v1/group/" + group_id + "/public_key";
+
+	let res = make_req(HttpMethod::GET, &url, auth_token, None, Some(jwt)).await?;
+
+	#[cfg(feature = "rust")]
+	let public_data = sentc_crypto::util::public::import_public_key_from_string_into_format(res.as_str())?;
+
+	#[cfg(not(feature = "rust"))]
+	let public_data = sentc_crypto::util::public::import_public_key_from_string_into_export_string(res.as_str())?;
+
+	Ok(public_data)
+}
 
 pub(crate) enum SessionKind
 {
