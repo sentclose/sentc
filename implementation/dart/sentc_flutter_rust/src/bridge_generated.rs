@@ -3075,7 +3075,13 @@ impl support::IntoDartExceptPrimitive for GroupOutDataKeys {}
 
 impl support::IntoDart for GroupUserListItem {
 	fn into_dart(self) -> support::DartCObject {
-		vec![self.user_id.into_dart(), self.rank.into_dart(), self.joined_time.into_dart()].into_dart()
+		vec![
+			self.user_id.into_dart(),
+			self.rank.into_dart(),
+			self.joined_time.into_dart(),
+			self.user_type.into_dart(),
+		]
+		.into_dart()
 	}
 }
 impl support::IntoDartExceptPrimitive for GroupUserListItem {}

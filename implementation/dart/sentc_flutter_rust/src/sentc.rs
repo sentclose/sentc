@@ -1026,6 +1026,7 @@ pub struct GroupUserListItem
 	pub user_id: String,
 	pub rank: i32,
 	pub joined_time: String,
+	pub user_type: i32,
 }
 
 impl From<sentc_crypto_common::group::GroupUserListItem> for GroupUserListItem
@@ -1036,6 +1037,7 @@ impl From<sentc_crypto_common::group::GroupUserListItem> for GroupUserListItem
 			user_id: item.user_id,
 			rank: item.rank,
 			joined_time: item.joined_time.to_string(),
+			user_type: item.user_type,
 		}
 	}
 }
