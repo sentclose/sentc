@@ -1973,7 +1973,6 @@ pub extern "C" fn wire_group_get_public_key_data(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
 	auth_token: *mut wire_uint_8_list,
-	jwt: *mut wire_uint_8_list,
 	id: *mut wire_uint_8_list,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
@@ -1985,9 +1984,8 @@ pub extern "C" fn wire_group_get_public_key_data(
 		move || {
 			let api_base_url = base_url.wire2api();
 			let api_auth_token = auth_token.wire2api();
-			let api_jwt = jwt.wire2api();
 			let api_id = id.wire2api();
-			move |task_callback| group_get_public_key_data(api_base_url, api_auth_token, api_jwt, api_id)
+			move |task_callback| group_get_public_key_data(api_base_url, api_auth_token, api_id)
 		},
 	)
 }
