@@ -57,23 +57,35 @@ pub(crate) use self::rust::{
 use crate::user::UserPublicKeyRes;
 use crate::util::{make_req, HttpMethod};
 
+#[inline(never)]
 async fn create_group(
 	base_url: String,
 	auth_token: &str,
 	jwt: &str,
 	parent_group_id: Option<&str>,
+	connected_group_id: Option<&str>,
 	#[cfg(not(feature = "rust"))] public_key: &str,
 	#[cfg(feature = "rust")] public_key: &sentc_crypto::util::PublicKeyFormat,
+	group_as_member: Option<&str>,
 ) -> Res
 {
-	let url = match parent_group_id {
-		Some(id) => base_url + "/api/v1/group/" + id + "/child",
-		None => base_url + "/api/v1/group",
+	let url = match (parent_group_id, connected_group_id) {
+		(None, Some(id)) => base_url + "/api/v1/group/" + id + "/connected",
+		(Some(id), None) => base_url + "/api/v1/group/" + id + "/child",
+		_ => base_url + "/api/v1/group", //(None, None) or both set
 	};
 
 	let input = sentc_crypto::group::prepare_create(public_key)?;
 
-	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::POST,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let group_id: GroupCreateOutput = handle_server_response(res.as_str())?;
 
@@ -86,9 +98,18 @@ pub fn create<'a>(
 	jwt: &'a str,
 	#[cfg(not(feature = "rust"))] creators_public_key: &'a str,
 	#[cfg(feature = "rust")] creators_public_key: &'a sentc_crypto::util::PublicKeyFormat,
+	group_as_member: Option<&'a str>,
 ) -> impl Future<Output = Res> + 'a
 {
-	create_group(base_url, auth_token, jwt, None, creators_public_key)
+	create_group(
+		base_url,
+		auth_token,
+		jwt,
+		None,
+		None,
+		creators_public_key,
+		group_as_member,
+	)
 }
 
 pub async fn create_child_group(
@@ -99,20 +120,63 @@ pub async fn create_child_group(
 	admin_rank: i32,
 	#[cfg(not(feature = "rust"))] parent_public_key: &str,
 	#[cfg(feature = "rust")] parent_public_key: &sentc_crypto::util::PublicKeyFormat,
+	group_as_member: Option<&str>,
 ) -> Res
 {
 	sentc_crypto::group::check_create_sub_group(admin_rank)?;
 
-	create_group(base_url, auth_token, jwt, Some(parent_group_id), parent_public_key).await
+	create_group(
+		base_url,
+		auth_token,
+		jwt,
+		Some(parent_group_id),
+		None,
+		parent_public_key,
+		group_as_member,
+	)
+	.await
+}
+
+pub async fn create_connected_group(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	connected_group_id: &str,
+	admin_rank: i32,
+	#[cfg(not(feature = "rust"))] parent_public_key: &str,
+	#[cfg(feature = "rust")] parent_public_key: &sentc_crypto::util::PublicKeyFormat,
+	group_as_member: Option<&str>,
+) -> Res
+{
+	sentc_crypto::group::check_create_sub_group(admin_rank)?;
+
+	create_group(
+		base_url,
+		auth_token,
+		jwt,
+		None,
+		Some(connected_group_id),
+		parent_public_key,
+		group_as_member,
+	)
+	.await
 }
 
 //__________________________________________________________________________________________________
 
-pub async fn get_group(base_url: String, auth_token: &str, jwt: &str, id: &str) -> DataRes
+pub async fn get_group(base_url: String, auth_token: &str, jwt: &str, id: &str, group_as_member: Option<&str>) -> DataRes
 {
 	let url = base_url + "/api/v1/group/" + id;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let out = sentc_crypto::group::get_group_data(res.as_str())?;
 
@@ -126,22 +190,39 @@ pub async fn get_group_keys(
 	id: &str,
 	last_fetched_time: &str,
 	last_fetched_key_id: &str,
+	group_as_member: Option<&str>,
 ) -> KeyFetchRes
 {
 	let url = base_url + "/api/v1/group/" + id + "/keys/" + last_fetched_time + "/" + last_fetched_key_id;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let group_keys = sentc_crypto::group::get_group_keys_from_server_output(res.as_str())?;
 
 	Ok(group_keys)
 }
 
-pub async fn get_group_key(base_url: String, auth_token: &str, jwt: &str, id: &str, key_id: &str) -> SingleKeyRes
+pub async fn get_group_key(base_url: String, auth_token: &str, jwt: &str, id: &str, key_id: &str, group_as_member: Option<&str>) -> SingleKeyRes
 {
 	let url = base_url + "/api/v1/group/" + id + "/key/" + key_id;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let group_key = sentc_crypto::group::get_group_key_from_server_output(res.as_str())?;
 
@@ -163,22 +244,46 @@ pub fn decrypt_key(
 	)?)
 }
 
-pub async fn get_member(base_url: String, auth_token: &str, jwt: &str, id: &str, last_fetched_time: &str, last_fetched_id: &str) -> MemberRes
+pub async fn get_member(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	id: &str,
+	last_fetched_time: &str,
+	last_fetched_id: &str,
+	group_as_member: Option<&str>,
+) -> MemberRes
 {
 	let url = base_url + "/api/v1/group/" + id + "/member/" + last_fetched_time + "/" + last_fetched_id;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let out: Vec<GroupUserListItem> = handle_server_response(res.as_str())?;
 
 	Ok(out)
 }
 
-pub async fn get_group_updates(base_url: String, auth_token: &str, jwt: &str, id: &str) -> UserUpdateCheckRes
+pub async fn get_group_updates(base_url: String, auth_token: &str, jwt: &str, id: &str, group_as_member: Option<&str>) -> UserUpdateCheckRes
 {
 	let url = base_url + "/api/v1/group/" + id + "/update_check";
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let out: GroupDataCheckUpdateServerOutput = handle_server_response(res.as_str())?;
 
@@ -190,7 +295,7 @@ pub async fn get_groups_for_user(base_url: String, auth_token: &str, jwt: &str, 
 {
 	let url = base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_fetched_group_id;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt), None).await?;
 
 	let list: Vec<ListGroups> = handle_server_response(res.as_str())?;
 
@@ -209,15 +314,22 @@ pub async fn invite_user(
 	key_count: i32,
 	admin_rank: i32,
 	auto_invite: bool,
+	group_invite: bool,
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
 	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::util::SymKeyFormat],
+	group_as_member: Option<&str>,
 ) -> SessionRes
 {
 	sentc_crypto::group::check_make_invite_req(admin_rank)?;
 
-	let endpoint = if auto_invite { "invite_auto" } else { "invite" };
+	let endpoint = match (group_invite, auto_invite) {
+		(true, true) => "invite_group_auto",
+		(false, true) => "invite_auto",
+		(true, false) => "invite_group",
+		(false, false) => "invite",
+	};
 
 	let url = base_url + "/api/v1/group/" + id + "/" + endpoint + "/" + user_to_invite_id;
 
@@ -226,7 +338,15 @@ pub async fn invite_user(
 	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
 
 	//insert the invite and check for more keys in the sdk impl and call the other fn!
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(invite), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PUT,
+		url.as_str(),
+		auth_token,
+		Some(invite),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let session: GroupInviteServerOutput = handle_server_response(res.as_str())?;
 
@@ -244,6 +364,7 @@ pub fn invite_user_session<'a>(
 	#[cfg(feature = "rust")] user_public_key: &'a sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &'a str,
 	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::util::SymKeyFormat],
+	group_as_member: Option<&'a str>,
 ) -> impl Future<Output = VoidRes> + 'a
 {
 	//use the join session for auto invited user
@@ -261,6 +382,7 @@ pub fn invite_user_session<'a>(
 		session_id,
 		user_public_key,
 		group_keys,
+		group_as_member,
 	)
 }
 
@@ -270,42 +392,111 @@ pub async fn get_invites_for_user(
 	jwt: &str,
 	last_fetched_time: &str,
 	last_fetched_group_id: &str,
+	group_id: Option<&str>,
+	group_as_member: Option<&str>,
 ) -> InviteListRes
 {
-	let url = base_url + "/api/v1/group/invite/" + last_fetched_time + "/" + last_fetched_group_id;
+	//get invites for user and group as member
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/invite/" + last_fetched_time + "/" + last_fetched_group_id,
+		None => base_url + "/api/v1/group/invite/" + last_fetched_time + "/" + last_fetched_group_id,
+	};
+
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let invites: Vec<GroupInviteReqList> = handle_server_response(res.as_str())?;
 
 	Ok(invites)
 }
 
-pub async fn accept_invite(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> VoidRes
+pub async fn accept_invite(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id_to_accept: &str,
+	group_id: Option<&str>,
+	group_as_member: Option<&str>,
+) -> VoidRes
 {
-	let url = base_url + "/api/v1/group/" + group_id + "/invite";
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/" + group_id_to_accept + "/invite",
+		None => base_url + "/api/v1/group/" + group_id_to_accept + "/invite",
+	};
 
-	let res = make_req(HttpMethod::PATCH, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PATCH,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
-pub async fn reject_invite(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> VoidRes
+pub async fn reject_invite(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id_to_reject: &str,
+	group_id: Option<&str>,
+	group_as_member: Option<&str>,
+) -> VoidRes
 {
-	let url = base_url + "/api/v1/group/" + group_id + "/invite";
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/" + group_id_to_reject + "/invite",
+		None => base_url + "/api/v1/group/" + group_id_to_reject + "/invite",
+	};
 
-	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
 //__________________________________________________________________________________________________
 
-pub async fn join_req(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> VoidRes
+pub async fn join_req(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id_to_join: &str,
+	group_id: Option<&str>,
+	group_as_member: Option<&str>,
+) -> VoidRes
 {
-	let url = base_url + "/api/v1/group/" + group_id + "/join_req";
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/" + group_id_to_join,
+		None => base_url + "/api/v1/group/" + group_id_to_join + "/join_req",
+	};
 
-	let res = make_req(HttpMethod::PATCH, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PATCH,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -318,26 +509,51 @@ pub async fn get_join_reqs(
 	admin_rank: i32,
 	last_fetched_time: &str,
 	last_fetched_id: &str,
+	group_as_member: Option<&str>,
 ) -> JoinReqListRes
 {
 	sentc_crypto::group::check_get_join_reqs(admin_rank)?;
 
 	let url = base_url + "/api/v1/group/" + group_id + "/join_req/" + last_fetched_time + "/" + last_fetched_id;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let join_reqs: Vec<GroupJoinReqList> = handle_server_response(res.as_str())?;
 
 	Ok(join_reqs)
 }
 
-pub async fn reject_join_req(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32, rejected_user_id: &str) -> VoidRes
+pub async fn reject_join_req(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	admin_rank: i32,
+	rejected_user_id: &str,
+	group_as_member: Option<&str>,
+) -> VoidRes
 {
 	sentc_crypto::group::check_get_join_reqs(admin_rank)?;
 
 	let url = base_url + "/api/v1/group/" + group_id + "/join_req/" + rejected_user_id;
 
-	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -354,6 +570,7 @@ pub async fn accept_join_req(
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
 	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::util::SymKeyFormat],
+	group_as_member: Option<&str>,
 ) -> SessionRes
 {
 	sentc_crypto::group::check_get_join_reqs(admin_rank)?;
@@ -365,7 +582,15 @@ pub async fn accept_join_req(
 	let join = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
 
 	//insert the invite and check for more keys in the sdk impl and call the other fn!
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(join), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PUT,
+		url.as_str(),
+		auth_token,
+		Some(join),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let out: GroupAcceptJoinReqServerOutput = handle_server_response(res.as_str())?;
 
@@ -382,6 +607,7 @@ pub fn join_user_session<'a>(
 	#[cfg(feature = "rust")] user_public_key: &'a sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &'a str,
 	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::util::SymKeyFormat],
+	group_as_member: Option<&'a str>,
 ) -> impl Future<Output = VoidRes> + 'a
 {
 	insert_session_keys(
@@ -393,27 +619,51 @@ pub fn join_user_session<'a>(
 		session_id,
 		user_public_key,
 		group_keys,
+		group_as_member,
 	)
 }
 
-pub async fn stop_group_invites(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32) -> VoidRes
+pub async fn stop_group_invites(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	admin_rank: i32,
+	group_as_member: Option<&str>,
+) -> VoidRes
 {
 	sentc_crypto::group::check_create_sub_group(admin_rank)?;
 
 	let url = base_url + "/api/v1/group/" + group_id + "/change_invite";
 
-	let res = make_req(HttpMethod::PATCH, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PATCH,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
 //__________________________________________________________________________________________________
 
-pub async fn leave_group(base_url: String, auth_token: &str, jwt: &str, group_id: &str) -> VoidRes
+pub async fn leave_group(base_url: String, auth_token: &str, jwt: &str, group_id: &str, group_as_member: Option<&str>) -> VoidRes
 {
 	let url = base_url + "/api/v1/group/" + group_id + "/leave";
 
-	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -431,6 +681,7 @@ pub async fn key_rotation(
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
 	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
 	user_group: bool,
+	group_as_member: Option<&str>,
 ) -> Res
 {
 	let url = match user_group {
@@ -440,7 +691,15 @@ pub async fn key_rotation(
 
 	let input = sentc_crypto::group::key_rotation(pre_group_key, public_key, user_group)?;
 
-	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::POST,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let out: KeyRotationStartServerOutput = handle_server_response(res.as_str())?;
 
@@ -453,14 +712,29 @@ Get the keys for the key rotation for this group
 call with this arr the done key rotation fn for each key with the pre group key
 */
 #[inline(never)]
-pub async fn prepare_done_key_rotation(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_group: bool) -> KeyRotationRes
+pub async fn prepare_done_key_rotation(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	user_group: bool,
+	group_as_member: Option<&str>,
+) -> KeyRotationRes
 {
 	let url = match user_group {
 		true => base_url + "/api/v1/user/user_keys/rotation",
 		false => base_url + "/api/v1/group/" + group_id + "/key_rotation",
 	};
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let out: Vec<KeyRotationInput> = handle_server_response(res.as_str())?;
 
@@ -505,6 +779,7 @@ pub async fn done_key_rotation(
 	#[cfg(not(feature = "rust"))] private_key: &str,
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 	user_group: bool,
+	group_as_member: Option<&str>,
 ) -> VoidRes
 {
 	#[cfg(not(feature = "rust"))]
@@ -524,7 +799,15 @@ pub async fn done_key_rotation(
 
 	let input = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, server_output)?;
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PUT,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -532,24 +815,57 @@ pub async fn done_key_rotation(
 //__________________________________________________________________________________________________
 //group admin fn
 
-pub async fn update_rank(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_id: &str, rank: i32, admin_rank: i32) -> VoidRes
+pub async fn update_rank(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	user_id: &str,
+	rank: i32,
+	admin_rank: i32,
+	group_as_member: Option<&str>,
+) -> VoidRes
 {
 	let url = base_url + "/api/v1/group/" + group_id + "/change_rank";
 
 	let input = sentc_crypto::group::prepare_change_rank(user_id, rank, admin_rank)?;
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PUT,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
-pub async fn kick_user(base_url: String, auth_token: &str, jwt: &str, group_id: &str, user_id: &str, admin_rank: i32) -> VoidRes
+pub async fn kick_user(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	user_id: &str,
+	admin_rank: i32,
+	group_as_member: Option<&str>,
+) -> VoidRes
 {
 	let url = base_url + "/api/v1/group/" + group_id + "/kick/" + user_id;
 
 	sentc_crypto::group::check_delete_user_rank(admin_rank)?;
 
-	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -563,6 +879,7 @@ pub async fn get_sent_join_req(
 	admin_rank: Option<i32>,
 	last_fetched_time: &str,
 	last_fetched_id: &str,
+	group_as_member: Option<&str>,
 ) -> InviteListRes
 {
 	//the join req the group or user sent
@@ -575,7 +892,7 @@ pub async fn get_sent_join_req(
 		_ => base_url + "/api/v1/group/joins/" + last_fetched_time + "/" + last_fetched_id,
 	};
 
-	let res = make_req(HttpMethod::GET, &url, auth_token, None, Some(jwt)).await?;
+	let res = make_req(HttpMethod::GET, &url, auth_token, None, Some(jwt), group_as_member).await?;
 
 	let out: Vec<GroupInviteReqList> = handle_server_response(&res)?;
 
@@ -590,6 +907,7 @@ pub async fn delete_sent_join_req(
 	group_id: Option<&str>,
 	admin_rank: Option<i32>,
 	join_req_group_id: &str,
+	group_as_member: Option<&str>,
 ) -> VoidRes
 {
 	let url = match (group_id, admin_rank) {
@@ -600,20 +918,28 @@ pub async fn delete_sent_join_req(
 		_ => base_url + "/api/v1/group/joins/" + join_req_group_id,
 	};
 
-	let res = make_req(HttpMethod::DELETE, &url, auth_token, None, Some(jwt)).await?;
+	let res = make_req(HttpMethod::DELETE, &url, auth_token, None, Some(jwt), group_as_member).await?;
 
 	Ok(handle_general_server_response(&res)?)
 }
 
 //__________________________________________________________________________________________________
 
-pub async fn delete_group(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32) -> VoidRes
+pub async fn delete_group(base_url: String, auth_token: &str, jwt: &str, group_id: &str, admin_rank: i32, group_as_member: Option<&str>) -> VoidRes
 {
 	sentc_crypto::group::check_group_delete(admin_rank)?;
 
 	let url = base_url + "/api/v1/group/" + group_id;
 
-	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -624,7 +950,7 @@ pub async fn get_public_key_data(base_url: String, auth_token: &str, group_id: &
 {
 	let url = base_url + "/api/v1/group/" + group_id + "/public_key";
 
-	let res = make_req(HttpMethod::GET, &url, auth_token, None, None).await?;
+	let res = make_req(HttpMethod::GET, &url, auth_token, None, None, None).await?;
 
 	#[cfg(feature = "rust")]
 	let public_data = sentc_crypto::util::public::import_public_key_from_string_into_format(res.as_str())?;
@@ -654,6 +980,7 @@ pub(crate) async fn insert_session_keys(
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
 	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::util::SymKeyFormat],
+	group_as_member: Option<&str>,
 ) -> VoidRes
 {
 	let input = sentc_crypto::group::prepare_group_keys_for_new_member_via_session(user_public_key, group_keys)?;
@@ -664,7 +991,15 @@ pub(crate) async fn insert_session_keys(
 		SessionKind::UserGroup => base_url + "/api/v1/user/user_keys/session/" + session_id,
 	};
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PUT,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
