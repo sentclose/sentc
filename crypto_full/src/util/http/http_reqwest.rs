@@ -9,9 +9,16 @@ use sentc_crypto_common::server_default::ServerSuccessOutput;
 use crate::error::SdkFullError;
 use crate::util::{auth_header, HttpMethod};
 
-pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<String, SdkFullError>
+pub async fn make_req(
+	method: HttpMethod,
+	url: &str,
+	auth_token: &str,
+	body: Option<String>,
+	jwt: Option<&str>,
+	group_as_member: Option<&str>,
+) -> Result<String, SdkFullError>
 {
-	let res = make_req_raw(method, url, auth_token, body, jwt).await?;
+	let res = make_req_raw(method, url, auth_token, body, jwt, group_as_member).await?;
 
 	res.text().await.map_err(|_e| SdkFullError::ResponseErrText)
 }
@@ -22,9 +29,10 @@ pub async fn make_req_buffer(
 	auth_token: &str,
 	body: Option<String>,
 	jwt: Option<&str>,
+	group_as_member: Option<&str>,
 ) -> Result<Vec<u8>, SdkFullError>
 {
-	let res = make_req_raw(method, url, auth_token, body, jwt).await?;
+	let res = make_req_raw(method, url, auth_token, body, jwt, group_as_member).await?;
 
 	if res.status().as_u16() >= 400 {
 		let text = res
@@ -44,7 +52,14 @@ pub async fn make_req_buffer(
 	Ok(buffer)
 }
 
-pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &str, body: Vec<u8>, jwt: Option<&str>) -> Result<String, SdkFullError>
+pub async fn make_req_buffer_body(
+	method: HttpMethod,
+	url: &str,
+	auth_token: &str,
+	body: Vec<u8>,
+	jwt: Option<&str>,
+	group_as_member: Option<&str>,
+) -> Result<String, SdkFullError>
 {
 	let client = reqwest::Client::new();
 
@@ -63,6 +78,11 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 		None => builder,
 	};
 
+	let builder = match group_as_member {
+		Some(id) => builder.header("x-sentc-group-access-id", id),
+		None => builder,
+	};
+
 	let builder = builder.body(body);
 
 	let res = builder
@@ -73,7 +93,14 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 	res.text().await.map_err(|_e| SdkFullError::ResponseErrText)
 }
 
-async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<Response, SdkFullError>
+async fn make_req_raw(
+	method: HttpMethod,
+	url: &str,
+	auth_token: &str,
+	body: Option<String>,
+	jwt: Option<&str>,
+	group_as_member: Option<&str>,
+) -> Result<Response, SdkFullError>
 {
 	let client = reqwest::Client::new();
 
@@ -89,6 +116,11 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 
 	let builder = match jwt {
 		Some(j) => builder.header(AUTHORIZATION, auth_header(j)),
+		None => builder,
+	};
+
+	let builder = match group_as_member {
+		Some(id) => builder.header("x-sentc-group-access-id", id),
 		None => builder,
 	};
 
