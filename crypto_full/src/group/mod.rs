@@ -484,7 +484,7 @@ pub async fn join_req(
 ) -> VoidRes
 {
 	let url = match group_id {
-		Some(id) => base_url + "/api/v1/group/" + id + "/" + group_id_to_join,
+		Some(id) => base_url + "/api/v1/group/" + id + "/join_req/" + group_id_to_join,
 		None => base_url + "/api/v1/group/" + group_id_to_join + "/join_req",
 	};
 
