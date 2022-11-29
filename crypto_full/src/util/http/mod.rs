@@ -12,14 +12,36 @@ pub use self::http_reqwest::{make_req, make_req_buffer, make_req_buffer_body};
 pub use self::http_wasm::{make_req, make_req_buffer, make_req_buffer_body};
 use crate::error::SdkFullError;
 
-pub fn make_non_auth_req<'a>(
+pub fn non_auth_req<'a>(
 	method: HttpMethod,
 	url: &'a str,
 	auth_token: &'a str,
 	body: Option<String>,
 ) -> impl Future<Output = Result<String, SdkFullError>> + 'a
 {
-	make_req(method, url, auth_token, body, None)
+	make_req(method, url, auth_token, body, None, None)
+}
+
+pub fn auth_req<'a>(
+	method: HttpMethod,
+	url: &'a str,
+	auth_token: &'a str,
+	body: Option<String>,
+	jwt: &'a str,
+) -> impl Future<Output = Result<String, SdkFullError>> + 'a
+{
+	make_req(method, url, auth_token, body, Some(jwt), None)
+}
+
+pub fn normal_req<'a>(
+	method: HttpMethod,
+	url: &'a str,
+	auth_token: &'a str,
+	body: Option<String>,
+	jwt: Option<&'a str>,
+) -> impl Future<Output = Result<String, SdkFullError>> + 'a
+{
+	make_req(method, url, auth_token, body, jwt, None)
 }
 
 pub enum HttpMethod

@@ -40,7 +40,7 @@ pub(crate) use self::rust::{
 };
 use crate::group;
 use crate::group::{KeyRotationRes, SessionKind};
-use crate::util::{make_non_auth_req, make_req, HttpMethod};
+use crate::util::{auth_req, non_auth_req, HttpMethod};
 
 //Register
 pub async fn check_user_identifier_available(base_url: String, auth_token: &str, user_identifier: &str) -> BoolRes
@@ -49,7 +49,7 @@ pub async fn check_user_identifier_available(base_url: String, auth_token: &str,
 
 	let url = base_url + "/api/v1/exists";
 
-	let res = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(server_input)).await?;
+	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(server_input)).await?;
 	let out = user::done_check_user_identifier_available(res.as_str())?;
 
 	Ok(out)
@@ -61,7 +61,7 @@ pub async fn register(base_url: String, auth_token: &str, user_identifier: &str,
 
 	let url = base_url + "/api/v1/register";
 
-	let res = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(register_input)).await?;
+	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(register_input)).await?;
 
 	let out = user::done_register(res.as_str())?;
 
@@ -74,7 +74,7 @@ pub async fn register_device_start(base_url: String, auth_token: &str, device_id
 
 	let input = user::prepare_register_device_start(device_identifier, password)?;
 
-	let res = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
+	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
 
 	//check the server output
 	user::done_register_device_start(res.as_str())?;
@@ -98,7 +98,7 @@ pub async fn register_device(
 
 	let (input, exported_device_public_key) = user::prepare_register_device(server_output, user_keys, key_session)?;
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
 
 	let out: GroupAcceptJoinReqServerOutput = handle_server_response(res.as_str())?;
 
@@ -125,6 +125,7 @@ pub fn device_key_session<'a>(
 		session_id,
 		user_public_key,
 		group_keys,
+		None,
 	)
 }
 
@@ -137,7 +138,7 @@ pub async fn prepare_login_start(base_url: String, auth_token: &str, user_identi
 
 	let url = base_url + "/api/v1/prepare_login";
 
-	let res = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(user_id_input)).await?;
+	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(user_id_input)).await?;
 
 	Ok(res)
 }
@@ -148,7 +149,7 @@ pub async fn done_login(base_url: String, auth_token: &str, user_identifier: &st
 
 	let url = base_url + "/api/v1/done_login";
 
-	let server_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
 
 	let keys = user::done_login(&master_key_encryption_key, server_out.as_str())?;
 
@@ -161,14 +162,14 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 
 	let url = base_url.clone() + "/api/v1/prepare_login";
 
-	let res = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(user_id_input)).await?;
+	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(user_id_input)).await?;
 
 	//prepare the login, the auth key is already in the right json format for the server
 	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier, password, res.as_str())?;
 
 	let url = base_url + "/api/v1/done_login";
 
-	let server_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
 
 	let keys = user::done_login(&master_key_encryption_key, server_out.as_str())?;
 
@@ -186,7 +187,7 @@ pub async fn fetch_user_key(
 {
 	let url = base_url + "/api/v1/user/user_keys/key/" + key_id;
 
-	let server_out = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let server_out = auth_req(HttpMethod::GET, url.as_str(), auth_token, None, jwt).await?;
 
 	let keys = user::done_key_fetch(private_key, server_out.as_str())?;
 
@@ -199,7 +200,7 @@ pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_
 
 	let url = base_url + "/api/v1/refresh";
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
 
 	let server_output: DoneLoginLightServerOutput = handle_server_response(res.as_str())?;
 
@@ -212,7 +213,7 @@ pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_to
 
 	let url = base_url + "/api/v1/init";
 
-	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), jwt).await?;
 
 	let server_output: UserInitServerOutput = handle_server_response(res.as_str())?;
 
@@ -223,7 +224,7 @@ pub async fn get_user_devices(base_url: String, auth_token: &str, jwt: &str, las
 {
 	let url = base_url + "/api/v1/user/device/" + last_fetched_time + "/" + last_fetched_id;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = auth_req(HttpMethod::GET, url.as_str(), auth_token, None, jwt).await?;
 
 	let out: Vec<UserDeviceList> = handle_server_response(res.as_str())?;
 
@@ -242,7 +243,7 @@ pub async fn change_password(base_url: String, auth_token: &str, user_identifier
 	//make done login req again to get a fresh jwt
 	let url = base_url.clone() + "/api/v1/done_login";
 
-	let done_login_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
 
 	let keys = user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
 
@@ -255,12 +256,12 @@ pub async fn change_password(base_url: String, auth_token: &str, user_identifier
 
 	let url = base_url + "/api/v1/user/update_pw";
 
-	let res = make_req(
+	let res = auth_req(
 		HttpMethod::PUT,
 		url.as_str(),
 		auth_token,
 		Some(change_pw_input),
-		Some(keys.jwt.as_str()),
+		keys.jwt.as_str(),
 	)
 	.await?;
 
@@ -282,7 +283,7 @@ pub async fn reset_password(
 
 	let input = user::reset_password(new_password, decrypted_private_key, decrypted_sign_key)?;
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -298,20 +299,13 @@ pub async fn delete(base_url: String, auth_token: &str, user_identifier: &str, p
 	//make done login req again to get a fresh jwt
 	let url = base_url.clone() + "/api/v1/done_login";
 
-	let done_login_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
 
 	let keys = user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
 
 	let url = base_url + "/api/v1/user";
 
-	let res = make_req(
-		HttpMethod::DELETE,
-		url.as_str(),
-		auth_token,
-		None,
-		Some(keys.jwt.as_str()),
-	)
-	.await?;
+	let res = auth_req(HttpMethod::DELETE, url.as_str(), auth_token, None, keys.jwt.as_str()).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -331,20 +325,13 @@ pub async fn delete_device(base_url: String, auth_token: &str, device_identifier
 	//make done login req again to get a fresh jwt
 	let url = base_url.clone() + "/api/v1/done_login";
 
-	let done_login_out = make_non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
 
 	let keys = user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
 
 	let url = base_url + "/api/v1/user/device/" + device_id;
 
-	let res = make_req(
-		HttpMethod::DELETE,
-		url.as_str(),
-		auth_token,
-		None,
-		Some(keys.jwt.as_str()),
-	)
-	.await?;
+	let res = auth_req(HttpMethod::DELETE, url.as_str(), auth_token, None, keys.jwt.as_str()).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -357,7 +344,7 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 
 	let input = user::prepare_user_identifier_update(user_identifier)?;
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -368,7 +355,7 @@ pub async fn fetch_user_public_key(base_url: String, auth_token: &str, user_id: 
 {
 	let url = base_url + "/api/v1/user/" + user_id + "/public_key";
 
-	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
+	let res = non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
 	#[cfg(feature = "rust")]
 	let public_data = sentc_crypto::util::public::import_public_key_from_string_into_format(res.as_str())?;
@@ -383,7 +370,7 @@ pub async fn fetch_user_verify_key_by_id(base_url: String, auth_token: &str, use
 {
 	let url = base_url + "/api/v1/user/" + user_id + "/verify_key/" + verify_key_id;
 
-	let res = make_non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
+	let res = non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
 	#[cfg(feature = "rust")]
 	let public_data = sentc_crypto::util::public::import_verify_key_from_string_into_format(res.as_str())?;
@@ -406,12 +393,21 @@ pub fn key_rotation<'a>(
 	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::util::SymKeyFormat,
 ) -> impl Future<Output = Res> + 'a
 {
-	group::key_rotation(base_url, auth_token, jwt, "", device_public_key, pre_user_key, true)
+	group::key_rotation(
+		base_url,
+		auth_token,
+		jwt,
+		"",
+		device_public_key,
+		pre_user_key,
+		true,
+		None,
+	)
 }
 
 pub fn prepare_done_key_rotation<'a>(base_url: String, auth_token: &'a str, jwt: &'a str) -> impl Future<Output = KeyRotationRes> + 'a
 {
-	group::prepare_done_key_rotation(base_url, auth_token, jwt, "", true)
+	group::prepare_done_key_rotation(base_url, auth_token, jwt, "", true, None)
 }
 
 pub fn done_key_rotation<'a>(
@@ -438,5 +434,6 @@ pub fn done_key_rotation<'a>(
 		device_public_key,
 		device_private_key,
 		true,
+		None,
 	)
 }

@@ -11,9 +11,16 @@ use web_sys::{Request, RequestInit, RequestMode, Response};
 use crate::error::SdkFullError;
 use crate::util::{auth_header, HttpMethod};
 
-pub async fn make_req(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<String, SdkFullError>
+pub async fn make_req(
+	method: HttpMethod,
+	url: &str,
+	auth_token: &str,
+	body: Option<String>,
+	jwt: Option<&str>,
+	group_as_member: Option<&str>,
+) -> Result<String, SdkFullError>
 {
-	let resp = make_req_raw(method, url, auth_token, body, jwt).await?;
+	let resp = make_req_raw(method, url, auth_token, body, jwt, group_as_member).await?;
 
 	let text = JsFuture::from(resp.text().map_err(|_| SdkFullError::ResponseErrText)?)
 		.await
@@ -31,9 +38,10 @@ pub async fn make_req_buffer(
 	auth_token: &str,
 	body: Option<String>,
 	jwt: Option<&str>,
+	group_as_member: Option<&str>,
 ) -> Result<Vec<u8>, SdkFullError>
 {
-	let resp = make_req_raw(method, url, auth_token, body, jwt).await?;
+	let resp = make_req_raw(method, url, auth_token, body, jwt, group_as_member).await?;
 
 	let status = resp.status();
 
@@ -67,7 +75,14 @@ pub async fn make_req_buffer(
 	Ok(bytes)
 }
 
-pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &str, body: Vec<u8>, jwt: Option<&str>) -> Result<String, SdkFullError>
+pub async fn make_req_buffer_body(
+	method: HttpMethod,
+	url: &str,
+	auth_token: &str,
+	body: Vec<u8>,
+	jwt: Option<&str>,
+	group_as_member: Option<&str>,
+) -> Result<String, SdkFullError>
 {
 	let method = match method {
 		HttpMethod::GET => "GET",
@@ -92,6 +107,13 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 		request
 			.headers()
 			.set("Authorization", auth_header(j).as_str())
+			.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
+	}
+
+	if let Some(id) = group_as_member {
+		request
+			.headers()
+			.set("x-sentc-group-access-id", id)
 			.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 	}
 
@@ -129,7 +151,14 @@ pub async fn make_req_buffer_body(method: HttpMethod, url: &str, auth_token: &st
 	}
 }
 
-async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Option<String>, jwt: Option<&str>) -> Result<Response, SdkFullError>
+async fn make_req_raw(
+	method: HttpMethod,
+	url: &str,
+	auth_token: &str,
+	body: Option<String>,
+	jwt: Option<&str>,
+	group_as_member: Option<&str>,
+) -> Result<Response, SdkFullError>
 {
 	let method = match method {
 		HttpMethod::GET => "GET",
@@ -153,6 +182,13 @@ async fn make_req_raw(method: HttpMethod, url: &str, auth_token: &str, body: Opt
 		request
 			.headers()
 			.set("Authorization", auth_header(j).as_str())
+			.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
+	}
+
+	if let Some(id) = group_as_member {
+		request
+			.headers()
+			.set("x-sentc-group-access-id", id)
 			.map_err(|_| SdkFullError::RequestErr("Can't set a header".to_string()))?;
 	}
 

@@ -280,13 +280,20 @@ Create a group with request.
 Only the default values are send to the server, no extra data. If extra data is required, use prepare_create
 */
 #[wasm_bindgen]
-pub async fn group_create_group(base_url: String, auth_token: String, jwt: String, creators_public_key: String) -> Result<String, JsValue>
+pub async fn group_create_group(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	creators_public_key: String,
+	group_as_member: String,
+) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::create(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
 		creators_public_key.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -301,6 +308,7 @@ pub async fn group_create_child_group(
 	parent_public_key: String,
 	parent_id: String,
 	admin_rank: i32,
+	group_as_member: String,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::create_child_group(
@@ -310,6 +318,32 @@ pub async fn group_create_child_group(
 		parent_id.as_str(),
 		admin_rank,
 		parent_public_key.as_str(),
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
+
+	Ok(out)
+}
+
+#[wasm_bindgen]
+pub async fn group_create_connected_group(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	connected_group_id: String,
+	admin_rank: i32,
+	parent_public_key: String,
+	group_as_member: String,
+) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::group::create_connected_group(
+		base_url,
+		&auth_token,
+		&jwt,
+		&connected_group_id,
+		admin_rank,
+		&parent_public_key,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -345,9 +379,22 @@ pub fn group_extract_group_keys(server_output: &str) -> Result<JsValue, JsValue>
 }
 
 #[wasm_bindgen]
-pub async fn group_get_group_data(base_url: String, auth_token: String, jwt: String, id: String) -> Result<GroupOutData, JsValue>
+pub async fn group_get_group_data(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	group_as_member: String,
+) -> Result<GroupOutData, JsValue>
 {
-	let out = sentc_crypto_full::group::get_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+	let out = sentc_crypto_full::group::get_group(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(out.into())
 }
@@ -360,6 +407,7 @@ pub async fn group_get_group_keys(
 	id: String,
 	last_fetched_time: String,
 	last_fetched_key_id: String,
+	group_as_member: String,
 ) -> Result<JsValue, JsValue>
 {
 	let out = sentc_crypto_full::group::get_group_keys(
@@ -369,6 +417,7 @@ pub async fn group_get_group_keys(
 		id.as_str(),
 		last_fetched_time.as_str(),
 		last_fetched_key_id.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -376,7 +425,14 @@ pub async fn group_get_group_keys(
 }
 
 #[wasm_bindgen]
-pub async fn group_get_group_key(base_url: String, auth_token: String, jwt: String, id: String, key_id: String) -> Result<GroupOutDataKeys, JsValue>
+pub async fn group_get_group_key(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	key_id: String,
+	group_as_member: String,
+) -> Result<GroupOutDataKeys, JsValue>
 {
 	let out = sentc_crypto_full::group::get_group_key(
 		base_url,
@@ -384,6 +440,7 @@ pub async fn group_get_group_key(base_url: String, auth_token: String, jwt: Stri
 		jwt.as_str(),
 		id.as_str(),
 		key_id.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -406,6 +463,7 @@ pub async fn group_get_member(
 	id: String,
 	last_fetched_time: String,
 	last_fetched_id: String,
+	group_as_member: String,
 ) -> Result<JsValue, JsValue>
 {
 	let out = sentc_crypto_full::group::get_member(
@@ -415,6 +473,7 @@ pub async fn group_get_member(
 		id.as_str(),
 		last_fetched_time.as_str(),
 		last_fetched_id.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -427,9 +486,17 @@ pub async fn group_get_group_updates(
 	auth_token: String,
 	jwt: String,
 	id: String,
+	group_as_member: String,
 ) -> Result<GroupDataCheckUpdateServerOutput, JsValue>
 {
-	let out = sentc_crypto_full::group::get_group_updates(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+	let out = sentc_crypto_full::group::get_group_updates(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(GroupDataCheckUpdateServerOutput {
 		key_update: out.key_update,
@@ -475,6 +542,7 @@ pub async fn group_get_sent_join_req_user(
 		None,
 		&last_fetched_time,
 		&last_fetched_id,
+		None,
 	)
 	.await?;
 
@@ -484,7 +552,7 @@ pub async fn group_get_sent_join_req_user(
 #[wasm_bindgen]
 pub async fn group_delete_sent_join_req_user(base_url: String, auth_token: String, jwt: String, join_req_group_id: String) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::delete_sent_join_req(base_url, &auth_token, &jwt, None, None, &join_req_group_id).await?;
+	sentc_crypto_full::group::delete_sent_join_req(base_url, &auth_token, &jwt, None, None, &join_req_group_id, None).await?;
 
 	Ok(())
 }
@@ -519,8 +587,10 @@ pub async fn group_invite_user(
 	key_count: i32,
 	admin_rank: i32,
 	auto_invite: bool,
+	group_invite: bool,
 	user_public_key: String,
 	group_keys: String,
+	group_as_member: String,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::invite_user(
@@ -532,8 +602,10 @@ pub async fn group_invite_user(
 		key_count,
 		admin_rank,
 		auto_invite,
+		group_invite,
 		user_public_key.as_str(),
 		group_keys.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -553,6 +625,7 @@ pub async fn group_invite_user_session(
 	session_id: String,
 	user_public_key: String,
 	group_keys: String,
+	group_as_member: String,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::invite_user_session(
@@ -564,6 +637,7 @@ pub async fn group_invite_user_session(
 		auto_invite,
 		user_public_key.as_str(),
 		group_keys.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -577,14 +651,20 @@ pub async fn group_get_invites_for_user(
 	jwt: String,
 	last_fetched_time: String,
 	last_fetched_group_id: String,
+	group_id: String,
+	group_as_member: String,
 ) -> Result<JsValue, JsValue>
 {
+	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
+
 	let out = sentc_crypto_full::group::get_invites_for_user(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
 		last_fetched_time.as_str(),
 		last_fetched_group_id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -592,17 +672,51 @@ pub async fn group_get_invites_for_user(
 }
 
 #[wasm_bindgen]
-pub async fn group_accept_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
+pub async fn group_accept_invite(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	group_id: String,
+	group_as_member: String,
+) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::accept_invite(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
+
+	sentc_crypto_full::group::accept_invite(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(())
 }
 
 #[wasm_bindgen]
-pub async fn group_reject_invite(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
+pub async fn group_reject_invite(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	group_id: String,
+	group_as_member: String,
+) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::reject_invite(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
+
+	sentc_crypto_full::group::reject_invite(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(())
 }
@@ -611,9 +725,26 @@ pub async fn group_reject_invite(base_url: String, auth_token: String, jwt: Stri
 //join req
 
 #[wasm_bindgen]
-pub async fn group_join_req(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
+pub async fn group_join_req(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	group_id: String,
+	group_as_member: String,
+) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::join_req(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
+
+	sentc_crypto_full::group::join_req(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(())
 }
@@ -627,6 +758,7 @@ pub async fn group_get_join_reqs(
 	admin_rank: i32,
 	last_fetched_time: String,
 	last_fetched_id: String,
+	group_as_member: String,
 ) -> Result<JsValue, JsValue>
 {
 	let out = sentc_crypto_full::group::get_join_reqs(
@@ -637,6 +769,7 @@ pub async fn group_get_join_reqs(
 		admin_rank,
 		last_fetched_time.as_str(),
 		last_fetched_id.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -651,6 +784,7 @@ pub async fn group_reject_join_req(
 	id: String,
 	admin_rank: i32,
 	rejected_user_id: String,
+	group_as_member: String,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::reject_join_req(
@@ -660,6 +794,7 @@ pub async fn group_reject_join_req(
 		id.as_str(),
 		admin_rank,
 		rejected_user_id.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -677,6 +812,7 @@ pub async fn group_accept_join_req(
 	admin_rank: i32,
 	user_public_key: String,
 	group_keys: String,
+	group_as_member: String,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::accept_join_req(
@@ -689,6 +825,7 @@ pub async fn group_accept_join_req(
 		admin_rank,
 		user_public_key.as_str(),
 		group_keys.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -707,6 +844,7 @@ pub async fn group_join_user_session(
 	session_id: String,
 	user_public_key: String,
 	group_keys: String,
+	group_as_member: String,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::join_user_session(
@@ -717,6 +855,7 @@ pub async fn group_join_user_session(
 		session_id.as_str(),
 		user_public_key.as_str(),
 		group_keys.as_str(),
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -724,9 +863,24 @@ pub async fn group_join_user_session(
 }
 
 #[wasm_bindgen]
-pub async fn group_stop_group_invites(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32) -> Result<(), JsValue>
+pub async fn group_stop_group_invites(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	admin_rank: i32,
+	group_as_member: String,
+) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::stop_group_invites(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), admin_rank).await?;
+	sentc_crypto_full::group::stop_group_invites(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		admin_rank,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(())
 }
@@ -734,9 +888,16 @@ pub async fn group_stop_group_invites(base_url: String, auth_token: String, jwt:
 //__________________________________________________________________________________________________
 
 #[wasm_bindgen]
-pub async fn leave_group(base_url: String, auth_token: String, jwt: String, id: String) -> Result<(), JsValue>
+pub async fn leave_group(base_url: String, auth_token: String, jwt: String, id: String, group_as_member: String) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::leave_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str()).await?;
+	sentc_crypto_full::group::leave_group(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(())
 }
@@ -768,6 +929,7 @@ pub async fn group_key_rotation(
 	id: String,
 	public_key: String,
 	pre_group_key: String,
+	group_as_member: String,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::key_rotation(
@@ -778,6 +940,7 @@ pub async fn group_key_rotation(
 		public_key.as_str(),
 		pre_group_key.as_str(),
 		false,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -790,9 +953,23 @@ Get the keys for done key rotation.
 Then call for each key rotation server output the finish_key_rotation fn
 */
 #[wasm_bindgen]
-pub async fn group_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String, id: String) -> Result<JsValue, JsValue>
+pub async fn group_pre_done_key_rotation(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	group_as_member: String,
+) -> Result<JsValue, JsValue>
 {
-	let out = sentc_crypto_full::group::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), false).await?;
+	let out = sentc_crypto_full::group::prepare_done_key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		false,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
 }
@@ -815,6 +992,7 @@ pub async fn group_finish_key_rotation(
 	pre_group_key: String,
 	public_key: String,
 	private_key: String,
+	group_as_member: String,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::done_key_rotation(
@@ -827,6 +1005,7 @@ pub async fn group_finish_key_rotation(
 		public_key.as_str(),
 		private_key.as_str(),
 		false,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -853,6 +1032,7 @@ pub async fn group_update_rank(
 	user_id: String,
 	rank: i32,
 	admin_rank: i32,
+	group_as_member: String,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::update_rank(
@@ -863,6 +1043,7 @@ pub async fn group_update_rank(
 		user_id.as_str(),
 		rank,
 		admin_rank,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -870,7 +1051,15 @@ pub async fn group_update_rank(
 }
 
 #[wasm_bindgen]
-pub async fn group_kick_user(base_url: String, auth_token: String, jwt: String, id: String, user_id: String, admin_rank: i32) -> Result<(), JsValue>
+pub async fn group_kick_user(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	user_id: String,
+	admin_rank: i32,
+	group_as_member: String,
+) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::kick_user(
 		base_url,
@@ -879,6 +1068,7 @@ pub async fn group_kick_user(base_url: String, auth_token: String, jwt: String, 
 		id.as_str(),
 		user_id.as_str(),
 		admin_rank,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -894,6 +1084,7 @@ pub async fn group_get_sent_join_req(
 	admin_rank: i32,
 	last_fetched_time: String,
 	last_fetched_id: String,
+	group_as_member: String,
 ) -> Result<JsValue, JsValue>
 {
 	let out = sentc_crypto_full::group::get_sent_join_req(
@@ -904,6 +1095,7 @@ pub async fn group_get_sent_join_req(
 		Some(admin_rank),
 		&last_fetched_time,
 		&last_fetched_id,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -918,6 +1110,7 @@ pub async fn group_delete_sent_join_req(
 	id: String,
 	admin_rank: i32,
 	join_req_group_id: String,
+	group_as_member: String,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::delete_sent_join_req(
@@ -927,6 +1120,7 @@ pub async fn group_delete_sent_join_req(
 		Some(&id),
 		Some(admin_rank),
 		&join_req_group_id,
+		get_group_as_member(&group_as_member),
 	)
 	.await?;
 
@@ -936,9 +1130,24 @@ pub async fn group_delete_sent_join_req(
 //__________________________________________________________________________________________________
 
 #[wasm_bindgen]
-pub async fn group_delete_group(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32) -> Result<(), JsValue>
+pub async fn group_delete_group(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	admin_rank: i32,
+	group_as_member: String,
+) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::delete_group(base_url, auth_token.as_str(), jwt.as_str(), id.as_str(), admin_rank).await?;
+	sentc_crypto_full::group::delete_group(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		admin_rank,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
 
 	Ok(())
 }
@@ -975,4 +1184,14 @@ pub async fn group_get_public_key_data(base_url: String, auth_token: String, id:
 		public_key,
 		public_key_id,
 	})
+}
+
+#[inline(never)]
+fn get_group_as_member(group_as_member: &String) -> Option<&str>
+{
+	if group_as_member.is_empty() {
+		None
+	} else {
+		Some(group_as_member.as_str())
+	}
 }

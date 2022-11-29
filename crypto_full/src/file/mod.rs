@@ -24,6 +24,7 @@ pub async fn download_file_meta(
 	#[cfg(feature = "rust")] jwt: Option<&str>,
 	#[cfg(not(feature = "rust"))] group_id: &str,
 	#[cfg(feature = "rust")] group_id: Option<&str>,
+	group_as_member: Option<&str>,
 ) -> FileRes
 {
 	#[cfg(not(feature = "rust"))]
@@ -47,7 +48,7 @@ pub async fn download_file_meta(
 		None => base_url + "/api/v1/file/" + file_id,
 	};
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, jwt).await?;
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, jwt, group_as_member).await?;
 
 	let file_data: FileData = handle_server_response(res.as_str())?;
 
@@ -58,7 +59,7 @@ pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &st
 {
 	let url = base_url + "/api/v1/file/" + file_id + "/part_fetch/" + last_sequence;
 
-	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, None).await?;
+	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, None, None).await?;
 
 	let file_parts: Vec<FilePartListItem> = handle_server_response(res.as_str())?;
 
@@ -90,7 +91,7 @@ pub async fn download_and_decrypt_file_part(
 
 	let url = url_prefix + "/" + part_id;
 
-	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None).await?;
+	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None, None).await?;
 
 	//decrypt the part
 	let decrypted = sentc_crypto::crypto::decrypt_symmetric(content_key, &res, verify_key_data)?;
@@ -115,6 +116,7 @@ pub async fn register_file(
 	#[cfg(feature = "rust")] file_name: Option<String>,
 	#[cfg(not(feature = "rust"))] group_id: &str,
 	#[cfg(feature = "rust")] group_id: Option<&str>,
+	group_as_member: Option<&str>,
 ) -> FileRegRes
 {
 	let (input, encrypted_file_name) =
@@ -133,7 +135,15 @@ pub async fn register_file(
 		None => base_url + "/api/v1/file",
 	};
 
-	let res = make_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::POST,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	let (file_id, session_id) = sentc_crypto::file::done_register_file(res.as_str())?;
 
@@ -171,7 +181,7 @@ pub async fn upload_part(
 
 	let url = url_prefix + "/" + session_id + "/" + sequence.to_string().as_str() + "/" + end.to_string().as_str();
 
-	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt)).await?;
+	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt), None).await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -191,7 +201,15 @@ pub async fn update_file_name(
 
 	let url = base_url + "/api/v1/file/" + file_id;
 
-	let res = make_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::PUT,
+		url.as_str(),
+		auth_token,
+		Some(input),
+		Some(jwt),
+		None,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }
@@ -203,6 +221,7 @@ pub async fn delete_file(
 	file_id: &str,
 	#[cfg(not(feature = "rust"))] group_id: &str,
 	#[cfg(feature = "rust")] group_id: Option<&str>,
+	group_as_member: Option<&str>,
 ) -> VoidRes
 {
 	#[cfg(not(feature = "rust"))]
@@ -218,7 +237,15 @@ pub async fn delete_file(
 		None => base_url + "/api/v1/file/" + file_id,
 	};
 
-	let res = make_req(HttpMethod::DELETE, url.as_str(), auth_token, None, Some(jwt)).await?;
+	let res = make_req(
+		HttpMethod::DELETE,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
 
 	Ok(handle_general_server_response(res.as_str())?)
 }

@@ -142,14 +142,28 @@ impl FileRegisterOutput
 }
 
 #[wasm_bindgen]
-pub async fn file_download_file_meta(base_url: String, auth_token: String, jwt: String, id: String, group_id: String) -> Result<FileData, JsValue>
+pub async fn file_download_file_meta(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	group_id: String,
+	group_as_member: String,
+) -> Result<FileData, JsValue>
 {
+	let group_as_member = if group_as_member.is_empty() {
+		None
+	} else {
+		Some(group_as_member.as_str())
+	};
+
 	let out = sentc_crypto_full::file::download_file_meta(
 		base_url,
 		auth_token.as_str(),
 		id.as_str(),
 		jwt.as_str(),
 		group_id.as_str(),
+		group_as_member,
 	)
 	.await?;
 
@@ -207,8 +221,15 @@ pub async fn file_register_file(
 	belongs_to_type: String,
 	file_name: String,
 	group_id: String,
+	group_as_member: String,
 ) -> Result<FileRegisterOutput, JsValue>
 {
+	let group_as_member = if group_as_member.is_empty() {
+		None
+	} else {
+		Some(group_as_member.as_str())
+	};
+
 	let (file_id, session_id, encrypted_file_name) = sentc_crypto_full::file::register_file(
 		base_url,
 		auth_token.as_str(),
@@ -219,6 +240,7 @@ pub async fn file_register_file(
 		belongs_to_type.as_str(),
 		file_name.as_str(),
 		group_id.as_str(),
+		group_as_member,
 	)
 	.await?;
 
@@ -313,14 +335,28 @@ pub async fn file_file_name_update(
 }
 
 #[wasm_bindgen]
-pub async fn file_delete_file(base_url: String, auth_token: String, jwt: String, file_id: String, group_id: String) -> Result<(), JsValue>
+pub async fn file_delete_file(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	file_id: String,
+	group_id: String,
+	group_as_member: String,
+) -> Result<(), JsValue>
 {
+	let group_as_member = if group_as_member.is_empty() {
+		None
+	} else {
+		Some(group_as_member.as_str())
+	};
+
 	sentc_crypto_full::file::delete_file(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
 		file_id.as_str(),
 		group_id.as_str(),
+		group_as_member,
 	)
 	.await?;
 
