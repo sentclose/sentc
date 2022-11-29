@@ -325,6 +325,31 @@ pub async fn group_create_child_group(
 	Ok(out)
 }
 
+#[wasm_bindgen]
+pub async fn group_create_connected_group(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	connected_group_id: String,
+	admin_rank: i32,
+	parent_public_key: String,
+	group_as_member: String,
+) -> Result<String, JsValue>
+{
+	let out = sentc_crypto_full::group::create_connected_group(
+		base_url,
+		&auth_token,
+		&jwt,
+		&connected_group_id,
+		admin_rank,
+		&parent_public_key,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
+
+	Ok(out)
+}
+
 //__________________________________________________________________________________________________
 
 /**
