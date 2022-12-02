@@ -9,12 +9,12 @@ use sentc_crypto_common::ServerOutput;
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
 use sentc_crypto_core::generate_salt;
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::error::SdkError;
 use crate::util::client_random_value_from_string;
 
-pub fn handle_server_response<'de, T: Serialize + Deserialize<'de>>(res: &'de str) -> Result<T, SdkError>
+pub fn handle_server_response<'de, T: Deserialize<'de>>(res: &'de str) -> Result<T, SdkError>
 {
 	let server_output = ServerOutput::<T>::from_string(res).map_err(SdkError::JsonParseFailed)?;
 
