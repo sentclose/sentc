@@ -30,12 +30,11 @@ serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
 
 [features]
-default = ["sentc-crypto/default","reqwest/default"]
+default = ["sentc-crypto/default"]
 
-default_rustls = ["sentc-crypto/default","reqwest/rustls-tls"]
+rust = ["sentc-crypto/rust"]
 
-rust = ["sentc-crypto/rust","reqwest/default"]
-
-rust_rustls = ["sentc-crypto/rust","reqwest/rustls-tls"]
-
-wasm = ["sentc-crypto/default","wasm-bindgen","wasm-bindgen-futures","web-sys","js-sys"]
+# req handling
+default_tls = ["reqwest/default"]
+rustls = ["reqwest/rustls-tls"]
+wasm = ["wasm-bindgen","wasm-bindgen-futures","web-sys","js-sys"]
