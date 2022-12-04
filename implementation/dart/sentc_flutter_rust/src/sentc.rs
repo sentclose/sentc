@@ -1155,6 +1155,7 @@ pub fn group_get_groups_for_user(
 	jwt: String,
 	last_fetched_time: String,
 	last_fetched_group_id: String,
+	group_id: String,
 ) -> Result<Vec<ListGroups>>
 {
 	let out = rt(async {
@@ -1164,6 +1165,7 @@ pub fn group_get_groups_for_user(
 			jwt.as_str(),
 			last_fetched_time.as_str(),
 			last_fetched_group_id.as_str(),
+			get_group_as_member(&group_id),
 		)
 		.await
 	})?;
