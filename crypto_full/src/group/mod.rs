@@ -311,10 +311,22 @@ pub async fn get_group_updates(base_url: String, auth_token: &str, jwt: &str, id
 	Ok(out)
 }
 
-pub async fn get_groups_for_user(base_url: String, auth_token: &str, jwt: &str, last_fetched_time: &str, last_fetched_group_id: &str)
-	-> GroupListRes
+pub async fn get_groups_for_user(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	last_fetched_time: &str,
+	last_fetched_group_id: &str,
+	group_id: Option<&str>,
+) -> GroupListRes
 {
-	let url = base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_fetched_group_id;
+	//not needed group as member id because
+	// the user can only enter groups which are directly connected to this group not connected by a connected group
+
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/all/" + last_fetched_time + "/" + last_fetched_group_id,
+		None => base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_fetched_group_id,
+	};
 
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt), None).await?;
 

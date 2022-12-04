@@ -1,6 +1,7 @@
 use alloc::string::{String, ToString};
 
 use sentc_crypto::group;
+use sentc_crypto_common::group as common_group;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -184,9 +185,9 @@ pub struct KeyRotationInput
 	new_group_key_id: String,
 }
 
-impl From<sentc_crypto_common::group::KeyRotationInput> for KeyRotationInput
+impl From<common_group::KeyRotationInput> for KeyRotationInput
 {
-	fn from(out: sentc_crypto_common::group::KeyRotationInput) -> Self
+	fn from(out: common_group::KeyRotationInput) -> Self
 	{
 		Self {
 			encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
@@ -511,6 +512,7 @@ pub async fn group_get_groups_for_user(
 	jwt: String,
 	last_fetched_time: String,
 	last_fetched_group_id: String,
+	group_id: String,
 ) -> Result<JsValue, JsValue>
 {
 	let out = sentc_crypto_full::group::get_groups_for_user(
@@ -519,6 +521,7 @@ pub async fn group_get_groups_for_user(
 		jwt.as_str(),
 		last_fetched_time.as_str(),
 		last_fetched_group_id.as_str(),
+		get_group_as_member(&group_id),
 	)
 	.await?;
 

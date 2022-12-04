@@ -1127,6 +1127,7 @@ pub extern "C" fn wire_group_get_groups_for_user(
 	jwt: *mut wire_uint_8_list,
 	last_fetched_time: *mut wire_uint_8_list,
 	last_fetched_group_id: *mut wire_uint_8_list,
+	group_id: *mut wire_uint_8_list,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1140,6 +1141,7 @@ pub extern "C" fn wire_group_get_groups_for_user(
 			let api_jwt = jwt.wire2api();
 			let api_last_fetched_time = last_fetched_time.wire2api();
 			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
+			let api_group_id = group_id.wire2api();
 			move |task_callback| {
 				group_get_groups_for_user(
 					api_base_url,
@@ -1147,6 +1149,7 @@ pub extern "C" fn wire_group_get_groups_for_user(
 					api_jwt,
 					api_last_fetched_time,
 					api_last_fetched_group_id,
+					api_group_id,
 				)
 			}
 		},
