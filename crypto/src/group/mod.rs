@@ -49,6 +49,7 @@ pub use self::group::{
 	get_group_data,
 	get_group_key_from_server_output,
 	get_group_keys_from_server_output,
+	get_group_light_data,
 	key_rotation,
 	prepare_change_rank,
 	prepare_create,
@@ -57,6 +58,7 @@ pub use self::group::{
 	GroupKeyData,
 	GroupOutData,
 	GroupOutDataKeys,
+	GroupOutDataLight,
 };
 pub use self::group_rank_check::{
 	check_create_sub_group,
@@ -75,12 +77,14 @@ pub use self::group_rust::{
 	get_group_data,
 	get_group_key_from_server_output,
 	get_group_keys_from_server_output,
+	get_group_light_data,
 	key_rotation,
 	prepare_change_rank,
 	prepare_create,
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_via_session,
 	GroupOutData,
+	GroupOutDataLight,
 };
 #[cfg(feature = "rust")]
 pub use self::DoneGettingGroupKeysOutput as GroupKeyData;

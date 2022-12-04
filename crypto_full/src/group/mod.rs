@@ -23,6 +23,7 @@ use sentc_crypto_common::group::{
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{
+	DataLightRes,
 	DataRes,
 	GroupListRes,
 	InviteListRes,
@@ -40,6 +41,7 @@ pub(crate) use self::non_rust::{
 };
 #[cfg(feature = "rust")]
 pub(crate) use self::rust::{
+	DataLightRes,
 	DataRes,
 	GroupListRes,
 	InviteListRes,
@@ -179,6 +181,25 @@ pub async fn get_group(base_url: String, auth_token: &str, jwt: &str, id: &str, 
 	.await?;
 
 	let out = sentc_crypto::group::get_group_data(res.as_str())?;
+
+	Ok(out)
+}
+
+pub async fn get_group_light(base_url: String, auth_token: &str, jwt: &str, id: &str, group_as_member: Option<&str>) -> DataLightRes
+{
+	let url = base_url + "/api/v1/group/" + id + "/light";
+
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
+
+	let out = sentc_crypto::group::get_group_light_data(&res)?;
 
 	Ok(out)
 }

@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto::group::{GroupKeyData, GroupOutData};
+use sentc_crypto::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
 use sentc_crypto_common::group::{
 	GroupDataCheckUpdateServerOutput,
 	GroupInviteReqList,
@@ -17,6 +17,7 @@ use crate::error::SdkFullError;
 pub type Res = Result<String, SdkFullError>;
 pub type VoidRes = Result<(), SdkFullError>;
 pub type DataRes = Result<GroupOutData, SdkFullError>;
+pub type DataLightRes = Result<GroupOutDataLight, SdkFullError>;
 pub type KeyRes = Result<GroupKeyData, SdkFullError>;
 pub type KeyFetchRes = Result<Vec<GroupKeyServerOutput>, SdkFullError>;
 pub type SingleKeyRes = Result<GroupKeyServerOutput, SdkFullError>;

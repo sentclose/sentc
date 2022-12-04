@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto::group::{GroupKeyData, GroupOutData, GroupOutDataKeys};
+use sentc_crypto::group::{GroupKeyData, GroupOutData, GroupOutDataKeys, GroupOutDataLight};
 use sentc_crypto_common::group::{GroupDataCheckUpdateServerOutput, GroupInviteReqList, GroupJoinReqList, GroupUserListItem, ListGroups};
 use sentc_crypto_common::EncryptionKeyPairId;
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 pub type Res = Result<String, String>;
 pub type VoidRes = Result<(), String>;
 pub type DataRes = Result<GroupOutData, String>;
+pub type DataLightRes = Result<GroupOutDataLight, String>;
 pub type KeyFetchRes = Result<Vec<GroupOutDataKeys>, String>;
 pub type SingleKeyRes = Result<GroupOutDataKeys, String>;
 pub type KeyRes = Result<GroupKeyData, String>;
