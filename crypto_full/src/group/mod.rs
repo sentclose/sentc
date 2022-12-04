@@ -10,6 +10,7 @@ use core::future::Future;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::group::{
 	GroupAcceptJoinReqServerOutput,
+	GroupChildrenList,
 	GroupCreateOutput,
 	GroupDataCheckUpdateServerOutput,
 	GroupInviteReqList,
@@ -23,6 +24,7 @@ use sentc_crypto_common::group::{
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{
+	ChildrenRes,
 	DataLightRes,
 	DataRes,
 	GroupListRes,
@@ -41,6 +43,7 @@ pub(crate) use self::non_rust::{
 };
 #[cfg(feature = "rust")]
 pub(crate) use self::rust::{
+	ChildrenRes,
 	DataLightRes,
 	DataRes,
 	GroupListRes,
@@ -331,6 +334,25 @@ pub async fn get_groups_for_user(
 	let res = make_req(HttpMethod::GET, url.as_str(), auth_token, None, Some(jwt), None).await?;
 
 	let list: Vec<ListGroups> = handle_server_response(res.as_str())?;
+
+	Ok(list)
+}
+
+pub async fn get_all_first_level_children(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	last_fetched_time: &str,
+	last_fetched_group_id: &str,
+	group_as_member: Option<&str>,
+) -> ChildrenRes
+{
+	let url = base_url + "/api/v1/group/" + group_id + "/children/" + last_fetched_time + "/" + last_fetched_group_id;
+
+	let res = make_req(HttpMethod::GET, &url, auth_token, None, Some(jwt), group_as_member).await?;
+
+	let list: Vec<GroupChildrenList> = handle_server_response(&res)?;
 
 	Ok(list)
 }

@@ -1069,6 +1069,26 @@ pub struct GroupDataCheckUpdateServerOutput
 }
 
 #[repr(C)]
+pub struct GroupChildrenList
+{
+	pub group_id: String,
+	pub time: String,
+	pub parent: Option<String>,
+}
+
+impl From<sentc_crypto_common::group::GroupChildrenList> for GroupChildrenList
+{
+	fn from(i: sentc_crypto_common::group::GroupChildrenList) -> Self
+	{
+		Self {
+			group_id: i.group_id,
+			time: i.time.to_string(),
+			parent: i.parent,
+		}
+	}
+}
+
+#[repr(C)]
 pub struct ListGroups
 {
 	pub group_id: String,
@@ -1147,6 +1167,38 @@ pub fn group_get_group_updates(
 		key_update: out.key_update,
 		rank: out.rank,
 	})
+}
+
+pub fn group_get_all_first_level_children(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+	group_as_member: String,
+) -> Result<Vec<GroupChildrenList>>
+{
+	let out = rt(async {
+		sentc_crypto_full::group::get_all_first_level_children(
+			base_url,
+			&auth_token,
+			&jwt,
+			&id,
+			&last_fetched_time,
+			&last_fetched_group_id,
+			get_group_as_member(&group_as_member),
+		)
+		.await
+	})?;
+
+	let mut list = Vec::with_capacity(out.len());
+
+	for item in out {
+		list.push(item.into());
+	}
+
+	Ok(list)
 }
 
 pub fn group_get_groups_for_user(

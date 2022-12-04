@@ -506,6 +506,31 @@ pub async fn group_get_group_updates(
 }
 
 #[wasm_bindgen]
+pub async fn group_get_all_first_level_children(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	id: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+	group_as_member: String,
+) -> Result<JsValue, JsValue>
+{
+	let out = sentc_crypto_full::group::get_all_first_level_children(
+		base_url,
+		&auth_token,
+		&jwt,
+		&id,
+		&last_fetched_time,
+		&last_fetched_group_id,
+		get_group_as_member(&group_as_member),
+	)
+	.await?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
+}
+
+#[wasm_bindgen]
 pub async fn group_get_groups_for_user(
 	base_url: String,
 	auth_token: String,
