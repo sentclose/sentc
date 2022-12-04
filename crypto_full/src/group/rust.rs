@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
 use sentc_crypto_common::group::{
+	GroupChildrenList,
 	GroupDataCheckUpdateServerOutput,
 	GroupInviteReqList,
 	GroupJoinReqList,
@@ -22,6 +23,7 @@ pub type KeyRes = Result<GroupKeyData, SdkFullError>;
 pub type KeyFetchRes = Result<Vec<GroupKeyServerOutput>, SdkFullError>;
 pub type SingleKeyRes = Result<GroupKeyServerOutput, SdkFullError>;
 pub type GroupListRes = Result<Vec<ListGroups>, SdkFullError>;
+pub type ChildrenRes = Result<Vec<GroupChildrenList>, SdkFullError>;
 pub type SessionRes = Result<Option<String>, SdkFullError>;
 pub type InviteListRes = Result<Vec<GroupInviteReqList>, SdkFullError>;
 pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, SdkFullError>;

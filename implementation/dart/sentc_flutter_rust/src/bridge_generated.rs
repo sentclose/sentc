@@ -1120,6 +1120,46 @@ pub extern "C" fn wire_group_get_group_updates(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_group_get_all_first_level_children(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	id: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_group_id: *mut wire_uint_8_list,
+	group_as_member: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_get_all_first_level_children",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_id = id.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
+			let api_group_as_member = group_as_member.wire2api();
+			move |task_callback| {
+				group_get_all_first_level_children(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_id,
+					api_last_fetched_time,
+					api_last_fetched_group_id,
+					api_group_as_member,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_group_get_groups_for_user(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -3197,6 +3237,13 @@ impl support::IntoDart for GeneratedRegisterData {
 	}
 }
 impl support::IntoDartExceptPrimitive for GeneratedRegisterData {}
+
+impl support::IntoDart for GroupChildrenList {
+	fn into_dart(self) -> support::DartCObject {
+		vec![self.group_id.into_dart(), self.time.into_dart(), self.parent.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupChildrenList {}
 
 impl support::IntoDart for GroupDataCheckUpdateServerOutput {
 	fn into_dart(self) -> support::DartCObject {
