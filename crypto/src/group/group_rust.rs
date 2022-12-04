@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sentc_crypto_common::group::{GroupKeyServerOutput, GroupLightServerData, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
 
@@ -32,6 +32,17 @@ pub struct GroupOutData
 	pub joined_time: u128,
 	pub rank: i32,
 	pub group_id: GroupId,
+	pub access_by_group_as_member: Option<GroupId>,
+	pub access_by_parent_group: Option<GroupId>,
+}
+
+pub struct GroupOutDataLight
+{
+	pub group_id: GroupId,
+	pub parent_group_id: Option<GroupId>,
+	pub rank: i32,
+	pub created_time: u128,
+	pub joined_time: u128,
 	pub access_by_group_as_member: Option<GroupId>,
 	pub access_by_parent_group: Option<GroupId>,
 }
@@ -74,6 +85,23 @@ pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<Grou
 pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupKeyServerOutput, SdkError>
 {
 	get_group_key_from_server_output_internally(server_output)
+}
+
+pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, SdkError>
+{
+	let server_output: GroupLightServerData = handle_server_response(server_output)?;
+
+	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+
+	Ok(GroupOutDataLight {
+		group_id: server_output.group_id,
+		parent_group_id: server_output.parent_group_id,
+		rank: server_output.rank,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
+		access_by_group_as_member,
+		access_by_parent_group,
+	})
 }
 
 pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>

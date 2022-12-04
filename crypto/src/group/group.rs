@@ -1,7 +1,7 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{GroupKeyServerOutput, GroupServerData, KeyRotationInput};
+use sentc_crypto_common::group::{GroupKeyServerOutput, GroupLightServerData, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,18 @@ use crate::util::{
 	SymKeyFormatInt,
 };
 use crate::SdkError;
+
+#[derive(Serialize, Deserialize)]
+pub struct GroupOutDataLight
+{
+	pub group_id: String,
+	pub parent_group_id: String,
+	pub rank: i32,
+	pub created_time: u128,
+	pub joined_time: u128,
+	pub access_by_group_as_member: Option<GroupId>,
+	pub access_by_parent_group: Option<GroupId>,
+}
 
 /**
 The decrypted and exported values
@@ -185,6 +197,28 @@ pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupOutD
 	Ok(GroupOutDataKeys {
 		private_key_id: out.user_public_key_id,
 		key_data,
+	})
+}
+
+pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, String>
+{
+	let server_output: GroupLightServerData = handle_server_response(server_output)?;
+
+	let parent_group_id = match server_output.parent_group_id {
+		Some(v) => v,
+		None => String::from(""),
+	};
+
+	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+
+	Ok(GroupOutDataLight {
+		group_id: server_output.group_id,
+		parent_group_id,
+		rank: server_output.rank,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
+		access_by_group_as_member,
+		access_by_parent_group,
 	})
 }
 
