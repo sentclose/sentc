@@ -10,4 +10,11 @@ members = [
 
 [profile.release]
 lto = true
-strip = true
+
+[profile.release.package.sentc_wasm]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+codegen-units = 1
