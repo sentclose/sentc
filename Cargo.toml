@@ -8,13 +8,18 @@ members = [
     "implementation/dart/sentc_flutter_rust"
 ]
 
+[profile.dev]
+# Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.
+panic = "abort"
+
 [profile.release]
 lto = true
+panic = "abort"
+strip = true
 
 [profile.release.package.sentc_wasm]
 opt-level = "z"
 overflow-checks = true
 debug = 0
-strip = "symbols"
 debug-assertions = false
 codegen-units = 1
