@@ -926,6 +926,30 @@ pub fn group_create_child_group(
 	})
 }
 
+pub fn group_create_connected_group(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	connected_group_id: String,
+	admin_rank: i32,
+	parent_public_key: String,
+	group_as_member: String,
+) -> Result<String>
+{
+	rt(async {
+		sentc_crypto_full::group::create_connected_group(
+			base_url,
+			&auth_token,
+			&jwt,
+			&connected_group_id,
+			admin_rank,
+			&parent_public_key,
+			get_group_as_member(&group_as_member),
+		)
+		.await
+	})
+}
+
 //__________________________________________________________________________________________________
 
 /**

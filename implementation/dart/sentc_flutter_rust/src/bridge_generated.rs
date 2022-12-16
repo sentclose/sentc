@@ -905,6 +905,46 @@ pub extern "C" fn wire_group_create_child_group(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_group_create_connected_group(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	connected_group_id: *mut wire_uint_8_list,
+	admin_rank: i32,
+	parent_public_key: *mut wire_uint_8_list,
+	group_as_member: *mut wire_uint_8_list,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_create_connected_group",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_connected_group_id = connected_group_id.wire2api();
+			let api_admin_rank = admin_rank.wire2api();
+			let api_parent_public_key = parent_public_key.wire2api();
+			let api_group_as_member = group_as_member.wire2api();
+			move |task_callback| {
+				group_create_connected_group(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_connected_group_id,
+					api_admin_rank,
+					api_parent_public_key,
+					api_group_as_member,
+				)
+			}
+		},
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_group_extract_group_data(port_: i64, server_output: *mut wire_uint_8_list) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
