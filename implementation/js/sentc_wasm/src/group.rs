@@ -584,14 +584,6 @@ pub async fn group_get_sent_join_req_user(
 	Ok(JsValue::from_serde(&out).unwrap())
 }
 
-#[wasm_bindgen]
-pub async fn group_delete_sent_join_req_user(base_url: String, auth_token: String, jwt: String, join_req_group_id: String) -> Result<(), JsValue>
-{
-	sentc_crypto_full::group::delete_sent_join_req(base_url, &auth_token, &jwt, None, None, &join_req_group_id, None).await?;
-
-	Ok(())
-}
-
 //__________________________________________________________________________________________________
 //invite
 
@@ -706,83 +698,8 @@ pub async fn group_get_invites_for_user(
 	Ok(JsValue::from_serde(&out).unwrap())
 }
 
-#[wasm_bindgen]
-pub async fn group_accept_invite(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	group_id: String,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
-
-	sentc_crypto_full::group::accept_invite(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		group_id,
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
-}
-
-#[wasm_bindgen]
-pub async fn group_reject_invite(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	group_id: String,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
-
-	sentc_crypto_full::group::reject_invite(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		group_id,
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
-}
-
 //__________________________________________________________________________________________________
 //join req
-
-#[wasm_bindgen]
-pub async fn group_join_req(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	group_id: String,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
-
-	sentc_crypto_full::group::join_req(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		group_id,
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
-}
 
 #[wasm_bindgen]
 pub async fn group_get_join_reqs(
@@ -809,31 +726,6 @@ pub async fn group_get_join_reqs(
 	.await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
-}
-
-#[wasm_bindgen]
-pub async fn group_reject_join_req(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	admin_rank: i32,
-	rejected_user_id: String,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	sentc_crypto_full::group::reject_join_req(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		admin_rank,
-		rejected_user_id.as_str(),
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
 }
 
 #[wasm_bindgen]
@@ -890,46 +782,6 @@ pub async fn group_join_user_session(
 		session_id.as_str(),
 		user_public_key.as_str(),
 		group_keys.as_str(),
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
-}
-
-#[wasm_bindgen]
-pub async fn group_stop_group_invites(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	admin_rank: i32,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	sentc_crypto_full::group::stop_group_invites(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		admin_rank,
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
-}
-
-//__________________________________________________________________________________________________
-
-#[wasm_bindgen]
-pub async fn leave_group(base_url: String, auth_token: String, jwt: String, id: String, group_as_member: String) -> Result<(), JsValue>
-{
-	sentc_crypto_full::group::leave_group(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
 		get_group_as_member(&group_as_member),
 	)
 	.await?;
@@ -1056,58 +908,6 @@ pub fn group_prepare_update_rank(user_id: &str, rank: i32, admin_rank: i32) -> R
 	let input = group::prepare_change_rank(user_id, rank, admin_rank)?;
 
 	Ok(input)
-}
-
-#[wasm_bindgen]
-pub async fn group_update_rank(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	user_id: String,
-	rank: i32,
-	admin_rank: i32,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	sentc_crypto_full::group::update_rank(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		user_id.as_str(),
-		rank,
-		admin_rank,
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
-}
-
-#[wasm_bindgen]
-pub async fn group_kick_user(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	user_id: String,
-	admin_rank: i32,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	sentc_crypto_full::group::kick_user(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		user_id.as_str(),
-		admin_rank,
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(())
 }
 
 #[wasm_bindgen]

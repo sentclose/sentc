@@ -671,9 +671,9 @@ pub async fn delete_device(
 }
 
 #[wasm_bindgen]
-pub async fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<(), JsValue>
+pub fn user_prepare_user_identifier_update(user_identifier: String) -> Result<String, JsValue>
 {
-	Ok(sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await?)
+	Ok(user::prepare_user_identifier_update(user_identifier)?)
 }
 
 //__________________________________________________________________________________________________
