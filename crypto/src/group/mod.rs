@@ -510,6 +510,7 @@ pub(crate) mod test_fn
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		//to avoid the clone trait on the real type
@@ -570,6 +571,7 @@ pub(crate) mod test_fn
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		//to avoid the clone trait on the real type

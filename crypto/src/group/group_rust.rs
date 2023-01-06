@@ -34,6 +34,7 @@ pub struct GroupOutData
 	pub group_id: GroupId,
 	pub access_by_group_as_member: Option<GroupId>,
 	pub access_by_parent_group: Option<GroupId>,
+	pub is_connected_group: bool,
 }
 
 pub struct GroupOutDataLight
@@ -120,6 +121,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 		group_id: server_output.group_id,
 		access_by_group_as_member,
 		access_by_parent_group,
+		is_connected_group: server_output.is_connected_group,
 	})
 }
 
@@ -284,6 +286,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -327,6 +330,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -386,6 +390,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -434,6 +439,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {

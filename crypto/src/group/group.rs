@@ -74,6 +74,7 @@ pub struct GroupOutData
 	pub keys: Vec<GroupOutDataKeys>,
 	pub access_by_group_as_member: Option<GroupId>,
 	pub access_by_parent_group: Option<GroupId>,
+	pub is_connected_group: bool,
 }
 
 impl GroupOutData
@@ -263,6 +264,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		keys, //save the keys from server output to decrypt them later with get group keys
 		access_by_group_as_member,
 		access_by_parent_group,
+		is_connected_group: server_output.is_connected_group,
 	})
 }
 
@@ -468,6 +470,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -522,6 +525,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -587,6 +591,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -637,6 +642,7 @@ mod test
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
