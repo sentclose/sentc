@@ -3332,6 +3332,7 @@ impl support::IntoDart for GroupOutData {
 			self.keys.into_dart(),
 			self.access_by_group_as_member.into_dart(),
 			self.access_by_parent_group.into_dart(),
+			self.is_connected_group.into_dart(),
 		]
 		.into_dart()
 	}

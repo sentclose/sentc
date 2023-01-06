@@ -799,6 +799,7 @@ pub struct GroupOutData
 	pub keys: Vec<GroupOutDataKeys>,
 	pub access_by_group_as_member: Option<String>,
 	pub access_by_parent_group: Option<String>,
+	pub is_connected_group: bool,
 }
 
 impl From<sentc_crypto::group::GroupOutData> for GroupOutData
@@ -821,6 +822,7 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 			keys,
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
+			is_connected_group: data.is_connected_group,
 		}
 	}
 }

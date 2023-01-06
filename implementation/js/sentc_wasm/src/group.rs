@@ -16,6 +16,7 @@ pub struct GroupOutData
 	keys: JsValue,
 	access_by_group_as_member: Option<String>,
 	access_by_parent_group: Option<String>,
+	is_connected_group: bool,
 }
 
 impl From<group::GroupOutData> for GroupOutData
@@ -32,6 +33,7 @@ impl From<group::GroupOutData> for GroupOutData
 			keys: JsValue::from_serde(&data.keys).unwrap(),
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
+			is_connected_group: data.is_connected_group,
 		}
 	}
 }
@@ -82,6 +84,11 @@ impl GroupOutData
 	pub fn get_access_by_parent_group(&self) -> Option<String>
 	{
 		self.access_by_parent_group.clone()
+	}
+
+	pub fn get_is_connected_group(&self) -> bool
+	{
+		self.is_connected_group
 	}
 }
 
