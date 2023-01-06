@@ -2,75 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use js_sys::Uint8Array;
-use sentc_crypto_common::file::{BelongsToType, FilePartListItem};
 use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-pub struct FileData
-{
-	file_id: String,
-	master_key_id: String,
-	belongs_to: Option<String>,
-	belongs_to_type: BelongsToType,
-	key_id: String,
-	part_list: Vec<FilePartListItem>,
-	encrypted_file_name: Option<String>,
-}
-
-impl From<sentc_crypto_common::file::FileData> for FileData
-{
-	fn from(data: sentc_crypto_common::file::FileData) -> Self
-	{
-		Self {
-			file_id: data.file_id,
-			master_key_id: data.master_key_id,
-			belongs_to: data.belongs_to,
-			belongs_to_type: data.belongs_to_type,
-			key_id: data.key_id,
-			part_list: data.part_list,
-			encrypted_file_name: data.encrypted_file_name,
-		}
-	}
-}
-
-#[wasm_bindgen]
-impl FileData
-{
-	pub fn get_key_id(&self) -> String
-	{
-		self.key_id.clone()
-	}
-
-	pub fn get_master_key_id(&self) -> String
-	{
-		self.master_key_id.clone()
-	}
-
-	pub fn get_part_list(&self) -> JsValue
-	{
-		JsValue::from_serde(&self.part_list).unwrap()
-	}
-
-	pub fn get_belongs_to(&self) -> Option<String>
-	{
-		self.belongs_to.clone()
-	}
-
-	pub fn get_encrypted_file_name(&self) -> Option<String>
-	{
-		self.encrypted_file_name.clone()
-	}
-
-	pub fn get_belongs_to_type(&self) -> JsValue
-	{
-		JsValue::from_serde(&self.belongs_to_type).unwrap()
-	}
-
-	pub fn get_file_id(&self) -> String
-	{
-		self.file_id.clone()
-	}
-}
 
 #[wasm_bindgen]
 pub struct FilePrepareRegister
@@ -142,35 +74,6 @@ impl FileRegisterOutput
 }
 
 #[wasm_bindgen]
-pub async fn file_download_file_meta(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	group_id: String,
-	group_as_member: String,
-) -> Result<FileData, JsValue>
-{
-	let group_as_member = if group_as_member.is_empty() {
-		None
-	} else {
-		Some(group_as_member.as_str())
-	};
-
-	let out = sentc_crypto_full::file::download_file_meta(
-		base_url,
-		auth_token.as_str(),
-		id.as_str(),
-		jwt.as_str(),
-		group_id.as_str(),
-		group_as_member,
-	)
-	.await?;
-
-	Ok(out.into())
-}
-
-#[wasm_bindgen]
 pub async fn file_download_and_decrypt_file_part(
 	base_url: String,
 	url_prefix: String,
@@ -192,20 +95,6 @@ pub async fn file_download_and_decrypt_file_part(
 
 	//fastest way to convert vec to Uint8Array
 	Ok(unsafe { Uint8Array::view(&out) })
-}
-
-#[wasm_bindgen]
-pub async fn file_download_part_list(base_url: String, auth_token: String, file_id: String, last_sequence: String) -> Result<JsValue, JsValue>
-{
-	let out = sentc_crypto_full::file::download_part_list(
-		base_url,
-		auth_token.as_str(),
-		file_id.as_str(),
-		last_sequence.as_str(),
-	)
-	.await?;
-
-	Ok(JsValue::from_serde(&out).unwrap())
 }
 
 //__________________________________________________________________________________________________
