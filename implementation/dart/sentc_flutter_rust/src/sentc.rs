@@ -1,6 +1,7 @@
 use std::future::Future;
 
 use anyhow::{anyhow, Result};
+use flutter_rust_bridge::ZeroCopyBuffer;
 use sentc_crypto::user;
 use tokio::runtime::Runtime;
 
@@ -2009,19 +2010,25 @@ pub fn encrypt_raw_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Re
 	})
 }
 
-pub fn decrypt_raw_symmetric(key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String) -> Result<Vec<u8>>
+pub fn decrypt_raw_symmetric(key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	sentc_crypto::crypto::decrypt_raw_symmetric(key.as_str(), &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))
+	let vec = sentc_crypto::crypto::decrypt_raw_symmetric(key.as_str(), &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))?;
+
+	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn encrypt_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Result<Vec<u8>>
+pub fn encrypt_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	sentc_crypto::crypto::encrypt_symmetric(&key, &data, &sign_key).map_err(|err| anyhow!(err))
+	let vec = sentc_crypto::crypto::encrypt_symmetric(&key, &data, &sign_key).map_err(|err| anyhow!(err))?;
+
+	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn decrypt_symmetric(key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<Vec<u8>>
+pub fn decrypt_symmetric(key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	sentc_crypto::crypto::decrypt_symmetric(&key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+	let vec = sentc_crypto::crypto::decrypt_symmetric(&key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))?;
+
+	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn encrypt_string_symmetric(key: String, data: String, sign_key: String) -> Result<String>
@@ -2044,19 +2051,26 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign
 	})
 }
 
-pub fn decrypt_raw_asymmetric(private_key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String) -> Result<Vec<u8>>
+pub fn decrypt_raw_asymmetric(private_key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String)
+	-> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	sentc_crypto::crypto::decrypt_raw_asymmetric(&private_key, &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))
+	let vec = sentc_crypto::crypto::decrypt_raw_asymmetric(&private_key, &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))?;
+
+	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn encrypt_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: String) -> Result<Vec<u8>>
+pub fn encrypt_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	sentc_crypto::crypto::encrypt_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))
+	let vec = sentc_crypto::crypto::encrypt_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))?;
+
+	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn decrypt_asymmetric(private_key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<Vec<u8>>
+pub fn decrypt_asymmetric(private_key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	sentc_crypto::crypto::decrypt_asymmetric(&private_key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+	let vec = sentc_crypto::crypto::decrypt_asymmetric(&private_key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))?;
+
+	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn encrypt_string_asymmetric(reply_public_key_data: String, data: String, sign_key: String) -> Result<String>
@@ -2322,9 +2336,9 @@ pub fn file_download_and_decrypt_file_part(
 	part_id: String,
 	content_key: String,
 	verify_key_data: String,
-) -> Result<Vec<u8>>
+) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	rt(async {
+	let vec = rt(async {
 		sentc_crypto_full::file::download_and_decrypt_file_part(
 			base_url,
 			url_prefix,
@@ -2334,7 +2348,9 @@ pub fn file_download_and_decrypt_file_part(
 			verify_key_data.as_str(),
 		)
 		.await
-	})
+	})?;
+
+	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn file_download_part_list(base_url: String, auth_token: String, file_id: String, last_sequence: String) -> Result<Vec<FilePartListItem>>
