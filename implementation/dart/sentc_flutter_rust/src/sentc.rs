@@ -2,14 +2,20 @@ use std::future::Future;
 
 use anyhow::{anyhow, Result};
 use flutter_rust_bridge::ZeroCopyBuffer;
+use once_cell::sync::OnceCell;
 use sentc_crypto::user;
 use tokio::runtime::Runtime;
+
+static RUNTIME: OnceCell<Runtime> = OnceCell::new();
 
 fn rt<T, Fut>(fun: Fut) -> Result<T>
 where
 	Fut: Future<Output = std::result::Result<T, String>>,
 {
-	let rt = Runtime::new().unwrap();
+	let rt = RUNTIME.get_or_init(|| {
+		//init the tokio runtime
+		Runtime::new().unwrap()
+	});
 
 	let data = rt.block_on(fun).map_err(|err| anyhow!(err))?;
 
