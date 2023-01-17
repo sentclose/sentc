@@ -10,6 +10,8 @@
 //! 	- ecies based on x25519
 //! - signing
 //! 	- ed25519
+//! - hmac
+//! 	- hmac sha256
 //!
 //! This create can be used as stand alone version without the sentclose api
 
@@ -31,6 +33,9 @@ use rand_core::{CryptoRng, OsRng, RngCore};
 pub use self::alg::asym::ecies::ECIES_OUTPUT;
 pub(crate) use self::alg::asym::AsymKeyOutput;
 pub use self::alg::asym::{getting_alg_from_private_key, getting_alg_from_public_key, Pk, Sk};
+pub use self::alg::hmac::hmac_sha256::HMAC_SHA256_OUTPUT;
+pub(crate) use self::alg::hmac::HmacKeyOutput;
+pub use self::alg::hmac::{getting_alg_from_hmac_key, HmacKey};
 pub use self::alg::pw_hash::argon2::ARGON_2_OUTPUT;
 pub use self::alg::pw_hash::{
 	ClientRandomValue,

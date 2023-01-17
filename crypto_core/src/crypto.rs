@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::{alg, Error, PasswordEncryptOutput, Pk, SignK, Sk, SymKey, SymKeyOutput, VerifyK};
+use crate::{alg, Error, HmacKey, PasswordEncryptOutput, Pk, SignK, Sk, SymKey, SymKeyOutput, VerifyK};
 
 pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 {
@@ -148,5 +148,22 @@ pub fn prepare_password_decrypt(password: &str, salt: &[u8], alg: &str) -> Resul
 			Ok(SymKey::Aes(key))
 		},
 		_ => Err(Error::AlgNotFound),
+	}
+}
+
+//__________________________________________________________________________________________________
+//searchable encryption
+
+pub fn encrypt_searchable(key: &HmacKey, data: &[u8]) -> Result<Vec<u8>, Error>
+{
+	match key {
+		HmacKey::HmacSha256(k) => alg::hmac::hmac_sha256::auth_with_generated_key(k, data),
+	}
+}
+
+pub fn verify_encrypted_searchable(key: &HmacKey, data: &[u8], check_mac: &[u8]) -> Result<bool, Error>
+{
+	match key {
+		HmacKey::HmacSha256(k) => alg::hmac::hmac_sha256::verify_with_generated_key(k, data, check_mac),
 	}
 }
