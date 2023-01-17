@@ -353,7 +353,7 @@ mod test
 		let data_with_sign = sign(&login_out.sign_key, &encrypted).unwrap();
 		let (_data, verify_res) = verify(&verify_key, &data_with_sign).unwrap();
 
-		assert_eq!(verify_res);
+		assert!(verify_res);
 	}
 
 	#[test]
