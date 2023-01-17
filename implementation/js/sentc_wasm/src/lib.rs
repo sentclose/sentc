@@ -1,5 +1,5 @@
 #![no_std]
-#![allow(clippy::too_many_arguments, clippy::manual_map)]
+#![allow(clippy::too_many_arguments, clippy::manual_map, deprecated)]
 
 pub mod crypto;
 pub mod file;
