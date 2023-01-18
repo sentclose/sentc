@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
 use crate::group::{
+	decrypt_group_hmac_key_internally,
 	decrypt_group_keys_internally,
 	done_key_rotation_internally,
 	get_access_by,
@@ -22,6 +23,7 @@ use crate::group::{
 };
 use crate::util::public::handle_server_response;
 use crate::util::{
+	export_hmac_key_to_string,
 	export_private_key_to_string,
 	export_public_key_to_string,
 	export_sym_key_to_string,
@@ -44,6 +46,7 @@ pub struct GroupOutDataLight
 	pub joined_time: u128,
 	pub access_by_group_as_member: Option<GroupId>,
 	pub access_by_parent_group: Option<GroupId>,
+	pub is_connected_group: bool,
 }
 
 /**
@@ -75,6 +78,9 @@ pub struct GroupOutData
 	pub access_by_group_as_member: Option<GroupId>,
 	pub access_by_parent_group: Option<GroupId>,
 	pub is_connected_group: bool,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+	pub encrypted_hmac_encryption_key_id: SymKeyId,
 }
 
 impl GroupOutData
@@ -139,6 +145,17 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 		&previous_group_key,
 		&server_output,
 	)?)
+}
+
+pub fn decrypt_group_hmac_key(group_key: &str, encrypted_hmac_key: &str, encrypted_hmac_alg: &str) -> Result<String, String>
+{
+	let key = import_sym_key(group_key)?;
+
+	let hmac_key = decrypt_group_hmac_key_internally(&key, encrypted_hmac_key, encrypted_hmac_alg)?;
+
+	let hmac_key = export_hmac_key_to_string(hmac_key)?;
+
+	Ok(hmac_key)
 }
 
 pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<GroupKeyData, String>
@@ -218,6 +235,7 @@ pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, St
 		rank: server_output.rank,
 		created_time: server_output.created_time,
 		joined_time: server_output.joined_time,
+		is_connected_group: server_output.is_connected_group,
 		access_by_group_as_member,
 		access_by_parent_group,
 	})
@@ -254,6 +272,9 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 
 	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
 
+	//return here the hmac key incl, the encrypt key id to decrypt it later
+	// in the client -> load the group key which was used to encrypt the hmac key (should be the first group key)
+
 	Ok(GroupOutData {
 		group_id: server_output.group_id,
 		parent_group_id,
@@ -265,6 +286,9 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		access_by_group_as_member,
 		access_by_parent_group,
 		is_connected_group: server_output.is_connected_group,
+		encrypted_hmac_key: server_output.encrypted_hmac_key,
+		encrypted_hmac_alg: server_output.encrypted_hmac_alg,
+		encrypted_hmac_encryption_key_id: server_output.encrypted_hmac_encryption_key_id,
 	})
 }
 
@@ -471,6 +495,9 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			encrypted_hmac_key: group_create.encrypted_hmac_key.clone(),
+			encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
+			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		let server_output = ServerOutput {
@@ -526,6 +553,9 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			encrypted_hmac_key: group_create.encrypted_hmac_key,
+			encrypted_hmac_alg: group_create.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		let server_output = ServerOutput {
@@ -592,6 +622,9 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			encrypted_hmac_key: group_create.encrypted_hmac_key.clone(),
+			encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
+			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		let server_output = ServerOutput {
@@ -643,6 +676,9 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			encrypted_hmac_key: group_create.encrypted_hmac_key,
+			encrypted_hmac_alg: group_create.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		let server_output = ServerOutput {

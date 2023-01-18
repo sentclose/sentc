@@ -19,7 +19,7 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
-use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
+use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, HmacKey, Pk};
 
 use crate::util::public::handle_server_response;
 use crate::util::{
@@ -43,6 +43,7 @@ mod group_rust;
 pub(crate) use self::group::prepare_group_keys_for_new_member_with_ref;
 #[cfg(not(feature = "rust"))]
 pub use self::group::{
+	decrypt_group_hmac_key,
 	decrypt_group_keys,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
@@ -71,6 +72,7 @@ pub use self::group_rank_check::{
 };
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
+	decrypt_group_hmac_key,
 	decrypt_group_keys,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
@@ -130,6 +132,7 @@ pub(crate) fn prepare_create_private_internally(creators_public_key: &PublicKeyF
 	//1. encode the values to base64 for the server
 	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
 	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
+	let encrypted_hmac_key = Base64::encode_string(&out.encrypted_hmac_key);
 
 	//2. export the public key
 	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
@@ -164,6 +167,8 @@ pub(crate) fn prepare_create_private_internally(creators_public_key: &PublicKeyF
 		group_key_alg: out.group_key_alg.to_string(),
 		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
 		creator_public_key_id: creators_public_key.key_id.clone(),
+		encrypted_hmac_key,
+		encrypted_hmac_alg: out.encrypted_hmac_alg.to_string(),
 
 		//user group values
 		encrypted_sign_key,
@@ -303,6 +308,26 @@ fn get_group_key_from_server_output_internally(server_output: &str) -> Result<Gr
 	let server_output: GroupKeyServerOutput = handle_server_response(server_output)?;
 
 	Ok(server_output)
+}
+
+/**
+Decrypt the group hmac key which is used for searchable encryption.
+
+The hmac key is encrypted with the first group key and there is only one hmac key per group.
+*/
+pub(crate) fn decrypt_group_hmac_key_internally(
+	group_key: &SymKeyFormatInt,
+	encrypted_hmac_key: &str,
+	encrypted_hmac_alg: &str,
+) -> Result<HmacKey, SdkError>
+{
+	let encrypted_hmac_key = Base64::decode_vec(encrypted_hmac_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+
+	Ok(core_group::get_group_hmac_key(
+		&group_key.key,
+		&encrypted_hmac_key,
+		encrypted_hmac_alg,
+	)?)
 }
 
 /**
@@ -511,6 +536,9 @@ pub(crate) mod test_fn
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			encrypted_hmac_key: group.encrypted_hmac_key,
+			encrypted_hmac_alg: group.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		//to avoid the clone trait on the real type
@@ -572,6 +600,9 @@ pub(crate) mod test_fn
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			encrypted_hmac_key: group.encrypted_hmac_key,
+			encrypted_hmac_alg: group.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		//to avoid the clone trait on the real type
