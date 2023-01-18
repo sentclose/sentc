@@ -142,6 +142,9 @@ pub struct UserData
 	pub refresh_token: String,
 	pub keys: DeviceKeyData,
 	pub user_keys: Vec<UserKeyData>,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+	pub encrypted_hmac_encryption_key_id: String,
 }
 
 impl From<sentc_crypto::util::UserData> for UserData
@@ -161,6 +164,9 @@ impl From<sentc_crypto::util::UserData> for UserData
 			refresh_token: data.refresh_token,
 			keys: data.device_keys.into(),
 			user_keys,
+			encrypted_hmac_key: data.encrypted_hmac_key,
+			encrypted_hmac_alg: data.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: data.encrypted_hmac_encryption_key_id,
 		}
 	}
 }
@@ -807,6 +813,9 @@ pub struct GroupOutData
 	pub access_by_group_as_member: Option<String>,
 	pub access_by_parent_group: Option<String>,
 	pub is_connected_group: bool,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+	pub encrypted_hmac_encryption_key_id: String,
 }
 
 impl From<sentc_crypto::group::GroupOutData> for GroupOutData
@@ -830,6 +839,9 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
 			is_connected_group: data.is_connected_group,
+			encrypted_hmac_key: data.encrypted_hmac_key,
+			encrypted_hmac_alg: data.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: data.encrypted_hmac_encryption_key_id,
 		}
 	}
 }
@@ -1068,6 +1080,11 @@ pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result
 	let out = sentc_crypto_full::group::decrypt_key(server_key_data.as_str(), private_key.as_str()).map_err(|err| anyhow!(err))?;
 
 	Ok(out.into())
+}
+
+pub fn group_decrypt_hmac_key(group_key: String, encrypted_hmac_key: String, encrypted_hmac_alg: String) -> Result<String>
+{
+	sentc_crypto::group::decrypt_group_hmac_key(&group_key, &encrypted_hmac_key, &encrypted_hmac_alg).map_err(|err| anyhow!(err))
 }
 
 //__________________________________________________________________________________________________

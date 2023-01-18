@@ -1030,6 +1030,26 @@ fn wire_group_decrypt_key_impl(
 		},
 	)
 }
+fn wire_group_decrypt_hmac_key_impl(
+	port_: MessagePort,
+	group_key: impl Wire2Api<String> + UnwindSafe,
+	encrypted_hmac_key: impl Wire2Api<String> + UnwindSafe,
+	encrypted_hmac_alg: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_decrypt_hmac_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_group_key = group_key.wire2api();
+			let api_encrypted_hmac_key = encrypted_hmac_key.wire2api();
+			let api_encrypted_hmac_alg = encrypted_hmac_alg.wire2api();
+			move |task_callback| group_decrypt_hmac_key(api_group_key, api_encrypted_hmac_key, api_encrypted_hmac_alg)
+		},
+	)
+}
 fn wire_group_get_member_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -3111,6 +3131,9 @@ impl support::IntoDart for GroupOutData {
 			self.access_by_group_as_member.into_dart(),
 			self.access_by_parent_group.into_dart(),
 			self.is_connected_group.into_dart(),
+			self.encrypted_hmac_key.into_dart(),
+			self.encrypted_hmac_alg.into_dart(),
+			self.encrypted_hmac_encryption_key_id.into_dart(),
 		]
 		.into_dart()
 	}
@@ -3239,6 +3262,9 @@ impl support::IntoDart for UserData {
 			self.refresh_token.into_dart(),
 			self.keys.into_dart(),
 			self.user_keys.into_dart(),
+			self.encrypted_hmac_key.into_dart(),
+			self.encrypted_hmac_alg.into_dart(),
+			self.encrypted_hmac_encryption_key_id.into_dart(),
 		]
 		.into_dart()
 	}

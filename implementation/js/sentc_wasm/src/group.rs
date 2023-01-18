@@ -17,6 +17,9 @@ pub struct GroupOutData
 	access_by_group_as_member: Option<String>,
 	access_by_parent_group: Option<String>,
 	is_connected_group: bool,
+	encrypted_hmac_key: String,
+	encrypted_hmac_alg: String,
+	encrypted_hmac_encryption_key_id: String,
 }
 
 impl From<group::GroupOutData> for GroupOutData
@@ -34,6 +37,9 @@ impl From<group::GroupOutData> for GroupOutData
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
 			is_connected_group: data.is_connected_group,
+			encrypted_hmac_key: data.encrypted_hmac_key,
+			encrypted_hmac_alg: data.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: data.encrypted_hmac_encryption_key_id,
 		}
 	}
 }
@@ -89,6 +95,21 @@ impl GroupOutData
 	pub fn get_is_connected_group(&self) -> bool
 	{
 		self.is_connected_group
+	}
+
+	pub fn get_encrypted_hmac_key(&self) -> String
+	{
+		self.encrypted_hmac_key.clone()
+	}
+
+	pub fn get_encrypted_hmac_alg(&self) -> String
+	{
+		self.encrypted_hmac_alg.clone()
+	}
+
+	pub fn get_encrypted_hmac_encryption_key_id(&self) -> String
+	{
+		self.encrypted_hmac_encryption_key_id.clone()
 	}
 }
 
@@ -440,6 +461,16 @@ pub fn group_decrypt_key(private_key: &str, server_key_data: &str) -> Result<Gro
 	let out = sentc_crypto_full::group::decrypt_key(server_key_data, private_key)?;
 
 	Ok(out.into())
+}
+
+#[wasm_bindgen]
+pub fn group_decrypt_hmac_key(group_key: &str, encrypted_hmac_key: &str, encrypted_hmac_alg: &str) -> Result<String, JsValue>
+{
+	Ok(group::decrypt_group_hmac_key(
+		group_key,
+		encrypted_hmac_key,
+		encrypted_hmac_alg,
+	)?)
 }
 
 //__________________________________________________________________________________________________

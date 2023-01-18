@@ -471,6 +471,16 @@ pub extern "C" fn wire_group_decrypt_key(port_: i64, private_key: *mut wire_uint
 }
 
 #[no_mangle]
+pub extern "C" fn wire_group_decrypt_hmac_key(
+	port_: i64,
+	group_key: *mut wire_uint_8_list,
+	encrypted_hmac_key: *mut wire_uint_8_list,
+	encrypted_hmac_alg: *mut wire_uint_8_list,
+) {
+	wire_group_decrypt_hmac_key_impl(port_, group_key, encrypted_hmac_key, encrypted_hmac_alg)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_group_get_member(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,

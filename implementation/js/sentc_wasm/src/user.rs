@@ -62,6 +62,9 @@ pub struct UserData
 	refresh_token: String,
 	user_id: String,
 	device_id: String,
+	encrypted_hmac_key: String,
+	encrypted_hmac_alg: String,
+	encrypted_hmac_encryption_key_id: String,
 }
 
 impl From<sentc_crypto::util::UserData> for UserData
@@ -75,6 +78,9 @@ impl From<sentc_crypto::util::UserData> for UserData
 			refresh_token: data.refresh_token,
 			user_id: data.user_id,
 			device_id: data.device_id,
+			encrypted_hmac_key: data.encrypted_hmac_key,
+			encrypted_hmac_alg: data.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: data.encrypted_hmac_encryption_key_id,
 		}
 	}
 }
@@ -135,6 +141,21 @@ impl UserData
 	pub fn get_device_id(&self) -> String
 	{
 		self.device_id.clone()
+	}
+
+	pub fn get_encrypted_hmac_key(&self) -> String
+	{
+		self.encrypted_hmac_key.clone()
+	}
+
+	pub fn get_encrypted_hmac_alg(&self) -> String
+	{
+		self.encrypted_hmac_alg.clone()
+	}
+
+	pub fn get_encrypted_hmac_encryption_key_id(&self) -> String
+	{
+		self.encrypted_hmac_encryption_key_id.clone()
 	}
 }
 
