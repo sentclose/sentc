@@ -346,6 +346,9 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		refresh_token: server_output.refresh_token,
 		user_id: device_data.user_id,
 		device_id: device_data.device_id,
+		encrypted_hmac_key: server_output.encrypted_hmac_key,
+		encrypted_hmac_alg: server_output.encrypted_hmac_alg,
+		encrypted_hmac_encryption_key_id: server_output.encrypted_hmac_encryption_key_id,
 	};
 
 	Ok(out)
@@ -668,6 +671,9 @@ pub(crate) mod test_fn
 			jwt: "abc".to_string(),
 			refresh_token: "abc".to_string(),
 			user_keys,
+			encrypted_hmac_key: group.encrypted_hmac_key,
+			encrypted_hmac_alg: group.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		ServerOutput {

@@ -232,6 +232,9 @@ fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 		refresh_token: user_data.refresh_token,
 		user_id: user_data.user_id,
 		device_id: user_data.device_id,
+		encrypted_hmac_key: user_data.encrypted_hmac_key,
+		encrypted_hmac_alg: user_data.encrypted_hmac_alg,
+		encrypted_hmac_encryption_key_id: user_data.encrypted_hmac_encryption_key_id,
 	})
 }
 
@@ -472,6 +475,8 @@ mod test
 				public_group_key: out_new_device.group.public_group_key,
 				keypair_encrypt_alg: out_new_device.group.keypair_encrypt_alg,
 				creator_public_key_id: "abc".to_string(),
+				encrypted_hmac_key: out_new_device.group.encrypted_hmac_key,
+				encrypted_hmac_alg: out_new_device.group.encrypted_hmac_alg,
 				encrypted_sign_key: out_new_device.group.encrypted_sign_key,
 				verify_key: out_new_device.group.verify_key,
 				keypair_sign_alg: out_new_device.group.keypair_sign_alg,

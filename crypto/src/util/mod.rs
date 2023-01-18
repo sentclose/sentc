@@ -27,6 +27,7 @@ use sentc_crypto_core::{
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::util_non_rust::{
+	export_hmac_key_to_string,
 	export_private_key_to_string,
 	export_public_key_to_string,
 	export_sign_key_to_string,
@@ -129,6 +130,9 @@ pub struct UserDataInt
 	pub refresh_token: String,
 	pub user_id: UserId,
 	pub device_id: DeviceId,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+	pub encrypted_hmac_encryption_key_id: SymKeyId,
 
 	pub user_keys: Vec<UserKeyDataInt>,
 	pub device_keys: DeviceKeyDataInt,
