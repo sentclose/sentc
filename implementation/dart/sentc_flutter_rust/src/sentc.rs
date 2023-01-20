@@ -142,9 +142,7 @@ pub struct UserData
 	pub refresh_token: String,
 	pub keys: DeviceKeyData,
 	pub user_keys: Vec<UserKeyData>,
-	pub encrypted_hmac_key: String,
-	pub encrypted_hmac_alg: String,
-	pub encrypted_hmac_encryption_key_id: String,
+	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
 }
 
 impl From<sentc_crypto::util::UserData> for UserData
@@ -157,6 +155,12 @@ impl From<sentc_crypto::util::UserData> for UserData
 			user_keys.push(user_key.into());
 		}
 
+		let mut hmac_keys = Vec::with_capacity(data.hmac_keys.len());
+
+		for hmac_key in data.hmac_keys {
+			hmac_keys.push(hmac_key.into());
+		}
+
 		Self {
 			jwt: data.jwt,
 			user_id: data.user_id,
@@ -164,9 +168,7 @@ impl From<sentc_crypto::util::UserData> for UserData
 			refresh_token: data.refresh_token,
 			keys: data.device_keys.into(),
 			user_keys,
-			encrypted_hmac_key: data.encrypted_hmac_key,
-			encrypted_hmac_alg: data.encrypted_hmac_alg,
-			encrypted_hmac_encryption_key_id: data.encrypted_hmac_encryption_key_id,
+			hmac_keys,
 		}
 	}
 }
@@ -801,6 +803,24 @@ impl From<sentc_crypto::group::GroupOutDataKeys> for GroupOutDataKeys
 }
 
 #[repr(C)]
+pub struct GroupOutDataHmacKeys
+{
+	pub group_key_id: String,
+	pub key_data: String, //serde string
+}
+
+impl From<sentc_crypto::group::GroupOutDataHmacKeys> for GroupOutDataHmacKeys
+{
+	fn from(key: sentc_crypto::group::GroupOutDataHmacKeys) -> Self
+	{
+		Self {
+			group_key_id: key.group_key_id,
+			key_data: key.key_data,
+		}
+	}
+}
+
+#[repr(C)]
 pub struct GroupOutData
 {
 	pub group_id: String,
@@ -810,12 +830,10 @@ pub struct GroupOutData
 	pub created_time: String,
 	pub joined_time: String,
 	pub keys: Vec<GroupOutDataKeys>,
+	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
 	pub access_by_group_as_member: Option<String>,
 	pub access_by_parent_group: Option<String>,
 	pub is_connected_group: bool,
-	pub encrypted_hmac_key: String,
-	pub encrypted_hmac_alg: String,
-	pub encrypted_hmac_encryption_key_id: String,
 }
 
 impl From<sentc_crypto::group::GroupOutData> for GroupOutData
@@ -828,6 +846,12 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 			keys.push(key.into())
 		}
 
+		let mut hmac_keys = Vec::with_capacity(data.hmac_keys.len());
+
+		for hmac_key in data.hmac_keys {
+			hmac_keys.push(hmac_key.into());
+		}
+
 		Self {
 			group_id: data.group_id,
 			parent_group_id: data.parent_group_id,
@@ -836,12 +860,10 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 			created_time: data.created_time.to_string(),
 			joined_time: data.joined_time.to_string(),
 			keys,
+			hmac_keys,
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
 			is_connected_group: data.is_connected_group,
-			encrypted_hmac_key: data.encrypted_hmac_key,
-			encrypted_hmac_alg: data.encrypted_hmac_alg,
-			encrypted_hmac_encryption_key_id: data.encrypted_hmac_encryption_key_id,
 		}
 	}
 }
@@ -1082,9 +1104,9 @@ pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result
 	Ok(out.into())
 }
 
-pub fn group_decrypt_hmac_key(group_key: String, encrypted_hmac_key: String, encrypted_hmac_alg: String) -> Result<String>
+pub fn group_decrypt_hmac_key(group_key: String, server_key_data: String) -> Result<String>
 {
-	sentc_crypto::group::decrypt_group_hmac_key(&group_key, &encrypted_hmac_key, &encrypted_hmac_alg).map_err(|err| anyhow!(err))
+	sentc_crypto::group::decrypt_group_hmac_key(&group_key, &server_key_data).map_err(|err| anyhow!(err))
 }
 
 //__________________________________________________________________________________________________
