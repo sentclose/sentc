@@ -7,7 +7,8 @@ use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::util::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+use crate::group::GroupOutDataHmacKeys;
+use crate::util::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use crate::SdkError;
 
 #[derive(Serialize, Deserialize)]
@@ -103,7 +104,7 @@ pub enum HmacFormat
 {
 	HmacSha256
 	{
-		key: String
+		key: String, key_id: SymKeyId
 	},
 }
 
@@ -154,9 +155,7 @@ pub struct UserData
 	pub refresh_token: String,
 	pub user_id: UserId,
 	pub device_id: DeviceId,
-	pub encrypted_hmac_key: String,
-	pub encrypted_hmac_alg: String,
-	pub encrypted_hmac_encryption_key_id: SymKeyId,
+	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -401,20 +400,21 @@ pub(crate) fn export_sym_key_to_string(key: SymKeyFormatInt) -> Result<String, S
 	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
 }
 
-pub(crate) fn export_hmac_key(key: HmacKey) -> HmacFormat
+pub(crate) fn export_hmac_key(key: HmacKeyFormatInt) -> HmacFormat
 {
-	match key {
+	match key.key {
 		HmacKey::HmacSha256(k) => {
-			let key = Base64::encode_string(&k);
+			let hmac_key = Base64::encode_string(&k);
 
 			HmacFormat::HmacSha256 {
-				key,
+				key: hmac_key,
+				key_id: key.key_id,
 			}
 		},
 	}
 }
 
-pub(crate) fn export_hmac_key_to_string(key: HmacKey) -> Result<String, SdkError>
+pub(crate) fn export_hmac_key_to_string(key: HmacKeyFormatInt) -> Result<String, SdkError>
 {
 	let key = export_hmac_key(key);
 
