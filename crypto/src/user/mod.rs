@@ -9,7 +9,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::group::GroupKeyServerOutput;
+use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput};
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginServerInput,
@@ -324,7 +324,7 @@ fn prepare_login_internally(user_identifier: &str, password: &str, server_output
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserDataInt, SdkError>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<(UserDataInt, Vec<GroupHmacData>), SdkError>
 {
 	let server_output: DoneLoginServerOutput = handle_server_response(server_output)?;
 
@@ -346,12 +346,10 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		refresh_token: server_output.refresh_token,
 		user_id: device_data.user_id,
 		device_id: device_data.device_id,
-		encrypted_hmac_key: server_output.encrypted_hmac_key,
-		encrypted_hmac_alg: server_output.encrypted_hmac_alg,
-		encrypted_hmac_encryption_key_id: server_output.encrypted_hmac_encryption_key_id,
 	};
 
-	Ok(out)
+	//export the hmac keys to decrypt it later
+	Ok((out, server_output.hmac_keys))
 }
 
 fn done_key_fetch_internally(private_key: &PrivateKeyFormatInt, server_output: &str) -> Result<UserKeyDataInt, SdkError>
@@ -368,6 +366,8 @@ fn done_key_fetch_internally(private_key: &PrivateKeyFormatInt, server_output: &
 
 Decrypt it like group decrypt keys (which is used here)
 But decrypt the sign key too
+
+It can be immediately decrypt because the there is only one device key row not multiple like for group
 */
 fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_group_key: &GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
 {
@@ -600,6 +600,7 @@ pub(crate) mod test_fn
 	use alloc::string::ToString;
 	use alloc::vec;
 
+	use sentc_crypto_common::group::GroupHmacData;
 	use sentc_crypto_common::user::{DoneLoginServerOutput, KeyDerivedData, RegisterData};
 	use sentc_crypto_common::ServerOutput;
 
@@ -671,9 +672,13 @@ pub(crate) mod test_fn
 			jwt: "abc".to_string(),
 			refresh_token: "abc".to_string(),
 			user_keys,
-			encrypted_hmac_key: group.encrypted_hmac_key,
-			encrypted_hmac_alg: group.encrypted_hmac_alg,
-			encrypted_hmac_encryption_key_id: "".to_string(),
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group.encrypted_hmac_key,
+				encrypted_hmac_alg: group.encrypted_hmac_alg,
+				time: 0,
+			}],
 		};
 
 		ServerOutput {

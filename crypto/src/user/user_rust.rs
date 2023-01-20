@@ -77,7 +77,18 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 
 pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserData, SdkError>
 {
-	done_login_internally(master_key_encryption, server_output)
+	let (result, hmac_keys) = done_login_internally(master_key_encryption, server_output)?;
+
+	Ok(UserData {
+		jwt: result.jwt,
+		refresh_token: result.refresh_token,
+		user_id: result.user_id,
+		device_id: result.device_id,
+
+		user_keys: result.user_keys,
+		device_keys: result.device_keys,
+		hmac_keys,
+	})
 }
 
 pub fn done_key_fetch(private_key: &PrivateKeyFormat, server_output: &str) -> Result<UserKeyData, SdkError>

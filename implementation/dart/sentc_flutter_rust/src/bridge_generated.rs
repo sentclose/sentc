@@ -1033,8 +1033,7 @@ fn wire_group_decrypt_key_impl(
 fn wire_group_decrypt_hmac_key_impl(
 	port_: MessagePort,
 	group_key: impl Wire2Api<String> + UnwindSafe,
-	encrypted_hmac_key: impl Wire2Api<String> + UnwindSafe,
-	encrypted_hmac_alg: impl Wire2Api<String> + UnwindSafe,
+	server_key_data: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1044,9 +1043,8 @@ fn wire_group_decrypt_hmac_key_impl(
 		},
 		move || {
 			let api_group_key = group_key.wire2api();
-			let api_encrypted_hmac_key = encrypted_hmac_key.wire2api();
-			let api_encrypted_hmac_alg = encrypted_hmac_alg.wire2api();
-			move |task_callback| group_decrypt_hmac_key(api_group_key, api_encrypted_hmac_key, api_encrypted_hmac_alg)
+			let api_server_key_data = server_key_data.wire2api();
+			move |task_callback| group_decrypt_hmac_key(api_group_key, api_server_key_data)
 		},
 	)
 }
@@ -3128,17 +3126,22 @@ impl support::IntoDart for GroupOutData {
 			self.created_time.into_dart(),
 			self.joined_time.into_dart(),
 			self.keys.into_dart(),
+			self.hmac_keys.into_dart(),
 			self.access_by_group_as_member.into_dart(),
 			self.access_by_parent_group.into_dart(),
 			self.is_connected_group.into_dart(),
-			self.encrypted_hmac_key.into_dart(),
-			self.encrypted_hmac_alg.into_dart(),
-			self.encrypted_hmac_encryption_key_id.into_dart(),
 		]
 		.into_dart()
 	}
 }
 impl support::IntoDartExceptPrimitive for GroupOutData {}
+
+impl support::IntoDart for GroupOutDataHmacKeys {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.group_key_id.into_dart(), self.key_data.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupOutDataHmacKeys {}
 
 impl support::IntoDart for GroupOutDataKeys {
 	fn into_dart(self) -> support::DartAbi {
@@ -3262,9 +3265,7 @@ impl support::IntoDart for UserData {
 			self.refresh_token.into_dart(),
 			self.keys.into_dart(),
 			self.user_keys.into_dart(),
-			self.encrypted_hmac_key.into_dart(),
-			self.encrypted_hmac_alg.into_dart(),
-			self.encrypted_hmac_encryption_key_id.into_dart(),
+			self.hmac_keys.into_dart(),
 		]
 		.into_dart()
 	}

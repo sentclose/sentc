@@ -15,6 +15,7 @@ use sentc_crypto_core::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	HashedAuthenticationKey,
+	HmacKey,
 	Pk,
 	SignK,
 	Sk,
@@ -42,6 +43,7 @@ pub(crate) use self::util_non_rust::{
 #[cfg(not(feature = "rust"))]
 pub use self::util_non_rust::{
 	DeviceKeyData,
+	HmacFormat,
 	PrivateKeyFormat,
 	PublicKeyFormat,
 	SignKeyFormat,
@@ -54,11 +56,11 @@ pub use self::util_non_rust::{
 #[cfg(feature = "rust")]
 pub use self::{
 	DeviceKeyDataInt as DeviceKeyData,
+	HmacKeyFormatInt as HmacKeyFormat,
 	PrivateKeyFormatInt as PrivateKeyFormat,
 	PublicKeyFormatInt as PublicKeyFormat,
 	SignKeyFormatInt as SignKeyFormat,
 	SymKeyFormatInt as SymKeyFormat,
-	UserDataInt as UserData,
 	UserKeyDataInt as UserKeyData,
 	VerifyKeyFormatInt as VerifyKeyFormat,
 };
@@ -68,6 +70,12 @@ pub struct SymKeyFormatInt
 {
 	pub key: SymKey,
 	pub key_id: SymKeyId,
+}
+
+pub struct HmacKeyFormatInt
+{
+	pub key_id: SymKeyId,
+	pub key: HmacKey,
 }
 
 pub struct PrivateKeyFormatInt
@@ -130,12 +138,22 @@ pub struct UserDataInt
 	pub refresh_token: String,
 	pub user_id: UserId,
 	pub device_id: DeviceId,
-	pub encrypted_hmac_key: String,
-	pub encrypted_hmac_alg: String,
-	pub encrypted_hmac_encryption_key_id: SymKeyId,
 
 	pub user_keys: Vec<UserKeyDataInt>,
 	pub device_keys: DeviceKeyDataInt,
+}
+
+#[cfg(feature = "rust")]
+pub struct UserData
+{
+	pub jwt: String,
+	pub refresh_token: String,
+	pub user_id: UserId,
+	pub device_id: DeviceId,
+
+	pub user_keys: Vec<UserKeyDataInt>,
+	pub device_keys: DeviceKeyDataInt,
+	pub hmac_keys: Vec<sentc_crypto_common::group::GroupHmacData>,
 }
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, SdkError>

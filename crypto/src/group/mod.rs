@@ -10,6 +10,7 @@ use sentc_crypto_common::group::{
 	CreateData,
 	DoneKeyRotationData,
 	GroupChangeRankServerInput,
+	GroupHmacData,
 	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
@@ -19,13 +20,14 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
-use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, HmacKey, Pk};
+use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
 use crate::util::public::handle_server_response;
 use crate::util::{
 	export_raw_public_key_to_pem,
 	export_raw_verify_key_to_pem,
 	import_public_key_from_pem_with_alg,
+	HmacKeyFormatInt,
 	PrivateKeyFormatInt,
 	PublicKeyFormatInt,
 	SymKeyFormatInt,
@@ -58,6 +60,7 @@ pub use self::group::{
 	prepare_group_keys_for_new_member_via_session,
 	GroupKeyData,
 	GroupOutData,
+	GroupOutDataHmacKeys,
 	GroupOutDataKeys,
 	GroupOutDataLight,
 };
@@ -312,22 +315,17 @@ fn get_group_key_from_server_output_internally(server_output: &str) -> Result<Gr
 
 /**
 Decrypt the group hmac key which is used for searchable encryption.
-
-The hmac key is encrypted with the first group key and there is only one hmac key per group.
 */
-pub(crate) fn decrypt_group_hmac_key_internally(
-	group_key: &SymKeyFormatInt,
-	encrypted_hmac_key: &str,
-	encrypted_hmac_alg: &str,
-) -> Result<HmacKey, SdkError>
+pub(crate) fn decrypt_group_hmac_key_internally(group_key: &SymKeyFormatInt, server_output: &GroupHmacData) -> Result<HmacKeyFormatInt, SdkError>
 {
-	let encrypted_hmac_key = Base64::decode_vec(encrypted_hmac_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_hmac_key = Base64::decode_vec(&server_output.encrypted_hmac_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
-	Ok(core_group::get_group_hmac_key(
-		&group_key.key,
-		&encrypted_hmac_key,
-		encrypted_hmac_alg,
-	)?)
+	let key = core_group::get_group_hmac_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
+
+	Ok(HmacKeyFormatInt {
+		key_id: server_output.id.clone(),
+		key,
+	})
 }
 
 /**
@@ -497,7 +495,7 @@ pub(crate) mod test_fn
 {
 	use alloc::vec;
 
-	use sentc_crypto_common::group::{GroupServerData, GroupUserAccessBy};
+	use sentc_crypto_common::group::{GroupHmacData, GroupServerData, GroupUserAccessBy};
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
@@ -530,15 +528,19 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group.encrypted_hmac_key,
+				encrypted_hmac_alg: group.encrypted_hmac_alg,
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
-			encrypted_hmac_key: group.encrypted_hmac_key,
-			encrypted_hmac_alg: group.encrypted_hmac_alg,
-			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		//to avoid the clone trait on the real type
@@ -594,15 +596,19 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group.encrypted_hmac_key,
+				encrypted_hmac_alg: group.encrypted_hmac_alg,
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
-			encrypted_hmac_key: group.encrypted_hmac_key,
-			encrypted_hmac_alg: group.encrypted_hmac_alg,
-			encrypted_hmac_encryption_key_id: "".to_string(),
 		};
 
 		//to avoid the clone trait on the real type

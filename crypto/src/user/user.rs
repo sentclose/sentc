@@ -7,6 +7,7 @@ use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
+use crate::group::GroupOutDataHmacKeys;
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
@@ -166,9 +167,22 @@ pub fn done_login(
 		},
 	};
 
-	let result = done_login_internally(&master_key_encryption, server_output)?;
+	let (result, hmac_keys) = done_login_internally(&master_key_encryption, server_output)?;
 
-	export_user_data(result)
+	let mut encrypted_hmac_keys = Vec::with_capacity(hmac_keys.len());
+
+	for hmac_key in hmac_keys {
+		let group_key_id = hmac_key.encrypted_hmac_encryption_key_id.clone();
+
+		let key_data = to_string(&hmac_key).map_err(SdkError::JsonParseFailed)?;
+
+		encrypted_hmac_keys.push(GroupOutDataHmacKeys {
+			group_key_id,
+			key_data,
+		})
+	}
+
+	export_user_data(result, encrypted_hmac_keys)
 }
 
 pub fn done_key_fetch(private_key: &str, server_output: &str) -> Result<UserKeyData, String>
@@ -215,7 +229,7 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 	)?)
 }
 
-fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
+fn export_user_data(user_data: UserDataInt, hmac_keys: Vec<GroupOutDataHmacKeys>) -> Result<UserData, String>
 {
 	let device_keys = export_device_key_data(user_data.device_keys)?;
 
@@ -226,15 +240,13 @@ fn export_user_data(user_data: UserDataInt) -> Result<UserData, String>
 	}
 
 	Ok(UserData {
+		hmac_keys,
 		user_keys,
 		device_keys,
 		jwt: user_data.jwt,
 		refresh_token: user_data.refresh_token,
 		user_id: user_data.user_id,
 		device_id: user_data.device_id,
-		encrypted_hmac_key: user_data.encrypted_hmac_key,
-		encrypted_hmac_alg: user_data.encrypted_hmac_alg,
-		encrypted_hmac_encryption_key_id: user_data.encrypted_hmac_encryption_key_id,
 	})
 }
 
