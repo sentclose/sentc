@@ -420,3 +420,31 @@ pub(crate) fn export_hmac_key_to_string(key: HmacKeyFormatInt) -> Result<String,
 
 	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
 }
+
+pub(crate) fn import_hmac_key(key_string: &str) -> Result<HmacKeyFormatInt, SdkError>
+{
+	let key_format: HmacFormat = from_str(key_string).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+	import_hmac_key_from_format(&key_format)
+}
+
+pub(crate) fn import_hmac_key_from_format(key: &HmacFormat) -> Result<HmacKeyFormatInt, SdkError>
+{
+	match key {
+		HmacFormat::HmacSha256 {
+			key,
+			key_id,
+		} => {
+			let bytes = Base64::decode_vec(key).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+			let key = bytes
+				.try_into()
+				.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+			Ok(HmacKeyFormatInt {
+				key: HmacKey::HmacSha256(key),
+				key_id: key_id.clone(),
+			})
+		},
+	}
+}

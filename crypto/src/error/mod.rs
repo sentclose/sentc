@@ -43,6 +43,10 @@ pub enum SdkError
 	GroupUserKickRank,
 	GroupPermission,
 
+	SearchableEncryptionDataTooLong,
+
+	SearchableEncryptionDataNotFound,
+
 	ServerErr(u32, String),
 }
 
@@ -184,6 +188,16 @@ pub fn err_to_msg(error: SdkError) -> String
 		SdkError::GroupPermission => out_error("client_201", "No permission to fulfill this action"),
 		SdkError::GroupUserKickRank => out_error("client_202", "The user to delete has a higher rank"),
 		SdkError::KeyRotationServerOutputWrong => out_error("client_203", "The key rotation data is wrong and can't be decoded."),
+
+		SdkError::SearchableEncryptionDataTooLong => {
+			out_error(
+				"client_300",
+				"The input data is too long to hash. The maximal length is 200 characters.",
+			)
+		},
+
+		SdkError::SearchableEncryptionDataNotFound => out_error("client_301", "No data found to hash. Empty Strings are not allowed."),
+
 		SdkError::ServerErr(code, msg) => {
 			out_error(
 				(String::from("server_") + code.to_string().as_str()).as_str(),

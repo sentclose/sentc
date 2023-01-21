@@ -11,6 +11,7 @@
 extern crate alloc;
 
 pub mod crypto;
+pub mod crypto_searchable;
 mod error;
 pub mod file;
 pub mod group;
