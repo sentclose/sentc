@@ -419,7 +419,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _, _) = create_group(&user.user_keys[0]);
+		let (data, _, _, _) = create_group(&user.user_keys[0]);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -429,7 +429,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (_, key_data, group_server_out) = create_group(&user.user_keys[0]);
+		let (_, key_data, group_server_out, _) = create_group(&user.user_keys[0]);
 
 		let keys = group_server_out.keys;
 
@@ -746,7 +746,7 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let (_data, key_data, group_server_out) = create_group(user_keys);
+		let (_data, key_data, group_server_out, _) = create_group(user_keys);
 
 		let rotation_out = key_rotation(key_data[0].group_key.as_str(), user_keys.public_key.as_str(), false).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();

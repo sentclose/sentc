@@ -502,7 +502,14 @@ pub(crate) mod test_fn
 	use crate::UserKeyData;
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(
+		user: &UserKeyData,
+	) -> (
+		GroupOutData,
+		Vec<GroupKeyData>,
+		GroupServerData,
+		Vec<crate::util::HmacKeyFormat>,
+	)
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -562,15 +569,23 @@ pub(crate) mod test_fn
 			group_keys.push(decrypt_group_keys(&user.private_key, &key).unwrap());
 		}
 
+		//get the hmac key
+		let mut hmac_keys = Vec::with_capacity(out.hmac_keys.len());
+
+		for hmac_key in &out.hmac_keys {
+			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, &hmac_key).unwrap());
+		}
+
 		(
 			out,
 			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
+			hmac_keys,
 		)
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData, Vec<String>)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.as_str()).unwrap();
@@ -631,10 +646,18 @@ pub(crate) mod test_fn
 			group_keys.push(decrypt_group_keys(user.private_key.as_str(), &key.key_data).unwrap());
 		}
 
+		//get the hmac key
+		let mut hmac_keys = Vec::with_capacity(group_data.hmac_keys.len());
+
+		for hmac_key in &group_data.hmac_keys {
+			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, &hmac_key.key_data).unwrap());
+		}
+
 		(
 			group_data,
 			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
+			hmac_keys,
 		)
 	}
 }
