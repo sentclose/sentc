@@ -2271,6 +2271,78 @@ pub fn delete_sym_key(base_url: String, auth_token: String, jwt: String, key_id:
 	})
 }
 
+//__________________________________________________________________________________________________
+//searchable crypto
+#[repr(C)]
+pub struct ListSearchItem
+{
+	pub id: String,
+	pub item_ref: String,
+	pub time: String,
+}
+
+impl From<sentc_crypto_common::content_searchable::ListSearchItem> for ListSearchItem
+{
+	fn from(item: sentc_crypto_common::content_searchable::ListSearchItem) -> Self
+	{
+		Self {
+			id: item.id,
+			item_ref: item.item_ref,
+			time: item.time.to_string(),
+		}
+	}
+}
+
+pub fn prepare_create_searchable(key: String, item_ref: String, category: String, data: String, full: bool, limit: Option<usize>) -> Result<String>
+{
+	sentc_crypto::crypto_searchable::create_searchable(&key, &item_ref, &category, &data, full, limit).map_err(|err| anyhow!(err))
+}
+
+pub fn prepare_search(key: String, data: String) -> Result<String>
+{
+	sentc_crypto::crypto_searchable::search(&key, &data).map_err(|err| anyhow!(err))
+}
+
+pub fn search(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	group_id: String,
+	group_as_member: String,
+	key: String,
+	data: String,
+	cat_id: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<Vec<ListSearchItem>>
+{
+	let cat_id = if cat_id.is_empty() { None } else { Some(cat_id.as_str()) };
+
+	let out = rt(async {
+		sentc_crypto_full::crypto::search(
+			base_url,
+			&auth_token,
+			&jwt,
+			&group_id,
+			get_group_as_member(&group_as_member),
+			cat_id,
+			&key,
+			&data,
+			&last_fetched_time,
+			&last_fetched_group_id,
+		)
+		.await
+	})?;
+
+	let mut items = Vec::with_capacity(out.len());
+
+	for item in out {
+		items.push(item.into());
+	}
+
+	Ok(items)
+}
+
 //==================================================================================================
 //file
 

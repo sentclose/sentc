@@ -1282,6 +1282,53 @@ pub extern "C" fn wire_delete_sym_key(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_prepare_create_searchable(
+	port_: i64,
+	key: *mut wire_uint_8_list,
+	item_ref: *mut wire_uint_8_list,
+	category: *mut wire_uint_8_list,
+	data: *mut wire_uint_8_list,
+	full: bool,
+	limit: *mut usize,
+) {
+	wire_prepare_create_searchable_impl(port_, key, item_ref, category, data, full, limit)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_prepare_search(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
+	wire_prepare_search_impl(port_, key, data)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_search(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	group_id: *mut wire_uint_8_list,
+	group_as_member: *mut wire_uint_8_list,
+	key: *mut wire_uint_8_list,
+	data: *mut wire_uint_8_list,
+	cat_id: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_group_id: *mut wire_uint_8_list,
+) {
+	wire_search_impl(
+		port_,
+		base_url,
+		auth_token,
+		jwt,
+		group_id,
+		group_as_member,
+		key,
+		data,
+		cat_id,
+		last_fetched_time,
+		last_fetched_group_id,
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_file_download_file_meta(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -1437,6 +1484,11 @@ pub extern "C" fn wire_file_delete_file(
 // Section: allocate functions
 
 #[no_mangle]
+pub extern "C" fn new_box_autoadd_usize_0(value: usize) -> *mut usize {
+	support::new_leak_box_ptr(value)
+}
+
+#[no_mangle]
 pub extern "C" fn new_uint_8_list_0(len: i32) -> *mut wire_uint_8_list {
 	let ans = wire_uint_8_list {
 		ptr: support::new_leak_vec_ptr(Default::default(), len),
@@ -1456,6 +1508,12 @@ impl Wire2Api<String> for *mut wire_uint_8_list {
 	}
 }
 
+impl Wire2Api<usize> for *mut usize {
+	fn wire2api(self) -> usize {
+		unsafe { *support::box_from_leak_ptr(self) }
+	}
+}
+
 impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
 	fn wire2api(self) -> Vec<u8> {
 		unsafe {
@@ -1464,6 +1522,7 @@ impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
 		}
 	}
 }
+
 // Section: wire structs
 
 #[repr(C)]
