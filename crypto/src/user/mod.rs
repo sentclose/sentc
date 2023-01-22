@@ -8,7 +8,7 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use base64ct::{Base64, Encoding};
+use base64ct::{Base64, Base64UrlUnpadded, Encoding};
 use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput};
 use sentc_crypto_common::user::{
 	ChangePasswordData,
@@ -126,8 +126,8 @@ fn generate_user_register_data_internally() -> Result<(String, String), SdkError
 {
 	let (identifier, password) = sentc_crypto_core::generate_user_register_data()?;
 
-	let encoded_identifier = Base64::encode_string(&identifier);
-	let encoded_password = Base64::encode_string(&password);
+	let encoded_identifier = Base64UrlUnpadded::encode_string(&identifier);
+	let encoded_password = Base64UrlUnpadded::encode_string(&password);
 
 	Ok((encoded_identifier, encoded_password))
 }
