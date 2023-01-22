@@ -62,6 +62,7 @@ pub struct UserData
 	refresh_token: String,
 	user_id: String,
 	device_id: String,
+	hmac_keys: JsValue,
 }
 
 impl From<sentc_crypto::util::UserData> for UserData
@@ -75,6 +76,7 @@ impl From<sentc_crypto::util::UserData> for UserData
 			refresh_token: data.refresh_token,
 			user_id: data.user_id,
 			device_id: data.device_id,
+			hmac_keys: JsValue::from_serde(&data.hmac_keys).unwrap(),
 		}
 	}
 }
@@ -135,6 +137,11 @@ impl UserData
 	pub fn get_device_id(&self) -> String
 	{
 		self.device_id.clone()
+	}
+
+	pub fn get_hmac_keys(&self) -> JsValue
+	{
+		self.hmac_keys.clone()
 	}
 }
 

@@ -142,6 +142,7 @@ pub struct UserData
 	pub refresh_token: String,
 	pub keys: DeviceKeyData,
 	pub user_keys: Vec<UserKeyData>,
+	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
 }
 
 impl From<sentc_crypto::util::UserData> for UserData
@@ -154,6 +155,12 @@ impl From<sentc_crypto::util::UserData> for UserData
 			user_keys.push(user_key.into());
 		}
 
+		let mut hmac_keys = Vec::with_capacity(data.hmac_keys.len());
+
+		for hmac_key in data.hmac_keys {
+			hmac_keys.push(hmac_key.into());
+		}
+
 		Self {
 			jwt: data.jwt,
 			user_id: data.user_id,
@@ -161,6 +168,7 @@ impl From<sentc_crypto::util::UserData> for UserData
 			refresh_token: data.refresh_token,
 			keys: data.device_keys.into(),
 			user_keys,
+			hmac_keys,
 		}
 	}
 }
@@ -795,6 +803,24 @@ impl From<sentc_crypto::group::GroupOutDataKeys> for GroupOutDataKeys
 }
 
 #[repr(C)]
+pub struct GroupOutDataHmacKeys
+{
+	pub group_key_id: String,
+	pub key_data: String, //serde string
+}
+
+impl From<sentc_crypto::group::GroupOutDataHmacKeys> for GroupOutDataHmacKeys
+{
+	fn from(key: sentc_crypto::group::GroupOutDataHmacKeys) -> Self
+	{
+		Self {
+			group_key_id: key.group_key_id,
+			key_data: key.key_data,
+		}
+	}
+}
+
+#[repr(C)]
 pub struct GroupOutData
 {
 	pub group_id: String,
@@ -804,6 +830,7 @@ pub struct GroupOutData
 	pub created_time: String,
 	pub joined_time: String,
 	pub keys: Vec<GroupOutDataKeys>,
+	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
 	pub access_by_group_as_member: Option<String>,
 	pub access_by_parent_group: Option<String>,
 	pub is_connected_group: bool,
@@ -819,6 +846,12 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 			keys.push(key.into())
 		}
 
+		let mut hmac_keys = Vec::with_capacity(data.hmac_keys.len());
+
+		for hmac_key in data.hmac_keys {
+			hmac_keys.push(hmac_key.into());
+		}
+
 		Self {
 			group_id: data.group_id,
 			parent_group_id: data.parent_group_id,
@@ -827,6 +860,7 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 			created_time: data.created_time.to_string(),
 			joined_time: data.joined_time.to_string(),
 			keys,
+			hmac_keys,
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
 			is_connected_group: data.is_connected_group,
@@ -1068,6 +1102,11 @@ pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result
 	let out = sentc_crypto_full::group::decrypt_key(server_key_data.as_str(), private_key.as_str()).map_err(|err| anyhow!(err))?;
 
 	Ok(out.into())
+}
+
+pub fn group_decrypt_hmac_key(group_key: String, server_key_data: String) -> Result<String>
+{
+	sentc_crypto::group::decrypt_group_hmac_key(&group_key, &server_key_data).map_err(|err| anyhow!(err))
 }
 
 //__________________________________________________________________________________________________
@@ -2230,6 +2269,78 @@ pub fn delete_sym_key(base_url: String, auth_token: String, jwt: String, key_id:
 		//
 		sentc_crypto_full::crypto::delete_key(base_url, auth_token.as_str(), jwt.as_str(), key_id.as_str()).await
 	})
+}
+
+//__________________________________________________________________________________________________
+//searchable crypto
+#[repr(C)]
+pub struct ListSearchItem
+{
+	pub id: String,
+	pub item_ref: String,
+	pub time: String,
+}
+
+impl From<sentc_crypto_common::content_searchable::ListSearchItem> for ListSearchItem
+{
+	fn from(item: sentc_crypto_common::content_searchable::ListSearchItem) -> Self
+	{
+		Self {
+			id: item.id,
+			item_ref: item.item_ref,
+			time: item.time.to_string(),
+		}
+	}
+}
+
+pub fn prepare_create_searchable(key: String, item_ref: String, category: String, data: String, full: bool, limit: Option<usize>) -> Result<String>
+{
+	sentc_crypto::crypto_searchable::create_searchable(&key, &item_ref, &category, &data, full, limit).map_err(|err| anyhow!(err))
+}
+
+pub fn prepare_search(key: String, data: String) -> Result<String>
+{
+	sentc_crypto::crypto_searchable::search(&key, &data).map_err(|err| anyhow!(err))
+}
+
+pub fn search(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	group_id: String,
+	group_as_member: String,
+	key: String,
+	data: String,
+	cat_id: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<Vec<ListSearchItem>>
+{
+	let cat_id = if cat_id.is_empty() { None } else { Some(cat_id.as_str()) };
+
+	let out = rt(async {
+		sentc_crypto_full::crypto::search(
+			base_url,
+			&auth_token,
+			&jwt,
+			&group_id,
+			get_group_as_member(&group_as_member),
+			cat_id,
+			&key,
+			&data,
+			&last_fetched_time,
+			&last_fetched_group_id,
+		)
+		.await
+	})?;
+
+	let mut items = Vec::with_capacity(out.len());
+
+	for item in out {
+		items.push(item.into());
+	}
+
+	Ok(items)
 }
 
 //==================================================================================================

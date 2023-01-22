@@ -3,11 +3,12 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
-use sentc_crypto_core::{Pk, SignK, Sk, SymKey, VerifyK};
+use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::util::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+use crate::group::GroupOutDataHmacKeys;
+use crate::util::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use crate::SdkError;
 
 #[derive(Serialize, Deserialize)]
@@ -98,6 +99,23 @@ impl VerifyKeyFormat
 	}
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum HmacFormat
+{
+	HmacSha256
+	{
+		key: String, key_id: SymKeyId
+	},
+}
+
+impl HmacFormat
+{
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
+}
+
 /**
 # Key data to communicate with other ffi programs via Strings
 
@@ -137,6 +155,7 @@ pub struct UserData
 	pub refresh_token: String,
 	pub user_id: UserId,
 	pub device_id: DeviceId,
+	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -379,4 +398,53 @@ pub(crate) fn export_sym_key_to_string(key: SymKeyFormatInt) -> Result<String, S
 	let key = export_sym_key(key);
 
 	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
+}
+
+pub(crate) fn export_hmac_key(key: HmacKeyFormatInt) -> HmacFormat
+{
+	match key.key {
+		HmacKey::HmacSha256(k) => {
+			let hmac_key = Base64::encode_string(&k);
+
+			HmacFormat::HmacSha256 {
+				key: hmac_key,
+				key_id: key.key_id,
+			}
+		},
+	}
+}
+
+pub(crate) fn export_hmac_key_to_string(key: HmacKeyFormatInt) -> Result<String, SdkError>
+{
+	let key = export_hmac_key(key);
+
+	key.to_string().map_err(|_e| SdkError::JsonToStringFailed)
+}
+
+pub(crate) fn import_hmac_key(key_string: &str) -> Result<HmacKeyFormatInt, SdkError>
+{
+	let key_format: HmacFormat = from_str(key_string).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+	import_hmac_key_from_format(&key_format)
+}
+
+pub(crate) fn import_hmac_key_from_format(key: &HmacFormat) -> Result<HmacKeyFormatInt, SdkError>
+{
+	match key {
+		HmacFormat::HmacSha256 {
+			key,
+			key_id,
+		} => {
+			let bytes = Base64::decode_vec(key).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+			let key = bytes
+				.try_into()
+				.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+			Ok(HmacKeyFormatInt {
+				key: HmacKey::HmacSha256(key),
+				key_id: key_id.clone(),
+			})
+		},
+	}
 }

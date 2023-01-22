@@ -344,3 +344,21 @@ pub async fn delete_sym_key(base_url: String, auth_token: String, jwt: String, k
 
 	Ok(())
 }
+
+//__________________________________________________________________________________________________
+//searchable crypto
+
+//only prepare here because it is server only but this string can be used to register an item
+#[wasm_bindgen]
+pub fn prepare_create_searchable(key: &str, item_ref: &str, category: &str, data: &str, full: bool, limit: Option<usize>) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto::crypto_searchable::create_searchable(
+		key, item_ref, category, data, full, limit,
+	)?)
+}
+
+#[wasm_bindgen]
+pub fn prepare_search(key: &str, data: &str) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto::crypto_searchable::search(key, data)?)
+}

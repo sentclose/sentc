@@ -77,7 +77,18 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 
 pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserData, SdkError>
 {
-	done_login_internally(master_key_encryption, server_output)
+	let (result, hmac_keys) = done_login_internally(master_key_encryption, server_output)?;
+
+	Ok(UserData {
+		jwt: result.jwt,
+		refresh_token: result.refresh_token,
+		user_id: result.user_id,
+		device_id: result.device_id,
+
+		user_keys: result.user_keys,
+		device_keys: result.device_keys,
+		hmac_keys,
+	})
 }
 
 pub fn done_key_fetch(private_key: &PrivateKeyFormat, server_output: &str) -> Result<UserKeyData, SdkError>
@@ -289,6 +300,8 @@ mod test
 				public_group_key: out_new_device.group.public_group_key,
 				keypair_encrypt_alg: out_new_device.group.keypair_encrypt_alg,
 				creator_public_key_id: "abc".to_string(),
+				encrypted_hmac_key: out_new_device.group.encrypted_hmac_key,
+				encrypted_hmac_alg: out_new_device.group.encrypted_hmac_alg,
 				encrypted_sign_key: out_new_device.group.encrypted_sign_key,
 				verify_key: out_new_device.group.verify_key,
 				keypair_sign_alg: out_new_device.group.keypair_sign_alg,

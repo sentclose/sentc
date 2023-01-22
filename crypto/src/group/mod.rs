@@ -10,6 +10,7 @@ use sentc_crypto_common::group::{
 	CreateData,
 	DoneKeyRotationData,
 	GroupChangeRankServerInput,
+	GroupHmacData,
 	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
@@ -26,6 +27,7 @@ use crate::util::{
 	export_raw_public_key_to_pem,
 	export_raw_verify_key_to_pem,
 	import_public_key_from_pem_with_alg,
+	HmacKeyFormatInt,
 	PrivateKeyFormatInt,
 	PublicKeyFormatInt,
 	SymKeyFormatInt,
@@ -43,6 +45,7 @@ mod group_rust;
 pub(crate) use self::group::prepare_group_keys_for_new_member_with_ref;
 #[cfg(not(feature = "rust"))]
 pub use self::group::{
+	decrypt_group_hmac_key,
 	decrypt_group_keys,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
@@ -57,6 +60,7 @@ pub use self::group::{
 	prepare_group_keys_for_new_member_via_session,
 	GroupKeyData,
 	GroupOutData,
+	GroupOutDataHmacKeys,
 	GroupOutDataKeys,
 	GroupOutDataLight,
 };
@@ -71,6 +75,7 @@ pub use self::group_rank_check::{
 };
 #[cfg(feature = "rust")]
 pub use self::group_rust::{
+	decrypt_group_hmac_key,
 	decrypt_group_keys,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
@@ -130,6 +135,7 @@ pub(crate) fn prepare_create_private_internally(creators_public_key: &PublicKeyF
 	//1. encode the values to base64 for the server
 	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
 	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
+	let encrypted_hmac_key = Base64::encode_string(&out.encrypted_hmac_key);
 
 	//2. export the public key
 	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
@@ -164,6 +170,8 @@ pub(crate) fn prepare_create_private_internally(creators_public_key: &PublicKeyF
 		group_key_alg: out.group_key_alg.to_string(),
 		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
 		creator_public_key_id: creators_public_key.key_id.clone(),
+		encrypted_hmac_key,
+		encrypted_hmac_alg: out.encrypted_hmac_alg.to_string(),
 
 		//user group values
 		encrypted_sign_key,
@@ -303,6 +311,21 @@ fn get_group_key_from_server_output_internally(server_output: &str) -> Result<Gr
 	let server_output: GroupKeyServerOutput = handle_server_response(server_output)?;
 
 	Ok(server_output)
+}
+
+/**
+Decrypt the group hmac key which is used for searchable encryption.
+*/
+pub(crate) fn decrypt_group_hmac_key_internally(group_key: &SymKeyFormatInt, server_output: &GroupHmacData) -> Result<HmacKeyFormatInt, SdkError>
+{
+	let encrypted_hmac_key = Base64::decode_vec(&server_output.encrypted_hmac_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+
+	let key = core_group::get_group_hmac_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
+
+	Ok(HmacKeyFormatInt {
+		key_id: server_output.id.clone(),
+		key,
+	})
 }
 
 /**
@@ -472,14 +495,21 @@ pub(crate) mod test_fn
 {
 	use alloc::vec;
 
-	use sentc_crypto_common::group::{GroupServerData, GroupUserAccessBy};
+	use sentc_crypto_common::group::{GroupHmacData, GroupServerData, GroupUserAccessBy};
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
 	use crate::UserKeyData;
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(
+		user: &UserKeyData,
+	) -> (
+		GroupOutData,
+		Vec<GroupKeyData>,
+		GroupServerData,
+		Vec<crate::util::HmacKeyFormat>,
+	)
 	{
 		#[cfg(feature = "rust")]
 		let group = prepare_create(&user.public_key).unwrap();
@@ -505,6 +535,13 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group.encrypted_hmac_key,
+				encrypted_hmac_alg: group.encrypted_hmac_alg,
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
@@ -532,15 +569,23 @@ pub(crate) mod test_fn
 			group_keys.push(decrypt_group_keys(&user.private_key, &key).unwrap());
 		}
 
+		//get the hmac key
+		let mut hmac_keys = Vec::with_capacity(out.hmac_keys.len());
+
+		for hmac_key in &out.hmac_keys {
+			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, &hmac_key).unwrap());
+		}
+
 		(
 			out,
 			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
+			hmac_keys,
 		)
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData)
+	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData, Vec<String>)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.as_str()).unwrap();
@@ -566,6 +611,13 @@ pub(crate) mod test_fn
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output],
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group.encrypted_hmac_key,
+				encrypted_hmac_alg: group.encrypted_hmac_alg,
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
@@ -594,10 +646,18 @@ pub(crate) mod test_fn
 			group_keys.push(decrypt_group_keys(user.private_key.as_str(), &key.key_data).unwrap());
 		}
 
+		//get the hmac key
+		let mut hmac_keys = Vec::with_capacity(group_data.hmac_keys.len());
+
+		for hmac_key in &group_data.hmac_keys {
+			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, &hmac_key.key_data).unwrap());
+		}
+
 		(
 			group_data,
 			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
+			hmac_keys,
 		)
 	}
 }

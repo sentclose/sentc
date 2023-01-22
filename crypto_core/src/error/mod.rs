@@ -24,4 +24,6 @@ pub enum Error
 	AlgNotFound,
 
 	DecodePrivateKeyFailed,
+
+	HmacAuthFailedLength,
 }

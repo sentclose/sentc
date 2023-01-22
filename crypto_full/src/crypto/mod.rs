@@ -4,15 +4,17 @@ mod non_rust;
 mod rust;
 
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto_common::content_searchable::ListSearchItem;
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerRegisterOutput;
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{GenKeyRes, KeyRes, KeysRes, VoidRes};
+pub(crate) use self::non_rust::{GenKeyRes, KeyRes, KeysRes, SearchRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{GenKeyRes, KeyRes, KeysRes, VoidRes};
-use crate::util::{auth_req, non_auth_req, HttpMethod};
+pub(crate) use self::rust::{GenKeyRes, KeyRes, KeysRes, SearchRes, VoidRes};
+use crate::util::{auth_req, make_req, non_auth_req, HttpMethod};
 
 pub async fn register_sym_key(
 	base_url: String,
@@ -143,4 +145,45 @@ pub async fn get_sym_key_by_id_by_private_key(
 	let sym_key = sentc_crypto::crypto::done_fetch_sym_key_by_private_key(private_key, res.as_str())?;
 
 	Ok(sym_key)
+}
+
+//__________________________________________________________________________________________________
+//searchable
+
+pub async fn search(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	id: &str,
+	group_as_member: Option<&str>,
+	cat_id: Option<&str>,
+	#[cfg(not(feature = "rust"))] key: &str,
+	#[cfg(feature = "rust")] key: &sentc_crypto::util::HmacKeyFormat,
+	data: &str,
+	last_fetched_time: &str,
+	last_fetched_group_id: &str,
+) -> SearchRes
+{
+	let search_str = sentc_crypto::crypto_searchable::search(key, data)?;
+
+	let url = match cat_id {
+		Some(c_id) => {
+			base_url + "api/v1/search/group/" + id + "/" + c_id + "/" + last_fetched_time + "/" + last_fetched_group_id + "?search=" + &search_str
+		},
+		None => base_url + "api/v1/search/group/" + id + "/all/" + last_fetched_time + "/" + last_fetched_group_id + "?search=" + &search_str,
+	};
+
+	let res = make_req(
+		HttpMethod::GET,
+		url.as_str(),
+		auth_token,
+		None,
+		Some(jwt),
+		group_as_member,
+	)
+	.await?;
+
+	let list: Vec<ListSearchItem> = handle_server_response(&res)?;
+
+	Ok(list)
 }

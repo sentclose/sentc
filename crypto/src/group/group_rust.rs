@@ -1,11 +1,12 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{GroupKeyServerOutput, GroupLightServerData, GroupServerData, KeyRotationInput};
+use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput, GroupLightServerData, GroupServerData, KeyRotationInput};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
 
 use crate::group::{
+	decrypt_group_hmac_key_internally,
 	decrypt_group_keys_internally,
 	done_key_rotation_internally,
 	get_access_by,
@@ -20,12 +21,13 @@ use crate::group::{
 	GroupKeyData,
 };
 use crate::util::public::handle_server_response;
-use crate::util::{PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
+use crate::util::{HmacKeyFormat, PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
 use crate::SdkError;
 
 pub struct GroupOutData
 {
 	pub keys: Vec<GroupKeyServerOutput>,
+	pub hmac_keys: Vec<GroupHmacData>,
 	pub parent_group_id: Option<GroupId>,
 	pub key_update: bool,
 	pub created_time: u128,
@@ -46,6 +48,7 @@ pub struct GroupOutDataLight
 	pub joined_time: u128,
 	pub access_by_group_as_member: Option<GroupId>,
 	pub access_by_parent_group: Option<GroupId>,
+	pub is_connected_group: bool,
 }
 
 pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, SdkError>
@@ -71,6 +74,11 @@ pub fn done_key_rotation(
 ) -> Result<String, SdkError>
 {
 	done_key_rotation_internally(private_key, public_key, previous_group_key, server_output)
+}
+
+pub fn decrypt_group_hmac_key(key: &SymKeyFormat, server_output: &GroupHmacData) -> Result<HmacKeyFormat, SdkError>
+{
+	decrypt_group_hmac_key_internally(&key, server_output)
 }
 
 pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
@@ -100,6 +108,7 @@ pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, Sd
 		rank: server_output.rank,
 		created_time: server_output.created_time,
 		joined_time: server_output.joined_time,
+		is_connected_group: server_output.is_connected_group,
 		access_by_group_as_member,
 		access_by_parent_group,
 	})
@@ -113,6 +122,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 
 	Ok(GroupOutData {
 		keys: server_output.keys,
+		hmac_keys: server_output.hmac_keys,
 		key_update: server_output.key_update,
 		parent_group_id: server_output.parent_group_id,
 		created_time: server_output.created_time,
@@ -190,7 +200,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _, _) = create_group(&user.user_keys[0]);
+		let (data, _, _, _) = create_group(&user.user_keys[0]);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -201,7 +211,7 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let (_, key_data, group_server_out) = create_group(user_keys);
+		let (_, key_data, group_server_out, _) = create_group(user_keys);
 
 		let keys = group_server_out.keys;
 
@@ -287,6 +297,13 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group_create.encrypted_hmac_key.clone(),
+				encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -331,6 +348,13 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group_create.encrypted_hmac_key,
+				encrypted_hmac_alg: group_create.encrypted_hmac_alg,
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -391,6 +415,13 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group_create.encrypted_hmac_key.clone(),
+				encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -440,6 +471,13 @@ mod test
 			joined_time: 0,
 			access_by: GroupUserAccessBy::User,
 			is_connected_group: false,
+			hmac_keys: vec![GroupHmacData {
+				id: "123".to_string(),
+				encrypted_hmac_encryption_key_id: "".to_string(),
+				encrypted_hmac_key: group_create.encrypted_hmac_key,
+				encrypted_hmac_alg: group_create.encrypted_hmac_alg,
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -466,7 +504,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (_data, key_data, group_server_out) = create_group(&user.user_keys[0]);
+		let (_data, key_data, group_server_out, _) = create_group(&user.user_keys[0]);
 
 		let rotation_out = key_rotation(&key_data[0].group_key, &user.user_keys[0].public_key, false).unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();

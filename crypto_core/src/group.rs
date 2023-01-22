@@ -1,9 +1,9 @@
 use alloc::vec::Vec;
 
 use crate::alg::sym::aes_gcm::AesKey;
-use crate::alg::{asym, sign, sym};
+use crate::alg::{asym, hmac, sign, sym};
 use crate::crypto::{decrypt_asymmetric, decrypt_symmetric, encrypt_asymmetric};
-use crate::{AsymKeyOutput, Error, Pk, SignK, Sk, SymKey, VerifyK};
+use crate::{AsymKeyOutput, Error, HmacKey, Pk, SignK, Sk, SymKey, VerifyK};
 
 pub struct CreateGroupOutput
 {
@@ -13,6 +13,8 @@ pub struct CreateGroupOutput
 	pub encrypted_private_group_key: Vec<u8>,
 	pub public_group_key: Pk,
 	pub keypair_encrypt_alg: &'static str,
+	pub encrypted_hmac_key: Vec<u8>,
+	pub encrypted_hmac_alg: &'static str,
 
 	//for user group
 	pub verify_key: Option<VerifyK>,
@@ -63,12 +65,28 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 	let (encrypted_private_group_key, encrypted_group_key, encrypted_group_key_alg, verify_key, encrypted_sign_key, keypair_sign_alg) =
 		prepare_keys_aes_ecies_ed25519(creators_public_key, user_group, raw_group_key, &keypair)?;
 
+	//3. get the hmac key
+
+	/*
+	create the searchable encryption hmac key and encrypt it with the group key
+
+	create it only for create group not key rotation
+	 because when searching an item we don't know what key was used for the item
+	 */
+	let searchable_encryption = hmac::hmac_sha256::generate_key()?;
+
+	let encrypted_hmac_key = match &searchable_encryption.key {
+		HmacKey::HmacSha256(k) => sym::aes_gcm::encrypt_with_generated_key(raw_group_key, k)?,
+	};
+
 	Ok(CreateGroupOutput {
 		encrypted_group_key,
 		encrypted_private_group_key,
 		public_group_key: keypair.pk,
 		group_key_alg: group_key.alg,
 		keypair_encrypt_alg: keypair.alg,
+		encrypted_hmac_key,
+		encrypted_hmac_alg: searchable_encryption.alg,
 		encrypted_group_key_alg,
 		verify_key,
 		encrypted_sign_key,
@@ -150,6 +168,7 @@ fn prepare_keys_aes_ecies_ed25519(
 	key_pair: &AsymKeyOutput,
 ) -> Result<PrepareKeysAesEciesEd25519Tuple, Error>
 {
+	//encrypt the private group key
 	let private_key = match &key_pair.sk {
 		Sk::Ecies(k) => k,
 	};
@@ -164,6 +183,7 @@ fn prepare_keys_aes_ecies_ed25519(
 		},
 	};
 
+	//create the sign keys if user group and after encrypt the sign key with group key
 	let (verify_key, encrypted_sign_key, keypair_sign_alg) = if !user_group {
 		(None, None, None)
 	} else {
@@ -221,6 +241,18 @@ pub fn done_key_rotation(
 
 	//the user can call ger group to get the new pri key too
 	Ok(encrypted_new_group_key)
+}
+
+pub fn get_group_hmac_key(group_key: &SymKey, encrypted_hmac_key: &[u8], encrypted_hmac_alg: &str) -> Result<HmacKey, Error>
+{
+	let hmac_key = decrypt_symmetric(group_key, encrypted_hmac_key)?;
+
+	let key = match encrypted_hmac_alg {
+		hmac::hmac_sha256::HMAC_SHA256_OUTPUT => HmacKey::HmacSha256(hmac_key.try_into().map_err(|_| Error::KeyDecryptFailed)?),
+		_ => return Err(Error::AlgNotFound),
+	};
+
+	Ok(key)
 }
 
 pub fn get_group(
