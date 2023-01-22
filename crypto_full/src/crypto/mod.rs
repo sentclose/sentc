@@ -167,8 +167,10 @@ pub async fn search(
 	let search_str = sentc_crypto::crypto_searchable::search(key, data)?;
 
 	let url = match cat_id {
-		Some(c_id) => base_url + "api/v1/search/group/" + id + "/" + c_id + "/" + &search_str + "/" + last_fetched_time + "/" + last_fetched_group_id,
-		None => base_url + "api/v1/search/group/" + id + "/all/" + &search_str + "/" + last_fetched_time + "/" + last_fetched_group_id,
+		Some(c_id) => {
+			base_url + "api/v1/search/group/" + id + "/" + c_id + "/" + last_fetched_time + "/" + last_fetched_group_id + "?search=" + &search_str
+		},
+		None => base_url + "api/v1/search/group/" + id + "/all/" + last_fetched_time + "/" + last_fetched_group_id + "?search=" + &search_str,
 	};
 
 	let res = make_req(
