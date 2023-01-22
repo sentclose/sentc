@@ -2,7 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 
-use base64ct::{Base64, Encoding};
+use base64ct::{Base64UrlUnpadded, Encoding};
 use sentc_crypto_common::content_searchable::SearchCreateData;
 use sentc_crypto_core::getting_alg_from_hmac_key;
 
@@ -100,5 +100,5 @@ fn hash_value_internally(key: &HmacKeyFormatInt, data: &[u8]) -> Result<String, 
 {
 	let hash = sentc_crypto_core::crypto::encrypt_searchable(&key.key, data)?;
 
-	Ok(Base64::encode_string(&hash))
+	Ok(Base64UrlUnpadded::encode_string(&hash))
 }
