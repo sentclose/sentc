@@ -32,7 +32,6 @@ pub struct Claims
 	pub sub: String, //the app id
 	pub exp: usize,
 	pub iat: usize,
-	pub group_id: String,
 	pub fresh: bool, //was this token from refresh jwt or from login
 }
 
@@ -45,7 +44,6 @@ impl From<sentc_crypto_full::jwt::Claims> for Claims
 			sub: claims.sub,
 			exp: claims.exp,
 			iat: claims.iat,
-			group_id: claims.group_id,
 			fresh: claims.fresh,
 		}
 	}

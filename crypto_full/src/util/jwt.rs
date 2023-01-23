@@ -2,7 +2,7 @@
 use alloc::string::String;
 
 use base64ct::Encoding;
-use sentc_crypto_common::{DeviceId, GroupId, UserId};
+use sentc_crypto_common::{DeviceId, UserId};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkFullError;
@@ -29,7 +29,6 @@ pub struct Claims
 	pub sub: DeviceId, //the device id
 	pub exp: usize,
 	pub iat: usize,
-	pub group_id: GroupId,
 	pub fresh: bool, //was this token from refresh jwt or from login
 }
 

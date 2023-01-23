@@ -3074,7 +3074,6 @@ impl support::IntoDart for Claims {
 			self.sub.into_dart(),
 			self.exp.into_dart(),
 			self.iat.into_dart(),
-			self.group_id.into_dart(),
 			self.fresh.into_dart(),
 		]
 		.into_dart()
