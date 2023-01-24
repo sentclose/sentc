@@ -2291,8 +2291,11 @@ impl From<sentc_crypto_common::content_searchable::ListSearchItem> for ListSearc
 	}
 }
 
-pub fn prepare_create_searchable(key: String, item_ref: String, category: String, data: String, full: bool, limit: Option<usize>) -> Result<String>
+pub fn prepare_create_searchable(key: String, item_ref: String, category: String, data: String, full: bool, limit: Option<u32>) -> Result<String>
 {
+	//flutter rust bridge don't support usize
+	let limit = if let Some(l) = limit { Some(l as usize) } else { None };
+
 	sentc_crypto::crypto_searchable::create_searchable(&key, &item_ref, &category, &data, full, limit).map_err(|err| anyhow!(err))
 }
 

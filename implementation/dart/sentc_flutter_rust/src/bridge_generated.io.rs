@@ -1289,7 +1289,7 @@ pub extern "C" fn wire_prepare_create_searchable(
 	category: *mut wire_uint_8_list,
 	data: *mut wire_uint_8_list,
 	full: bool,
-	limit: *mut usize,
+	limit: *mut u32,
 ) {
 	wire_prepare_create_searchable_impl(port_, key, item_ref, category, data, full, limit)
 }
@@ -1484,7 +1484,7 @@ pub extern "C" fn wire_file_delete_file(
 // Section: allocate functions
 
 #[no_mangle]
-pub extern "C" fn new_box_autoadd_usize_0(value: usize) -> *mut usize {
+pub extern "C" fn new_box_autoadd_u32_0(value: u32) -> *mut u32 {
 	support::new_leak_box_ptr(value)
 }
 
@@ -1508,8 +1508,8 @@ impl Wire2Api<String> for *mut wire_uint_8_list {
 	}
 }
 
-impl Wire2Api<usize> for *mut usize {
-	fn wire2api(self) -> usize {
+impl Wire2Api<u32> for *mut u32 {
+	fn wire2api(self) -> u32 {
 		unsafe { *support::box_from_leak_ptr(self) }
 	}
 }
@@ -1522,7 +1522,6 @@ impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
 		}
 	}
 }
-
 // Section: wire structs
 
 #[repr(C)]

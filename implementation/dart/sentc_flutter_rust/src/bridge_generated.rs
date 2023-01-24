@@ -2627,7 +2627,7 @@ fn wire_prepare_create_searchable_impl(
 	category: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<String> + UnwindSafe,
 	full: impl Wire2Api<bool> + UnwindSafe,
-	limit: impl Wire2Api<Option<usize>> + UnwindSafe,
+	limit: impl Wire2Api<Option<u32>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -3043,17 +3043,17 @@ impl Wire2Api<i32> for i32 {
 	}
 }
 
+impl Wire2Api<u32> for u32 {
+	fn wire2api(self) -> u32 {
+		self
+	}
+}
 impl Wire2Api<u8> for u8 {
 	fn wire2api(self) -> u8 {
 		self
 	}
 }
 
-impl Wire2Api<usize> for usize {
-	fn wire2api(self) -> usize {
-		self
-	}
-}
 // Section: impl IntoDart
 
 impl support::IntoDart for BelongsToType {
