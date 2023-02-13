@@ -178,16 +178,11 @@ impl From<sentc_crypto::util::UserData> for UserData
  */
 pub fn check_user_identifier_available(base_url: String, auth_token: String, user_identifier: String) -> Result<bool>
 {
-	let out = rt(async {
-		//
-		sentc_crypto_full::user::check_user_identifier_available(
-			//
-			base_url,
-			auth_token.as_str(),
-			user_identifier.as_str(),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::user::check_user_identifier_available(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+	))?;
 
 	Ok(out)
 }
@@ -255,15 +250,12 @@ No checking about spamming and just return the user id.
  */
 pub fn register(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String>
 {
-	let data = rt(async {
-		sentc_crypto_full::user::register(
-			base_url,
-			auth_token.as_str(),
-			user_identifier.as_str(),
-			password.as_str(),
-		)
-		.await
-	})?;
+	let data = rt(sentc_crypto_full::user::register(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		password.as_str(),
+	))?;
 
 	Ok(data)
 }
@@ -280,15 +272,12 @@ pub fn done_register_device_start(server_output: String) -> Result<()>
 
 pub fn register_device_start(base_url: String, auth_token: String, device_identifier: String, password: String) -> Result<String>
 {
-	let out = rt(async {
-		sentc_crypto_full::user::register_device_start(
-			base_url,
-			auth_token.as_str(),
-			device_identifier.as_str(),
-			password.as_str(),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::user::register_device_start(
+		base_url,
+		auth_token.as_str(),
+		device_identifier.as_str(),
+		password.as_str(),
+	))?;
 
 	Ok(out)
 }
@@ -334,17 +323,14 @@ pub fn register_device(
 	user_keys: String,
 ) -> Result<RegisterDeviceData>
 {
-	let (out, exported_public_key) = rt(async {
-		sentc_crypto_full::user::register_device(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			server_output.as_str(),
-			key_count,
-			user_keys.as_str(),
-		)
-		.await
-	})?;
+	let (out, exported_public_key) = rt(sentc_crypto_full::user::register_device(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		server_output.as_str(),
+		key_count,
+		user_keys.as_str(),
+	))?;
 
 	let session_id = match out {
 		Some(id) => id,
@@ -366,33 +352,25 @@ pub fn user_device_key_session_upload(
 	group_keys: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::user::device_key_session(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			session_id.as_str(),
-			user_public_key.as_str(),
-			group_keys.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::device_key_session(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		session_id.as_str(),
+		user_public_key.as_str(),
+		group_keys.as_str(),
+	))
 }
 
 //__________________________________________________________________________________________________
 
 pub fn prepare_login_start(base_url: String, auth_token: String, user_identifier: String) -> Result<String>
 {
-	let out = rt(async {
-		//
-		sentc_crypto_full::user::prepare_login_start(
-			//
-			base_url,
-			auth_token.as_str(),
-			user_identifier.as_str(),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::user::prepare_login_start(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+	))?;
 
 	Ok(out)
 }
@@ -434,15 +412,12 @@ The other backend can validate the jwt
  */
 pub fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserData>
 {
-	let data = rt(async {
-		sentc_crypto_full::user::login(
-			base_url,
-			auth_token.as_str(),
-			user_identifier.as_str(),
-			password.as_str(),
-		)
-		.await
-	})?;
+	let data = rt(sentc_crypto_full::user::login(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		password.as_str(),
+	))?;
 
 	Ok(data.into())
 }
@@ -456,16 +431,13 @@ pub fn done_fetch_user_key(private_key: String, server_output: String) -> Result
 
 pub fn fetch_user_key(base_url: String, auth_token: String, jwt: String, key_id: String, private_key: String) -> Result<UserKeyData>
 {
-	let data = rt(async {
-		sentc_crypto_full::user::fetch_user_key(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			key_id.as_str(),
-			private_key.as_str(),
-		)
-		.await
-	})?;
+	let data = rt(sentc_crypto_full::user::fetch_user_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		key_id.as_str(),
+		private_key.as_str(),
+	))?;
 
 	Ok(data.into())
 }
@@ -481,32 +453,22 @@ pub struct UserInitServerOutput
 
 pub fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String>
 {
-	rt(async {
-		//
-		sentc_crypto_full::user::refresh_jwt(
-			//
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			refresh_token.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::refresh_jwt(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		refresh_token.as_str(),
+	))
 }
 
 pub fn init_user(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<UserInitServerOutput>
 {
-	let out = rt(async {
-		//
-		sentc_crypto_full::user::init_user(
-			//
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			refresh_token.as_str(),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::user::init_user(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		refresh_token.as_str(),
+	))?;
 
 	let mut invites = Vec::with_capacity(out.invites.len());
 
@@ -550,16 +512,13 @@ pub fn get_user_devices(
 	last_fetched_id: String,
 ) -> Result<Vec<UserDeviceList>>
 {
-	let out = rt(async {
-		sentc_crypto_full::user::get_user_devices(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			last_fetched_time.as_str(),
-			last_fetched_id.as_str(),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::user::get_user_devices(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_id.as_str(),
+	))?;
 
 	let mut list = Vec::with_capacity(out.len());
 
@@ -579,66 +538,56 @@ pub fn reset_password(
 	decrypted_sign_key: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::user::reset_password(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			new_password.as_str(),
-			decrypted_private_key.as_str(),
-			decrypted_sign_key.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::reset_password(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		new_password.as_str(),
+		decrypted_private_key.as_str(),
+		decrypted_sign_key.as_str(),
+	))
 }
 
 pub fn change_password(base_url: String, auth_token: String, user_identifier: String, old_password: String, new_password: String) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::user::change_password(
-			base_url,
-			auth_token.as_str(),
-			user_identifier.as_str(),
-			old_password.as_str(),
-			new_password.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::change_password(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		old_password.as_str(),
+		new_password.as_str(),
+	))
 }
 
 pub fn delete_user(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::user::delete(
-			base_url,
-			auth_token.as_str(),
-			user_identifier.as_str(),
-			password.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::delete(
+		base_url,
+		auth_token.as_str(),
+		user_identifier.as_str(),
+		password.as_str(),
+	))
 }
 
 pub fn delete_device(base_url: String, auth_token: String, device_identifier: String, password: String, device_id: String) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::user::delete_device(
-			base_url,
-			auth_token.as_str(),
-			device_identifier.as_str(),
-			password.as_str(),
-			device_id.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::delete_device(
+		base_url,
+		auth_token.as_str(),
+		device_identifier.as_str(),
+		password.as_str(),
+		device_id.as_str(),
+	))
 }
 
 pub fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<()>
 {
-	rt(async {
-		//
-		sentc_crypto_full::user::update(base_url, auth_token.as_str(), jwt.as_str(), user_identifier).await
-	})
+	rt(sentc_crypto_full::user::update(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		user_identifier,
+	))
 }
 
 //__________________________________________________________________________________________________
@@ -652,10 +601,11 @@ pub struct UserPublicKeyData
 
 pub fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicKeyData>
 {
-	let (public_key, public_key_id) = rt(async {
-		//
-		sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await
-	})?;
+	let (public_key, public_key_id) = rt(sentc_crypto_full::user::fetch_user_public_key(
+		base_url,
+		auth_token.as_str(),
+		user_id.as_str(),
+	))?;
 
 	Ok(UserPublicKeyData {
 		public_key,
@@ -665,15 +615,12 @@ pub fn user_fetch_public_key(base_url: String, auth_token: String, user_id: Stri
 
 pub fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String, verify_key_id: String) -> Result<String>
 {
-	let key = rt(async {
-		sentc_crypto_full::user::fetch_user_verify_key_by_id(
-			base_url,
-			auth_token.as_str(),
-			user_id.as_str(),
-			verify_key_id.as_str(),
-		)
-		.await
-	})?;
+	let key = rt(sentc_crypto_full::user::fetch_user_verify_key_by_id(
+		base_url,
+		auth_token.as_str(),
+		user_id.as_str(),
+		verify_key_id.as_str(),
+	))?;
 
 	Ok(key)
 }
@@ -691,24 +638,22 @@ pub struct KeyRotationGetOut
 
 pub fn user_key_rotation(base_url: String, auth_token: String, jwt: String, public_device_key: String, pre_user_key: String) -> Result<String>
 {
-	rt(async {
-		sentc_crypto_full::user::key_rotation(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			public_device_key.as_str(),
-			pre_user_key.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		public_device_key.as_str(),
+		pre_user_key.as_str(),
+	))
 }
 
 pub fn user_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String) -> Result<Vec<KeyRotationGetOut>>
 {
-	let out = rt(async {
-		//
-		sentc_crypto_full::user::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str()).await
-	})?;
+	let out = rt(sentc_crypto_full::user::prepare_done_key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+	))?;
 
 	let mut list = Vec::with_capacity(out.len());
 
@@ -741,18 +686,15 @@ pub fn user_finish_key_rotation(
 	private_key: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::user::done_key_rotation(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			server_output.as_str(),
-			pre_group_key.as_str(),
-			public_key.as_str(),
-			private_key.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::user::done_key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		server_output.as_str(),
+		pre_group_key.as_str(),
+		public_key.as_str(),
+		private_key.as_str(),
+	))
 }
 
 //==================================================================================================
@@ -931,16 +873,13 @@ Only the default values are send to the server, no extra data. If extra data is 
  */
 pub fn group_create_group(base_url: String, auth_token: String, jwt: String, creators_public_key: String, group_as_member: String) -> Result<String>
 {
-	rt(async {
-		sentc_crypto_full::group::create(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			creators_public_key.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::create(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		creators_public_key.as_str(),
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_create_child_group(
@@ -953,18 +892,15 @@ pub fn group_create_child_group(
 	group_as_member: String,
 ) -> Result<String>
 {
-	rt(async {
-		sentc_crypto_full::group::create_child_group(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			parent_id.as_str(),
-			admin_rank,
-			parent_public_key.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::create_child_group(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		parent_id.as_str(),
+		admin_rank,
+		parent_public_key.as_str(),
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_create_connected_group(
@@ -977,18 +913,15 @@ pub fn group_create_connected_group(
 	group_as_member: String,
 ) -> Result<String>
 {
-	rt(async {
-		sentc_crypto_full::group::create_connected_group(
-			base_url,
-			&auth_token,
-			&jwt,
-			&connected_group_id,
-			admin_rank,
-			&parent_public_key,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::create_connected_group(
+		base_url,
+		&auth_token,
+		&jwt,
+		&connected_group_id,
+		admin_rank,
+		&parent_public_key,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 //__________________________________________________________________________________________________
@@ -1025,16 +958,13 @@ pub fn group_extract_group_keys(server_output: String) -> Result<Vec<GroupOutDat
 
 pub fn group_get_group_data(base_url: String, auth_token: String, jwt: String, id: String, group_as_member: String) -> Result<GroupOutData>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_group(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_group(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	Ok(out.into())
 }
@@ -1049,18 +979,15 @@ pub fn group_get_group_keys(
 	group_as_member: String,
 ) -> Result<Vec<GroupOutDataKeys>>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_group_keys(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			last_fetched_time.as_str(),
-			last_fetched_key_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_group_keys(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_key_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut keys = Vec::with_capacity(out.len());
 
@@ -1080,17 +1007,14 @@ pub fn group_get_group_key(
 	group_as_member: String,
 ) -> Result<GroupOutDataKeys>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_group_key(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			key_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_group_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		key_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	Ok(out.into())
 }
@@ -1192,18 +1116,15 @@ pub fn group_get_member(
 	group_as_member: String,
 ) -> Result<Vec<GroupUserListItem>>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_member(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			last_fetched_time.as_str(),
-			last_fetched_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_member(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut items = Vec::with_capacity(out.len());
 
@@ -1222,16 +1143,13 @@ pub fn group_get_group_updates(
 	group_as_member: String,
 ) -> Result<GroupDataCheckUpdateServerOutput>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_group_updates(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_group_updates(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	Ok(GroupDataCheckUpdateServerOutput {
 		key_update: out.key_update,
@@ -1249,18 +1167,15 @@ pub fn group_get_all_first_level_children(
 	group_as_member: String,
 ) -> Result<Vec<GroupChildrenList>>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_all_first_level_children(
-			base_url,
-			&auth_token,
-			&jwt,
-			&id,
-			&last_fetched_time,
-			&last_fetched_group_id,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_all_first_level_children(
+		base_url,
+		&auth_token,
+		&jwt,
+		&id,
+		&last_fetched_time,
+		&last_fetched_group_id,
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut list = Vec::with_capacity(out.len());
 
@@ -1280,17 +1195,14 @@ pub fn group_get_groups_for_user(
 	group_id: String,
 ) -> Result<Vec<ListGroups>>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_groups_for_user(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			last_fetched_time.as_str(),
-			last_fetched_group_id.as_str(),
-			get_group_as_member(&group_id),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_groups_for_user(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_group_id.as_str(),
+		get_group_as_member(&group_id),
+	))?;
 
 	let mut list = Vec::with_capacity(out.len());
 
@@ -1339,23 +1251,20 @@ pub fn group_invite_user(
 	group_as_member: String,
 ) -> Result<String>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::invite_user(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			user_id.as_str(),
-			key_count,
-			admin_rank,
-			auto_invite,
-			group_invite,
-			user_public_key.as_str(),
-			group_keys.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::invite_user(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		user_id.as_str(),
+		key_count,
+		admin_rank,
+		auto_invite,
+		group_invite,
+		user_public_key.as_str(),
+		group_keys.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	match out {
 		Some(id) => Ok(id),
@@ -1375,20 +1284,17 @@ pub fn group_invite_user_session(
 	group_as_member: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::invite_user_session(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			session_id.as_str(),
-			auto_invite,
-			user_public_key.as_str(),
-			group_keys.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::invite_user_session(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		session_id.as_str(),
+		auto_invite,
+		user_public_key.as_str(),
+		group_keys.as_str(),
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_get_invites_for_user(
@@ -1403,18 +1309,15 @@ pub fn group_get_invites_for_user(
 {
 	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
 
-	let out = rt(async {
-		sentc_crypto_full::group::get_invites_for_user(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			last_fetched_time.as_str(),
-			last_fetched_group_id.as_str(),
-			group_id,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_invites_for_user(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		last_fetched_time.as_str(),
+		last_fetched_group_id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut invites = Vec::with_capacity(out.len());
 
@@ -1429,34 +1332,28 @@ pub fn group_accept_invite(base_url: String, auth_token: String, jwt: String, id
 {
 	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
 
-	rt(async {
-		sentc_crypto_full::group::accept_invite(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			group_id,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::accept_invite(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_reject_invite(base_url: String, auth_token: String, jwt: String, id: String, group_id: String, group_as_member: String) -> Result<()>
 {
 	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
 
-	rt(async {
-		sentc_crypto_full::group::reject_invite(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			group_id,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::reject_invite(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 //__________________________________________________________________________________________________
@@ -1491,19 +1388,16 @@ pub fn group_get_sent_join_req_user(
 	group_as_member: String,
 ) -> Result<Vec<GroupInviteReqList>>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_sent_join_req(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			None,
-			None,
-			last_fetched_time.as_str(),
-			last_fetched_group_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_sent_join_req(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		None,
+		None,
+		last_fetched_time.as_str(),
+		last_fetched_group_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut invites = Vec::with_capacity(out.len());
 
@@ -1525,20 +1419,16 @@ pub fn group_get_sent_join_req(
 	group_as_member: String,
 ) -> Result<Vec<GroupInviteReqList>>
 {
-	let out = rt(async {
-		//
-		sentc_crypto_full::group::get_sent_join_req(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			Some(&id),
-			Some(admin_rank),
-			last_fetched_time.as_str(),
-			last_fetched_group_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_sent_join_req(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		Some(&id),
+		Some(admin_rank),
+		last_fetched_time.as_str(),
+		last_fetched_group_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut invites = Vec::with_capacity(out.len());
 
@@ -1557,18 +1447,15 @@ pub fn group_delete_sent_join_req_user(
 	group_as_member: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::delete_sent_join_req(
-			base_url,
-			&auth_token,
-			&jwt,
-			None,
-			None,
-			&join_req_group_id,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::delete_sent_join_req(
+		base_url,
+		&auth_token,
+		&jwt,
+		None,
+		None,
+		&join_req_group_id,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_delete_sent_join_req(
@@ -1581,35 +1468,29 @@ pub fn group_delete_sent_join_req(
 	group_as_member: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::delete_sent_join_req(
-			base_url,
-			&auth_token,
-			&jwt,
-			Some(&id),
-			Some(admin_rank),
-			&join_req_group_id,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::delete_sent_join_req(
+		base_url,
+		&auth_token,
+		&jwt,
+		Some(&id),
+		Some(admin_rank),
+		&join_req_group_id,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_join_req(base_url: String, auth_token: String, jwt: String, id: String, group_id: String, group_as_member: String) -> Result<()>
 {
 	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
 
-	rt(async {
-		sentc_crypto_full::group::join_req(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			group_id,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::join_req(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		group_id,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_get_join_reqs(
@@ -1623,19 +1504,16 @@ pub fn group_get_join_reqs(
 	group_as_member: String,
 ) -> Result<Vec<GroupJoinReqList>>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::get_join_reqs(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			admin_rank,
-			last_fetched_time.as_str(),
-			last_fetched_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::get_join_reqs(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		admin_rank,
+		last_fetched_time.as_str(),
+		last_fetched_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut list = Vec::with_capacity(out.len());
 
@@ -1656,18 +1534,15 @@ pub fn group_reject_join_req(
 	group_as_member: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::reject_join_req(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			admin_rank,
-			rejected_user_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::reject_join_req(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		admin_rank,
+		rejected_user_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_accept_join_req(
@@ -1683,21 +1558,18 @@ pub fn group_accept_join_req(
 	group_as_member: String,
 ) -> Result<String>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::accept_join_req(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			user_id.as_str(),
-			key_count,
-			admin_rank,
-			user_public_key.as_str(),
-			group_keys.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::accept_join_req(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		user_id.as_str(),
+		key_count,
+		admin_rank,
+		user_public_key.as_str(),
+		group_keys.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	match out {
 		Some(id) => Ok(id),
@@ -1734,33 +1606,27 @@ pub fn group_join_user_session(
 pub fn group_stop_group_invites(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32, group_as_member: String)
 	-> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::stop_group_invites(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			admin_rank,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::stop_group_invites(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		admin_rank,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 //__________________________________________________________________________________________________
 
 pub fn leave_group(base_url: String, auth_token: String, jwt: String, id: String, group_as_member: String) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::leave_group(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::leave_group(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		get_group_as_member(&group_as_member),
+	))
 }
 
 //__________________________________________________________________________________________________
@@ -1792,19 +1658,16 @@ pub fn group_key_rotation(
 	group_as_member: String,
 ) -> Result<String>
 {
-	rt(async {
-		sentc_crypto_full::group::key_rotation(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			public_key.as_str(),
-			pre_group_key.as_str(),
-			false,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		public_key.as_str(),
+		pre_group_key.as_str(),
+		false,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_pre_done_key_rotation(
@@ -1815,17 +1678,14 @@ pub fn group_pre_done_key_rotation(
 	group_as_member: String,
 ) -> Result<Vec<KeyRotationGetOut>>
 {
-	let out = rt(async {
-		sentc_crypto_full::group::prepare_done_key_rotation(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			false,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::group::prepare_done_key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		false,
+		get_group_as_member(&group_as_member),
+	))?;
 
 	let mut list = Vec::with_capacity(out.len());
 
@@ -1860,21 +1720,18 @@ pub fn group_finish_key_rotation(
 	group_as_member: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::done_key_rotation(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			server_output.as_str(),
-			pre_group_key.as_str(),
-			public_key.as_str(),
-			private_key.as_str(),
-			false,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::done_key_rotation(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		server_output.as_str(),
+		pre_group_key.as_str(),
+		public_key.as_str(),
+		private_key.as_str(),
+		false,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 //__________________________________________________________________________________________________
@@ -1896,19 +1753,16 @@ pub fn group_update_rank(
 	group_as_member: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::update_rank(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			user_id.as_str(),
-			rank,
-			admin_rank,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::update_rank(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		user_id.as_str(),
+		rank,
+		admin_rank,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_kick_user(
@@ -1921,49 +1775,39 @@ pub fn group_kick_user(
 	group_as_member: String,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::kick_user(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			user_id.as_str(),
-			admin_rank,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::kick_user(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		user_id.as_str(),
+		admin_rank,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 //__________________________________________________________________________________________________
 
 pub fn group_delete_group(base_url: String, auth_token: String, jwt: String, id: String, admin_rank: i32, group_as_member: String) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::group::delete_group(
-			//
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			id.as_str(),
-			admin_rank,
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::group::delete_group(
+		//
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		id.as_str(),
+		admin_rank,
+		get_group_as_member(&group_as_member),
+	))
 }
 
 pub fn group_get_public_key_data(base_url: String, auth_token: String, id: String) -> Result<UserPublicKeyData>
 {
-	let (public_key, public_key_id) = rt(async {
-		sentc_crypto_full::group::get_public_key_data(
-			//
-			base_url,
-			auth_token.as_str(),
-			&id,
-		)
-		.await
-	})?;
+	let (public_key, public_key_id) = rt(sentc_crypto_full::group::get_public_key_data(
+		base_url,
+		auth_token.as_str(),
+		&id,
+	))?;
 
 	Ok(UserPublicKeyData {
 		public_key,
@@ -2176,10 +2020,12 @@ pub struct KeyGenOutput
 
 pub fn generate_and_register_sym_key(base_url: String, auth_token: String, jwt: String, master_key: String) -> Result<KeyGenOutput>
 {
-	let (key_id, key) = rt(async {
-		//
-		sentc_crypto_full::crypto::register_sym_key(base_url, auth_token.as_str(), jwt.as_str(), master_key.as_str()).await
-	})?;
+	let (key_id, key) = rt(sentc_crypto_full::crypto::register_sym_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		master_key.as_str(),
+	))?;
 
 	Ok(KeyGenOutput {
 		key,
@@ -2189,17 +2035,12 @@ pub fn generate_and_register_sym_key(base_url: String, auth_token: String, jwt: 
 
 pub fn generate_and_register_sym_key_by_public_key(base_url: String, auth_token: String, jwt: String, public_key: String) -> Result<KeyGenOutput>
 {
-	let (key_id, key) = rt(async {
-		//
-		sentc_crypto_full::crypto::register_key_by_public_key(
-			//
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			public_key.as_str(),
-		)
-		.await
-	})?;
+	let (key_id, key) = rt(sentc_crypto_full::crypto::register_key_by_public_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		public_key.as_str(),
+	))?;
 
 	Ok(KeyGenOutput {
 		key,
@@ -2209,18 +2050,22 @@ pub fn generate_and_register_sym_key_by_public_key(base_url: String, auth_token:
 
 pub fn get_sym_key_by_id(base_url: String, auth_token: String, key_id: String, master_key: String) -> Result<String>
 {
-	rt(async {
-		//
-		sentc_crypto_full::crypto::get_sym_key_by_id(base_url, auth_token.as_str(), key_id.as_str(), master_key.as_str()).await
-	})
+	rt(sentc_crypto_full::crypto::get_sym_key_by_id(
+		base_url,
+		auth_token.as_str(),
+		key_id.as_str(),
+		master_key.as_str(),
+	))
 }
 
 pub fn get_sym_key_by_id_by_private_key(base_url: String, auth_token: String, key_id: String, private_key: String) -> Result<String>
 {
-	rt(async {
-		//
-		sentc_crypto_full::crypto::get_sym_key_by_id_by_private_key(base_url, auth_token.as_str(), key_id.as_str(), private_key.as_str()).await
-	})
+	rt(sentc_crypto_full::crypto::get_sym_key_by_id_by_private_key(
+		base_url,
+		auth_token.as_str(),
+		key_id.as_str(),
+		private_key.as_str(),
+	))
 }
 
 //__________________________________________________________________________________________________
@@ -2242,17 +2087,14 @@ pub fn get_keys_for_master_key(
 	master_key: String,
 ) -> Result<KeysToMasterKeyFetch>
 {
-	let (keys, last_fetched_time, last_key_id) = rt(async {
-		sentc_crypto_full::crypto::get_keys_for_master_key(
-			base_url,
-			auth_token.as_str(),
-			master_key_id.as_str(),
-			last_fetched_time.as_str(),
-			last_key_id.as_str(),
-			master_key.as_str(),
-		)
-		.await
-	})?;
+	let (keys, last_fetched_time, last_key_id) = rt(sentc_crypto_full::crypto::get_keys_for_master_key(
+		base_url,
+		auth_token.as_str(),
+		master_key_id.as_str(),
+		last_fetched_time.as_str(),
+		last_key_id.as_str(),
+		master_key.as_str(),
+	))?;
 
 	Ok(KeysToMasterKeyFetch {
 		last_fetched_time: last_fetched_time.to_string(),
@@ -2263,10 +2105,12 @@ pub fn get_keys_for_master_key(
 
 pub fn delete_sym_key(base_url: String, auth_token: String, jwt: String, key_id: String) -> Result<()>
 {
-	rt(async {
-		//
-		sentc_crypto_full::crypto::delete_key(base_url, auth_token.as_str(), jwt.as_str(), key_id.as_str()).await
-	})
+	rt(sentc_crypto_full::crypto::delete_key(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		key_id.as_str(),
+	))
 }
 
 //__________________________________________________________________________________________________
@@ -2319,21 +2163,18 @@ pub fn search(
 {
 	let cat_id = if cat_id.is_empty() { None } else { Some(cat_id.as_str()) };
 
-	let out = rt(async {
-		sentc_crypto_full::crypto::search(
-			base_url,
-			&auth_token,
-			&jwt,
-			&group_id,
-			get_group_as_member(&group_as_member),
-			cat_id,
-			&key,
-			&data,
-			&last_fetched_time,
-			&last_fetched_group_id,
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::crypto::search(
+		base_url,
+		&auth_token,
+		&jwt,
+		&group_id,
+		get_group_as_member(&group_as_member),
+		cat_id,
+		&key,
+		&data,
+		&last_fetched_time,
+		&last_fetched_group_id,
+	))?;
 
 	let mut items = Vec::with_capacity(out.len());
 
@@ -2432,17 +2273,14 @@ pub fn file_download_file_meta(
 	group_as_member: String,
 ) -> Result<FileData>
 {
-	let out = rt(async {
-		sentc_crypto_full::file::download_file_meta(
-			base_url,
-			auth_token.as_str(),
-			id.as_str(),
-			jwt.as_str(),
-			group_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::file::download_file_meta(
+		base_url,
+		auth_token.as_str(),
+		id.as_str(),
+		jwt.as_str(),
+		group_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	Ok(out.into())
 }
@@ -2456,32 +2294,26 @@ pub fn file_download_and_decrypt_file_part(
 	verify_key_data: String,
 ) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = rt(async {
-		sentc_crypto_full::file::download_and_decrypt_file_part(
-			base_url,
-			url_prefix,
-			auth_token.as_str(),
-			part_id.as_str(),
-			content_key.as_str(),
-			verify_key_data.as_str(),
-		)
-		.await
-	})?;
+	let vec = rt(sentc_crypto_full::file::download_and_decrypt_file_part(
+		base_url,
+		url_prefix,
+		auth_token.as_str(),
+		part_id.as_str(),
+		content_key.as_str(),
+		verify_key_data.as_str(),
+	))?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn file_download_part_list(base_url: String, auth_token: String, file_id: String, last_sequence: String) -> Result<Vec<FilePartListItem>>
 {
-	let out = rt(async {
-		sentc_crypto_full::file::download_part_list(
-			base_url,
-			auth_token.as_str(),
-			file_id.as_str(),
-			last_sequence.as_str(),
-		)
-		.await
-	})?;
+	let out = rt(sentc_crypto_full::file::download_part_list(
+		base_url,
+		auth_token.as_str(),
+		file_id.as_str(),
+		last_sequence.as_str(),
+	))?;
 
 	let mut part_list = Vec::with_capacity(out.len());
 
@@ -2529,21 +2361,18 @@ pub fn file_register_file(
 	group_as_member: String,
 ) -> Result<FileRegisterOutput>
 {
-	let (file_id, session_id, encrypted_file_name) = rt(async {
-		sentc_crypto_full::file::register_file(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			master_key_id,
-			content_key.as_str(),
-			belongs_to_id.as_str(),
-			belongs_to_type.as_str(),
-			file_name.as_str(),
-			group_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})?;
+	let (file_id, session_id, encrypted_file_name) = rt(sentc_crypto_full::file::register_file(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		master_key_id,
+		content_key.as_str(),
+		belongs_to_id.as_str(),
+		belongs_to_type.as_str(),
+		file_name.as_str(),
+		group_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))?;
 
 	Ok(FileRegisterOutput {
 		file_id,
@@ -2598,52 +2427,43 @@ pub fn file_upload_part(
 	part: Vec<u8>,
 ) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::file::upload_part(
-			base_url,
-			url_prefix,
-			auth_token.as_str(),
-			jwt.as_str(),
-			session_id.as_str(),
-			end,
-			sequence,
-			content_key.as_str(),
-			sign_key.as_str(),
-			&part,
-		)
-		.await
-	})
+	rt(sentc_crypto_full::file::upload_part(
+		base_url,
+		url_prefix,
+		auth_token.as_str(),
+		jwt.as_str(),
+		session_id.as_str(),
+		end,
+		sequence,
+		content_key.as_str(),
+		sign_key.as_str(),
+		&part,
+	))
 }
 
 pub fn file_file_name_update(base_url: String, auth_token: String, jwt: String, file_id: String, content_key: String, file_name: String)
 	-> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::file::update_file_name(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			file_id.as_str(),
-			content_key.as_str(),
-			file_name.as_str(),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::file::update_file_name(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		file_id.as_str(),
+		content_key.as_str(),
+		file_name.as_str(),
+	))
 }
 
 pub fn file_delete_file(base_url: String, auth_token: String, jwt: String, file_id: String, group_id: String, group_as_member: String) -> Result<()>
 {
-	rt(async {
-		sentc_crypto_full::file::delete_file(
-			base_url,
-			auth_token.as_str(),
-			jwt.as_str(),
-			file_id.as_str(),
-			group_id.as_str(),
-			get_group_as_member(&group_as_member),
-		)
-		.await
-	})
+	rt(sentc_crypto_full::file::delete_file(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		file_id.as_str(),
+		group_id.as_str(),
+		get_group_as_member(&group_as_member),
+	))
 }
 
 #[inline(never)]
