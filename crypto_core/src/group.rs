@@ -48,7 +48,7 @@ pub struct PrepareGroupKeysForNewMemberOutput
 }
 
 #[cfg(feature = "argon2_aes_ecies_ed25519")]
-fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) -> Result<CreateGroupOutput, Error>
+fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) -> Result<(CreateGroupOutput, SymKey), Error>
 {
 	//1. create the keys:
 	//	1. master symmetric key
@@ -79,22 +79,25 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 		HmacKey::HmacSha256(k) => sym::aes_gcm::encrypt_with_generated_key(raw_group_key, k)?,
 	};
 
-	Ok(CreateGroupOutput {
-		encrypted_group_key,
-		encrypted_private_group_key,
-		public_group_key: keypair.pk,
-		group_key_alg: group_key.alg,
-		keypair_encrypt_alg: keypair.alg,
-		encrypted_hmac_key,
-		encrypted_hmac_alg: searchable_encryption.alg,
-		encrypted_group_key_alg,
-		verify_key,
-		encrypted_sign_key,
-		keypair_sign_alg,
-	})
+	Ok((
+		CreateGroupOutput {
+			encrypted_group_key,
+			encrypted_private_group_key,
+			public_group_key: keypair.pk,
+			group_key_alg: group_key.alg,
+			keypair_encrypt_alg: keypair.alg,
+			encrypted_hmac_key,
+			encrypted_hmac_alg: searchable_encryption.alg,
+			encrypted_group_key_alg,
+			verify_key,
+			encrypted_sign_key,
+			keypair_sign_alg,
+		},
+		group_key.key, //return the group key extra because it is not encrypted and should not leave the device
+	))
 }
 
-pub fn prepare_create(creators_public_key: &Pk, user_group: bool) -> Result<CreateGroupOutput, Error>
+pub fn prepare_create(creators_public_key: &Pk, user_group: bool) -> Result<(CreateGroupOutput, SymKey), Error>
 {
 	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	prepare_create_aes_ecies_ed25519(creators_public_key, user_group)
@@ -402,6 +405,8 @@ mod test
 		let (pk, login_out) = create_dummy_user();
 
 		let group_out = prepare_create(&pk, false).unwrap();
+		let created_key = group_out.1;
+		let group_out = group_out.0;
 
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		assert_eq!(group_out.group_key_alg, AES_GCM_OUTPUT);
@@ -424,6 +429,12 @@ mod test
 
 		assert_eq!(decrypted, text.as_bytes());
 
+		//test decrypt with group returned group key after create
+		let encrypted = encrypt_symmetric(&created_key, text.as_bytes()).unwrap();
+		let decrypted = decrypt_symmetric(&created_key, &encrypted).unwrap();
+
+		assert_eq!(decrypted, text.as_bytes());
+
 		let decrypted_text = from_utf8(&decrypted).unwrap();
 		assert_eq!(decrypted_text, text);
 
@@ -441,7 +452,7 @@ mod test
 	{
 		let (pk, login_out) = create_dummy_user();
 
-		let group_out = prepare_create(&pk, false).unwrap();
+		let group_out = prepare_create(&pk, false).unwrap().0;
 
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		assert_eq!(group_out.group_key_alg, AES_GCM_OUTPUT);
@@ -517,7 +528,7 @@ mod test
 		let (user_1_pk, user_1_out) = create_dummy_user();
 		let (user_2_pk, user_2_out) = create_dummy_user();
 
-		let group_out = prepare_create(&user_1_pk, false).unwrap();
+		let group_out = prepare_create(&user_1_pk, false).unwrap().0;
 		let (group_key, _group_pri_key) = get_group(
 			&user_1_out.private_key,
 			&group_out.encrypted_group_key,

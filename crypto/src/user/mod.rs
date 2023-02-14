@@ -148,7 +148,7 @@ fn register_internally(user_identifier: &str, password: &str) -> Result<String, 
 	};
 
 	//6.2 create a group
-	let group = group::prepare_create_private_internally(&group_public_key, true)?;
+	let (group, _, _) = group::prepare_create_private_internally(&group_public_key, true)?;
 
 	let register_out = RegisterData {
 		device,

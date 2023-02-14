@@ -53,6 +53,13 @@ pub struct GroupOutDataLight
 
 pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, SdkError>
 {
+	let out = prepare_create_internally(creators_public_key)?;
+
+	Ok(out.0)
+}
+
+pub fn prepare_create_batch(creators_public_key: &PublicKeyFormat) -> Result<(String, PublicKeyFormat, SymKeyFormat), SdkError>
+{
 	prepare_create_internally(creators_public_key)
 }
 

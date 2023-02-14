@@ -56,6 +56,7 @@ pub use self::group::{
 	key_rotation,
 	prepare_change_rank,
 	prepare_create,
+	prepare_create_batch,
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_via_session,
 	GroupKeyData,
@@ -86,6 +87,7 @@ pub use self::group_rust::{
 	key_rotation,
 	prepare_change_rank,
 	prepare_create,
+	prepare_create_batch,
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_via_session,
 	GroupOutData,
@@ -115,11 +117,15 @@ fn get_access_by(access_by: GroupUserAccessBy) -> (Option<GroupId>, Option<Group
 	}
 }
 
-fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
+fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<(String, PublicKeyFormatInt, SymKeyFormatInt), SdkError>
 {
 	let out = prepare_create_private_internally(creators_public_key, false)?;
+	let input = out
+		.0
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)?;
 
-	out.to_string().map_err(|_| SdkError::JsonToStringFailed)
+	Ok((input, out.1, out.2))
 }
 
 /**
@@ -127,10 +133,15 @@ Prepare the server input for the group creation.
 
 Use the public key of the group for creating a child group.
 */
-pub(crate) fn prepare_create_private_internally(creators_public_key: &PublicKeyFormatInt, user_group: bool) -> Result<CreateData, SdkError>
+pub(crate) fn prepare_create_private_internally(
+	creators_public_key: &PublicKeyFormatInt,
+	user_group: bool,
+) -> Result<(CreateData, PublicKeyFormatInt, SymKeyFormatInt), SdkError>
 {
 	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
 	let out = core_group::prepare_create(&creators_public_key.key, user_group)?;
+	let created_group_key = out.1;
+	let out = out.0;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
@@ -179,7 +190,19 @@ pub(crate) fn prepare_create_private_internally(creators_public_key: &PublicKeyF
 		keypair_sign_alg,
 	};
 
-	Ok(create_out)
+	//return the non registered version of the group key and the public group key to use it
+	// to create child groups or connect to a group without register the group
+	let group_public_key_int = PublicKeyFormatInt {
+		key: out.public_group_key,
+		key_id: "non_registered".to_string(),
+	};
+
+	let created_group_key = SymKeyFormatInt {
+		key: created_group_key,
+		key_id: "non_registered".to_string(),
+	};
+
+	Ok((create_out, group_public_key_int, created_group_key))
 }
 
 fn key_rotation_internally(
