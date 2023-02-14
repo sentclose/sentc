@@ -112,7 +112,21 @@ pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 {
 	let creators_public_key = import_public_key(creators_public_key)?;
 
-	Ok(prepare_create_internally(&creators_public_key)?)
+	let out = prepare_create_internally(&creators_public_key)?;
+
+	Ok(out.0)
+}
+
+pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String, String), String>
+{
+	let creators_public_key = import_public_key(creators_public_key)?;
+
+	let out = prepare_create_internally(&creators_public_key)?;
+
+	let public_key = export_public_key_to_string(out.1)?;
+	let group_key = export_sym_key_to_string(out.2)?;
+
+	Ok((out.0, public_key, group_key))
 }
 
 pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str, user_group: bool) -> Result<String, String>
