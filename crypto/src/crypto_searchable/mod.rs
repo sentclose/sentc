@@ -3,7 +3,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use base64ct::{Base64UrlUnpadded, Encoding};
-use sentc_crypto_common::content_searchable::SearchCreateData;
+use sentc_crypto_common::content_searchable::{SearchCreateData, SearchCreateDataLight};
 use sentc_crypto_core::getting_alg_from_hmac_key;
 
 use crate::util::HmacKeyFormatInt;
@@ -15,9 +15,9 @@ mod crypto_searchable;
 mod crypto_searchable_rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::crypto_searchable::{create_searchable, search};
+pub use self::crypto_searchable::{create_searchable, prepare_create_searchable, prepare_create_searchable_light, search};
 #[cfg(feature = "rust")]
-pub use self::crypto_searchable_rust::{create_searchable, search};
+pub use self::crypto_searchable_rust::{create_searchable, prepare_create_searchable, prepare_create_searchable_light, search};
 
 fn search_internally(key: &HmacKeyFormatInt, data: &str) -> Result<String, SdkError>
 {
@@ -33,19 +33,47 @@ fn create_searchable_internally(
 	limit: Option<usize>,
 ) -> Result<String, SdkError>
 {
+	let out = prepare_create_searchable_internally(key, item_ref, category, data, full, limit)?;
+
+	serde_json::to_string(&out).map_err(|_| SdkError::JsonToStringFailed)
+}
+
+fn prepare_create_searchable_internally(
+	key: &HmacKeyFormatInt,
+	item_ref: &str,
+	category: Option<&str>,
+	data: &str,
+	full: bool,
+	limit: Option<usize>,
+) -> Result<SearchCreateData, SdkError>
+{
 	let hashes = hash_full_internally(key, data, full, limit)?;
 
 	let category = if let Some(c) = category { Some(c.to_string()) } else { None };
 
-	let out = SearchCreateData {
+	Ok(SearchCreateData {
 		category,
 		item_ref: item_ref.to_string(),
 		hashes,
 		alg: getting_alg_from_hmac_key(&key.key).to_string(),
 		key_id: key.key_id.to_string(),
-	};
+	})
+}
 
-	serde_json::to_string(&out).map_err(|_| SdkError::JsonToStringFailed)
+fn prepare_create_searchable_light_internally(
+	key: &HmacKeyFormatInt,
+	data: &str,
+	full: bool,
+	limit: Option<usize>,
+) -> Result<SearchCreateDataLight, SdkError>
+{
+	let hashes = hash_full_internally(key, data, full, limit)?;
+
+	Ok(SearchCreateDataLight {
+		hashes,
+		alg: getting_alg_from_hmac_key(&key.key).to_string(),
+		key_id: key.key_id.to_string(),
+	})
 }
 
 fn hash_full_internally(key: &HmacKeyFormatInt, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, SdkError>

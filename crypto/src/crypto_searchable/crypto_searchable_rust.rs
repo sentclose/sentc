@@ -1,6 +1,13 @@
 use alloc::string::String;
 
-use crate::crypto_searchable::{create_searchable_internally, search_internally};
+use sentc_crypto_common::content_searchable::{SearchCreateData, SearchCreateDataLight};
+
+use crate::crypto_searchable::{
+	create_searchable_internally,
+	prepare_create_searchable_internally,
+	prepare_create_searchable_light_internally,
+	search_internally,
+};
 use crate::util::HmacKeyFormat;
 use crate::SdkError;
 
@@ -14,6 +21,23 @@ pub fn create_searchable(
 ) -> Result<String, SdkError>
 {
 	create_searchable_internally(key, item_ref, category, data, full, limit)
+}
+
+pub fn prepare_create_searchable(
+	key: &HmacKeyFormat,
+	item_ref: &str,
+	category: Option<&str>,
+	data: &str,
+	full: bool,
+	limit: Option<usize>,
+) -> Result<SearchCreateData, SdkError>
+{
+	prepare_create_searchable_internally(&key, item_ref, category, data, full, limit)
+}
+
+pub fn prepare_create_searchable_light(key: &HmacKeyFormat, data: &str, full: bool, limit: Option<usize>) -> Result<SearchCreateDataLight, SdkError>
+{
+	prepare_create_searchable_light_internally(&key, data, full, limit)
 }
 
 pub fn search(key: &HmacKeyFormat, data: &str) -> Result<String, SdkError>
