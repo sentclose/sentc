@@ -1,6 +1,7 @@
 /target
 .idea/
 storage/
+.run_config/
 
 # local env files
 .env
