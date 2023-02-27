@@ -182,13 +182,10 @@ fn encrypt_raw_symmetric_internally(
 	let mut encrypted = crypto_core::encrypt_symmetric(&key.key, data)?;
 
 	//sign the data
-	match sign_key {
-		None => {},
-		Some(sk) => {
-			let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
-			encrypted = data_with_sign;
-			encrypt_head.sign = sign_head;
-		},
+	if let Some(sk) = sign_key {
+		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
+		encrypted = data_with_sign;
+		encrypt_head.sign = sign_head;
 	}
 
 	Ok((encrypt_head, encrypted))
@@ -241,13 +238,10 @@ fn encrypt_raw_asymmetric_internally(
 	let mut encrypted = crypto_core::encrypt_asymmetric(&public_key, data)?;
 
 	//sign the data
-	match sign_key {
-		None => {},
-		Some(sk) => {
-			let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
-			encrypted = data_with_sign;
-			encrypt_head.sign = sign_head;
-		},
+	if let Some(sk) = sign_key {
+		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
+		encrypted = data_with_sign;
+		encrypt_head.sign = sign_head;
 	}
 
 	Ok((encrypt_head, encrypted))
