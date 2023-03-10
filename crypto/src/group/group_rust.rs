@@ -1,7 +1,15 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput, GroupLightServerData, GroupServerData, KeyRotationInput};
+use sentc_crypto_common::group::{
+	CreateData,
+	GroupHmacData,
+	GroupKeyServerOutput,
+	GroupKeysForNewMemberServerInput,
+	GroupLightServerData,
+	GroupServerData,
+	KeyRotationInput,
+};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::GroupId;
 
@@ -16,7 +24,9 @@ use crate::group::{
 	key_rotation_internally,
 	prepare_change_rank_internally,
 	prepare_create_internally,
+	prepare_create_typed_internally,
 	prepare_group_keys_for_new_member_internally,
+	prepare_group_keys_for_new_member_typed_internally,
 	prepare_group_keys_for_new_member_via_session_internally,
 	GroupKeyData,
 };
@@ -51,11 +61,23 @@ pub struct GroupOutDataLight
 	pub is_connected_group: bool,
 }
 
+pub fn prepare_create_typed(creators_public_key: &PublicKeyFormat) -> Result<CreateData, SdkError>
+{
+	let out = prepare_create_typed_internally(creators_public_key)?;
+
+	Ok(out.0)
+}
+
 pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, SdkError>
 {
 	let out = prepare_create_internally(creators_public_key)?;
 
 	Ok(out.0)
+}
+
+pub fn prepare_create_batch_typed(creators_public_key: &PublicKeyFormat) -> Result<(CreateData, PublicKeyFormat, SymKeyFormat), SdkError>
+{
+	prepare_create_typed_internally(creators_public_key)
 }
 
 pub fn prepare_create_batch(creators_public_key: &PublicKeyFormat) -> Result<(String, PublicKeyFormat, SymKeyFormat), SdkError>
@@ -140,6 +162,15 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 		access_by_parent_group,
 		is_connected_group: server_output.is_connected_group,
 	})
+}
+
+pub fn prepare_group_keys_for_new_member_typed(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormat],
+	key_session: bool,
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
+{
+	prepare_group_keys_for_new_member_typed_internally(requester_public_key_data, group_keys, key_session)
 }
 
 pub fn prepare_group_keys_for_new_member(
