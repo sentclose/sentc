@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_common::user::{RegisterData, UserPublicKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
@@ -20,6 +20,7 @@ use crate::user::{
 	prepare_register_device_start_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
+	register_typed_internally,
 	reset_password_internally,
 };
 use crate::util::{PrivateKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData};
@@ -38,6 +39,11 @@ pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool,
 pub fn generate_user_register_data() -> Result<(String, String), SdkError>
 {
 	generate_user_register_data_internally()
+}
+
+pub fn register_typed(user_identifier: &str, password: &str) -> Result<RegisterData, String>
+{
+	Ok(register_typed_internally(user_identifier, password)?)
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
