@@ -1,7 +1,15 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput, GroupLightServerData, GroupServerData, KeyRotationInput};
+use sentc_crypto_common::group::{
+	CreateData,
+	GroupHmacData,
+	GroupKeyServerOutput,
+	GroupKeysForNewMemberServerInput,
+	GroupLightServerData,
+	GroupServerData,
+	KeyRotationInput,
+};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
 use serde::{Deserialize, Serialize};
@@ -18,7 +26,9 @@ use crate::group::{
 	key_rotation_internally,
 	prepare_change_rank_internally,
 	prepare_create_internally,
+	prepare_create_typed_internally,
 	prepare_group_keys_for_new_member_internally,
+	prepare_group_keys_for_new_member_typed_internally,
 	prepare_group_keys_for_new_member_via_session_internally,
 };
 use crate::util::public::handle_server_response;
@@ -108,6 +118,15 @@ pub struct GroupOutDataHmacKeys
 	pub key_data: String, //serde string
 }
 
+pub fn prepare_create_typed(creators_public_key: &str) -> Result<CreateData, String>
+{
+	let creators_public_key = import_public_key(creators_public_key)?;
+
+	let out = prepare_create_typed_internally(&creators_public_key)?;
+
+	Ok(out.0)
+}
+
 pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 {
 	let creators_public_key = import_public_key(creators_public_key)?;
@@ -115,6 +134,18 @@ pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 	let out = prepare_create_internally(&creators_public_key)?;
 
 	Ok(out.0)
+}
+
+pub fn prepare_create_batch_typed(creators_public_key: &str) -> Result<(CreateData, String, String), String>
+{
+	let creators_public_key = import_public_key(creators_public_key)?;
+
+	let out = prepare_create_typed_internally(&creators_public_key)?;
+
+	let public_key = export_public_key_to_string(out.1)?;
+	let group_key = export_sym_key_to_string(out.2)?;
+
+	Ok((out.0, public_key, group_key))
 }
 
 pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String, String), String>
@@ -322,20 +353,42 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 	})
 }
 
+pub fn prepare_group_keys_for_new_member_typed(
+	requester_public_key_data: &str,
+	group_keys: &str,
+	key_session: bool,
+) -> Result<GroupKeysForNewMemberServerInput, String>
+{
+	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
+
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
+
+	//split group key and id
+	let saved_keys = group_keys
+		.iter()
+		.map(import_sym_key_from_format)
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+
+	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
+
+	Ok(prepare_group_keys_for_new_member_typed_internally(
+		&requester_public_key_data,
+		&split_group_keys,
+		key_session,
+	)?)
+}
+
 pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str, key_session: bool) -> Result<String, String>
 {
 	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
 
 	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
 
-	let mut saved_keys = Vec::with_capacity(group_keys.len());
-
 	//split group key and id
-	for group_key in group_keys {
-		let key = import_sym_key_from_format(&group_key)?;
-
-		saved_keys.push(key);
-	}
+	let saved_keys = group_keys
+		.iter()
+		.map(import_sym_key_from_format)
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -352,14 +405,11 @@ pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: 
 
 	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
 
-	let mut saved_keys = Vec::with_capacity(group_keys.len());
-
 	//split group key and id
-	for group_key in group_keys {
-		let key = import_sym_key_from_format(&group_key)?;
-
-		saved_keys.push(key);
-	}
+	let saved_keys = group_keys
+		.iter()
+		.map(import_sym_key_from_format)
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 

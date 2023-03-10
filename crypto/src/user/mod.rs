@@ -79,6 +79,7 @@ pub use self::user::{
 	prepare_register_device_start,
 	prepare_user_identifier_update,
 	register,
+	register_typed,
 	reset_password,
 	MasterKeyFormat,
 };
@@ -100,6 +101,7 @@ pub use self::user_rust::{
 	prepare_register_device_start,
 	prepare_user_identifier_update,
 	register,
+	register_typed,
 	reset_password,
 };
 
@@ -135,7 +137,7 @@ fn generate_user_register_data_internally() -> Result<(String, String), SdkError
 /**
 # Prepare the register input incl. keys
 */
-fn register_internally(user_identifier: &str, password: &str) -> Result<String, SdkError>
+fn register_typed_internally(user_identifier: &str, password: &str) -> Result<RegisterData, SdkError>
 {
 	let (device, raw_public_key) = prepare_register_device_private_internally(user_identifier, password)?;
 
@@ -150,10 +152,15 @@ fn register_internally(user_identifier: &str, password: &str) -> Result<String, 
 	//6.2 create a group
 	let (group, _, _) = group::prepare_create_private_internally(&group_public_key, true)?;
 
-	let register_out = RegisterData {
+	Ok(RegisterData {
 		device,
 		group,
-	};
+	})
+}
+
+fn register_internally(user_identifier: &str, password: &str) -> Result<String, SdkError>
+{
+	let register_out = register_typed_internally(user_identifier, password)?;
 
 	//use always to string, even for rust feature enable because this data is for the server
 	register_out

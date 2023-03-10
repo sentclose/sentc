@@ -57,7 +57,10 @@ pub use self::group::{
 	prepare_change_rank,
 	prepare_create,
 	prepare_create_batch,
+	prepare_create_batch_typed,
+	prepare_create_typed,
 	prepare_group_keys_for_new_member,
+	prepare_group_keys_for_new_member_typed,
 	prepare_group_keys_for_new_member_via_session,
 	GroupKeyData,
 	GroupOutData,
@@ -88,7 +91,10 @@ pub use self::group_rust::{
 	prepare_change_rank,
 	prepare_create,
 	prepare_create_batch,
+	prepare_create_batch_typed,
+	prepare_create_typed,
 	prepare_group_keys_for_new_member,
+	prepare_group_keys_for_new_member_typed,
 	prepare_group_keys_for_new_member_via_session,
 	GroupOutData,
 	GroupOutDataLight,
@@ -115,6 +121,11 @@ fn get_access_by(access_by: GroupUserAccessBy) -> (Option<GroupId>, Option<Group
 			group_as_user,
 		} => (Some(group_as_user), Some(parent)),
 	}
+}
+
+fn prepare_create_typed_internally(creators_public_key: &PublicKeyFormatInt) -> Result<(CreateData, PublicKeyFormatInt, SymKeyFormatInt), SdkError>
+{
+	prepare_create_private_internally(creators_public_key, false)
 }
 
 fn prepare_create_internally(creators_public_key: &PublicKeyFormatInt) -> Result<(String, PublicKeyFormatInt, SymKeyFormatInt), SdkError>
@@ -392,6 +403,15 @@ pub(crate) fn decrypt_group_keys_internally(
 		},
 		time: server_output.time,
 	})
+}
+
+fn prepare_group_keys_for_new_member_typed_internally(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymKeyFormatInt],
+	key_session: bool, //this value must be set form each sdk impl from key storage when more than 100 keys are used
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
+{
+	prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session)
 }
 
 fn prepare_group_keys_for_new_member_internally(
