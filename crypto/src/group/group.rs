@@ -363,14 +363,11 @@ pub fn prepare_group_keys_for_new_member_typed(
 
 	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
 
-	let mut saved_keys = Vec::with_capacity(group_keys.len());
-
 	//split group key and id
-	for group_key in group_keys {
-		let key = import_sym_key_from_format(&group_key)?;
-
-		saved_keys.push(key);
-	}
+	let saved_keys = group_keys
+		.iter()
+		.map(import_sym_key_from_format)
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -387,14 +384,11 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 
 	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
 
-	let mut saved_keys = Vec::with_capacity(group_keys.len());
-
 	//split group key and id
-	for group_key in group_keys {
-		let key = import_sym_key_from_format(&group_key)?;
-
-		saved_keys.push(key);
-	}
+	let saved_keys = group_keys
+		.iter()
+		.map(import_sym_key_from_format)
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -411,14 +405,11 @@ pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: 
 
 	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
 
-	let mut saved_keys = Vec::with_capacity(group_keys.len());
-
 	//split group key and id
-	for group_key in group_keys {
-		let key = import_sym_key_from_format(&group_key)?;
-
-		saved_keys.push(key);
-	}
+	let saved_keys = group_keys
+		.iter()
+		.map(import_sym_key_from_format)
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
