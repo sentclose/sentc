@@ -62,6 +62,7 @@ pub use self::group::{
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_typed,
 	prepare_group_keys_for_new_member_via_session,
+	prepare_group_keys_for_new_member_with_group_public_key,
 	GroupKeyData,
 	GroupOutData,
 	GroupOutDataHmacKeys,
@@ -96,6 +97,7 @@ pub use self::group_rust::{
 	prepare_group_keys_for_new_member,
 	prepare_group_keys_for_new_member_typed,
 	prepare_group_keys_for_new_member_via_session,
+	prepare_group_keys_for_new_member_with_group_public_key,
 	GroupOutData,
 	GroupOutDataLight,
 };
@@ -450,6 +452,27 @@ pub(crate) fn prepare_group_keys_for_new_member_private_internally(
 	let keys = prepare_group_keys_for_new_member_internally_with_public_key(
 		&public_key,
 		requester_public_key_data.public_key_id.as_str(),
+		group_keys,
+	)?;
+
+	let server_input = GroupKeysForNewMemberServerInput {
+		keys,
+		key_session,
+	};
+
+	Ok(server_input)
+}
+
+fn prepare_group_keys_for_new_member_internally_with_group_public_key(
+	requester_public_key_data: &PublicKeyFormatInt,
+	group_keys: &[&SymKeyFormatInt],
+	key_session: bool,
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
+{
+	//this can be used to not fetch the group public key but use it if the user already fetch the group
+	let keys = prepare_group_keys_for_new_member_internally_with_public_key(
+		&requester_public_key_data.key,
+		&requester_public_key_data.key_id,
 		group_keys,
 	)?;
 
