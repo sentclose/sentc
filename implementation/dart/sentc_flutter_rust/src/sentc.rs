@@ -705,6 +705,7 @@ pub struct GroupKeyData
 {
 	pub private_group_key: String,
 	pub public_group_key: String,
+	pub exported_public_key: String,
 	pub group_key: String,
 	pub time: String,
 	pub group_key_id: String,
@@ -717,6 +718,7 @@ impl From<sentc_crypto::group::GroupKeyData> for GroupKeyData
 		Self {
 			private_group_key: data.private_group_key,
 			public_group_key: data.public_group_key,
+			exported_public_key: data.exported_public_key,
 			group_key: data.group_key,
 			time: data.time.to_string(),
 			group_key_id: data.group_key_id,
