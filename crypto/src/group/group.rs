@@ -67,6 +67,7 @@ pub struct GroupKeyData
 {
 	pub private_group_key: String,
 	pub public_group_key: String,
+	pub exported_public_key: String,
 	pub group_key: String,
 	pub time: u128,
 	pub group_key_id: SymKeyId,
@@ -227,6 +228,10 @@ pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<
 	Ok(GroupKeyData {
 		private_group_key,
 		public_group_key,
+		exported_public_key: result
+			.exported_public_key
+			.to_string()
+			.map_err(|_e| SdkError::JsonToStringFailed)?,
 		group_key,
 		time: result.time,
 		group_key_id,
