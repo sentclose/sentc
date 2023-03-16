@@ -26,6 +26,7 @@ use crate::group::{
 	prepare_create_internally,
 	prepare_create_typed_internally,
 	prepare_group_keys_for_new_member_internally,
+	prepare_group_keys_for_new_member_internally_with_group_public_key,
 	prepare_group_keys_for_new_member_typed_internally,
 	prepare_group_keys_for_new_member_via_session_internally,
 	GroupKeyData,
@@ -162,6 +163,16 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 		access_by_parent_group,
 		is_connected_group: server_output.is_connected_group,
 	})
+}
+
+pub fn prepare_group_keys_for_new_member_with_group_public_key(
+	requester_public_key: &PublicKeyFormat,
+	group_keys: &[&SymKeyFormat],
+	key_session: bool,
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
+{
+	//the same like the other fn but with the public key format and not the exported public key from server fetch
+	prepare_group_keys_for_new_member_internally_with_group_public_key(requester_public_key, group_keys, key_session)
 }
 
 pub fn prepare_group_keys_for_new_member_typed(

@@ -28,6 +28,7 @@ use crate::group::{
 	prepare_create_internally,
 	prepare_create_typed_internally,
 	prepare_group_keys_for_new_member_internally,
+	prepare_group_keys_for_new_member_internally_with_group_public_key,
 	prepare_group_keys_for_new_member_typed_internally,
 	prepare_group_keys_for_new_member_via_session_internally,
 };
@@ -356,6 +357,33 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 		access_by_parent_group,
 		is_connected_group: server_output.is_connected_group,
 	})
+}
+
+pub fn prepare_group_keys_for_new_member_with_group_public_key(
+	requester_public_key: &str,
+	group_keys: &str,
+	key_session: bool,
+) -> Result<GroupKeysForNewMemberServerInput, String>
+{
+	//the same like the other fn but with the public key format and not the exported public key from server fetch
+
+	let requester_public_key = import_public_key(requester_public_key)?;
+
+	let group_keys: Vec<SymKeyFormat> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
+
+	//split group key and id
+	let saved_keys = group_keys
+		.iter()
+		.map(import_sym_key_from_format)
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+
+	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
+
+	Ok(prepare_group_keys_for_new_member_internally_with_group_public_key(
+		&requester_public_key,
+		&split_group_keys,
+		key_session,
+	)?)
 }
 
 pub fn prepare_group_keys_for_new_member_typed(
