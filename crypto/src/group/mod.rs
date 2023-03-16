@@ -107,6 +107,7 @@ pub struct DoneGettingGroupKeysOutput
 	pub group_key: SymKeyFormatInt,
 	pub private_group_key: PrivateKeyFormatInt,
 	pub public_group_key: PublicKeyFormatInt,
+	pub exported_public_key: UserPublicKeyData,
 	pub time: u128,
 }
 
@@ -388,6 +389,13 @@ pub(crate) fn decrypt_group_keys_internally(
 		server_output.keypair_encrypt_alg.as_str(),
 	)?;
 
+	//export it to use it for connecting to a group without fetching the key again
+	let exported_public_key = UserPublicKeyData {
+		public_key_pem: server_output.public_group_key.clone(),
+		public_key_alg: server_output.keypair_encrypt_alg.clone(),
+		public_key_id: server_output.key_pair_id.clone(),
+	};
+
 	Ok(DoneGettingGroupKeysOutput {
 		group_key: SymKeyFormatInt {
 			key: group_key,
@@ -401,6 +409,7 @@ pub(crate) fn decrypt_group_keys_internally(
 			key_id: server_output.key_pair_id.clone(),
 			key: public_group_key,
 		},
+		exported_public_key,
 		time: server_output.time,
 	})
 }

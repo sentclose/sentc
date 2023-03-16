@@ -380,12 +380,6 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 {
 	let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
-	let exported_public_key = UserPublicKeyData {
-		public_key_pem: user_group_key.public_group_key.to_string(),
-		public_key_alg: user_group_key.keypair_encrypt_alg.to_string(),
-		public_key_id: user_group_key.key_pair_id.clone(),
-	};
-
 	//now get the verify key
 	let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (
 		&user_group_key.encrypted_sign_key,
@@ -425,7 +419,7 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 			key: verify_key,
 			key_id: keypair_sign_id.to_string(),
 		},
-		exported_public_key,
+		exported_public_key: keys.exported_public_key,
 		exported_verify_key,
 	})
 }

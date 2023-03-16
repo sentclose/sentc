@@ -3200,6 +3200,7 @@ impl support::IntoDart for GroupKeyData {
 		vec![
 			self.private_group_key.into_dart(),
 			self.public_group_key.into_dart(),
+			self.exported_public_key.into_dart(),
 			self.group_key.into_dart(),
 			self.time.into_dart(),
 			self.group_key_id.into_dart(),
