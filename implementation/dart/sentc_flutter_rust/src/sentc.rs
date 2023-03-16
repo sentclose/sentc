@@ -147,26 +147,22 @@ impl From<sentc_crypto::util::UserData> for UserData
 {
 	fn from(data: sentc_crypto::UserData) -> Self
 	{
-		let mut user_keys = Vec::with_capacity(data.user_keys.len());
-
-		for user_key in data.user_keys {
-			user_keys.push(user_key.into());
-		}
-
-		let mut hmac_keys = Vec::with_capacity(data.hmac_keys.len());
-
-		for hmac_key in data.hmac_keys {
-			hmac_keys.push(hmac_key.into());
-		}
-
 		Self {
 			jwt: data.jwt,
 			user_id: data.user_id,
 			device_id: data.device_id,
 			refresh_token: data.refresh_token,
 			keys: data.device_keys.into(),
-			user_keys,
-			hmac_keys,
+			user_keys: data
+				.user_keys
+				.into_iter()
+				.map(|user_key| user_key.into())
+				.collect(),
+			hmac_keys: data
+				.hmac_keys
+				.into_iter()
+				.map(|hmac_key| hmac_key.into())
+				.collect(),
 		}
 	}
 }
@@ -470,15 +466,13 @@ pub fn init_user(base_url: String, auth_token: String, jwt: String, refresh_toke
 		refresh_token.as_str(),
 	))?;
 
-	let mut invites = Vec::with_capacity(out.invites.len());
-
-	for invite in out.invites {
-		invites.push(invite.into());
-	}
-
 	Ok(UserInitServerOutput {
 		jwt: out.jwt,
-		invites,
+		invites: out
+			.invites
+			.into_iter()
+			.map(|invite| invite.into())
+			.collect(),
 	})
 }
 
@@ -520,13 +514,7 @@ pub fn get_user_devices(
 		last_fetched_id.as_str(),
 	))?;
 
-	let mut list = Vec::with_capacity(out.len());
-
-	for device in out {
-		list.push(device.into())
-	}
-
-	Ok(list)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 pub fn reset_password(
@@ -782,18 +770,6 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 {
 	fn from(data: sentc_crypto::group::GroupOutData) -> Self
 	{
-		let mut keys = Vec::with_capacity(data.keys.len());
-
-		for key in data.keys {
-			keys.push(key.into())
-		}
-
-		let mut hmac_keys = Vec::with_capacity(data.hmac_keys.len());
-
-		for hmac_key in data.hmac_keys {
-			hmac_keys.push(hmac_key.into());
-		}
-
 		Self {
 			group_id: data.group_id,
 			parent_group_id: data.parent_group_id,
@@ -801,8 +777,12 @@ impl From<sentc_crypto::group::GroupOutData> for GroupOutData
 			key_update: data.key_update,
 			created_time: data.created_time.to_string(),
 			joined_time: data.joined_time.to_string(),
-			keys,
-			hmac_keys,
+			keys: data.keys.into_iter().map(|key| key.into()).collect(),
+			hmac_keys: data
+				.hmac_keys
+				.into_iter()
+				.map(|hmac_key| hmac_key.into())
+				.collect(),
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
 			is_connected_group: data.is_connected_group,
@@ -949,13 +929,7 @@ pub fn group_extract_group_keys(server_output: String) -> Result<Vec<GroupOutDat
 {
 	let out = sentc_crypto::group::get_group_keys_from_server_output(server_output.as_str()).map_err(|err| anyhow!(err))?;
 
-	let mut keys = Vec::with_capacity(out.len());
-
-	for key in out {
-		keys.push(key.into());
-	}
-
-	Ok(keys)
+	Ok(out.into_iter().map(|key| key.into()).collect())
 }
 
 pub fn group_get_group_data(base_url: String, auth_token: String, jwt: String, id: String, group_as_member: String) -> Result<GroupOutData>
@@ -991,13 +965,7 @@ pub fn group_get_group_keys(
 		get_group_as_member(&group_as_member),
 	))?;
 
-	let mut keys = Vec::with_capacity(out.len());
-
-	for key in out {
-		keys.push(key.into());
-	}
-
-	Ok(keys)
+	Ok(out.into_iter().map(|key| key.into()).collect())
 }
 
 pub fn group_get_group_key(
@@ -1128,13 +1096,7 @@ pub fn group_get_member(
 		get_group_as_member(&group_as_member),
 	))?;
 
-	let mut items = Vec::with_capacity(out.len());
-
-	for item in out {
-		items.push(item.into());
-	}
-
-	Ok(items)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 pub fn group_get_group_updates(
@@ -1179,13 +1141,7 @@ pub fn group_get_all_first_level_children(
 		get_group_as_member(&group_as_member),
 	))?;
 
-	let mut list = Vec::with_capacity(out.len());
-
-	for item in out {
-		list.push(item.into());
-	}
-
-	Ok(list)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 pub fn group_get_groups_for_user(
@@ -1206,13 +1162,7 @@ pub fn group_get_groups_for_user(
 		get_group_as_member(&group_id),
 	))?;
 
-	let mut list = Vec::with_capacity(out.len());
-
-	for item in out {
-		list.push(item.into());
-	}
-
-	Ok(list)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 //__________________________________________________________________________________________________
@@ -1321,13 +1271,7 @@ pub fn group_get_invites_for_user(
 		get_group_as_member(&group_as_member),
 	))?;
 
-	let mut invites = Vec::with_capacity(out.len());
-
-	for invite in out {
-		invites.push(invite.into());
-	}
-
-	Ok(invites)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 pub fn group_accept_invite(base_url: String, auth_token: String, jwt: String, id: String, group_id: String, group_as_member: String) -> Result<()>
@@ -1401,13 +1345,7 @@ pub fn group_get_sent_join_req_user(
 		get_group_as_member(&group_as_member),
 	))?;
 
-	let mut invites = Vec::with_capacity(out.len());
-
-	for invite in out {
-		invites.push(invite.into());
-	}
-
-	Ok(invites)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 pub fn group_get_sent_join_req(
@@ -1432,13 +1370,7 @@ pub fn group_get_sent_join_req(
 		get_group_as_member(&group_as_member),
 	))?;
 
-	let mut invites = Vec::with_capacity(out.len());
-
-	for invite in out {
-		invites.push(invite.into());
-	}
-
-	Ok(invites)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 pub fn group_delete_sent_join_req_user(
@@ -1517,13 +1449,7 @@ pub fn group_get_join_reqs(
 		get_group_as_member(&group_as_member),
 	))?;
 
-	let mut list = Vec::with_capacity(out.len());
-
-	for item in out {
-		list.push(item.into());
-	}
-
-	Ok(list)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 pub fn group_reject_join_req(
@@ -2178,13 +2104,7 @@ pub fn search(
 		&last_fetched_group_id,
 	))?;
 
-	let mut items = Vec::with_capacity(out.len());
-
-	for item in out {
-		items.push(item.into());
-	}
-
-	Ok(items)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 //==================================================================================================
@@ -2247,12 +2167,6 @@ impl From<sentc_crypto_common::file::FileData> for FileData
 {
 	fn from(data: sentc_crypto_common::file::FileData) -> Self
 	{
-		let mut part_list = Vec::with_capacity(data.part_list.len());
-
-		for part in data.part_list {
-			part_list.push(part.into());
-		}
-
 		Self {
 			file_id: data.file_id,
 			master_key_id: data.master_key_id,
@@ -2261,7 +2175,7 @@ impl From<sentc_crypto_common::file::FileData> for FileData
 			belongs_to_type: data.belongs_to_type.into(),
 			key_id: data.key_id,
 			encrypted_file_name: data.encrypted_file_name,
-			part_list,
+			part_list: data.part_list.into_iter().map(|part| part.into()).collect(),
 		}
 	}
 }
@@ -2317,13 +2231,7 @@ pub fn file_download_part_list(base_url: String, auth_token: String, file_id: St
 		last_sequence.as_str(),
 	))?;
 
-	let mut part_list = Vec::with_capacity(out.len());
-
-	for part in out {
-		part_list.push(part.into());
-	}
-
-	Ok(part_list)
+	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
 //__________________________________________________________________________________________________
