@@ -139,6 +139,7 @@ pub struct GroupKeyData
 {
 	private_group_key: String,
 	public_group_key: String,
+	exported_public_key: String,
 	group_key: String,
 	time: u128,
 	group_key_id: String,
@@ -151,6 +152,7 @@ impl From<group::GroupKeyData> for GroupKeyData
 		Self {
 			private_group_key: key.private_group_key,
 			public_group_key: key.public_group_key,
+			exported_public_key: key.exported_public_key,
 			group_key: key.group_key,
 			time: key.time,
 			group_key_id: key.group_key_id,
@@ -169,6 +171,11 @@ impl GroupKeyData
 	pub fn get_public_group_key(&self) -> String
 	{
 		self.public_group_key.clone()
+	}
+
+	pub fn get_exported_public_group_key(&self) -> String
+	{
+		self.exported_public_key.clone()
 	}
 
 	pub fn get_group_key(&self) -> String
