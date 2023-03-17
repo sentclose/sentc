@@ -10,4 +10,5 @@ pub mod group;
 pub mod user;
 pub mod util;
 
+pub use self::error::{err_to_msg, SdkFullError};
 pub use self::util::jwt;
