@@ -2,7 +2,7 @@
 use alloc::string::String;
 
 use base64ct::Encoding;
-use sentc_crypto_common::user::Claims;
+pub use sentc_crypto_common::user::Claims;
 
 use crate::error::SdkFullError;
 
