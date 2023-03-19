@@ -1,8 +1,8 @@
 [package]
 name = "sentc_wasm"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
-license = "MIT"
+license = "AGPL-3.0"
 description = "Wasm for sentc. End-to-end encryption sdk"
 authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
 
