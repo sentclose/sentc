@@ -35,9 +35,9 @@ pub struct Claims
 	pub fresh: bool, //was this token from refresh jwt or from login
 }
 
-impl From<sentc_crypto_full::jwt::Claims> for Claims
+impl From<sentc_crypto_common::user::Claims> for Claims
 {
-	fn from(claims: sentc_crypto_full::jwt::Claims) -> Self
+	fn from(claims: sentc_crypto_common::user::Claims) -> Self
 	{
 		Self {
 			aud: claims.aud,
