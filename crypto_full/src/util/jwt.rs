@@ -2,8 +2,7 @@
 use alloc::string::String;
 
 use base64ct::Encoding;
-use sentc_crypto_common::{DeviceId, UserId};
-use serde::{Deserialize, Serialize};
+use sentc_crypto_common::user::Claims;
 
 use crate::error::SdkFullError;
 
@@ -16,20 +15,6 @@ macro_rules! expect_two {
 			_ => return Err(SdkFullError::InvalidJwt),
 		}
 	}};
-}
-
-/**
-Claims struct from the backend
-*/
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims
-{
-	//jwt defaults
-	pub aud: UserId,   //the user id
-	pub sub: DeviceId, //the device id
-	pub exp: usize,
-	pub iat: usize,
-	pub fresh: bool, //was this token from refresh jwt or from login
 }
 
 #[cfg(feature = "rust")]
