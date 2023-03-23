@@ -1295,6 +1295,17 @@ pub extern "C" fn wire_prepare_create_searchable(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_prepare_create_searchable_light(
+	port_: i64,
+	key: *mut wire_uint_8_list,
+	data: *mut wire_uint_8_list,
+	full: bool,
+	limit: *mut u32,
+) {
+	wire_prepare_create_searchable_light_impl(port_, key, data, full, limit)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_prepare_search(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
 	wire_prepare_search_impl(port_, key, data)
 }
