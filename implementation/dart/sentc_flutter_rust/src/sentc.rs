@@ -2063,12 +2063,42 @@ impl From<sentc_crypto_common::content_searchable::ListSearchItem> for ListSearc
 	}
 }
 
+#[repr(C)]
+pub struct SearchCreateDataLight
+{
+	hashes: Vec<String>,
+	alg: String,
+	key_id: String,
+}
+
+impl From<sentc_crypto_common::content_searchable::SearchCreateDataLight> for SearchCreateDataLight
+{
+	fn from(value: sentc_crypto_common::content_searchable::SearchCreateDataLight) -> Self
+	{
+		Self {
+			hashes: value.hashes,
+			alg: value.alg,
+			key_id: value.key_id,
+		}
+	}
+}
+
 pub fn prepare_create_searchable(key: String, item_ref: String, category: String, data: String, full: bool, limit: Option<u32>) -> Result<String>
 {
 	//flutter rust bridge don't support usize
 	let limit = if let Some(l) = limit { Some(l as usize) } else { None };
 
 	sentc_crypto::crypto_searchable::create_searchable(&key, &item_ref, &category, &data, full, limit).map_err(|err| anyhow!(err))
+}
+
+pub fn prepare_create_searchable_light(key: String, data: String, full: bool, limit: Option<u32>) -> Result<SearchCreateDataLight>
+{
+	//flutter rust bridge don't support usize
+	let limit = if let Some(l) = limit { Some(l as usize) } else { None };
+
+	let out = sentc_crypto::crypto_searchable::prepare_create_searchable_light(&key, &data, full, limit).map_err(|err| anyhow!(err))?;
+
+	Ok(out.into())
 }
 
 pub fn prepare_search(key: String, data: String) -> Result<String>

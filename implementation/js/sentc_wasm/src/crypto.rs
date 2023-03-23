@@ -348,6 +348,45 @@ pub async fn delete_sym_key(base_url: String, auth_token: String, jwt: String, k
 //__________________________________________________________________________________________________
 //searchable crypto
 
+#[wasm_bindgen]
+pub struct SearchCreateDataLight
+{
+	hashes: Vec<String>,
+	alg: String,
+	key_id: String,
+}
+
+#[wasm_bindgen]
+impl SearchCreateDataLight
+{
+	pub fn get_hashes(&self) -> JsValue
+	{
+		JsValue::from_serde(&self.hashes).unwrap()
+	}
+
+	pub fn get_alg(&self) -> String
+	{
+		self.alg.clone()
+	}
+
+	pub fn get_key_id(&self) -> String
+	{
+		self.key_id.clone()
+	}
+}
+
+impl From<sentc_crypto_common::content_searchable::SearchCreateDataLight> for SearchCreateDataLight
+{
+	fn from(value: sentc_crypto_common::content_searchable::SearchCreateDataLight) -> Self
+	{
+		Self {
+			hashes: value.hashes,
+			alg: value.alg,
+			key_id: value.key_id,
+		}
+	}
+}
+
 //only prepare here because it is server only but this string can be used to register an item
 #[wasm_bindgen]
 pub fn prepare_create_searchable(key: &str, item_ref: &str, category: &str, data: &str, full: bool, limit: Option<usize>) -> Result<String, JsValue>
@@ -355,6 +394,14 @@ pub fn prepare_create_searchable(key: &str, item_ref: &str, category: &str, data
 	Ok(sentc_crypto::crypto_searchable::create_searchable(
 		key, item_ref, category, data, full, limit,
 	)?)
+}
+
+#[wasm_bindgen]
+pub fn prepare_create_searchable_light(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<SearchCreateDataLight, JsValue>
+{
+	let out = sentc_crypto::crypto_searchable::prepare_create_searchable_light(key, data, full, limit)?;
+
+	Ok(out.into())
 }
 
 #[wasm_bindgen]

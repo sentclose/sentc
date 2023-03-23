@@ -2646,6 +2646,28 @@ fn wire_prepare_create_searchable_impl(
 		},
 	)
 }
+fn wire_prepare_create_searchable_light_impl(
+	port_: MessagePort,
+	key: impl Wire2Api<String> + UnwindSafe,
+	data: impl Wire2Api<String> + UnwindSafe,
+	full: impl Wire2Api<bool> + UnwindSafe,
+	limit: impl Wire2Api<Option<u32>> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "prepare_create_searchable_light",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			let api_full = full.wire2api();
+			let api_limit = limit.wire2api();
+			move |task_callback| prepare_create_searchable_light(api_key, api_data, api_full, api_limit)
+		},
+	)
+}
 fn wire_prepare_search_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -3349,6 +3371,13 @@ impl support::IntoDart for RegisterDeviceData {
 	}
 }
 impl support::IntoDartExceptPrimitive for RegisterDeviceData {}
+
+impl support::IntoDart for SearchCreateDataLight {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.hashes.into_dart(), self.alg.into_dart(), self.key_id.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for SearchCreateDataLight {}
 
 impl support::IntoDart for SignHead {
 	fn into_dart(self) -> support::DartAbi {
