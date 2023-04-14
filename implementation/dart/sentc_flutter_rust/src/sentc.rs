@@ -2066,9 +2066,9 @@ impl From<sentc_crypto_common::content_searchable::ListSearchItem> for ListSearc
 #[repr(C)]
 pub struct SearchCreateDataLight
 {
-	hashes: Vec<String>,
-	alg: String,
-	key_id: String,
+	pub hashes: Vec<String>,
+	pub alg: String,
+	pub key_id: String,
 }
 
 impl From<sentc_crypto_common::content_searchable::SearchCreateDataLight> for SearchCreateDataLight
