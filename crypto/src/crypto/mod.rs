@@ -11,6 +11,7 @@ use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerInput,
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::SymKeyId;
 use sentc_crypto_core::{crypto as crypto_core, SignK, ED25519_OUTPUT};
+use serde::{Deserialize, Serialize};
 
 #[cfg(not(feature = "rust"))]
 pub use self::crypto::{
@@ -40,6 +41,8 @@ pub use self::crypto::{
 	split_head_and_encrypted_data,
 	split_head_and_encrypted_string,
 };
+#[cfg(not(feature = "rust"))]
+pub(crate) use self::crypto::{prepare_sign_key, prepare_verify_key};
 #[cfg(feature = "rust")]
 pub use self::crypto_rust::{
 	decrypt_asymmetric,
@@ -72,7 +75,7 @@ use crate::util::public::handle_server_response;
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
 
-fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHead>, Vec<u8>), SdkError>
+pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHead>, Vec<u8>), SdkError>
 {
 	let signed_data = crypto_core::sign(&key.key, data)?;
 
@@ -88,7 +91,7 @@ fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHe
 	Ok((head, signed_data))
 }
 
-fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkError>
+pub(crate) fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkError>
 {
 	let verify_k = import_verify_key_from_pem_with_alg(verify_key.verify_key_pem.as_str(), verify_key.verify_key_alg.as_str())?;
 
@@ -112,7 +115,7 @@ Get the head and the data.
 
 This can not only be used internally, to get the used key_id
 */
-fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>
+pub(crate) fn split_head_and_encrypted_data_internally<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &[u8]), SdkError>
 {
 	let mut i = 0usize;
 	for data_itr in data_with_head {
@@ -125,7 +128,7 @@ fn split_head_and_encrypted_data_internally(data_with_head: &[u8]) -> Result<(En
 		i += 1;
 	}
 
-	let head = EncryptedHead::from_slice(&data_with_head[..i]).map_err(SdkError::JsonParseFailed)?;
+	let head = serde_json::from_slice(&data_with_head[..i]).map_err(SdkError::JsonParseFailed)?;
 
 	//ignore the zero byte
 	Ok((head, &data_with_head[i + 1..]))
@@ -145,9 +148,9 @@ fn split_head_and_encrypted_string_internally(encrypted_data_with_head: &str) ->
 	Ok(head)
 }
 
-fn put_head_and_encrypted_data_internally(head: &EncryptedHead, encrypted: &[u8]) -> Result<Vec<u8>, SdkError>
+pub(crate) fn put_head_and_encrypted_data_internally<T: Serialize>(head: &T, encrypted: &[u8]) -> Result<Vec<u8>, SdkError>
 {
-	let head = head.to_string().map_err(|_| SdkError::JsonToStringFailed)?;
+	let head = serde_json::to_string(head).map_err(|_| SdkError::JsonToStringFailed)?;
 
 	let mut out = Vec::with_capacity(head.len() + 1 + encrypted.len());
 
