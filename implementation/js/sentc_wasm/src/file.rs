@@ -74,16 +74,38 @@ impl FileRegisterOutput
 }
 
 #[wasm_bindgen]
-pub async fn file_download_and_decrypt_file_part(
+pub struct FileDownloadResult
+{
+	next_file_key: String,
+	file: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl FileDownloadResult
+{
+	pub fn get_next_file_key(&self) -> String
+	{
+		self.next_file_key.clone()
+	}
+
+	pub fn get_file(&self) -> Uint8Array
+	{
+		//fastest way to convert vec to Uint8Array
+		unsafe { Uint8Array::view(&self.file) }
+	}
+}
+
+#[wasm_bindgen]
+pub async fn file_download_and_decrypt_file_part_start(
 	base_url: String,
 	url_prefix: String,
 	auth_token: String,
 	part_id: String,
 	content_key: String,
 	verify_key_data: String,
-) -> Result<Uint8Array, JsValue>
+) -> Result<FileDownloadResult, JsValue>
 {
-	let out = sentc_crypto_full::file::download_and_decrypt_file_part(
+	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part_start(
 		base_url,
 		url_prefix,
 		auth_token.as_str(),
@@ -94,7 +116,37 @@ pub async fn file_download_and_decrypt_file_part(
 	.await?;
 
 	//fastest way to convert vec to Uint8Array
-	Ok(unsafe { Uint8Array::view(&out) })
+	Ok(FileDownloadResult {
+		next_file_key,
+		file,
+	})
+}
+
+#[wasm_bindgen]
+pub async fn file_download_and_decrypt_file_part(
+	base_url: String,
+	url_prefix: String,
+	auth_token: String,
+	part_id: String,
+	content_key: String,
+	verify_key_data: String,
+) -> Result<FileDownloadResult, JsValue>
+{
+	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part(
+		base_url,
+		url_prefix,
+		auth_token.as_str(),
+		part_id.as_str(),
+		content_key.as_str(),
+		verify_key_data.as_str(),
+	)
+	.await?;
+
+	//fastest way to convert vec to Uint8Array
+	Ok(FileDownloadResult {
+		next_file_key,
+		file,
+	})
 }
 
 //__________________________________________________________________________________________________
@@ -170,7 +222,7 @@ pub fn file_done_register_file(server_output: &str) -> Result<FileDoneRegister, 
 }
 
 #[wasm_bindgen]
-pub async fn file_upload_part(
+pub async fn file_upload_part_start(
 	base_url: String,
 	url_prefix: String,
 	auth_token: String,
@@ -181,9 +233,9 @@ pub async fn file_upload_part(
 	content_key: String,
 	sign_key: String,
 	part: Vec<u8>,
-) -> Result<(), JsValue>
+) -> Result<String, JsValue>
 {
-	sentc_crypto_full::file::upload_part(
+	Ok(sentc_crypto_full::file::upload_part_start(
 		base_url,
 		url_prefix,
 		auth_token.as_str(),
@@ -195,9 +247,36 @@ pub async fn file_upload_part(
 		sign_key.as_str(),
 		&part,
 	)
-	.await?;
+	.await?)
+}
 
-	Ok(())
+#[wasm_bindgen]
+pub async fn file_upload_part(
+	base_url: String,
+	url_prefix: String,
+	auth_token: String,
+	jwt: String,
+	session_id: String,
+	end: bool,
+	sequence: i32,
+	content_key: String,
+	sign_key: String,
+	part: Vec<u8>,
+) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto_full::file::upload_part(
+		base_url,
+		url_prefix,
+		auth_token.as_str(),
+		jwt.as_str(),
+		session_id.as_str(),
+		end,
+		sequence,
+		content_key.as_str(),
+		sign_key.as_str(),
+		&part,
+	)
+	.await?)
 }
 
 #[wasm_bindgen]

@@ -1,9 +1,19 @@
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use sentc_crypto_common::file::BelongsToType;
 
-use crate::file::{done_register_file_internally, prepare_file_name_update_internally, prepare_register_file_internally};
-use crate::util::import_sym_key;
+use crate::crypto::{prepare_sign_key, prepare_verify_key};
+use crate::file::{
+	decrypt_file_part_internally,
+	decrypt_file_part_start_internally,
+	done_register_file_internally,
+	encrypt_file_part_internally,
+	encrypt_file_part_start_internally,
+	prepare_file_name_update_internally,
+	prepare_register_file_internally,
+};
+use crate::util::{export_core_sym_key_to_string, import_core_sym_key, import_sym_key};
 use crate::SdkError;
 
 pub fn prepare_register_file(
@@ -53,4 +63,67 @@ pub fn prepare_file_name_update(key: &str, file_name: &str) -> Result<String, St
 	};
 
 	Ok(prepare_file_name_update_internally(&key, file_name)?)
+}
+
+pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: &str) -> Result<(Vec<u8>, String), String>
+{
+	let sign_key = prepare_sign_key(sign_key)?;
+
+	let key = import_sym_key(key)?;
+
+	let (encrypted_part, file_key) = match sign_key {
+		None => encrypt_file_part_start_internally(&key, part, None)?,
+		Some(k) => encrypt_file_part_start_internally(&key, part, Some(&k))?,
+	};
+
+	let exported_file_key = export_core_sym_key_to_string(file_key)?;
+
+	Ok((encrypted_part, exported_file_key))
+}
+
+pub fn encrypt_file_part(pre_content_key: &str, part: &[u8], sign_key: &str) -> Result<(Vec<u8>, String), String>
+{
+	let sign_key = prepare_sign_key(sign_key)?;
+
+	let key = import_core_sym_key(pre_content_key)?;
+
+	let (encrypted_part, file_key) = match sign_key {
+		None => encrypt_file_part_internally(&key, part, None)?,
+		Some(k) => encrypt_file_part_internally(&key, part, Some(&k))?,
+	};
+
+	let exported_file_key = export_core_sym_key_to_string(file_key)?;
+
+	Ok((encrypted_part, exported_file_key))
+}
+
+pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: &str) -> Result<(Vec<u8>, String), String>
+{
+	let verify_key = prepare_verify_key(verify_key)?;
+	let key = import_sym_key(key)?;
+
+	let (decrypted, next_key) = match verify_key {
+		None => decrypt_file_part_start_internally(&key, part, None)?,
+		Some(k) => decrypt_file_part_start_internally(&key, part, Some(&k))?,
+	};
+
+	let exported_file_key = export_core_sym_key_to_string(next_key)?;
+
+	Ok((decrypted, exported_file_key))
+}
+
+pub fn decrypt_file_part(pre_content_key: &str, part: &[u8], verify_key: &str) -> Result<(Vec<u8>, String), String>
+{
+	let verify_key = prepare_verify_key(verify_key)?;
+
+	let key = import_core_sym_key(pre_content_key)?;
+
+	let (decrypted, next_key) = match verify_key {
+		None => decrypt_file_part_internally(&key, part, None)?,
+		Some(k) => decrypt_file_part_internally(&key, part, Some(&k))?,
+	};
+
+	let exported_file_key = export_core_sym_key_to_string(next_key)?;
+
+	Ok((decrypted, exported_file_key))
 }

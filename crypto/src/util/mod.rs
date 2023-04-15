@@ -28,12 +28,14 @@ use sentc_crypto_core::{
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::util_non_rust::{
+	export_core_sym_key_to_string,
 	export_hmac_key_to_string,
 	export_private_key_to_string,
 	export_public_key_to_string,
 	export_sign_key_to_string,
 	export_sym_key_to_string,
 	export_verify_key_to_string,
+	import_core_sym_key,
 	import_hmac_key,
 	import_private_key,
 	import_public_key,

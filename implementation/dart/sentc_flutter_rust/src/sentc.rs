@@ -2231,16 +2231,23 @@ pub fn file_download_file_meta(
 	Ok(out.into())
 }
 
-pub fn file_download_and_decrypt_file_part(
+#[repr(C)]
+pub struct FileDownloadResult
+{
+	pub next_file_key: String,
+	pub file: ZeroCopyBuffer<Vec<u8>>,
+}
+
+pub fn file_download_and_decrypt_file_part_start(
 	base_url: String,
 	url_prefix: String,
 	auth_token: String,
 	part_id: String,
 	content_key: String,
 	verify_key_data: String,
-) -> Result<ZeroCopyBuffer<Vec<u8>>>
+) -> Result<FileDownloadResult>
 {
-	let vec = rt(sentc_crypto_full::file::download_and_decrypt_file_part(
+	let (file, next_file_key) = rt(sentc_crypto_full::file::download_and_decrypt_file_part_start(
 		base_url,
 		url_prefix,
 		auth_token.as_str(),
@@ -2249,7 +2256,34 @@ pub fn file_download_and_decrypt_file_part(
 		verify_key_data.as_str(),
 	))?;
 
-	Ok(ZeroCopyBuffer(vec))
+	Ok(FileDownloadResult {
+		next_file_key,
+		file: ZeroCopyBuffer(file),
+	})
+}
+
+pub fn file_download_and_decrypt_file_part(
+	base_url: String,
+	url_prefix: String,
+	auth_token: String,
+	part_id: String,
+	content_key: String,
+	verify_key_data: String,
+) -> Result<FileDownloadResult>
+{
+	let (file, next_file_key) = rt(sentc_crypto_full::file::download_and_decrypt_file_part(
+		base_url,
+		url_prefix,
+		auth_token.as_str(),
+		part_id.as_str(),
+		content_key.as_str(),
+		verify_key_data.as_str(),
+	))?;
+
+	Ok(FileDownloadResult {
+		next_file_key,
+		file: ZeroCopyBuffer(file),
+	})
 }
 
 pub fn file_download_part_list(base_url: String, auth_token: String, file_id: String, last_sequence: String) -> Result<Vec<FilePartListItem>>
@@ -2354,6 +2388,33 @@ pub fn file_done_register_file(server_output: String) -> Result<FileDoneRegister
 	})
 }
 
+pub fn file_upload_part_start(
+	base_url: String,
+	url_prefix: String,
+	auth_token: String,
+	jwt: String,
+	session_id: String,
+	end: bool,
+	sequence: i32,
+	content_key: String,
+	sign_key: String,
+	part: Vec<u8>,
+) -> Result<String>
+{
+	rt(sentc_crypto_full::file::upload_part_start(
+		base_url,
+		url_prefix,
+		auth_token.as_str(),
+		jwt.as_str(),
+		session_id.as_str(),
+		end,
+		sequence,
+		content_key.as_str(),
+		sign_key.as_str(),
+		&part,
+	))
+}
+
 pub fn file_upload_part(
 	base_url: String,
 	url_prefix: String,
@@ -2365,7 +2426,7 @@ pub fn file_upload_part(
 	content_key: String,
 	sign_key: String,
 	part: Vec<u8>,
-) -> Result<()>
+) -> Result<String>
 {
 	rt(sentc_crypto_full::file::upload_part(
 		base_url,

@@ -1,10 +1,21 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use sentc_crypto_common::file::BelongsToType;
+use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::{FileId, FileSessionId};
+use sentc_crypto_core::SymKey;
 
-use crate::file::{done_register_file_internally, prepare_file_name_update_internally, prepare_register_file_internally};
-use crate::{SdkError, SymKeyFormat};
+use crate::file::{
+	decrypt_file_part_internally,
+	decrypt_file_part_start_internally,
+	done_register_file_internally,
+	encrypt_file_part_internally,
+	encrypt_file_part_start_internally,
+	prepare_file_name_update_internally,
+	prepare_register_file_internally,
+};
+use crate::{SdkError, SignKeyFormat, SymKeyFormat};
 
 pub fn prepare_register_file(
 	master_key_id: String,
@@ -25,4 +36,24 @@ pub fn done_register_file(server_output: &str) -> Result<(FileId, FileSessionId)
 pub fn prepare_file_name_update(key: &SymKeyFormat, file_name: Option<String>) -> Result<String, SdkError>
 {
 	prepare_file_name_update_internally(key, file_name)
+}
+
+pub fn encrypt_file_part_start(key: &SymKeyFormat, part: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<(Vec<u8>, SymKey), SdkError>
+{
+	encrypt_file_part_start_internally(key, part, sign_key)
+}
+
+pub fn encrypt_file_part(pre_content_key: &SymKey, part: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<(Vec<u8>, SymKey), SdkError>
+{
+	encrypt_file_part_internally(pre_content_key, part, sign_key)
+}
+
+pub fn decrypt_file_part_start(key: &SymKeyFormat, part: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<(Vec<u8>, SymKey), SdkError>
+{
+	decrypt_file_part_start_internally(key, part, verify_key)
+}
+
+pub fn decrypt_file_part(pre_content_key: &SymKey, part: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<(Vec<u8>, SymKey), SdkError>
+{
+	decrypt_file_part_internally(pre_content_key, part, verify_key)
 }

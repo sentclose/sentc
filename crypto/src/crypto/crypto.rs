@@ -35,7 +35,7 @@ use crate::crypto::{
 use crate::util::{export_sym_key_to_string, import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
 use crate::SdkError;
 
-fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, SdkError>
+pub(crate) fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, SdkError>
 {
 	let sign_key = match sign_key {
 		"" => None,
@@ -49,7 +49,7 @@ fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, SdkError
 	Ok(sign_key)
 }
 
-fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>, SdkError>
+pub(crate) fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>, SdkError>
 {
 	let verify_key = match verify_key_data {
 		"" => None,

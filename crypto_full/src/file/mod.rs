@@ -12,9 +12,9 @@ mod non_rust;
 mod rust;
 
 #[cfg(not(feature = "rust"))]
-pub use self::non_rust::{ByteRes, FilePartRes, FileRegRes, FileRes, VoidRes};
+pub use self::non_rust::{ByteRes, FilePartRes, FileRegRes, FileRes, KeyRes, VoidRes};
 #[cfg(feature = "rust")]
-pub use self::rust::{ByteRes, FilePartRes, FileRegRes, FileRes, VoidRes};
+pub use self::rust::{ByteRes, FilePartRes, FileRegRes, FileRes, KeyRes, VoidRes};
 
 pub async fn download_file_meta(
 	base_url: String,
@@ -66,7 +66,7 @@ pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &st
 	Ok(file_parts)
 }
 
-pub async fn download_and_decrypt_file_part(
+pub async fn download_and_decrypt_file_part_start(
 	base_url: String,
 	#[cfg(not(feature = "rust"))] url_prefix: String,
 	#[cfg(feature = "rust")] url_prefix: Option<String>,
@@ -94,9 +94,38 @@ pub async fn download_and_decrypt_file_part(
 	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None, None).await?;
 
 	//decrypt the part
-	let decrypted = sentc_crypto::crypto::decrypt_symmetric(content_key, &res, verify_key_data)?;
+	sentc_crypto::file::decrypt_file_part_start(content_key, &res, verify_key_data)
+}
 
-	Ok(decrypted)
+pub async fn download_and_decrypt_file_part(
+	base_url: String,
+	#[cfg(not(feature = "rust"))] url_prefix: String,
+	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	auth_token: &str,
+	part_id: &str,
+	#[cfg(not(feature = "rust"))] pre_key: &str,
+	#[cfg(feature = "rust")] pre_key: &sentc_crypto_core::SymKey,
+	#[cfg(not(feature = "rust"))] verify_key_data: &str,
+	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
+) -> ByteRes
+{
+	#[cfg(not(feature = "rust"))]
+	let url_prefix = match url_prefix.as_str() {
+		"" => None,
+		_ => Some(url_prefix),
+	};
+
+	let url_prefix = match url_prefix {
+		Some(p) => p,
+		None => base_url + "/api/v1/file/part",
+	};
+
+	let url = url_prefix + "/" + part_id;
+
+	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None, None).await?;
+
+	//decrypt the part
+	sentc_crypto::file::decrypt_file_part(pre_key, &res, verify_key_data)
 }
 
 //__________________________________________________________________________________________________
@@ -150,7 +179,7 @@ pub async fn register_file(
 	Ok((file_id, session_id, encrypted_file_name))
 }
 
-pub async fn upload_part(
+pub async fn upload_part_start(
 	base_url: String,
 	#[cfg(not(feature = "rust"))] url_prefix: String,
 	#[cfg(feature = "rust")] url_prefix: Option<String>,
@@ -164,7 +193,7 @@ pub async fn upload_part(
 	#[cfg(not(feature = "rust"))] sign_key: &str,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
 	part: &[u8],
-) -> VoidRes
+) -> KeyRes
 {
 	#[cfg(not(feature = "rust"))]
 	let url_prefix = match url_prefix.as_str() {
@@ -177,13 +206,53 @@ pub async fn upload_part(
 		None => base_url + "/api/v1/file/part",
 	};
 
-	let encrypted = sentc_crypto::crypto::encrypt_symmetric(content_key, part, sign_key)?;
+	let (encrypted, next_file_key) = sentc_crypto::file::encrypt_file_part_start(content_key, part, sign_key)?;
 
 	let url = url_prefix + "/" + session_id + "/" + sequence.to_string().as_str() + "/" + end.to_string().as_str();
 
 	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt), None).await?;
 
-	Ok(handle_general_server_response(res.as_str())?)
+	handle_general_server_response(res.as_str())?;
+
+	Ok(next_file_key)
+}
+
+pub async fn upload_part(
+	base_url: String,
+	#[cfg(not(feature = "rust"))] url_prefix: String,
+	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	auth_token: &str,
+	jwt: &str,
+	session_id: &str,
+	end: bool,
+	sequence: i32,
+	#[cfg(not(feature = "rust"))] content_key: &str,
+	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKey,
+	#[cfg(not(feature = "rust"))] sign_key: &str,
+	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
+	part: &[u8],
+) -> KeyRes
+{
+	#[cfg(not(feature = "rust"))]
+	let url_prefix = match url_prefix.as_str() {
+		"" => None,
+		_ => Some(url_prefix),
+	};
+
+	let url_prefix = match url_prefix {
+		Some(p) => p,
+		None => base_url + "/api/v1/file/part",
+	};
+
+	let (encrypted, next_file_key) = sentc_crypto::file::encrypt_file_part(content_key, part, sign_key)?;
+
+	let url = url_prefix + "/" + session_id + "/" + sequence.to_string().as_str() + "/" + end.to_string().as_str();
+
+	let res = make_req_buffer_body(HttpMethod::POST, url.as_str(), auth_token, encrypted, Some(jwt), None).await?;
+
+	handle_general_server_response(res.as_str())?;
+
+	Ok(next_file_key)
 }
 
 pub async fn update_file_name(
