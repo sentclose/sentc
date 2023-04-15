@@ -1353,6 +1353,27 @@ pub extern "C" fn wire_file_download_file_meta(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_file_download_and_decrypt_file_part_start(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	url_prefix: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	part_id: *mut wire_uint_8_list,
+	content_key: *mut wire_uint_8_list,
+	verify_key_data: *mut wire_uint_8_list,
+) {
+	wire_file_download_and_decrypt_file_part_start_impl(
+		port_,
+		base_url,
+		url_prefix,
+		auth_token,
+		part_id,
+		content_key,
+		verify_key_data,
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_file_download_and_decrypt_file_part(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -1435,6 +1456,35 @@ pub extern "C" fn wire_file_prepare_register_file(
 #[no_mangle]
 pub extern "C" fn wire_file_done_register_file(port_: i64, server_output: *mut wire_uint_8_list) {
 	wire_file_done_register_file_impl(port_, server_output)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_file_upload_part_start(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	url_prefix: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	session_id: *mut wire_uint_8_list,
+	end: bool,
+	sequence: i32,
+	content_key: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	part: *mut wire_uint_8_list,
+) {
+	wire_file_upload_part_start_impl(
+		port_,
+		base_url,
+		url_prefix,
+		auth_token,
+		jwt,
+		session_id,
+		end,
+		sequence,
+		content_key,
+		sign_key,
+		part,
+	)
 }
 
 #[no_mangle]

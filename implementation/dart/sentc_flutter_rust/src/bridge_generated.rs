@@ -2764,6 +2764,41 @@ fn wire_file_download_file_meta_impl(
 		},
 	)
 }
+fn wire_file_download_and_decrypt_file_part_start_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	url_prefix: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	part_id: impl Wire2Api<String> + UnwindSafe,
+	content_key: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_download_and_decrypt_file_part_start",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_url_prefix = url_prefix.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_part_id = part_id.wire2api();
+			let api_content_key = content_key.wire2api();
+			let api_verify_key_data = verify_key_data.wire2api();
+			move |task_callback| {
+				file_download_and_decrypt_file_part_start(
+					api_base_url,
+					api_url_prefix,
+					api_auth_token,
+					api_part_id,
+					api_content_key,
+					api_verify_key_data,
+				)
+			}
+		},
+	)
+}
 fn wire_file_download_and_decrypt_file_part_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -2910,6 +2945,53 @@ fn wire_file_done_register_file_impl(port_: MessagePort, server_output: impl Wir
 		move || {
 			let api_server_output = server_output.wire2api();
 			move |task_callback| file_done_register_file(api_server_output)
+		},
+	)
+}
+fn wire_file_upload_part_start_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	url_prefix: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+	session_id: impl Wire2Api<String> + UnwindSafe,
+	end: impl Wire2Api<bool> + UnwindSafe,
+	sequence: impl Wire2Api<i32> + UnwindSafe,
+	content_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<String> + UnwindSafe,
+	part: impl Wire2Api<Vec<u8>> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "file_upload_part_start",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_url_prefix = url_prefix.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_session_id = session_id.wire2api();
+			let api_end = end.wire2api();
+			let api_sequence = sequence.wire2api();
+			let api_content_key = content_key.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			let api_part = part.wire2api();
+			move |task_callback| {
+				file_upload_part_start(
+					api_base_url,
+					api_url_prefix,
+					api_auth_token,
+					api_jwt,
+					api_session_id,
+					api_end,
+					api_sequence,
+					api_content_key,
+					api_sign_key,
+					api_part,
+				)
+			}
 		},
 	)
 }
@@ -3155,6 +3237,13 @@ impl support::IntoDart for FileDoneRegister {
 	}
 }
 impl support::IntoDartExceptPrimitive for FileDoneRegister {}
+
+impl support::IntoDart for FileDownloadResult {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.next_file_key.into_dart(), self.file.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for FileDownloadResult {}
 
 impl support::IntoDart for FilePartListItem {
 	fn into_dart(self) -> support::DartAbi {
