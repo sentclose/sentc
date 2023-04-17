@@ -367,6 +367,7 @@ pub async fn invite_user(
 	id: &str,
 	user_to_invite_id: &str,
 	key_count: i32,
+	rank: Option<i32>,
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
@@ -390,7 +391,7 @@ pub async fn invite_user(
 
 	let key_session = key_count > 50;
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session, rank)?;
 
 	//insert the invite and check for more keys in the sdk impl and call the other fn!
 	let res = make_req(
@@ -620,6 +621,7 @@ pub async fn accept_join_req(
 	group_id: &str,
 	user_id: &str,
 	key_count: i32,
+	rank: Option<i32>,
 	admin_rank: i32,
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
@@ -634,7 +636,7 @@ pub async fn accept_join_req(
 
 	let key_session = key_count > 50;
 
-	let join = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
+	let join = sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session, rank)?;
 
 	//insert the invite and check for more keys in the sdk impl and call the other fn!
 	let res = make_req(

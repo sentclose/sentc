@@ -169,28 +169,31 @@ pub fn prepare_group_keys_for_new_member_with_group_public_key(
 	requester_public_key: &PublicKeyFormat,
 	group_keys: &[&SymKeyFormat],
 	key_session: bool,
+	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, SdkError>
 {
 	//the same like the other fn but with the public key format and not the exported public key from server fetch
-	prepare_group_keys_for_new_member_internally_with_group_public_key(requester_public_key, group_keys, key_session)
+	prepare_group_keys_for_new_member_internally_with_group_public_key(requester_public_key, group_keys, key_session, rank)
 }
 
 pub fn prepare_group_keys_for_new_member_typed(
 	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormat],
 	key_session: bool,
+	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, SdkError>
 {
-	prepare_group_keys_for_new_member_typed_internally(requester_public_key_data, group_keys, key_session)
+	prepare_group_keys_for_new_member_typed_internally(requester_public_key_data, group_keys, key_session, rank)
 }
 
 pub fn prepare_group_keys_for_new_member(
 	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormat],
 	key_session: bool,
+	rank: Option<i32>,
 ) -> Result<String, SdkError>
 {
-	prepare_group_keys_for_new_member_internally(requester_public_key_data, group_keys, key_session)
+	prepare_group_keys_for_new_member_internally(requester_public_key_data, group_keys, key_session, rank)
 }
 
 pub fn prepare_group_keys_for_new_member_via_session(
@@ -367,7 +370,13 @@ mod test
 		let group_key_user_0 = decrypt_group_keys(&user_keys.private_key, &group_data_user_0.keys[0]).unwrap();
 
 		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member(&user_keys1.exported_public_key, &[&group_key_user_0.group_key], false).unwrap();
+		let out = prepare_group_keys_for_new_member(
+			&user_keys1.exported_public_key,
+			&[&group_key_user_0.group_key],
+			false,
+			None,
+		)
+		.unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
 		let out_group_1 = &out.keys[0]; //this group only got one key
 
@@ -590,6 +599,7 @@ mod test
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 			time: 0,
 			new_group_key_id: "abc".to_string(),
+			error: None,
 		};
 
 		let done_key_rotation = done_key_rotation(
