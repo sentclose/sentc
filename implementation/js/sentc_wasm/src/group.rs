@@ -471,13 +471,19 @@ Prepare all group keys for a new member.
 Use the group keys from get group data or get group keys fn as string array
 */
 #[wasm_bindgen]
-pub fn group_prepare_keys_for_new_member(user_public_key: &str, group_keys: &str, key_count: i32, admin_rank: i32) -> Result<String, JsValue>
+pub fn group_prepare_keys_for_new_member(
+	user_public_key: &str,
+	group_keys: &str,
+	key_count: i32,
+	rank: Option<i32>,
+	admin_rank: i32,
+) -> Result<String, JsValue>
 {
 	group::check_make_invite_req(admin_rank)?;
 
 	let key_session = key_count > 50;
 
-	let input = group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session)?;
+	let input = group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session, rank)?;
 
 	Ok(input)
 }
@@ -490,6 +496,7 @@ pub async fn group_invite_user(
 	id: String,
 	user_id: String,
 	key_count: i32,
+	rank: Option<i32>,
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
@@ -505,6 +512,7 @@ pub async fn group_invite_user(
 		id.as_str(),
 		user_id.as_str(),
 		key_count,
+		rank,
 		admin_rank,
 		auto_invite,
 		group_invite,
@@ -560,6 +568,7 @@ pub async fn group_accept_join_req(
 	id: String,
 	user_id: String,
 	key_count: i32,
+	rank: Option<i32>,
 	admin_rank: i32,
 	user_public_key: String,
 	group_keys: String,
@@ -573,6 +582,7 @@ pub async fn group_accept_join_req(
 		id.as_str(),
 		user_id.as_str(),
 		key_count,
+		rank,
 		admin_rank,
 		user_public_key.as_str(),
 		group_keys.as_str(),

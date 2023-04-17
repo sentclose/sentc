@@ -1188,6 +1188,7 @@ fn wire_group_prepare_keys_for_new_member_impl(
 	user_public_key: impl Wire2Api<String> + UnwindSafe,
 	group_keys: impl Wire2Api<String> + UnwindSafe,
 	key_count: impl Wire2Api<i32> + UnwindSafe,
+	rank: impl Wire2Api<Option<i32>> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
@@ -1200,8 +1201,17 @@ fn wire_group_prepare_keys_for_new_member_impl(
 			let api_user_public_key = user_public_key.wire2api();
 			let api_group_keys = group_keys.wire2api();
 			let api_key_count = key_count.wire2api();
+			let api_rank = rank.wire2api();
 			let api_admin_rank = admin_rank.wire2api();
-			move |task_callback| group_prepare_keys_for_new_member(api_user_public_key, api_group_keys, api_key_count, api_admin_rank)
+			move |task_callback| {
+				group_prepare_keys_for_new_member(
+					api_user_public_key,
+					api_group_keys,
+					api_key_count,
+					api_rank,
+					api_admin_rank,
+				)
+			}
 		},
 	)
 }
@@ -1213,6 +1223,7 @@ fn wire_group_invite_user_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	user_id: impl Wire2Api<String> + UnwindSafe,
 	key_count: impl Wire2Api<i32> + UnwindSafe,
+	rank: impl Wire2Api<Option<i32>> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	auto_invite: impl Wire2Api<bool> + UnwindSafe,
 	group_invite: impl Wire2Api<bool> + UnwindSafe,
@@ -1233,6 +1244,7 @@ fn wire_group_invite_user_impl(
 			let api_id = id.wire2api();
 			let api_user_id = user_id.wire2api();
 			let api_key_count = key_count.wire2api();
+			let api_rank = rank.wire2api();
 			let api_admin_rank = admin_rank.wire2api();
 			let api_auto_invite = auto_invite.wire2api();
 			let api_group_invite = group_invite.wire2api();
@@ -1247,6 +1259,7 @@ fn wire_group_invite_user_impl(
 					api_id,
 					api_user_id,
 					api_key_count,
+					api_rank,
 					api_admin_rank,
 					api_auto_invite,
 					api_group_invite,
@@ -1678,6 +1691,7 @@ fn wire_group_accept_join_req_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	user_id: impl Wire2Api<String> + UnwindSafe,
 	key_count: impl Wire2Api<i32> + UnwindSafe,
+	rank: impl Wire2Api<Option<i32>> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	user_public_key: impl Wire2Api<String> + UnwindSafe,
 	group_keys: impl Wire2Api<String> + UnwindSafe,
@@ -1696,6 +1710,7 @@ fn wire_group_accept_join_req_impl(
 			let api_id = id.wire2api();
 			let api_user_id = user_id.wire2api();
 			let api_key_count = key_count.wire2api();
+			let api_rank = rank.wire2api();
 			let api_admin_rank = admin_rank.wire2api();
 			let api_user_public_key = user_public_key.wire2api();
 			let api_group_keys = group_keys.wire2api();
@@ -1708,6 +1723,7 @@ fn wire_group_accept_join_req_impl(
 					api_id,
 					api_user_id,
 					api_key_count,
+					api_rank,
 					api_admin_rank,
 					api_user_public_key,
 					api_group_keys,
