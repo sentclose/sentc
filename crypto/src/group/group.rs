@@ -363,6 +363,7 @@ pub fn prepare_group_keys_for_new_member_with_group_public_key(
 	requester_public_key: &str,
 	group_keys: &str,
 	key_session: bool,
+	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, String>
 {
 	//the same like the other fn but with the public key format and not the exported public key from server fetch
@@ -383,6 +384,7 @@ pub fn prepare_group_keys_for_new_member_with_group_public_key(
 		&requester_public_key,
 		&split_group_keys,
 		key_session,
+		rank,
 	)?)
 }
 
@@ -390,6 +392,7 @@ pub fn prepare_group_keys_for_new_member_typed(
 	requester_public_key_data: &str,
 	group_keys: &str,
 	key_session: bool,
+	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, String>
 {
 	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
@@ -408,10 +411,16 @@ pub fn prepare_group_keys_for_new_member_typed(
 		&requester_public_key_data,
 		&split_group_keys,
 		key_session,
+		rank,
 	)?)
 }
 
-pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_keys: &str, key_session: bool) -> Result<String, String>
+pub fn prepare_group_keys_for_new_member(
+	requester_public_key_data: &str,
+	group_keys: &str,
+	key_session: bool,
+	rank: Option<i32>,
+) -> Result<String, String>
 {
 	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
 
@@ -429,6 +438,7 @@ pub fn prepare_group_keys_for_new_member(requester_public_key_data: &str, group_
 		&requester_public_key_data,
 		&split_group_keys,
 		key_session,
+		rank,
 	)?)
 }
 
@@ -640,6 +650,7 @@ mod test
 			user1.user_keys[0].exported_public_key.as_str(),
 			group_keys.as_str(),
 			false,
+			None,
 		)
 		.unwrap();
 		let out = GroupKeysForNewMemberServerInput::from_string(out.as_str()).unwrap();
@@ -882,6 +893,7 @@ mod test
 		.unwrap();
 
 		let server_output = KeyRotationInput {
+			error: None,
 			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
 			encrypted_group_key_by_ephemeral: rotation_out.encrypted_group_key_by_ephemeral.to_string(),
 			ephemeral_alg: rotation_out.ephemeral_alg.to_string(),

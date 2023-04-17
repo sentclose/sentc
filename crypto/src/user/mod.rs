@@ -271,7 +271,7 @@ fn prepare_register_device_internally(
 		public_key_id: out.device_id,
 	};
 
-	let user_keys = group::prepare_group_keys_for_new_member_private_internally(&exported_public_key, group_keys, key_session)?;
+	let user_keys = group::prepare_group_keys_for_new_member_private_internally(&exported_public_key, group_keys, key_session, None)?;
 
 	Ok((
 		serde_json::to_string(&UserDeviceDoneRegisterInput {

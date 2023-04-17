@@ -420,18 +420,20 @@ fn prepare_group_keys_for_new_member_typed_internally(
 	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormatInt],
 	key_session: bool, //this value must be set form each sdk impl from key storage when more than 100 keys are used
+	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, SdkError>
 {
-	prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session)
+	prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session, rank)
 }
 
 fn prepare_group_keys_for_new_member_internally(
 	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormatInt],
 	key_session: bool, //this value must be set form each sdk impl from key storage when more than 100 keys are used
+	rank: Option<i32>,
 ) -> Result<String, SdkError>
 {
-	let server_input = prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session)?;
+	let server_input = prepare_group_keys_for_new_member_private_internally(requester_public_key_data, group_keys, key_session, rank)?;
 
 	server_input
 		.to_string()
@@ -442,6 +444,7 @@ pub(crate) fn prepare_group_keys_for_new_member_private_internally(
 	requester_public_key_data: &UserPublicKeyData,
 	group_keys: &[&SymKeyFormatInt],
 	key_session: bool,
+	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, SdkError>
 {
 	let public_key = import_public_key_from_pem_with_alg(
@@ -458,6 +461,7 @@ pub(crate) fn prepare_group_keys_for_new_member_private_internally(
 	let server_input = GroupKeysForNewMemberServerInput {
 		keys,
 		key_session,
+		rank,
 	};
 
 	Ok(server_input)
@@ -467,6 +471,7 @@ fn prepare_group_keys_for_new_member_internally_with_group_public_key(
 	requester_public_key_data: &PublicKeyFormatInt,
 	group_keys: &[&SymKeyFormatInt],
 	key_session: bool,
+	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, SdkError>
 {
 	//this can be used to not fetch the group public key but use it if the user already fetch the group
@@ -479,6 +484,7 @@ fn prepare_group_keys_for_new_member_internally_with_group_public_key(
 	let server_input = GroupKeysForNewMemberServerInput {
 		keys,
 		key_session,
+		rank,
 	};
 
 	Ok(server_input)

@@ -1173,19 +1173,20 @@ Prepare all group keys for a new member.
 
 Use the group keys from get group data or get group keys fn as string array
  */
-pub fn group_prepare_keys_for_new_member(user_public_key: String, group_keys: String, key_count: i32, admin_rank: i32) -> Result<String>
+pub fn group_prepare_keys_for_new_member(
+	user_public_key: String,
+	group_keys: String,
+	key_count: i32,
+	rank: Option<i32>,
+	admin_rank: i32,
+) -> Result<String>
 {
 	sentc_crypto::group::check_make_invite_req(admin_rank).map_err(|err| anyhow!(err))?;
 
 	let key_session = key_count > 50;
 
-	sentc_crypto::group::prepare_group_keys_for_new_member(
-		//
-		user_public_key.as_str(),
-		group_keys.as_str(),
-		key_session,
-	)
-	.map_err(|err| anyhow!(err))
+	sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key.as_str(), group_keys.as_str(), key_session, rank)
+		.map_err(|err| anyhow!(err))
 }
 
 pub fn group_invite_user(
@@ -1195,6 +1196,7 @@ pub fn group_invite_user(
 	id: String,
 	user_id: String,
 	key_count: i32,
+	rank: Option<i32>,
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
@@ -1210,6 +1212,7 @@ pub fn group_invite_user(
 		id.as_str(),
 		user_id.as_str(),
 		key_count,
+		rank,
 		admin_rank,
 		auto_invite,
 		group_invite,
@@ -1480,6 +1483,7 @@ pub fn group_accept_join_req(
 	id: String,
 	user_id: String,
 	key_count: i32,
+	rank: Option<i32>,
 	admin_rank: i32,
 	user_public_key: String,
 	group_keys: String,
@@ -1493,6 +1497,7 @@ pub fn group_accept_join_req(
 		id.as_str(),
 		user_id.as_str(),
 		key_count,
+		rank,
 		admin_rank,
 		user_public_key.as_str(),
 		group_keys.as_str(),

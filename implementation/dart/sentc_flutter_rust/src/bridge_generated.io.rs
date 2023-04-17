@@ -560,9 +560,10 @@ pub extern "C" fn wire_group_prepare_keys_for_new_member(
 	user_public_key: *mut wire_uint_8_list,
 	group_keys: *mut wire_uint_8_list,
 	key_count: i32,
+	rank: *mut i32,
 	admin_rank: i32,
 ) {
-	wire_group_prepare_keys_for_new_member_impl(port_, user_public_key, group_keys, key_count, admin_rank)
+	wire_group_prepare_keys_for_new_member_impl(port_, user_public_key, group_keys, key_count, rank, admin_rank)
 }
 
 #[no_mangle]
@@ -574,6 +575,7 @@ pub extern "C" fn wire_group_invite_user(
 	id: *mut wire_uint_8_list,
 	user_id: *mut wire_uint_8_list,
 	key_count: i32,
+	rank: *mut i32,
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
@@ -589,6 +591,7 @@ pub extern "C" fn wire_group_invite_user(
 		id,
 		user_id,
 		key_count,
+		rank,
 		admin_rank,
 		auto_invite,
 		group_invite,
@@ -825,6 +828,7 @@ pub extern "C" fn wire_group_accept_join_req(
 	id: *mut wire_uint_8_list,
 	user_id: *mut wire_uint_8_list,
 	key_count: i32,
+	rank: *mut i32,
 	admin_rank: i32,
 	user_public_key: *mut wire_uint_8_list,
 	group_keys: *mut wire_uint_8_list,
@@ -838,6 +842,7 @@ pub extern "C" fn wire_group_accept_join_req(
 		id,
 		user_id,
 		key_count,
+		rank,
 		admin_rank,
 		user_public_key,
 		group_keys,
@@ -1545,6 +1550,11 @@ pub extern "C" fn wire_file_delete_file(
 // Section: allocate functions
 
 #[no_mangle]
+pub extern "C" fn new_box_autoadd_i32_0(value: i32) -> *mut i32 {
+	support::new_leak_box_ptr(value)
+}
+
+#[no_mangle]
 pub extern "C" fn new_box_autoadd_u32_0(value: u32) -> *mut u32 {
 	support::new_leak_box_ptr(value)
 }
@@ -1569,6 +1579,11 @@ impl Wire2Api<String> for *mut wire_uint_8_list {
 	}
 }
 
+impl Wire2Api<i32> for *mut i32 {
+	fn wire2api(self) -> i32 {
+		unsafe { *support::box_from_leak_ptr(self) }
+	}
+}
 impl Wire2Api<u32> for *mut u32 {
 	fn wire2api(self) -> u32 {
 		unsafe { *support::box_from_leak_ptr(self) }
