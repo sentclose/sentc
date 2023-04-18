@@ -197,6 +197,7 @@ impl GroupKeyData
 #[wasm_bindgen]
 pub struct KeyRotationInput
 {
+	error: Option<String>,
 	encrypted_ephemeral_key_by_group_key_and_public_key: String,
 	encrypted_group_key_by_ephemeral: String,
 	ephemeral_alg: String,
@@ -211,6 +212,7 @@ impl From<common_group::KeyRotationInput> for KeyRotationInput
 	fn from(out: common_group::KeyRotationInput) -> Self
 	{
 		Self {
+			error: out.error,
 			encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
 			encrypted_group_key_by_ephemeral: out.encrypted_group_key_by_ephemeral,
 			ephemeral_alg: out.ephemeral_alg,
@@ -259,6 +261,11 @@ impl KeyRotationInput
 	pub fn get_time(&self) -> String
 	{
 		self.time.to_string()
+	}
+
+	pub fn get_error(&self) -> Option<String>
+	{
+		self.error.clone()
 	}
 }
 

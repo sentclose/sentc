@@ -3407,6 +3407,7 @@ impl support::IntoDartExceptPrimitive for KeyRotationGetOut {}
 impl support::IntoDart for KeyRotationInput {
 	fn into_dart(self) -> support::DartAbi {
 		vec![
+			self.error.into_dart(),
 			self.encrypted_ephemeral_key_by_group_key_and_public_key
 				.into_dart(),
 			self.encrypted_group_key_by_ephemeral.into_dart(),
