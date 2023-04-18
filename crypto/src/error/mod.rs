@@ -36,6 +36,7 @@ pub enum SdkError
 
 	LoginServerOutputWrong,
 	KeyRotationServerOutputWrong,
+	KeyRotationEncryptError(String),
 
 	AlgNotFound,
 
@@ -188,6 +189,13 @@ pub fn err_to_msg(error: SdkError) -> String
 		SdkError::GroupPermission => out_error("client_201", "No permission to fulfill this action"),
 		SdkError::GroupUserKickRank => out_error("client_202", "The user to delete has a higher rank"),
 		SdkError::KeyRotationServerOutputWrong => out_error("client_203", "The key rotation data is wrong and can't be decoded."),
+
+		SdkError::KeyRotationEncryptError(e) => {
+			out_error(
+				"client_204",
+				&("Key rotation failed for this account with this error message: ".to_string() + &e),
+			)
+		},
 
 		SdkError::SearchableEncryptionDataTooLong => {
 			out_error(

@@ -195,7 +195,7 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 		&private_key,
 		&public_key,
 		&previous_group_key,
-		&server_output,
+		server_output,
 	)?)
 }
 

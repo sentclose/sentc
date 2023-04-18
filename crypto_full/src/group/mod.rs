@@ -828,7 +828,7 @@ pub async fn done_key_rotation(
 	jwt: &str,
 	group_id: &str,
 	#[cfg(not(feature = "rust"))] server_output: &str,
-	#[cfg(feature = "rust")] server_output: &KeyRotationInput,
+	#[cfg(feature = "rust")] server_output: KeyRotationInput,
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
 	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
 	#[cfg(not(feature = "rust"))] public_key: &str,
