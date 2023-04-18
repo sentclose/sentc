@@ -100,7 +100,7 @@ pub fn done_key_rotation(
 	private_key: &PrivateKeyFormat,
 	public_key: &PublicKeyFormat,
 	previous_group_key: &SymKeyFormat,
-	server_output: &KeyRotationInput,
+	server_output: KeyRotationInput,
 ) -> Result<String, SdkError>
 {
 	done_key_rotation_internally(private_key, public_key, previous_group_key, server_output)

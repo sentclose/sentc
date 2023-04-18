@@ -294,20 +294,20 @@ fn done_key_rotation_internally(
 	private_key: &PrivateKeyFormatInt,
 	public_key: &PublicKeyFormatInt,
 	previous_group_key: &SymKeyFormatInt,
-	server_output: &KeyRotationInput,
+	server_output: KeyRotationInput,
 ) -> Result<String, SdkError>
 {
+	if let Some(e) = server_output.error {
+		return Err(SdkError::KeyRotationEncryptError(e));
+	}
+
 	//the id of the previous group key was returned by the server too so the sdk impl knows which key it used
 
 	//this values were encoded by key_rotation_internally
-	let encrypted_ephemeral_key_by_group_key_and_public_key = Base64::decode_vec(
-		server_output
-			.encrypted_ephemeral_key_by_group_key_and_public_key
-			.as_str(),
-	)
-	.map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
+	let encrypted_ephemeral_key_by_group_key_and_public_key =
+		Base64::decode_vec(&server_output.encrypted_ephemeral_key_by_group_key_and_public_key).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
 	let encrypted_group_key_by_ephemeral =
-		Base64::decode_vec(server_output.encrypted_group_key_by_ephemeral.as_str()).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
+		Base64::decode_vec(&server_output.encrypted_group_key_by_ephemeral).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
 
 	let out = core_group::done_key_rotation(
 		&private_key.key,
@@ -315,7 +315,7 @@ fn done_key_rotation_internally(
 		&previous_group_key.key,
 		&encrypted_ephemeral_key_by_group_key_and_public_key,
 		&encrypted_group_key_by_ephemeral,
-		server_output.ephemeral_alg.as_str(),
+		&server_output.ephemeral_alg,
 	)?;
 
 	let encrypted_new_group_key = Base64::encode_string(&out);

@@ -1227,6 +1227,7 @@ fn wire_group_invite_user_impl(
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	auto_invite: impl Wire2Api<bool> + UnwindSafe,
 	group_invite: impl Wire2Api<bool> + UnwindSafe,
+	re_invite: impl Wire2Api<bool> + UnwindSafe,
 	user_public_key: impl Wire2Api<String> + UnwindSafe,
 	group_keys: impl Wire2Api<String> + UnwindSafe,
 	group_as_member: impl Wire2Api<String> + UnwindSafe,
@@ -1248,6 +1249,7 @@ fn wire_group_invite_user_impl(
 			let api_admin_rank = admin_rank.wire2api();
 			let api_auto_invite = auto_invite.wire2api();
 			let api_group_invite = group_invite.wire2api();
+			let api_re_invite = re_invite.wire2api();
 			let api_user_public_key = user_public_key.wire2api();
 			let api_group_keys = group_keys.wire2api();
 			let api_group_as_member = group_as_member.wire2api();
@@ -1263,6 +1265,7 @@ fn wire_group_invite_user_impl(
 					api_admin_rank,
 					api_auto_invite,
 					api_group_invite,
+					api_re_invite,
 					api_user_public_key,
 					api_group_keys,
 					api_group_as_member,
@@ -3407,6 +3410,7 @@ impl support::IntoDartExceptPrimitive for KeyRotationGetOut {}
 impl support::IntoDart for KeyRotationInput {
 	fn into_dart(self) -> support::DartAbi {
 		vec![
+			self.error.into_dart(),
 			self.encrypted_ephemeral_key_by_group_key_and_public_key
 				.into_dart(),
 			self.encrypted_group_key_by_ephemeral.into_dart(),

@@ -371,6 +371,7 @@ pub async fn invite_user(
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
+	re_invite: bool,
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
@@ -380,11 +381,19 @@ pub async fn invite_user(
 {
 	sentc_crypto::group::check_make_invite_req(admin_rank)?;
 
-	let endpoint = match (group_invite, auto_invite) {
-		(true, true) => "invite_group_auto",
-		(false, true) => "invite_auto",
-		(true, false) => "invite_group",
-		(false, false) => "invite",
+	let endpoint = if re_invite {
+		if group_invite {
+			"re_invite_group"
+		} else {
+			"re_invite"
+		}
+	} else {
+		match (group_invite, auto_invite) {
+			(true, true) => "invite_group_auto",
+			(false, true) => "invite_auto",
+			(true, false) => "invite_group",
+			(false, false) => "invite",
+		}
 	};
 
 	let url = base_url + "/api/v1/group/" + id + "/" + endpoint + "/" + user_to_invite_id;
@@ -828,7 +837,7 @@ pub async fn done_key_rotation(
 	jwt: &str,
 	group_id: &str,
 	#[cfg(not(feature = "rust"))] server_output: &str,
-	#[cfg(feature = "rust")] server_output: &KeyRotationInput,
+	#[cfg(feature = "rust")] server_output: KeyRotationInput,
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
 	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
 	#[cfg(not(feature = "rust"))] public_key: &str,

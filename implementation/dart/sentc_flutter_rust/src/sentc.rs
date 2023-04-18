@@ -811,6 +811,7 @@ impl From<sentc_crypto_common::group::GroupInviteReqList> for GroupInviteReqList
 #[repr(C)]
 pub struct KeyRotationInput
 {
+	pub error: Option<String>,
 	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
 	pub encrypted_group_key_by_ephemeral: String,
 	pub ephemeral_alg: String,
@@ -825,6 +826,7 @@ impl From<sentc_crypto_common::group::KeyRotationInput> for KeyRotationInput
 	fn from(out: sentc_crypto_common::group::KeyRotationInput) -> Self
 	{
 		Self {
+			error: out.error,
 			encrypted_ephemeral_key_by_group_key_and_public_key: out.encrypted_ephemeral_key_by_group_key_and_public_key,
 			encrypted_group_key_by_ephemeral: out.encrypted_group_key_by_ephemeral,
 			ephemeral_alg: out.ephemeral_alg,
@@ -1200,6 +1202,7 @@ pub fn group_invite_user(
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
+	re_invite: bool,
 	user_public_key: String,
 	group_keys: String,
 	group_as_member: String,
@@ -1216,6 +1219,7 @@ pub fn group_invite_user(
 		admin_rank,
 		auto_invite,
 		group_invite,
+		re_invite,
 		user_public_key.as_str(),
 		group_keys.as_str(),
 		get_group_as_member(&group_as_member),
