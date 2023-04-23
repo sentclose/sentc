@@ -32,12 +32,12 @@ pub fn prepare_create_searchable(
 	limit: Option<usize>,
 ) -> Result<SearchCreateData, SdkError>
 {
-	prepare_create_searchable_internally(&key, item_ref, category, data, full, limit)
+	prepare_create_searchable_internally(key, item_ref, category, data, full, limit)
 }
 
 pub fn prepare_create_searchable_light(key: &HmacKeyFormat, data: &str, full: bool, limit: Option<usize>) -> Result<SearchCreateDataLight, SdkError>
 {
-	prepare_create_searchable_light_internally(&key, data, full, limit)
+	prepare_create_searchable_light_internally(key, data, full, limit)
 }
 
 pub fn search(key: &HmacKeyFormat, data: &str) -> Result<String, SdkError>

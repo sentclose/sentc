@@ -606,7 +606,7 @@ mod test
 			&user.user_keys[0].private_key,
 			&user.user_keys[0].public_key,
 			&key_data[0].group_key,
-			&server_output,
+			server_output,
 		)
 		.unwrap();
 		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();

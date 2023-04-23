@@ -415,7 +415,7 @@ pub fn done_key_rotation<'a>(
 	auth_token: &'a str,
 	jwt: &'a str,
 	#[cfg(not(feature = "rust"))] server_output: &'a str,
-	#[cfg(feature = "rust")] server_output: &'a sentc_crypto_common::group::KeyRotationInput,
+	#[cfg(feature = "rust")] server_output: sentc_crypto_common::group::KeyRotationInput,
 	#[cfg(not(feature = "rust"))] pre_user_key: &'a str,
 	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::util::SymKeyFormat,
 	#[cfg(not(feature = "rust"))] device_public_key: &'a str,

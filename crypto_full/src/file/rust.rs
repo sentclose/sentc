@@ -10,6 +10,6 @@ pub type FileRes = Result<FileData, SdkFullError>;
 pub type FilePartRes = Result<Vec<FilePartListItem>, SdkFullError>;
 pub type ByteRes = Result<(Vec<u8>, SymKey), SdkFullError>;
 pub type VoidRes = Result<(), SdkFullError>;
-pub type KeyRes = Result<String, SdkFullError>;
+pub type KeyRes = Result<SymKey, SdkFullError>;
 
 pub type FileRegRes = Result<(String, String, Option<String>), SdkFullError>;
