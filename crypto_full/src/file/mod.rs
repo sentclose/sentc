@@ -66,6 +66,7 @@ pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &st
 	Ok(file_parts)
 }
 
+#[allow(clippy::needless_question_mark)]
 pub async fn download_and_decrypt_file_part_start(
 	base_url: String,
 	#[cfg(not(feature = "rust"))] url_prefix: String,
@@ -94,9 +95,14 @@ pub async fn download_and_decrypt_file_part_start(
 	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None, None).await?;
 
 	//decrypt the part
-	sentc_crypto::file::decrypt_file_part_start(content_key, &res, verify_key_data)
+	Ok(sentc_crypto::file::decrypt_file_part_start(
+		content_key,
+		&res,
+		verify_key_data,
+	)?)
 }
 
+#[allow(clippy::needless_question_mark)]
 pub async fn download_and_decrypt_file_part(
 	base_url: String,
 	#[cfg(not(feature = "rust"))] url_prefix: String,
@@ -104,7 +110,7 @@ pub async fn download_and_decrypt_file_part(
 	auth_token: &str,
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] pre_key: &str,
-	#[cfg(feature = "rust")] pre_key: &sentc_crypto_core::SymKey,
+	#[cfg(feature = "rust")] pre_key: &sentc_crypto::sdk_core::SymKey,
 	#[cfg(not(feature = "rust"))] verify_key_data: &str,
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
@@ -125,7 +131,7 @@ pub async fn download_and_decrypt_file_part(
 	let res = make_req_buffer(HttpMethod::GET, url.as_str(), auth_token, None, None, None).await?;
 
 	//decrypt the part
-	sentc_crypto::file::decrypt_file_part(pre_key, &res, verify_key_data)
+	Ok(sentc_crypto::file::decrypt_file_part(pre_key, &res, verify_key_data)?)
 }
 
 //__________________________________________________________________________________________________
@@ -227,7 +233,7 @@ pub async fn upload_part(
 	end: bool,
 	sequence: i32,
 	#[cfg(not(feature = "rust"))] content_key: &str,
-	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKey,
+	#[cfg(feature = "rust")] content_key: &sentc_crypto::sdk_core::SymKey,
 	#[cfg(not(feature = "rust"))] sign_key: &str,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
 	part: &[u8],
