@@ -13,6 +13,14 @@ pub(crate) use crate::content::non_rust::ContentRes;
 pub(crate) use crate::content::rust::ContentRes;
 use crate::util::{make_req, HttpMethod};
 
+pub enum ContentFetchLimit
+{
+	Small,
+	Medium,
+	Large,
+	XLarge,
+}
+
 pub async fn fetch_content_for_group(
 	base_url: String,
 	auth_token: &str,
@@ -22,11 +30,19 @@ pub async fn fetch_content_for_group(
 	cat_id: Option<&str>,
 	last_fetched_time: &str,
 	last_fetched_group_id: &str,
+	limit: ContentFetchLimit,
 ) -> ContentRes
 {
+	let limit = match limit {
+		ContentFetchLimit::Small => "small",
+		ContentFetchLimit::Medium => "med",
+		ContentFetchLimit::Large => "large",
+		ContentFetchLimit::XLarge => "xlarge",
+	};
+
 	let url = match cat_id {
-		Some(c_id) => base_url + "/api/v1/content/group/" + id + "/" + c_id + "/" + last_fetched_time + "/" + last_fetched_group_id,
-		None => base_url + "/api/v1/content/group/" + id + "/all/" + last_fetched_time + "/" + last_fetched_group_id,
+		Some(c_id) => base_url + "/api/v1/content/group/" + id + "/" + limit + "/" + c_id + "/" + last_fetched_time + "/" + last_fetched_group_id,
+		None => base_url + "/api/v1/content/group/" + id + "/" + limit + "/" + "/all/" + last_fetched_time + "/" + last_fetched_group_id,
 	};
 
 	let res = make_req(

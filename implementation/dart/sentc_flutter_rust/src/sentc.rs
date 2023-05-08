@@ -2179,6 +2179,29 @@ impl From<sentc_crypto_common::content::ListContentItem> for ListContentItem
 	}
 }
 
+#[repr(C)]
+pub enum ContentFetchLimit
+{
+	Small,
+	Medium,
+	Large,
+	XLarge,
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<sentc_crypto_full::content::ContentFetchLimit> for ContentFetchLimit
+{
+	fn into(self) -> sentc_crypto_full::content::ContentFetchLimit
+	{
+		match self {
+			ContentFetchLimit::Small => sentc_crypto_full::content::ContentFetchLimit::Small,
+			ContentFetchLimit::Medium => sentc_crypto_full::content::ContentFetchLimit::Medium,
+			ContentFetchLimit::Large => sentc_crypto_full::content::ContentFetchLimit::Large,
+			ContentFetchLimit::XLarge => sentc_crypto_full::content::ContentFetchLimit::XLarge,
+		}
+	}
+}
+
 pub fn content_fetch_for_group(
 	base_url: String,
 	auth_token: String,
@@ -2188,6 +2211,7 @@ pub fn content_fetch_for_group(
 	cat_id: String,
 	last_fetched_time: String,
 	last_fetched_group_id: String,
+	limit: ContentFetchLimit,
 ) -> Result<Vec<ListContentItem>>
 {
 	let cat_id = if cat_id.is_empty() { None } else { Some(cat_id.as_str()) };
@@ -2201,6 +2225,7 @@ pub fn content_fetch_for_group(
 		cat_id,
 		&last_fetched_time,
 		&last_fetched_group_id,
+		limit.into(),
 	))?;
 
 	Ok(out.into_iter().map(|item| item.into()).collect())

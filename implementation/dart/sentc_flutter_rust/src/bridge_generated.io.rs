@@ -1357,6 +1357,7 @@ pub extern "C" fn wire_content_fetch_for_group(
 	cat_id: *mut wire_uint_8_list,
 	last_fetched_time: *mut wire_uint_8_list,
 	last_fetched_group_id: *mut wire_uint_8_list,
+	limit: i32,
 ) {
 	wire_content_fetch_for_group_impl(
 		port_,
@@ -1368,6 +1369,7 @@ pub extern "C" fn wire_content_fetch_for_group(
 		cat_id,
 		last_fetched_time,
 		last_fetched_group_id,
+		limit,
 	)
 }
 

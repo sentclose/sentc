@@ -2758,6 +2758,7 @@ fn wire_content_fetch_for_group_impl(
 	cat_id: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
+	limit: impl Wire2Api<ContentFetchLimit> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2774,6 +2775,7 @@ fn wire_content_fetch_for_group_impl(
 			let api_cat_id = cat_id.wire2api();
 			let api_last_fetched_time = last_fetched_time.wire2api();
 			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
+			let api_limit = limit.wire2api();
 			move |task_callback| {
 				content_fetch_for_group(
 					api_base_url,
@@ -2784,6 +2786,7 @@ fn wire_content_fetch_for_group_impl(
 					api_cat_id,
 					api_last_fetched_time,
 					api_last_fetched_group_id,
+					api_limit,
 				)
 			}
 		},
@@ -3201,6 +3204,17 @@ impl Wire2Api<bool> for bool {
 	}
 }
 
+impl Wire2Api<ContentFetchLimit> for i32 {
+	fn wire2api(self) -> ContentFetchLimit {
+		match self {
+			0 => ContentFetchLimit::Small,
+			1 => ContentFetchLimit::Medium,
+			2 => ContentFetchLimit::Large,
+			3 => ContentFetchLimit::XLarge,
+			_ => unreachable!("Invalid variant for ContentFetchLimit: {}", self),
+		}
+	}
+}
 impl Wire2Api<i32> for i32 {
 	fn wire2api(self) -> i32 {
 		self
