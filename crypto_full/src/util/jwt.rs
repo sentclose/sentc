@@ -23,6 +23,7 @@ pub(crate) type JwtRes = Result<Claims, SdkFullError>;
 #[cfg(not(feature = "rust"))]
 pub(crate) type JwtRes = Result<Claims, String>;
 
+#[allow(clippy::needless_question_mark)]
 pub fn decode_jwt(token: &str) -> JwtRes
 {
 	Ok(decode_jwt_internally(token)?)
