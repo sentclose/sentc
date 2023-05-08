@@ -108,7 +108,7 @@ pub fn done_key_rotation(
 
 pub fn decrypt_group_hmac_key(key: &SymKeyFormat, server_output: &GroupHmacData) -> Result<HmacKeyFormat, SdkError>
 {
-	decrypt_group_hmac_key_internally(&key, server_output)
+	decrypt_group_hmac_key_internally(key, server_output)
 }
 
 pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
