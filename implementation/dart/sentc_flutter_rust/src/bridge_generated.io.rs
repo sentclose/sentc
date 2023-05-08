@@ -1347,6 +1347,31 @@ pub extern "C" fn wire_search(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_content_fetch_for_group(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	group_id: *mut wire_uint_8_list,
+	group_as_member: *mut wire_uint_8_list,
+	cat_id: *mut wire_uint_8_list,
+	last_fetched_time: *mut wire_uint_8_list,
+	last_fetched_group_id: *mut wire_uint_8_list,
+) {
+	wire_content_fetch_for_group_impl(
+		port_,
+		base_url,
+		auth_token,
+		jwt,
+		group_id,
+		group_as_member,
+		cat_id,
+		last_fetched_time,
+		last_fetched_group_id,
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_file_download_file_meta(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,

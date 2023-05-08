@@ -2146,6 +2146,66 @@ pub fn search(
 	Ok(out.into_iter().map(|item| item.into()).collect())
 }
 
+//__________________________________________________________________________________________________
+//content
+
+#[repr(C)]
+pub struct ListContentItem
+{
+	pub id: String,
+	pub item: String,
+	pub belongs_to_group: Option<String>,
+	pub belongs_to_user: Option<String>,
+	pub creator: String,
+	pub time: String,
+	pub category: Option<String>,
+	pub access_from_group: Option<String>,
+}
+
+impl From<sentc_crypto_common::content::ListContentItem> for ListContentItem
+{
+	fn from(value: sentc_crypto_common::content::ListContentItem) -> Self
+	{
+		Self {
+			id: value.id,
+			item: value.item,
+			belongs_to_group: value.belongs_to_group,
+			belongs_to_user: value.belongs_to_user,
+			creator: value.creator,
+			time: value.time.to_string(),
+			category: value.category,
+			access_from_group: value.access_from_group,
+		}
+	}
+}
+
+pub fn content_fetch_for_group(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	group_id: String,
+	group_as_member: String,
+	cat_id: String,
+	last_fetched_time: String,
+	last_fetched_group_id: String,
+) -> Result<Vec<ListContentItem>>
+{
+	let cat_id = if cat_id.is_empty() { None } else { Some(cat_id.as_str()) };
+
+	let out = rt(sentc_crypto_full::content::fetch_content_for_group(
+		base_url,
+		&auth_token,
+		&jwt,
+		&group_id,
+		get_group_as_member(&group_as_member),
+		cat_id,
+		&last_fetched_time,
+		&last_fetched_group_id,
+	))?;
+
+	Ok(out.into_iter().map(|item| item.into()).collect())
+}
+
 //==================================================================================================
 //file
 

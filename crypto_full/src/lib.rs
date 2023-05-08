@@ -3,6 +3,7 @@
 
 extern crate alloc;
 
+pub mod content;
 pub mod crypto;
 mod error;
 pub mod file;

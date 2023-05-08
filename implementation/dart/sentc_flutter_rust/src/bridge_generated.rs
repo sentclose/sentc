@@ -2748,6 +2748,47 @@ fn wire_search_impl(
 		},
 	)
 }
+fn wire_content_fetch_for_group_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+	group_id: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	cat_id: impl Wire2Api<String> + UnwindSafe,
+	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
+	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "content_fetch_for_group",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_group_id = group_id.wire2api();
+			let api_group_as_member = group_as_member.wire2api();
+			let api_cat_id = cat_id.wire2api();
+			let api_last_fetched_time = last_fetched_time.wire2api();
+			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
+			move |task_callback| {
+				content_fetch_for_group(
+					api_base_url,
+					api_auth_token,
+					api_jwt,
+					api_group_id,
+					api_group_as_member,
+					api_cat_id,
+					api_last_fetched_time,
+					api_last_fetched_group_id,
+				)
+			}
+		},
+	)
+}
 fn wire_file_download_file_meta_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -3431,6 +3472,23 @@ impl support::IntoDart for KeysToMasterKeyFetch {
 	}
 }
 impl support::IntoDartExceptPrimitive for KeysToMasterKeyFetch {}
+
+impl support::IntoDart for ListContentItem {
+	fn into_dart(self) -> support::DartAbi {
+		vec![
+			self.id.into_dart(),
+			self.item.into_dart(),
+			self.belongs_to_group.into_dart(),
+			self.belongs_to_user.into_dart(),
+			self.creator.into_dart(),
+			self.time.into_dart(),
+			self.category.into_dart(),
+			self.access_from_group.into_dart(),
+		]
+		.into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for ListContentItem {}
 
 impl support::IntoDart for ListGroups {
 	fn into_dart(self) -> support::DartAbi {
