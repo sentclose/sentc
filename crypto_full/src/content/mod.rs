@@ -25,8 +25,8 @@ pub async fn fetch_content_for_group(
 ) -> ContentRes
 {
 	let url = match cat_id {
-		Some(c_id) => base_url + "api/v1/content/group/" + id + "/" + c_id + "/" + last_fetched_time + "/" + last_fetched_group_id,
-		None => base_url + "api/v1/content/group/" + id + "/all/" + last_fetched_time + "/" + last_fetched_group_id,
+		Some(c_id) => base_url + "/api/v1/content/group/" + id + "/" + c_id + "/" + last_fetched_time + "/" + last_fetched_group_id,
+		None => base_url + "/api/v1/content/group/" + id + "/all/" + last_fetched_time + "/" + last_fetched_group_id,
 	};
 
 	let res = make_req(
