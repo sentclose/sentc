@@ -15,7 +15,7 @@ sentc-crypto = {version = "0.1.0", path = "../../../crypto"}
 
 sentc-crypto-full = {version = "0.1.0", path = "../../../crypto_full", features = ["rustls"]}
 
-sentc-crypto-common = {version = "0.1.0", path = "../../../sdk-common"}
+sentc-crypto-common = {workspace=true}
 
 tokio = { version = "1.14.0", features = ["rt-multi-thread"] }
 

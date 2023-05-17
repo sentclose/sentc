@@ -9,7 +9,7 @@ edition = "2021"
 # own crypto lib
 sentc-crypto = {version = "0.1.0", path = "../crypto", default-features = false}
 
-sentc-crypto-common = {version = "0.1.0", path = "../sdk-common"}
+sentc-crypto-common = {workspace=true}
 
 #_______________________________________________________________________________________________________________________
 # req handling

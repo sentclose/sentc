@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 sentc-crypto-core = {version = "0.1.0", path = "../crypto_core"}
-sentc-crypto-common = {version = "0.1.0", path = "../sdk-common"}
+sentc-crypto-common = {workspace=true}
 
 # key and data export
 base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}  # must use this version because it is not comp. with password_hash from argon2

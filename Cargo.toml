@@ -3,10 +3,12 @@ members = [
     "crypto",
     "crypto_core",
     "crypto_full",
-    "sdk-common",
     "implementation/js/sentc_wasm",
     "implementation/dart/sentc_flutter_rust"
 ]
+
+[workspace.dependencies]
+sentc-crypto-common = "0.1.0"
 
 [profile.dev]
 # Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.

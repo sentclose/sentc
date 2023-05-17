@@ -17,7 +17,7 @@ sentc-crypto = {version = "0.1.0", path = "../../../crypto"}
 
 sentc-crypto-full = {version = "0.1.0", path = "../../../crypto_full", features = ["wasm"]}
 
-sentc-crypto-common = {version = "0.1.0", path = "../../../sdk-common"}
+sentc-crypto-common = {workspace=true}
 
 # must be js feature for wasm
 getrandom = { version = "0.2", features = ["js"] }
