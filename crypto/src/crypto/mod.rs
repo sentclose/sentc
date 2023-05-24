@@ -75,7 +75,7 @@ use crate::util::public::handle_server_response;
 use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
 
-pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Option<SignHead>, Vec<u8>), SdkError>
+pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(SignHead, Vec<u8>), SdkError>
 {
 	let signed_data = crypto_core::sign(&key.key, data)?;
 
@@ -83,12 +83,13 @@ pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Op
 		SignK::Ed25519(_) => ED25519_OUTPUT.to_string(),
 	};
 
-	let head = Some(SignHead {
-		id: key.key_id.to_string(),
-		alg,
-	});
-
-	Ok((head, signed_data))
+	Ok((
+		SignHead {
+			id: key.key_id.to_string(),
+			alg,
+		},
+		signed_data,
+	))
 }
 
 pub(crate) fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkError>
@@ -188,7 +189,7 @@ fn encrypt_raw_symmetric_internally(
 	if let Some(sk) = sign_key {
 		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
 		encrypted = data_with_sign;
-		encrypt_head.sign = sign_head;
+		encrypt_head.sign = Some(sign_head);
 	}
 
 	Ok((encrypt_head, encrypted))
@@ -244,7 +245,7 @@ fn encrypt_raw_asymmetric_internally(
 	if let Some(sk) = sign_key {
 		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
 		encrypted = data_with_sign;
-		encrypt_head.sign = sign_head;
+		encrypt_head.sign = Some(sign_head);
 	}
 
 	Ok((encrypt_head, encrypted))
