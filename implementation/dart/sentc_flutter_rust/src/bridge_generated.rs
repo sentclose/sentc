@@ -1840,6 +1840,8 @@ fn wire_group_prepare_key_rotation_impl(
 	port_: MessagePort,
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
 	public_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<String> + UnwindSafe,
+	starter: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1850,7 +1852,9 @@ fn wire_group_prepare_key_rotation_impl(
 		move || {
 			let api_pre_group_key = pre_group_key.wire2api();
 			let api_public_key = public_key.wire2api();
-			move |task_callback| group_prepare_key_rotation(api_pre_group_key, api_public_key)
+			let api_sign_key = sign_key.wire2api();
+			let api_starter = starter.wire2api();
+			move |task_callback| group_prepare_key_rotation(api_pre_group_key, api_public_key, api_sign_key, api_starter)
 		},
 	)
 }
@@ -1860,6 +1864,7 @@ fn wire_group_done_key_rotation_impl(
 	public_key: impl Wire2Api<String> + UnwindSafe,
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
 	server_output: impl Wire2Api<String> + UnwindSafe,
+	verify_key: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1872,7 +1877,16 @@ fn wire_group_done_key_rotation_impl(
 			let api_public_key = public_key.wire2api();
 			let api_pre_group_key = pre_group_key.wire2api();
 			let api_server_output = server_output.wire2api();
-			move |task_callback| group_done_key_rotation(api_private_key, api_public_key, api_pre_group_key, api_server_output)
+			let api_verify_key = verify_key.wire2api();
+			move |task_callback| {
+				group_done_key_rotation(
+					api_private_key,
+					api_public_key,
+					api_pre_group_key,
+					api_server_output,
+					api_verify_key,
+				)
+			}
 		},
 	)
 }
@@ -1884,6 +1898,8 @@ fn wire_group_key_rotation_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	public_key: impl Wire2Api<String> + UnwindSafe,
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<String> + UnwindSafe,
+	starter: impl Wire2Api<String> + UnwindSafe,
 	group_as_member: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
@@ -1899,6 +1915,8 @@ fn wire_group_key_rotation_impl(
 			let api_id = id.wire2api();
 			let api_public_key = public_key.wire2api();
 			let api_pre_group_key = pre_group_key.wire2api();
+			let api_sign_key = sign_key.wire2api();
+			let api_starter = starter.wire2api();
 			let api_group_as_member = group_as_member.wire2api();
 			move |task_callback| {
 				group_key_rotation(
@@ -1908,6 +1926,8 @@ fn wire_group_key_rotation_impl(
 					api_id,
 					api_public_key,
 					api_pre_group_key,
+					api_sign_key,
+					api_starter,
 					api_group_as_member,
 				)
 			}
@@ -1961,6 +1981,7 @@ fn wire_group_finish_key_rotation_impl(
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
 	public_key: impl Wire2Api<String> + UnwindSafe,
 	private_key: impl Wire2Api<String> + UnwindSafe,
+	verify_key: impl Wire2Api<String> + UnwindSafe,
 	group_as_member: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
@@ -1978,6 +1999,7 @@ fn wire_group_finish_key_rotation_impl(
 			let api_pre_group_key = pre_group_key.wire2api();
 			let api_public_key = public_key.wire2api();
 			let api_private_key = private_key.wire2api();
+			let api_verify_key = verify_key.wire2api();
 			let api_group_as_member = group_as_member.wire2api();
 			move |task_callback| {
 				group_finish_key_rotation(
@@ -1989,6 +2011,7 @@ fn wire_group_finish_key_rotation_impl(
 					api_pre_group_key,
 					api_public_key,
 					api_private_key,
+					api_verify_key,
 					api_group_as_member,
 				)
 			}
@@ -3456,6 +3479,9 @@ impl support::IntoDart for KeyRotationGetOut {
 			self.new_group_key_id.into_dart(),
 			self.encrypted_eph_key_key_id.into_dart(),
 			self.server_output.into_dart(),
+			self.signed_by_user_id.into_dart(),
+			self.signed_by_user_sign_key_id.into_dart(),
+			self.signed_by_user_sign_key_alg.into_dart(),
 		]
 		.into_dart()
 	}

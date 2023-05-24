@@ -903,8 +903,14 @@ pub extern "C" fn wire_leave_group(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_group_prepare_key_rotation(port_: i64, pre_group_key: *mut wire_uint_8_list, public_key: *mut wire_uint_8_list) {
-	wire_group_prepare_key_rotation_impl(port_, pre_group_key, public_key)
+pub extern "C" fn wire_group_prepare_key_rotation(
+	port_: i64,
+	pre_group_key: *mut wire_uint_8_list,
+	public_key: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	starter: *mut wire_uint_8_list,
+) {
+	wire_group_prepare_key_rotation_impl(port_, pre_group_key, public_key, sign_key, starter)
 }
 
 #[no_mangle]
@@ -914,8 +920,16 @@ pub extern "C" fn wire_group_done_key_rotation(
 	public_key: *mut wire_uint_8_list,
 	pre_group_key: *mut wire_uint_8_list,
 	server_output: *mut wire_uint_8_list,
+	verify_key: *mut wire_uint_8_list,
 ) {
-	wire_group_done_key_rotation_impl(port_, private_key, public_key, pre_group_key, server_output)
+	wire_group_done_key_rotation_impl(
+		port_,
+		private_key,
+		public_key,
+		pre_group_key,
+		server_output,
+		verify_key,
+	)
 }
 
 #[no_mangle]
@@ -927,6 +941,8 @@ pub extern "C" fn wire_group_key_rotation(
 	id: *mut wire_uint_8_list,
 	public_key: *mut wire_uint_8_list,
 	pre_group_key: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	starter: *mut wire_uint_8_list,
 	group_as_member: *mut wire_uint_8_list,
 ) {
 	wire_group_key_rotation_impl(
@@ -937,6 +953,8 @@ pub extern "C" fn wire_group_key_rotation(
 		id,
 		public_key,
 		pre_group_key,
+		sign_key,
+		starter,
 		group_as_member,
 	)
 }
@@ -969,6 +987,7 @@ pub extern "C" fn wire_group_finish_key_rotation(
 	pre_group_key: *mut wire_uint_8_list,
 	public_key: *mut wire_uint_8_list,
 	private_key: *mut wire_uint_8_list,
+	verify_key: *mut wire_uint_8_list,
 	group_as_member: *mut wire_uint_8_list,
 ) {
 	wire_group_finish_key_rotation_impl(
@@ -981,6 +1000,7 @@ pub extern "C" fn wire_group_finish_key_rotation(
 		pre_group_key,
 		public_key,
 		private_key,
+		verify_key,
 		group_as_member,
 	)
 }
