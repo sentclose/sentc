@@ -36,4 +36,8 @@ pub struct KeyRotationGetOut
 	pub new_group_key_id: String,
 	pub encrypted_eph_key_key_id: EncryptionKeyPairId,
 	pub server_output: String,
+
+	pub signed_by_user_id: Option<String>,
+	pub signed_by_user_sign_key_id: Option<String>,
+	pub signed_by_user_sign_key_alg: Option<String>,
 }

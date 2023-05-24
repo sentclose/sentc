@@ -11,10 +11,11 @@ use sentc_crypto_common::group::{
 	KeyRotationInput,
 };
 use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
+use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
+use crate::crypto::{prepare_sign_key, prepare_verify_key};
 use crate::group::{
 	decrypt_group_hmac_key_internally,
 	decrypt_group_keys_internally,
@@ -162,8 +163,10 @@ pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String
 	Ok((out.0, public_key, group_key))
 }
 
-pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str, user_group: bool) -> Result<String, String>
+pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str, user_group: bool, sign_key: &str, starter: UserId) -> Result<String, String>
 {
+	let sign_key = prepare_sign_key(sign_key)?;
+
 	//the ids comes from the storage of the current impl from the sdk, the group key id comes from get group
 	let previous_group_key = import_sym_key(previous_group_key)?;
 
@@ -173,6 +176,8 @@ pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str, user_gro
 		&previous_group_key,
 		&invoker_public_key,
 		user_group,
+		sign_key.as_ref(),
+		starter,
 	)?)
 }
 
@@ -181,8 +186,16 @@ pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRota
 	Ok(get_done_key_rotation_server_input_internally(server_output)?)
 }
 
-pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key: &str, server_output: &str) -> Result<String, String>
+pub fn done_key_rotation(
+	private_key: &str,
+	public_key: &str,
+	previous_group_key: &str,
+	server_output: &str,
+	verify_key: &str,
+) -> Result<String, String>
 {
+	let verify_key = prepare_verify_key(verify_key)?;
+
 	let previous_group_key = import_sym_key(previous_group_key)?;
 
 	let private_key = import_private_key(private_key)?;
@@ -196,6 +209,7 @@ pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key
 		&public_key,
 		&previous_group_key,
 		server_output,
+		verify_key.as_ref(),
 	)?)
 }
 
@@ -856,7 +870,14 @@ mod test
 
 		let (_data, key_data, group_server_out, _) = create_group(user_keys);
 
-		let rotation_out = key_rotation(key_data[0].group_key.as_str(), user_keys.public_key.as_str(), false).unwrap();
+		let rotation_out = key_rotation(
+			key_data[0].group_key.as_str(),
+			user_keys.public_key.as_str(),
+			false,
+			"",
+			"".to_string(),
+		)
+		.unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -901,6 +922,10 @@ mod test
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 			time: 0,
 			new_group_key_id: "abc".to_string(),
+
+			signed_by_user_id: None,
+			signed_by_user_sign_key_id: None,
+			signed_by_user_sign_key_alg: None,
 		};
 
 		let done_key_rotation = done_key_rotation(
@@ -908,6 +933,7 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
+			"",
 		)
 		.unwrap();
 		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();

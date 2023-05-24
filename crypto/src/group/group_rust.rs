@@ -10,8 +10,8 @@ use sentc_crypto_common::group::{
 	GroupServerData,
 	KeyRotationInput,
 };
-use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::GroupId;
+use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::{GroupId, UserId};
 
 use crate::group::{
 	decrypt_group_hmac_key_internally,
@@ -32,7 +32,7 @@ use crate::group::{
 	GroupKeyData,
 };
 use crate::util::public::handle_server_response;
-use crate::util::{HmacKeyFormat, PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SymKeyFormat};
+use crate::util::{HmacKeyFormat, PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SignKeyFormat, SymKeyFormat};
 use crate::SdkError;
 
 pub struct GroupOutData
@@ -86,9 +86,15 @@ pub fn prepare_create_batch(creators_public_key: &PublicKeyFormat) -> Result<(St
 	prepare_create_internally(creators_public_key)
 }
 
-pub fn key_rotation(previous_group_key: &SymKeyFormat, invoker_public_key: &PublicKeyFormat, user_group: bool) -> Result<String, SdkError>
+pub fn key_rotation(
+	previous_group_key: &SymKeyFormat,
+	invoker_public_key: &PublicKeyFormat,
+	user_group: bool,
+	sign_key: Option<&SignKeyFormat>,
+	starter: UserId,
+) -> Result<String, SdkError>
 {
-	key_rotation_internally(previous_group_key, invoker_public_key, user_group)
+	key_rotation_internally(previous_group_key, invoker_public_key, user_group, sign_key, starter)
 }
 
 pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, SdkError>
@@ -101,9 +107,10 @@ pub fn done_key_rotation(
 	public_key: &PublicKeyFormat,
 	previous_group_key: &SymKeyFormat,
 	server_output: KeyRotationInput,
+	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<String, SdkError>
 {
-	done_key_rotation_internally(private_key, public_key, previous_group_key, server_output)
+	done_key_rotation_internally(private_key, public_key, previous_group_key, server_output, verify_key)
 }
 
 pub fn decrypt_group_hmac_key(key: &SymKeyFormat, server_output: &GroupHmacData) -> Result<HmacKeyFormat, SdkError>
@@ -564,7 +571,14 @@ mod test
 
 		let (_data, key_data, group_server_out, _) = create_group(&user.user_keys[0]);
 
-		let rotation_out = key_rotation(&key_data[0].group_key, &user.user_keys[0].public_key, false).unwrap();
+		let rotation_out = key_rotation(
+			&key_data[0].group_key,
+			&user.user_keys[0].public_key,
+			false,
+			None,
+			Default::default(),
+		)
+		.unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
 
 		//get the new group key directly because for the invoker the key is already encrypted by the own public key
@@ -600,6 +614,10 @@ mod test
 			time: 0,
 			new_group_key_id: "abc".to_string(),
 			error: None,
+
+			signed_by_user_id: None,
+			signed_by_user_sign_key_id: None,
+			signed_by_user_sign_key_alg: None,
 		};
 
 		let done_key_rotation = done_key_rotation(
@@ -607,6 +625,7 @@ mod test
 			&user.user_keys[0].public_key,
 			&key_data[0].group_key,
 			server_output,
+			None,
 		)
 		.unwrap();
 		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();
