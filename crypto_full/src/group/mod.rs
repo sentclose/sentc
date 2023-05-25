@@ -21,6 +21,7 @@ use sentc_crypto_common::group::{
 	KeyRotationStartServerOutput,
 	ListGroups,
 };
+use sentc_crypto_common::UserId;
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{
@@ -747,6 +748,9 @@ pub async fn key_rotation(
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
 	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
 	user_group: bool,
+	#[cfg(not(feature = "rust"))] sign_key: &str,
+	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
+	starter: UserId,
 	group_as_member: Option<&str>,
 ) -> Res
 {
@@ -755,7 +759,7 @@ pub async fn key_rotation(
 		false => base_url + "/api/v1/group/" + group_id + "/key_rotation",
 	};
 
-	let input = sentc_crypto::group::key_rotation(pre_group_key, public_key, user_group)?;
+	let input = sentc_crypto::group::key_rotation(pre_group_key, public_key, user_group, sign_key, starter)?;
 
 	let res = make_req(
 		HttpMethod::POST,
@@ -816,6 +820,10 @@ pub async fn prepare_done_key_rotation(
 				pre_group_key_id: key.previous_group_key_id,
 				new_group_key_id: key.new_group_key_id,
 				encrypted_eph_key_key_id: key.encrypted_eph_key_key_id,
+
+				signed_by_user_id: key.signed_by_user_id,
+				signed_by_user_sign_key_id: key.signed_by_user_sign_key_id,
+				signed_by_user_sign_key_alg: key.signed_by_user_sign_key_alg,
 			});
 		}
 
@@ -845,6 +853,8 @@ pub async fn done_key_rotation(
 	#[cfg(not(feature = "rust"))] private_key: &str,
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 	user_group: bool,
+	#[cfg(not(feature = "rust"))] verify_key: &str,
+	#[cfg(feature = "rust")] verify_key: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 	group_as_member: Option<&str>,
 ) -> VoidRes
 {
@@ -863,7 +873,7 @@ pub async fn done_key_rotation(
 		true => base_url + "/api/v1/user/user_keys/rotation/" + key_id,
 	};
 
-	let input = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, server_output)?;
+	let input = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, server_output, verify_key)?;
 
 	let res = make_req(
 		HttpMethod::PUT,

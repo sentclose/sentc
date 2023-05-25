@@ -401,6 +401,8 @@ pub fn key_rotation<'a>(
 		device_public_key,
 		pre_user_key,
 		true,
+		Default::default(),
+		Default::default(),
 		None,
 	)
 }
@@ -434,6 +436,7 @@ pub fn done_key_rotation<'a>(
 		device_public_key,
 		device_private_key,
 		true,
+		Default::default(),
 		None,
 	)
 }

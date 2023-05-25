@@ -129,7 +129,7 @@ fn encrypt_file_part_internally(pre_content_key: &SymKey, part: &[u8], sign_key:
 	let sign = if let Some(sk) = sign_key {
 		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted_part)?;
 		encrypted_part = data_with_sign;
-		sign_head
+		Some(sign_head)
 	} else {
 		None
 	};

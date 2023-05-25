@@ -6,6 +6,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
+use sentc_crypto_common::crypto::SignHead;
 use sentc_crypto_common::group::{
 	CreateData,
 	DoneKeyRotationData,
@@ -18,8 +19,8 @@ use sentc_crypto_common::group::{
 	KeyRotationData,
 	KeyRotationInput,
 };
-use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::GroupId;
+use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
 use crate::util::public::handle_server_response;
@@ -30,9 +31,10 @@ use crate::util::{
 	HmacKeyFormatInt,
 	PrivateKeyFormatInt,
 	PublicKeyFormatInt,
+	SignKeyFormatInt,
 	SymKeyFormatInt,
 };
-use crate::SdkError;
+use crate::{crypto, SdkError};
 
 #[cfg(not(feature = "rust"))]
 mod group;
@@ -223,6 +225,8 @@ fn key_rotation_internally(
 	previous_group_key: &SymKeyFormatInt,
 	invoker_public_key: &PublicKeyFormatInt,
 	user_group: bool,
+	sign_key: Option<&SignKeyFormatInt>,
+	starter: UserId,
 ) -> Result<String, SdkError>
 {
 	let out = core_group::key_rotation(&previous_group_key.key, &invoker_public_key.key, user_group)?;
@@ -230,7 +234,6 @@ fn key_rotation_internally(
 	//1. encode the values to base64 for the server
 	let encrypted_group_key_by_user = Base64::encode_string(&out.encrypted_group_key_by_user);
 	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
-	let encrypted_group_key_by_ephemeral = Base64::encode_string(&out.encrypted_group_key_by_ephemeral);
 	let encrypted_ephemeral_key = Base64::encode_string(&out.encrypted_ephemeral_key);
 
 	//2. export the public key
@@ -258,6 +261,24 @@ fn key_rotation_internally(
 		(encrypted_sign_key, verify_key, keypair_sign_alg)
 	};
 
+	//4. if set sign the encrypted group key
+	let (encrypted_group_key_by_ephemeral, signed_by_user_id, signed_by_user_sign_key_id, signed_by_user_sign_key_alg) = if let Some(sk) = sign_key {
+		let (sign_head_group_key, signed_group_key) = crypto::sign_internally(sk, &out.encrypted_group_key_by_ephemeral)?;
+		(
+			Base64::encode_string(&signed_group_key),
+			Some(starter),
+			Some(sign_head_group_key.id),
+			Some(sign_head_group_key.alg),
+		)
+	} else {
+		(
+			Base64::encode_string(&out.encrypted_group_key_by_ephemeral),
+			None,
+			None,
+			None,
+		)
+	};
+
 	let rotation_out = KeyRotationData {
 		encrypted_group_key_by_user,
 		group_key_alg: out.group_key_alg.to_string(),
@@ -270,6 +291,10 @@ fn key_rotation_internally(
 		encrypted_ephemeral_key,
 		previous_group_key_id: previous_group_key.key_id.clone(),
 		invoker_public_key_id: invoker_public_key.key_id.clone(),
+
+		signed_by_user_id,
+		signed_by_user_sign_key_id,
+		signed_by_user_sign_key_alg,
 
 		//user group
 		encrypted_sign_key,
@@ -295,6 +320,7 @@ fn done_key_rotation_internally(
 	public_key: &PublicKeyFormatInt,
 	previous_group_key: &SymKeyFormatInt,
 	server_output: KeyRotationInput,
+	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<String, SdkError>
 {
 	if let Some(e) = server_output.error {
@@ -309,12 +335,48 @@ fn done_key_rotation_internally(
 	let encrypted_group_key_by_ephemeral =
 		Base64::decode_vec(&server_output.encrypted_group_key_by_ephemeral).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
 
+	//if verify key set then verify the new group key first
+
+	//get from the KeyRotationInput also if the key was signed before and only then do the verify, even if a verify key was set.
+	//the user id doesn't matter here.
+	let encrypted_group_key_by_ephemeral = match (
+		server_output.signed_by_user_id,
+		server_output.signed_by_user_sign_key_id,
+		server_output.signed_by_user_sign_key_alg,
+	) {
+		(Some(_user_id), Some(sign_key_id), Some(sign_key_alg)) => {
+			match verify_key {
+				Some(vk) => {
+					crypto::verify_internally(
+						vk,
+						&encrypted_group_key_by_ephemeral,
+						&SignHead {
+							id: sign_key_id,
+							alg: sign_key_alg,
+						},
+					)?
+				},
+				None => {
+					//if no verify key set, still split the data to get only the group key without the sign
+					let (_, encrypted_group_key_by_ephemeral) =
+						sentc_crypto_core::crypto::split_sig_and_data(&sign_key_alg, &encrypted_group_key_by_ephemeral)?;
+
+					encrypted_group_key_by_ephemeral
+				},
+			}
+		},
+		_ => {
+			//no sign head set for key rotation
+			&encrypted_group_key_by_ephemeral
+		},
+	};
+
 	let out = core_group::done_key_rotation(
 		&private_key.key,
 		&public_key.key,
 		&previous_group_key.key,
 		&encrypted_ephemeral_key_by_group_key_and_public_key,
-		&encrypted_group_key_by_ephemeral,
+		encrypted_group_key_by_ephemeral,
 		&server_output.ephemeral_alg,
 	)?;
 

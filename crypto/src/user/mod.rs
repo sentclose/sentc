@@ -665,7 +665,7 @@ pub(crate) mod test_fn
 			encrypted_sign_key: group.encrypted_sign_key,
 			verify_key: group.verify_key,
 			keypair_sign_alg: group.keypair_sign_alg,
-			keypair_sign_id: Some("hello".to_string()),
+			keypair_sign_id: Some("abc".to_string()),
 		}];
 
 		let out = DoneLoginServerOutput {
