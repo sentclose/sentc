@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.dependencies]
-sentc-crypto-common = "0.1.0"
+sentc-crypto-common = "0.1.1"
 
 [profile.dev]
 # Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.
