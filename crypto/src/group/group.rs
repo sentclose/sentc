@@ -981,4 +981,188 @@ mod test
 			},
 		}
 	}
+
+	#[test]
+	fn test_signed_key_rotation()
+	{
+		let user = create_user();
+		let user_keys = &user.user_keys[0];
+
+		let (_data, key_data, group_server_out, _) = create_group(user_keys);
+
+		let rotation_out = key_rotation(
+			key_data[0].group_key.as_str(),
+			user_keys.public_key.as_str(),
+			false,
+			&user_keys.sign_key,
+			user.user_id.clone(),
+		)
+		.unwrap();
+		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
+
+		assert_eq!(rotation_out.signed_by_user_id.as_ref(), Some(&user.user_id));
+		assert_eq!(
+			rotation_out.signed_by_user_sign_key_id.as_ref(),
+			Some(&user_keys.group_key_id)
+		);
+
+		//__________________________________________________________________________________________
+		//get the new group key directly because for the invoker the key is already encrypted by the own public key
+		let server_key_output_direct = GroupKeyServerOutput {
+			encrypted_group_key: rotation_out.encrypted_group_key_by_user.to_string(),
+			group_key_alg: group_server_out.keys[0].group_key_alg.to_string(),
+			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
+			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
+			public_group_key: rotation_out.public_group_key.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
+			key_pair_id: "new_key_id_from_server".to_string(),
+			user_public_key_id: "abc".to_string(),
+			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
+		};
+
+		let new_group_key_direct = decrypt_group_keys(
+			user_keys.private_key.as_str(),
+			&server_key_output_direct.to_string().unwrap(),
+		)
+		.unwrap();
+
+		//__________________________________________________________________________________________
+		//do the server part
+		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key = encrypt_asymmetric_core(
+			&import_public_key(user_keys.public_key.as_str())
+				.unwrap()
+				.key,
+			&encrypted_ephemeral_key,
+		)
+		.unwrap();
+		let server_output = KeyRotationInput {
+			error: None,
+			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
+			encrypted_group_key_by_ephemeral: rotation_out.encrypted_group_key_by_ephemeral.to_string(),
+			ephemeral_alg: rotation_out.ephemeral_alg.to_string(),
+			encrypted_eph_key_key_id: "".to_string(),
+			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
+			time: 0,
+			new_group_key_id: "abc".to_string(),
+
+			signed_by_user_id: rotation_out.signed_by_user_id,
+			signed_by_user_sign_key_id: rotation_out.signed_by_user_sign_key_id,
+			signed_by_user_sign_key_alg: rotation_out.signed_by_user_sign_key_alg,
+		};
+
+		//__________________________________________________________________________________________
+		//test done key rotation without verify key (should work even if it is signed, sign is here ignored)
+
+		let done_key_rotation_out = done_key_rotation(
+			user.user_keys[0].private_key.as_str(),
+			user.user_keys[0].public_key.as_str(),
+			key_data[0].group_key.as_str(),
+			server_output.to_string().unwrap().as_str(),
+			"",
+		)
+		.unwrap();
+		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
+
+		//get the new group keys
+		let server_key_output = GroupKeyServerOutput {
+			encrypted_group_key: done_key_rotation_out.encrypted_new_group_key.to_string(),
+			group_key_alg: group_server_out.keys[0].group_key_alg.to_string(),
+			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
+			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
+			public_group_key: rotation_out.public_group_key.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
+			key_pair_id: "new_key_id_from_server".to_string(),
+			user_public_key_id: done_key_rotation_out.public_key_id,
+			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
+		};
+
+		let out = decrypt_group_keys(
+			user_keys.private_key.as_str(),
+			&server_key_output.to_string().unwrap(),
+		)
+		.unwrap();
+
+		let old_group_key = import_sym_key(key_data[0].group_key.to_string().as_str()).unwrap();
+
+		let new_group_key_direct = import_sym_key(new_group_key_direct.group_key.as_str()).unwrap();
+
+		let new_group_key = import_sym_key(out.group_key.as_str()).unwrap();
+
+		//the new group key must be different after key rotation
+		match (&old_group_key.key, &new_group_key.key) {
+			(SymKey::Aes(k_old), SymKey::Aes(k_new)) => {
+				assert_ne!(*k_old, *k_new);
+			},
+		}
+
+		match (&new_group_key_direct.key, &new_group_key.key) {
+			(SymKey::Aes(k_0), SymKey::Aes(k_1)) => {
+				//should be the same for all users
+				assert_eq!(*k_0, *k_1);
+			},
+		}
+
+		//__________________________________________________________________________________________
+		//now test rotation with verify
+
+		let done_key_rotation_out = done_key_rotation(
+			user.user_keys[0].private_key.as_str(),
+			user.user_keys[0].public_key.as_str(),
+			key_data[0].group_key.as_str(),
+			server_output.to_string().unwrap().as_str(),
+			&user_keys.exported_verify_key,
+		)
+		.unwrap();
+		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
+
+		//get the new group keys
+		let server_key_output = GroupKeyServerOutput {
+			encrypted_group_key: done_key_rotation_out.encrypted_new_group_key.to_string(),
+			group_key_alg: group_server_out.keys[0].group_key_alg.to_string(),
+			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
+			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
+			public_group_key: rotation_out.public_group_key.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg,
+			key_pair_id: "new_key_id_from_server".to_string(),
+			user_public_key_id: done_key_rotation_out.public_key_id,
+			time: 0,
+			encrypted_sign_key: None,
+			verify_key: None,
+			keypair_sign_alg: None,
+			keypair_sign_id: None,
+		};
+
+		let out = decrypt_group_keys(
+			user_keys.private_key.as_str(),
+			&server_key_output.to_string().unwrap(),
+		)
+		.unwrap();
+
+		let old_group_key = import_sym_key(key_data[0].group_key.to_string().as_str()).unwrap();
+
+		let new_group_key = import_sym_key(out.group_key.as_str()).unwrap();
+
+		//the new group key must be different after key rotation
+		match (&old_group_key.key, &new_group_key.key) {
+			(SymKey::Aes(k_old), SymKey::Aes(k_new)) => {
+				assert_ne!(*k_old, *k_new);
+			},
+		}
+
+		match (&new_group_key_direct.key, &new_group_key.key) {
+			(SymKey::Aes(k_0), SymKey::Aes(k_1)) => {
+				//should be the same for all users
+				assert_eq!(*k_0, *k_1);
+			},
+		}
+	}
 }
