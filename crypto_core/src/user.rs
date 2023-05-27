@@ -12,6 +12,7 @@ use crate::{
 	HashedAuthenticationKey,
 	MasterKeyInfo,
 	Pk,
+	SafetyNumber,
 	SignK,
 	Sk,
 	SymKey,
@@ -285,6 +286,20 @@ pub fn password_reset(new_pw: &str, decrypted_private_key: &Sk, decrypted_sign_k
 	password_reset_argon2_aes_ecies_ed25519(new_pw, decrypted_private_key, decrypted_sign_key)
 }
 
+/**
+Creates a safety number in byte of a given verify key and additional user information like the user id or user name.
+
+## combined number
+
+To create a combination of two identities set for user_2 another SafetyNumberUser struct.
+Make sure to keep the order of user_1 and user_2 on the other user too, otherwise the number will not be the same.
+*/
+pub fn safety_number(user_1: SafetyNumber, user_2: Option<SafetyNumber>) -> Vec<u8>
+{
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	sign::ed25519::safety_number(user_1, user_2)
+}
+
 #[cfg(test)]
 mod test
 {
@@ -470,5 +485,71 @@ mod test
 				assert_eq!(pk, pk2);
 			},
 		}
+	}
+
+	fn create_dummy_user_for_safety_number() -> (VerifyK, LoginDoneOutput)
+	{
+		let password = "abc*èéöäüê";
+		let out = register(password).unwrap();
+
+		let salt_from_rand_value = generate_salt(out.client_random_value, "");
+
+		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
+
+		//try to decrypt the master key
+		let login_out = done_login(
+			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
+			&out.master_key_info.encrypted_master_key,
+			&out.encrypted_private_key,
+			out.keypair_encrypt_alg,
+			&out.encrypted_sign_key,
+			out.keypair_sign_alg,
+		)
+		.unwrap();
+
+		(out.verify_key, login_out)
+	}
+
+	#[test]
+	fn test_safety_number()
+	{
+		let (user_1_key, _user_1) = create_dummy_user_for_safety_number();
+		let (user_2_key, _user_2) = create_dummy_user_for_safety_number();
+
+		let number = safety_number(
+			SafetyNumber {
+				verify_key: &user_1_key,
+				user_info: "abc",
+			},
+			None,
+		);
+
+		let number_1 = safety_number(
+			SafetyNumber {
+				verify_key: &user_1_key,
+				user_info: "abc",
+			},
+			Some(SafetyNumber {
+				verify_key: &user_2_key,
+				user_info: "abc",
+			}),
+		);
+
+		let number_2 = safety_number(
+			SafetyNumber {
+				verify_key: &user_2_key,
+				user_info: "abc",
+			},
+			Some(SafetyNumber {
+				verify_key: &user_1_key,
+				user_info: "abc",
+			}),
+		);
+
+		assert_eq!(number.len(), 32);
+		assert_eq!(number_1.len(), 32);
+		assert_eq!(number_2.len(), 32);
+
+		assert_ne!(number_1, number_2);
 	}
 }

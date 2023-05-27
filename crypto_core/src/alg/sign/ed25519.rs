@@ -2,9 +2,10 @@ use alloc::vec::Vec;
 
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
 use rand_core::{CryptoRng, RngCore};
+use sha2::{Digest, Sha256};
 
 use crate::error::Error;
-use crate::{get_rand, SignK, SignOutput, VerifyK};
+use crate::{get_rand, SafetyNumber, SignK, SignOutput, VerifyK};
 
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
@@ -81,6 +82,32 @@ pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Resul
 	}
 }
 
+pub(crate) fn safety_number(user_1: SafetyNumber, user_2: Option<SafetyNumber>) -> Vec<u8>
+{
+	let mut hasher = Sha256::new();
+
+	match user_1.verify_key {
+		VerifyK::Ed25519(k) => hasher.update(k),
+	}
+
+	hasher.update(user_1.user_info.as_bytes());
+
+	if let Some(u_2) = user_2 {
+		match u_2.verify_key {
+			VerifyK::Ed25519(k) => hasher.update(k),
+		}
+
+		hasher.update(u_2.user_info.as_bytes());
+	}
+
+	let number_bytes = hasher.finalize();
+
+	let mut vec: Vec<u8> = Vec::with_capacity(number_bytes.len());
+	vec.extend(number_bytes[..].as_ref());
+
+	vec
+}
+
 //__________________________________________________________________________________________________
 //internally function
 
@@ -137,7 +164,7 @@ mod test
 
 		let (data, check) = verify(&out.verify_key, &data_with_sig).unwrap();
 
-		assert_eq!(check, true);
+		assert!(check);
 		assert_eq!(data, text.as_bytes());
 	}
 
@@ -153,7 +180,7 @@ mod test
 
 		let (data, check) = verify(&out1.verify_key, &data_with_sig).unwrap();
 
-		assert_eq!(check, false);
+		assert!(!check);
 		assert_eq!(data, text.as_bytes());
 	}
 
@@ -167,7 +194,7 @@ mod test
 
 		let data_with_sig = &data_with_sig[..31];
 
-		let check_result = verify(&out.verify_key, &data_with_sig);
+		let check_result = verify(&out.verify_key, data_with_sig);
 
 		assert!(matches!(check_result, Err(DataToSignTooShort)));
 	}
@@ -182,8 +209,63 @@ mod test
 
 		let data_with_sig = &data_with_sig[..SIG_LENGTH + 2];
 
-		let (_data, check) = verify(&out.verify_key, &data_with_sig).unwrap();
+		let (_data, check) = verify(&out.verify_key, data_with_sig).unwrap();
 
-		assert_eq!(check, false);
+		assert!(!check);
+	}
+
+	extern crate std;
+
+	#[test]
+	fn test_safety_number()
+	{
+		let u1 = generate_key_pair().unwrap();
+
+		let number = safety_number(
+			SafetyNumber {
+				verify_key: &u1.verify_key,
+				user_info: "123",
+			},
+			None,
+		);
+
+		assert_eq!(number.len(), 32);
+	}
+
+	#[test]
+	fn test_combined_safety_number()
+	{
+		let u1 = generate_key_pair().unwrap();
+		let u2 = generate_key_pair().unwrap();
+
+		let number = safety_number(
+			SafetyNumber {
+				verify_key: &u1.verify_key,
+				user_info: "123",
+			},
+			Some(SafetyNumber {
+				verify_key: &u2.verify_key,
+				user_info: "321",
+			}),
+		);
+
+		assert_eq!(number.len(), 32);
+
+		//test the other way around
+
+		let number_2 = safety_number(
+			SafetyNumber {
+				verify_key: &u2.verify_key,
+				user_info: "321",
+			},
+			Some(SafetyNumber {
+				verify_key: &u1.verify_key,
+				user_info: "123",
+			}),
+		);
+
+		assert_eq!(number_2.len(), 32);
+
+		assert_ne!(number, number_2);
 	}
 }
