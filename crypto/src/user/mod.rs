@@ -606,23 +606,45 @@ fn create_safety_number_internally(
 {
 	let verify_key_1 = import_verify_key_from_pem_with_alg(&verify_key_1.verify_key_pem, &verify_key_1.verify_key_alg)?;
 
-	let n1 = sentc_crypto_core::SafetyNumber {
-		verify_key: &verify_key_1,
-		user_info: user_id_1,
-	};
-
 	let number = match (verify_key_2, user_id_2) {
 		(Some(k), Some(id)) => {
 			let verify_key_2 = import_verify_key_from_pem_with_alg(&k.verify_key_pem, &k.verify_key_alg)?;
 
-			let n2 = Some(sentc_crypto_core::SafetyNumber {
-				verify_key: &verify_key_2,
-				user_info: id,
-			});
+			if id > user_id_1 {
+				//if the user id 1 comes first in the alphabet
 
-			core_user::safety_number(n1, n2)
+				core_user::safety_number(
+					sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_1,
+						user_info: user_id_1,
+					},
+					Some(sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_2,
+						user_info: id,
+					}),
+				)
+			} else {
+				core_user::safety_number(
+					sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_2,
+						user_info: id,
+					},
+					Some(sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_1,
+						user_info: user_id_1,
+					}),
+				)
+			}
 		},
-		_ => core_user::safety_number(n1, None),
+		_ => {
+			core_user::safety_number(
+				sentc_crypto_core::SafetyNumber {
+					verify_key: &verify_key_1,
+					user_info: user_id_1,
+				},
+				None,
+			)
+		},
 	};
 
 	Ok(Base64UrlUnpadded::encode_string(&number))

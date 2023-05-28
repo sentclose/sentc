@@ -528,26 +528,41 @@ mod test
 	#[test]
 	fn test_safety_number()
 	{
+		//use other ids to compare equal
 		let user_1 = create_user();
+		let user_1_id = "abc1";
 		let user_2 = create_user();
+		let user_2_id = "abc2";
+		let user_3 = create_user();
+		let user_3_id = "abc3";
 
 		let _number_single = create_safety_number(&user_1.user_keys[0].exported_verify_key, &user_1.user_id, None, None).unwrap();
 
 		let number = create_safety_number(
 			&user_1.user_keys[0].exported_verify_key,
-			&user_1.user_id,
+			user_1_id,
 			Some(&user_2.user_keys[0].exported_verify_key),
-			Some(&user_2.user_id),
+			Some(user_2_id),
 		)
 		.unwrap();
 		let number_2 = create_safety_number(
 			&user_2.user_keys[0].exported_verify_key,
-			&user_2.user_id,
+			user_2_id,
 			Some(&user_1.user_keys[0].exported_verify_key),
-			Some(&user_1.user_id),
+			Some(user_1_id),
 		)
 		.unwrap();
 
-		assert_ne!(number, number_2);
+		assert_eq!(number, number_2);
+
+		let number_3 = create_safety_number(
+			&user_3.user_keys[0].exported_verify_key,
+			user_3_id,
+			Some(&user_1.user_keys[0].exported_verify_key),
+			Some(user_1_id),
+		)
+		.unwrap();
+
+		assert_ne!(number, number_3);
 	}
 }
