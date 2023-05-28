@@ -448,6 +448,28 @@ fn wire_init_user_impl(
 		},
 	)
 }
+fn wire_user_create_safety_number_impl(
+	port_: MessagePort,
+	verify_key_1: impl Wire2Api<String> + UnwindSafe,
+	user_id_1: impl Wire2Api<String> + UnwindSafe,
+	verify_key_2: impl Wire2Api<Option<String>> + UnwindSafe,
+	user_id_2: impl Wire2Api<Option<String>> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "user_create_safety_number",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_verify_key_1 = verify_key_1.wire2api();
+			let api_user_id_1 = user_id_1.wire2api();
+			let api_verify_key_2 = verify_key_2.wire2api();
+			let api_user_id_2 = user_id_2.wire2api();
+			move |task_callback| user_create_safety_number(api_verify_key_1, api_user_id_1, api_verify_key_2, api_user_id_2)
+		},
+	)
+}
 fn wire_get_user_devices_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,

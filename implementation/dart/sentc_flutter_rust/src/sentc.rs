@@ -476,6 +476,17 @@ pub fn init_user(base_url: String, auth_token: String, jwt: String, refresh_toke
 	})
 }
 
+pub fn user_create_safety_number(verify_key_1: String, user_id_1: String, verify_key_2: Option<String>, user_id_2: Option<String>) -> Result<String>
+{
+	user::create_safety_number(
+		&verify_key_1,
+		&user_id_1,
+		verify_key_2.as_deref(),
+		user_id_2.as_deref(),
+	)
+	.map_err(|err| anyhow!(err))
+}
+
 //__________________________________________________________________________________________________
 
 #[repr(C)]
