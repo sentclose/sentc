@@ -188,6 +188,17 @@ pub extern "C" fn wire_init_user(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_user_create_safety_number(
+	port_: i64,
+	verify_key_1: *mut wire_uint_8_list,
+	user_id_1: *mut wire_uint_8_list,
+	verify_key_2: *mut wire_uint_8_list,
+	user_id_2: *mut wire_uint_8_list,
+) {
+	wire_user_create_safety_number_impl(port_, verify_key_1, user_id_1, verify_key_2, user_id_2)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_get_user_devices(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,

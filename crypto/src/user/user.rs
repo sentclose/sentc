@@ -2,7 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::user::RegisterData;
+use sentc_crypto_common::user::{RegisterData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,7 @@ use serde_json::{from_str, to_string};
 use crate::group::GroupOutDataHmacKeys;
 use crate::user::{
 	change_password_internally,
+	create_safety_number_internally,
 	done_check_user_identifier_available_internally,
 	done_key_fetch_internally,
 	done_login_internally,
@@ -236,6 +237,22 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted
 	)?)
 }
 
+pub fn create_safety_number(verify_key_1: &str, user_id_1: &str, verify_key_2: Option<&str>, user_id_2: Option<&str>) -> Result<String, String>
+{
+	let verify_key_1 = UserVerifyKeyData::from_string(verify_key_1).map_err(SdkError::JsonParseFailed)?;
+	let verify_key_2 = match verify_key_2 {
+		Some(k) => Some(UserVerifyKeyData::from_string(k).map_err(SdkError::JsonParseFailed)?),
+		None => None,
+	};
+
+	Ok(create_safety_number_internally(
+		&verify_key_1,
+		user_id_1,
+		verify_key_2.as_ref(),
+		user_id_2,
+	)?)
+}
+
 fn export_user_data(user_data: UserDataInt, hmac_keys: Vec<GroupOutDataHmacKeys>) -> Result<UserData, String>
 {
 	let device_keys = export_device_key_data(user_data.device_keys)?;
@@ -327,7 +344,7 @@ mod test
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
-	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
+	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login};
 	use crate::util::PrivateKeyFormat;
 
 	#[test]
@@ -506,5 +523,31 @@ mod test
 
 		assert_eq!(user.user_keys[0].group_key, new_device_data.user_keys[0].group_key);
 		assert_ne!(user.device_keys.private_key, new_device_data.device_keys.private_key);
+	}
+
+	#[test]
+	fn test_safety_number()
+	{
+		let user_1 = create_user();
+		let user_2 = create_user();
+
+		let _number_single = create_safety_number(&user_1.user_keys[0].exported_verify_key, &user_1.user_id, None, None).unwrap();
+
+		let number = create_safety_number(
+			&user_1.user_keys[0].exported_verify_key,
+			&user_1.user_id,
+			Some(&user_2.user_keys[0].exported_verify_key),
+			Some(&user_2.user_id),
+		)
+		.unwrap();
+		let number_2 = create_safety_number(
+			&user_2.user_keys[0].exported_verify_key,
+			&user_2.user_id,
+			Some(&user_1.user_keys[0].exported_verify_key),
+			Some(&user_1.user_id),
+		)
+		.unwrap();
+
+		assert_ne!(number, number_2);
 	}
 }

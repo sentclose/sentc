@@ -1,11 +1,12 @@
 use alloc::string::String;
 
-use sentc_crypto_common::user::{RegisterData, UserPublicKeyData};
+use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
 use crate::user::{
 	change_password_internally,
+	create_safety_number_internally,
 	done_check_user_identifier_available_internally,
 	done_key_fetch_internally,
 	done_login_internally,
@@ -122,6 +123,16 @@ pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyForm
 	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
 }
 
+pub fn create_safety_number(
+	verify_key_1: &UserVerifyKeyData,
+	user_id_1: &str,
+	verify_key_2: Option<&UserVerifyKeyData>,
+	user_id_2: Option<&str>,
+) -> Result<String, SdkError>
+{
+	create_safety_number_internally(verify_key_1, user_id_1, verify_key_2, user_id_2)
+}
+
 #[cfg(test)]
 mod test
 {
@@ -142,7 +153,7 @@ mod test
 	use serde_json::to_string;
 
 	use super::*;
-	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
+	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login};
 
 	#[test]
 	fn test_register()
@@ -333,5 +344,31 @@ mod test
 				assert_ne!(*k1, *k2);
 			},
 		}
+	}
+
+	#[test]
+	fn test_safety_number()
+	{
+		let user_1 = create_user();
+		let user_2 = create_user();
+
+		let _number_single = create_safety_number(&user_1.user_keys[0].exported_verify_key, &user_1.user_id, None, None).unwrap();
+
+		let number = create_safety_number(
+			&user_1.user_keys[0].exported_verify_key,
+			&user_1.user_id,
+			Some(&user_2.user_keys[0].exported_verify_key),
+			Some(&user_2.user_id),
+		)
+		.unwrap();
+		let number_2 = create_safety_number(
+			&user_2.user_keys[0].exported_verify_key,
+			&user_2.user_id,
+			Some(&user_1.user_keys[0].exported_verify_key),
+			Some(&user_1.user_id),
+		)
+		.unwrap();
+
+		assert_ne!(number, number_2);
 	}
 }

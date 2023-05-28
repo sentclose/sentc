@@ -65,6 +65,7 @@ mod user;
 #[cfg(not(feature = "rust"))]
 pub use self::user::{
 	change_password,
+	create_safety_number,
 	done_check_user_identifier_available,
 	done_key_fetch,
 	done_login,
@@ -87,6 +88,7 @@ pub use self::user::{
 #[cfg(feature = "rust")]
 pub use self::user_rust::{
 	change_password,
+	create_safety_number,
 	done_check_user_identifier_available,
 	done_key_fetch,
 	done_login,
@@ -593,6 +595,37 @@ fn reset_password_internally(
 	};
 
 	data.to_string().map_err(|_| SdkError::JsonToStringFailed)
+}
+
+fn create_safety_number_internally(
+	verify_key_1: &UserVerifyKeyData,
+	user_id_1: &str,
+	verify_key_2: Option<&UserVerifyKeyData>,
+	user_id_2: Option<&str>,
+) -> Result<String, SdkError>
+{
+	let verify_key_1 = import_verify_key_from_pem_with_alg(&verify_key_1.verify_key_pem, &verify_key_1.verify_key_alg)?;
+
+	let n1 = sentc_crypto_core::SafetyNumber {
+		verify_key: &verify_key_1,
+		user_info: user_id_1,
+	};
+
+	let number = match (verify_key_2, user_id_2) {
+		(Some(k), Some(id)) => {
+			let verify_key_2 = import_verify_key_from_pem_with_alg(&k.verify_key_pem, &k.verify_key_alg)?;
+
+			let n2 = Some(sentc_crypto_core::SafetyNumber {
+				verify_key: &verify_key_2,
+				user_info: id,
+			});
+
+			core_user::safety_number(n1, n2)
+		},
+		_ => core_user::safety_number(n1, None),
+	};
+
+	Ok(Base64UrlUnpadded::encode_string(&number))
 }
 
 #[cfg(test)]

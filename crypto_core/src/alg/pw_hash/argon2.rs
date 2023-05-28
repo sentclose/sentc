@@ -213,10 +213,7 @@ pub(crate) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH], add_s
 
 	let result = hasher.finalize();
 
-	let mut vec: Vec<u8> = Vec::with_capacity(result[..].len());
-	vec.extend(result[..].as_ref());
-
-	vec
+	result.to_vec()
 }
 
 fn generate_random_value<R: CryptoRng + RngCore>(rng: &mut R) -> [u8; RECOMMENDED_LENGTH]

@@ -19,6 +19,12 @@ pub(crate) struct SignOutput
 	pub verify_key: VerifyK,
 }
 
+pub struct SafetyNumber<'a>
+{
+	pub verify_key: &'a VerifyK,
+	pub user_info: &'a str,
+}
+
 pub fn get_alg_from_sign_key(key: SignK) -> &'static str
 {
 	match key {

@@ -752,3 +752,19 @@ pub async fn user_finish_key_rotation(
 
 	Ok(())
 }
+
+#[wasm_bindgen]
+pub fn user_create_safety_number(
+	verify_key_1: &str,
+	user_id_1: &str,
+	verify_key_2: Option<String>,
+	user_id_2: Option<String>,
+) -> Result<String, JsValue>
+{
+	Ok(user::create_safety_number(
+		verify_key_1,
+		user_id_1,
+		verify_key_2.as_deref(),
+		user_id_2.as_deref(),
+	)?)
+}

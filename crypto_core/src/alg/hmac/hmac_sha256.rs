@@ -37,10 +37,7 @@ pub(crate) fn auth_with_generated_key(key: &HmacSha256Key, data: &[u8]) -> Resul
 	let result = mac.finalize();
 	let result = result.into_bytes();
 
-	let mut vec: Vec<u8> = Vec::with_capacity(result[..].len());
-	vec.extend(result[..].as_ref());
-
-	Ok(vec)
+	Ok(result.to_vec())
 }
 
 pub(crate) fn verify_with_generated_key(key: &HmacSha256Key, data: &[u8], check_mac: &[u8]) -> Result<bool, Error>
