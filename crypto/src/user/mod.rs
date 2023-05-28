@@ -597,6 +597,11 @@ fn reset_password_internally(
 	data.to_string().map_err(|_| SdkError::JsonToStringFailed)
 }
 
+/**
+Create a safety number
+
+When creating a combined number than use always the user id which comes first in the alphabet as the first user
+*/
 fn create_safety_number_internally(
 	verify_key_1: &UserVerifyKeyData,
 	user_id_1: &str,
