@@ -102,10 +102,7 @@ pub(crate) fn safety_number(user_1: SafetyNumber, user_2: Option<SafetyNumber>) 
 
 	let number_bytes = hasher.finalize();
 
-	let mut vec: Vec<u8> = Vec::with_capacity(number_bytes.len());
-	vec.extend(number_bytes[..].as_ref());
-
-	vec
+	number_bytes.to_vec()
 }
 
 //__________________________________________________________________________________________________
