@@ -63,6 +63,8 @@ pub fn import_public_key_from_string_into_format(public_key: &str) -> Result<Use
 		public_key_pem: out.public_key,
 		public_key_alg: out.public_key_alg,
 		public_key_id: out.public_key_id,
+		public_key_sig: out.public_key_sig,
+		public_key_sig_key_id: out.public_key_sig_key_id,
 	};
 
 	Ok(public_key)
@@ -82,7 +84,7 @@ pub fn import_verify_key_from_string_into_format(verify_key: &str) -> Result<Use
 }
 
 #[cfg(not(feature = "rust"))]
-pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<(String, EncryptionKeyPairId), String>
+pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<(String, EncryptionKeyPairId, Option<SignKeyPairId>), String>
 {
 	let public_key = import_public_key_from_string_into_format(public_key)?;
 
@@ -91,6 +93,7 @@ pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Res
 			.to_string()
 			.map_err(|_| SdkError::JsonToStringFailed)?,
 		public_key.public_key_id,
+		public_key.public_key_sig_key_id,
 	))
 }
 
