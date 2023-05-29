@@ -211,7 +211,7 @@ fn prepare_keys_aes_ecies_ed25519(
 		let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, raw_sign_key)?;
 
 		//sign the public key
-		let raw_public_key = match public_key {
+		let raw_public_key = match &key_pair.pk {
 			Pk::Ecies(k) => k,
 		};
 
