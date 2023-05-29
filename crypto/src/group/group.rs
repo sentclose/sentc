@@ -219,7 +219,7 @@ pub fn decrypt_group_hmac_key(group_key: &str, server_key_output: &str) -> Resul
 
 	let server_output: GroupHmacData = from_str(server_key_output).map_err(SdkError::JsonParseFailed)?;
 
-	let hmac_key = decrypt_group_hmac_key_internally(&key, &server_output)?;
+	let hmac_key = decrypt_group_hmac_key_internally(&key, server_output)?;
 
 	let hmac_key = export_hmac_key_to_string(hmac_key)?;
 
@@ -232,7 +232,7 @@ pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<
 
 	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(SdkError::JsonParseFailed)?;
 
-	let result = decrypt_group_keys_internally(&private_key, &server_key_output)?;
+	let result = decrypt_group_keys_internally(&private_key, server_key_output)?;
 
 	let group_key_id = result.group_key.key_id.to_string();
 

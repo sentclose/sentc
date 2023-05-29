@@ -259,7 +259,7 @@ pub async fn get_group_key(base_url: String, auth_token: &str, jwt: &str, id: &s
 #[allow(clippy::needless_question_mark)]
 pub fn decrypt_key(
 	#[cfg(not(feature = "rust"))] server_key_output: &str,
-	#[cfg(feature = "rust")] server_key_output: &sentc_crypto_common::group::GroupKeyServerOutput,
+	#[cfg(feature = "rust")] server_key_output: sentc_crypto_common::group::GroupKeyServerOutput,
 	#[cfg(not(feature = "rust"))] private_key: &str,
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 ) -> KeyRes

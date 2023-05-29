@@ -5,6 +5,7 @@
 //!
 //! If rust feature is enabled the rust functions are used. The return is no longer just a json string but rust structs and enums to work with
 
+use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
@@ -350,7 +351,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 
 	let mut user_keys = Vec::with_capacity(user_data.len());
 
-	for datum in &user_data {
+	for datum in user_data {
 		user_keys.push(done_login_internally_with_user_out(&device_keys.private_key, datum)?)
 	}
 
@@ -371,7 +372,7 @@ fn done_key_fetch_internally(private_key: &PrivateKeyFormatInt, server_output: &
 {
 	let out: GroupKeyServerOutput = handle_server_response(server_output)?;
 
-	let key = done_login_internally_with_user_out(private_key, &out)?;
+	let key = done_login_internally_with_user_out(private_key, out)?;
 
 	Ok(key)
 }
@@ -384,28 +385,28 @@ But decrypt the sign key too
 
 It can be immediately decrypt because the there is only one device key row not multiple like for group
 */
-fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_group_key: &GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
+fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_group_key: GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
 {
+	let keypair_sign_id = user_group_key.keypair_sign_id.to_owned();
+	let keypair_sign_alg = user_group_key.keypair_sign_alg.to_owned();
+	let verify_key = user_group_key.verify_key.to_owned();
+	let encrypted_sign_key = user_group_key.encrypted_sign_key.to_owned();
+
 	let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
 	//now get the verify key
-	let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (
-		&user_group_key.encrypted_sign_key,
-		&user_group_key.verify_key,
-		&user_group_key.keypair_sign_alg,
-		&user_group_key.keypair_sign_id,
-	) {
+	let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (encrypted_sign_key, verify_key, keypair_sign_alg, keypair_sign_id) {
 		(Some(encrypted_sign_key), Some(server_verify_key), Some(keypair_sign_alg), Some(keypair_sign_id)) => {
 			//handle it, only for user group
-			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+			let encrypted_sign_key = Base64::decode_vec(&encrypted_sign_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
-			let sign_key = sentc_crypto_core::decrypt_sign_key(&encrypted_sign_key, &keys.group_key.key, keypair_sign_alg)?;
+			let sign_key = sentc_crypto_core::decrypt_sign_key(&encrypted_sign_key, &keys.group_key.key, &keypair_sign_alg)?;
 
-			let verify_key = import_verify_key_from_pem_with_alg(server_verify_key.as_str(), keypair_sign_alg.as_str())?;
+			let verify_key = import_verify_key_from_pem_with_alg(&server_verify_key, &keypair_sign_alg)?;
 
 			let exported_verify_key = UserVerifyKeyData {
-				verify_key_pem: server_verify_key.to_string(),
-				verify_key_alg: keypair_sign_alg.to_string(),
+				verify_key_pem: server_verify_key,
+				verify_key_alg: keypair_sign_alg,
 				verify_key_id: keypair_sign_id.clone(),
 			};
 
@@ -421,11 +422,11 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 		time: keys.time,
 		sign_key: SignKeyFormatInt {
 			key: sign_key,
-			key_id: keypair_sign_id.to_string(),
+			key_id: keypair_sign_id.clone(),
 		},
 		verify_key: VerifyKeyFormatInt {
 			key: verify_key,
-			key_id: keypair_sign_id.to_string(),
+			key_id: keypair_sign_id,
 		},
 		exported_public_key: keys.exported_public_key,
 		exported_verify_key,

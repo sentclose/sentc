@@ -428,14 +428,14 @@ fn get_group_key_from_server_output_internally(server_output: &str) -> Result<Gr
 /**
 Decrypt the group hmac key which is used for searchable encryption.
 */
-pub(crate) fn decrypt_group_hmac_key_internally(group_key: &SymKeyFormatInt, server_output: &GroupHmacData) -> Result<HmacKeyFormatInt, SdkError>
+pub(crate) fn decrypt_group_hmac_key_internally(group_key: &SymKeyFormatInt, server_output: GroupHmacData) -> Result<HmacKeyFormatInt, SdkError>
 {
 	let encrypted_hmac_key = Base64::decode_vec(&server_output.encrypted_hmac_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
 	let key = core_group::get_group_hmac_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
 
 	Ok(HmacKeyFormatInt {
-		key_id: server_output.id.clone(),
+		key_id: server_output.id,
 		key,
 	})
 }
@@ -445,7 +445,7 @@ Call this fn for each key, with the right private key
 */
 pub(crate) fn decrypt_group_keys_internally(
 	private_key: &PrivateKeyFormatInt,
-	server_output: &GroupKeyServerOutput,
+	server_output: GroupKeyServerOutput,
 ) -> Result<DoneGettingGroupKeysOutput, SdkError>
 {
 	//the user_public_key_id is used to get the right private key
@@ -468,24 +468,24 @@ pub(crate) fn decrypt_group_keys_internally(
 
 	//export it to use it for connecting to a group without fetching the key again
 	let exported_public_key = UserPublicKeyData {
-		public_key_pem: server_output.public_group_key.clone(),
-		public_key_alg: server_output.keypair_encrypt_alg.clone(),
+		public_key_pem: server_output.public_group_key,
+		public_key_alg: server_output.keypair_encrypt_alg,
 		public_key_id: server_output.key_pair_id.clone(),
-		public_key_sig: server_output.public_key_sig.clone(),
-		public_key_sig_key_id: server_output.public_key_sig_key_id.clone(),
+		public_key_sig: server_output.public_key_sig,
+		public_key_sig_key_id: server_output.public_key_sig_key_id,
 	};
 
 	Ok(DoneGettingGroupKeysOutput {
 		group_key: SymKeyFormatInt {
 			key: group_key,
-			key_id: server_output.group_key_id.clone(),
+			key_id: server_output.group_key_id,
 		},
 		private_group_key: PrivateKeyFormatInt {
 			key_id: server_output.key_pair_id.clone(),
 			key: private_group_key,
 		},
 		public_group_key: PublicKeyFormatInt {
-			key_id: server_output.key_pair_id.clone(),
+			key_id: server_output.key_pair_id,
 			key: public_group_key,
 		},
 		exported_public_key,
@@ -725,19 +725,31 @@ pub(crate) mod test_fn
 
 		let mut group_keys = Vec::with_capacity(out.keys.len());
 
-		for key in &out.keys {
-			group_keys.push(decrypt_group_keys(&user.private_key, &key).unwrap());
+		for key in out.keys {
+			group_keys.push(decrypt_group_keys(&user.private_key, key).unwrap());
 		}
 
 		//get the hmac key
 		let mut hmac_keys = Vec::with_capacity(out.hmac_keys.len());
 
-		for hmac_key in &out.hmac_keys {
-			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, &hmac_key).unwrap());
+		for hmac_key in out.hmac_keys {
+			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, hmac_key).unwrap());
 		}
 
 		(
-			out,
+			GroupOutData {
+				keys: vec![],
+				hmac_keys: vec![],
+				parent_group_id: out.parent_group_id,
+				key_update: out.key_update,
+				created_time: out.created_time,
+				joined_time: out.joined_time,
+				rank: out.rank,
+				group_id: out.group_id,
+				access_by_group_as_member: out.access_by_group_as_member,
+				access_by_parent_group: out.access_by_parent_group,
+				is_connected_group: out.is_connected_group,
+			},
 			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
 			hmac_keys,
@@ -804,6 +816,7 @@ pub(crate) mod test_fn
 		//get the group keys
 		let mut group_keys = Vec::with_capacity(group_data.keys.len());
 
+		#[cfg(not(feature = "rust"))]
 		for key in &group_data.keys {
 			group_keys.push(decrypt_group_keys(user.private_key.as_str(), &key.key_data).unwrap());
 		}
@@ -811,6 +824,7 @@ pub(crate) mod test_fn
 		//get the hmac key
 		let mut hmac_keys = Vec::with_capacity(group_data.hmac_keys.len());
 
+		#[cfg(not(feature = "rust"))]
 		for hmac_key in &group_data.hmac_keys {
 			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, &hmac_key.key_data).unwrap());
 		}
