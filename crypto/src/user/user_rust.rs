@@ -23,6 +23,7 @@ use crate::user::{
 	register_internally,
 	register_typed_internally,
 	reset_password_internally,
+	verify_user_public_key_internally,
 };
 use crate::util::{PrivateKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData};
 use crate::SdkError;
@@ -131,6 +132,11 @@ pub fn create_safety_number(
 ) -> Result<String, SdkError>
 {
 	create_safety_number_internally(verify_key_1, user_id_1, verify_key_2, user_id_2)
+}
+
+pub fn verify_user_public_key(verify_key: &UserVerifyKeyData, public_key: &UserPublicKeyData) -> Result<bool, SdkError>
+{
+	verify_user_public_key_internally(verify_key, public_key)
 }
 
 #[cfg(test)]
@@ -322,6 +328,7 @@ mod test
 				encrypted_sign_key: out_new_device.group.encrypted_sign_key,
 				verify_key: out_new_device.group.verify_key,
 				keypair_sign_alg: out_new_device.group.keypair_sign_alg,
+				public_key_sig: out_new_device.group.public_key_sig,
 			},
 		});
 
@@ -385,5 +392,19 @@ mod test
 		.unwrap();
 
 		assert_ne!(number, number_3);
+	}
+
+	#[test]
+	fn test_verify_public_key()
+	{
+		let user_1 = create_user();
+
+		let verify = verify_user_public_key(
+			&user_1.user_keys[0].exported_verify_key,
+			&user_1.user_keys[0].exported_public_key,
+		)
+		.unwrap();
+
+		assert!(verify);
 	}
 }

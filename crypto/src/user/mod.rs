@@ -43,6 +43,7 @@ use crate::util::{
 	export_raw_verify_key_to_pem,
 	hashed_authentication_key_to_string,
 	import_public_key_from_pem_with_alg,
+	import_sig_from_string,
 	import_verify_key_from_pem_with_alg,
 	DeviceKeyDataInt,
 	PrivateKeyFormatInt,
@@ -82,6 +83,7 @@ pub use self::user::{
 	register,
 	register_typed,
 	reset_password,
+	verify_user_public_key,
 	MasterKeyFormat,
 };
 //export when rust feature is enabled
@@ -105,6 +107,7 @@ pub use self::user_rust::{
 	register,
 	register_typed,
 	reset_password,
+	verify_user_public_key,
 };
 
 /**
@@ -267,10 +270,13 @@ fn prepare_register_device_internally(
 {
 	let out: UserDeviceRegisterOutput = handle_server_response(server_output)?;
 
+	//no sig for device keys
 	let exported_public_key = UserPublicKeyData {
 		public_key_pem: out.public_key_string,
 		public_key_alg: out.keypair_encrypt_alg,
 		public_key_id: out.device_id,
+		public_key_sig: None,
+		public_key_sig_key_id: None,
 	};
 
 	let user_keys = group::prepare_group_keys_for_new_member_private_internally(&exported_public_key, group_keys, key_session, None)?;
@@ -460,6 +466,8 @@ fn done_login_internally_with_device_out(
 		public_key_pem: server_output.public_key_string.to_string(),
 		public_key_alg: server_output.keypair_encrypt_alg.to_string(),
 		public_key_id: server_output.keypair_encrypt_id.clone(),
+		public_key_sig: None, //no sig for device keys
+		public_key_sig_key_id: None,
 	};
 
 	let exported_verify_key = UserVerifyKeyData {
@@ -655,6 +663,26 @@ fn create_safety_number_internally(
 	Ok(Base64UrlUnpadded::encode_string(&number))
 }
 
+extern crate std;
+
+fn verify_user_public_key_internally(verify_key: &UserVerifyKeyData, public_key: &UserPublicKeyData) -> Result<bool, SdkError>
+{
+	let raw_verify_key = import_verify_key_from_pem_with_alg(&verify_key.verify_key_pem, &verify_key.verify_key_alg)?;
+
+	let sig = match &public_key.public_key_sig {
+		Some(s) => s,
+		None => {
+			return Ok(false);
+		},
+	};
+
+	let sig = import_sig_from_string(sig, &verify_key.verify_key_alg)?;
+
+	let public_key = import_public_key_from_pem_with_alg(&public_key.public_key_pem, &public_key.public_key_alg)?;
+
+	Ok(core_user::verify_user_public_key(&raw_verify_key, &sig, &public_key)?)
+}
+
 #[cfg(test)]
 pub(crate) mod test_fn
 {
@@ -726,6 +754,8 @@ pub(crate) mod test_fn
 			verify_key: group.verify_key,
 			keypair_sign_alg: group.keypair_sign_alg,
 			keypair_sign_id: Some("abc".to_string()),
+			public_key_sig: group.public_key_sig,
+			public_key_sig_key_id: Some("abc".to_string()),
 		}];
 
 		let out = DoneLoginServerOutput {
