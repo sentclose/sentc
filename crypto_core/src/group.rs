@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use crate::alg::sym::aes_gcm::AesKey;
 use crate::alg::{asym, hmac, sign, sym};
 use crate::crypto::{decrypt_asymmetric, decrypt_symmetric, encrypt_asymmetric};
-use crate::{AsymKeyOutput, Error, HmacKey, Pk, SignK, Sk, SymKey, VerifyK};
+use crate::{AsymKeyOutput, Error, HmacKey, Pk, Sig, SignK, Sk, SymKey, VerifyK};
 
 pub struct CreateGroupOutput
 {
@@ -20,6 +20,7 @@ pub struct CreateGroupOutput
 	pub verify_key: Option<VerifyK>,
 	pub encrypted_sign_key: Option<Vec<u8>>,
 	pub keypair_sign_alg: Option<&'static str>,
+	pub public_key_sig: Option<Sig>,
 }
 
 pub struct KeyRotationOutput
@@ -38,6 +39,7 @@ pub struct KeyRotationOutput
 	pub verify_key: Option<VerifyK>,
 	pub encrypted_sign_key: Option<Vec<u8>>,
 	pub keypair_sign_alg: Option<&'static str>,
+	pub public_key_sig: Option<Sig>,
 }
 
 pub struct PrepareGroupKeysForNewMemberOutput
@@ -62,7 +64,7 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 		SymKey::Aes(k) => k,
 	};
 
-	let (encrypted_private_group_key, encrypted_group_key, encrypted_group_key_alg, verify_key, encrypted_sign_key, keypair_sign_alg) =
+	let (encrypted_private_group_key, encrypted_group_key, encrypted_group_key_alg, verify_key, encrypted_sign_key, keypair_sign_alg, public_key_sig) =
 		prepare_keys_aes_ecies_ed25519(creators_public_key, user_group, raw_group_key, &keypair)?;
 
 	//3. get the hmac key
@@ -92,6 +94,7 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 			verify_key,
 			encrypted_sign_key,
 			keypair_sign_alg,
+			public_key_sig,
 		},
 		group_key.key, //return the group key extra because it is not encrypted and should not leave the device
 	))
@@ -115,8 +118,15 @@ fn key_rotation_aes_ecies_ed25519(previous_group_key: &SymKey, invoker_public_ke
 		SymKey::Aes(k) => k,
 	};
 
-	let (encrypted_private_group_key, encrypted_group_key_by_user, encrypted_group_key_alg, verify_key, encrypted_sign_key, keypair_sign_alg) =
-		prepare_keys_aes_ecies_ed25519(invoker_public_key, user_group, raw_group_key, &keypair)?;
+	let (
+		encrypted_private_group_key,
+		encrypted_group_key_by_user,
+		encrypted_group_key_alg,
+		verify_key,
+		encrypted_sign_key,
+		keypair_sign_alg,
+		public_key_sig,
+	) = prepare_keys_aes_ecies_ed25519(invoker_public_key, user_group, raw_group_key, &keypair)?;
 
 	//3. create an ephemeral key to encrypt the new group key
 	let ephemeral_key = sym::aes_gcm::generate_key()?;
@@ -144,6 +154,7 @@ fn key_rotation_aes_ecies_ed25519(previous_group_key: &SymKey, invoker_public_ke
 		verify_key,
 		encrypted_sign_key,
 		keypair_sign_alg,
+		public_key_sig,
 		ephemeral_alg: sym::aes_gcm::AES_GCM_OUTPUT,
 	})
 }
@@ -161,6 +172,7 @@ type PrepareKeysAesEciesEd25519Tuple = (
 	Option<VerifyK>,
 	Option<Vec<u8>>,
 	Option<&'static str>,
+	Option<Sig>,
 );
 
 #[cfg(feature = "argon2_aes_ecies_ed25519")]
@@ -187,18 +199,30 @@ fn prepare_keys_aes_ecies_ed25519(
 	};
 
 	//create the sign keys if user group and after encrypt the sign key with group key
-	let (verify_key, encrypted_sign_key, keypair_sign_alg) = if !user_group {
-		(None, None, None)
+	let (verify_key, encrypted_sign_key, keypair_sign_alg, public_key_sig) = if !user_group {
+		(None, None, None, None)
 	} else {
 		let sign = sign::ed25519::generate_key_pair()?;
 
-		let sign_key = match &sign.sign_key {
+		let raw_sign_key = match &sign.sign_key {
 			SignK::Ed25519(k) => k,
 		};
 
-		let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, sign_key)?;
+		let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, raw_sign_key)?;
 
-		(Some(sign.verify_key), Some(encrypted_sign_key), Some(sign.alg))
+		//sign the public key
+		let raw_public_key = match public_key {
+			Pk::Ecies(k) => k,
+		};
+
+		let public_key_sig = sign::ed25519::sign_only(&sign.sign_key, raw_public_key)?;
+
+		(
+			Some(sign.verify_key),
+			Some(encrypted_sign_key),
+			Some(sign.alg),
+			Some(public_key_sig),
+		)
 	};
 
 	Ok((
@@ -208,6 +232,7 @@ fn prepare_keys_aes_ecies_ed25519(
 		verify_key,
 		encrypted_sign_key,
 		keypair_sign_alg,
+		public_key_sig,
 	))
 }
 
