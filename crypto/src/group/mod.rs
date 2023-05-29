@@ -28,6 +28,7 @@ use crate::util::{
 	export_raw_public_key_to_pem,
 	export_raw_verify_key_to_pem,
 	import_public_key_from_pem_with_alg,
+	sig_to_string,
 	HmacKeyFormatInt,
 	PrivateKeyFormatInt,
 	PublicKeyFormatInt,
@@ -168,8 +169,8 @@ pub(crate) fn prepare_create_private_internally(
 	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
 
 	//3. user group values
-	let (encrypted_sign_key, verify_key, keypair_sign_alg) = if !user_group {
-		(None, None, None)
+	let (encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig) = if !user_group {
+		(None, None, None, None)
 	} else {
 		let encrypted_sign_key = match &out.encrypted_sign_key {
 			None => None,
@@ -186,7 +187,12 @@ pub(crate) fn prepare_create_private_internally(
 			Some(alg) => Some(alg.to_string()),
 		};
 
-		(encrypted_sign_key, verify_key, keypair_sign_alg)
+		let public_key_sig = match &out.public_key_sig {
+			None => None,
+			Some(s) => Some(sig_to_string(s)),
+		};
+
+		(encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig)
 	};
 
 	let create_out = CreateData {
@@ -204,6 +210,7 @@ pub(crate) fn prepare_create_private_internally(
 		encrypted_sign_key,
 		verify_key,
 		keypair_sign_alg,
+		public_key_sig,
 	};
 
 	//return the non registered version of the group key and the public group key to use it
@@ -240,8 +247,8 @@ fn key_rotation_internally(
 	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
 
 	//3. user group values
-	let (encrypted_sign_key, verify_key, keypair_sign_alg) = if !user_group {
-		(None, None, None)
+	let (encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig) = if !user_group {
+		(None, None, None, None)
 	} else {
 		let encrypted_sign_key = match &out.encrypted_sign_key {
 			None => None,
@@ -258,7 +265,12 @@ fn key_rotation_internally(
 			Some(alg) => Some(alg.to_string()),
 		};
 
-		(encrypted_sign_key, verify_key, keypair_sign_alg)
+		let public_key_sig = match &out.public_key_sig {
+			None => None,
+			Some(s) => Some(sig_to_string(s)),
+		};
+
+		(encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig)
 	};
 
 	//4. if set sign the encrypted group key
@@ -300,6 +312,7 @@ fn key_rotation_internally(
 		encrypted_sign_key,
 		verify_key,
 		keypair_sign_alg,
+		public_key_sig,
 	};
 
 	rotation_out
@@ -458,6 +471,8 @@ pub(crate) fn decrypt_group_keys_internally(
 		public_key_pem: server_output.public_group_key.clone(),
 		public_key_alg: server_output.keypair_encrypt_alg.clone(),
 		public_key_id: server_output.key_pair_id.clone(),
+		public_key_sig: server_output.public_key_sig.clone(),
+		public_key_sig_key_id: server_output.public_key_sig_key_id.clone(),
 	};
 
 	Ok(DoneGettingGroupKeysOutput {
@@ -672,6 +687,8 @@ pub(crate) mod test_fn
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output = GroupServerData {
@@ -748,6 +765,8 @@ pub(crate) mod test_fn
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output = GroupServerData {

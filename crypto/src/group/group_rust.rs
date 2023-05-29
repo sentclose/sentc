@@ -344,6 +344,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -401,6 +403,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -468,6 +472,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -524,6 +530,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -596,6 +604,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output_direct).unwrap();
@@ -645,6 +655,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let out = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output).unwrap();
@@ -703,6 +715,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output_direct).unwrap();
@@ -756,6 +770,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let out = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output).unwrap();
@@ -817,6 +833,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let out = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output).unwrap();
