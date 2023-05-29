@@ -13,6 +13,7 @@ use crate::{
 	MasterKeyInfo,
 	Pk,
 	SafetyNumber,
+	Sig,
 	SignK,
 	Sk,
 	SymKey,
@@ -298,6 +299,18 @@ pub fn safety_number(user_1: SafetyNumber, user_2: Option<SafetyNumber>) -> Vec<
 {
 	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	sign::ed25519::safety_number(user_1, user_2)
+}
+
+/**
+Verify a user public key, which was signed by the user group.
+
+The verify key must be from the user group
+*/
+pub fn verify_user_public_key(verify_key: &VerifyK, sig: &Sig, public_key: &Pk) -> Result<bool, Error>
+{
+	match public_key {
+		Pk::Ecies(pk) => crate::crypto::verify_only(verify_key, sig, pk),
+	}
 }
 
 #[cfg(test)]

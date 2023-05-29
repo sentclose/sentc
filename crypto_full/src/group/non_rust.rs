@@ -28,6 +28,7 @@ pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, String>;
 pub type KeyRotationRes = Result<Vec<KeyRotationGetOut>, String>;
 pub type MemberRes = Result<Vec<GroupUserListItem>, String>;
 pub type UserUpdateCheckRes = Result<GroupDataCheckUpdateServerOutput, String>;
+pub type UserPublicKeyRes = Result<(String, EncryptionKeyPairId), String>;
 
 #[derive(Serialize, Deserialize)]
 pub struct KeyRotationGetOut

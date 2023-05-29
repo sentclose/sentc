@@ -2,7 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::user::{RegisterData, UserVerifyKeyData};
+use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
@@ -28,6 +28,7 @@ use crate::user::{
 	register_internally,
 	register_typed_internally,
 	reset_password_internally,
+	verify_user_public_key_internally,
 };
 use crate::util::{
 	export_private_key_to_string,
@@ -251,6 +252,14 @@ pub fn create_safety_number(verify_key_1: &str, user_id_1: &str, verify_key_2: O
 		verify_key_2.as_ref(),
 		user_id_2,
 	)?)
+}
+
+pub fn verify_user_public_key(verify_key: &str, public_key: &str) -> Result<bool, String>
+{
+	let verify_key = UserVerifyKeyData::from_string(verify_key).map_err(SdkError::JsonParseFailed)?;
+	let public_key = UserPublicKeyData::from_string(public_key).map_err(SdkError::JsonParseFailed)?;
+
+	Ok(verify_user_public_key_internally(&verify_key, &public_key)?)
 }
 
 fn export_user_data(user_data: UserDataInt, hmac_keys: Vec<GroupOutDataHmacKeys>) -> Result<UserData, String>
@@ -516,6 +525,7 @@ mod test
 				encrypted_sign_key: out_new_device.group.encrypted_sign_key,
 				verify_key: out_new_device.group.verify_key,
 				keypair_sign_alg: out_new_device.group.keypair_sign_alg,
+				public_key_sig: out_new_device.group.public_key_sig,
 			},
 		});
 
@@ -564,5 +574,40 @@ mod test
 		.unwrap();
 
 		assert_ne!(number, number_3);
+	}
+
+	#[test]
+	fn test_verify_public_key()
+	{
+		let user_1 = create_user();
+
+		let verify = verify_user_public_key(
+			&user_1.user_keys[0].exported_verify_key,
+			&user_1.user_keys[0].exported_public_key,
+		)
+		.unwrap();
+
+		assert!(verify);
+	}
+
+	#[test]
+	fn test_verify_public_key_with_wrong_key()
+	{
+		let user_1 = create_user();
+		let user_2 = create_user();
+
+		let verify = verify_user_public_key(
+			&user_1.user_keys[0].exported_verify_key,
+			&user_2.user_keys[0].exported_public_key,
+		)
+		.unwrap();
+		assert!(!verify);
+
+		let verify = verify_user_public_key(
+			&user_2.user_keys[0].exported_verify_key,
+			&user_1.user_keys[0].exported_public_key,
+		)
+		.unwrap();
+		assert!(!verify);
 	}
 }

@@ -17,6 +17,7 @@ use sentc_crypto_core::{
 	HashedAuthenticationKey,
 	HmacKey,
 	Pk,
+	Sig,
 	SignK,
 	Sk,
 	SymKey,
@@ -189,6 +190,13 @@ pub(crate) fn export_raw_verify_key_to_pem(key: &VerifyK) -> Result<String, SdkE
 	}
 }
 
+pub(crate) fn sig_to_string(sig: &Sig) -> String
+{
+	match sig {
+		Sig::Ed25519(s) => Base64::encode_string(s),
+	}
+}
+
 pub(crate) fn hashed_authentication_key_to_string(hashed_authentication_key_bytes: &HashedAuthenticationKey) -> String
 {
 	match hashed_authentication_key_bytes {
@@ -251,6 +259,22 @@ pub(crate) fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -
 				.try_into()
 				.map_err(|_| SdkError::DecodePublicKeyFailed)?;
 			Ok(VerifyK::Ed25519(verify_key))
+		},
+		_ => Err(SdkError::AlgNotFound),
+	}
+}
+
+pub(crate) fn import_sig_from_string(sig: &str, alg: &str) -> Result<Sig, SdkError>
+{
+	match alg {
+		ED25519_OUTPUT => {
+			let sig = Base64::decode_vec(sig).map_err(|_| SdkError::DecodePublicKeyFailed)?;
+			let sig = Sig::Ed25519(
+				sig.try_into()
+					.map_err(|_| SdkError::DecodePublicKeyFailed)?,
+			);
+
+			Ok(sig)
 		},
 		_ => Err(SdkError::AlgNotFound),
 	}

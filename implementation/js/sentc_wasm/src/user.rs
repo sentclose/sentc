@@ -183,6 +183,7 @@ pub struct UserPublicKeyData
 {
 	public_key: String,
 	public_key_id: String,
+	public_key_sig_key_id: Option<String>,
 }
 
 #[wasm_bindgen]
@@ -196,6 +197,11 @@ impl UserPublicKeyData
 	pub fn get_public_key_id(&self) -> String
 	{
 		self.public_key_id.clone()
+	}
+
+	pub fn get_public_key_sig_key_id(&self) -> Option<String>
+	{
+		self.public_key_sig_key_id.clone()
 	}
 }
 
@@ -667,11 +673,13 @@ pub fn user_prepare_user_identifier_update(user_identifier: String) -> Result<St
 #[wasm_bindgen]
 pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicKeyData, JsValue>
 {
-	let (public_key, public_key_id) = sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await?;
+	let (public_key, public_key_id, public_key_sig_key_id) =
+		sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await?;
 
 	Ok(UserPublicKeyData {
 		public_key,
 		public_key_id,
+		public_key_sig_key_id,
 	})
 }
 
@@ -767,4 +775,10 @@ pub fn user_create_safety_number(
 		verify_key_2.as_deref(),
 		user_id_2.as_deref(),
 	)?)
+}
+
+#[wasm_bindgen]
+pub fn user_verify_user_public_key(verify_key: &str, public_key: &str) -> Result<bool, JsValue>
+{
+	Ok(user::verify_user_public_key(verify_key, public_key)?)
 }

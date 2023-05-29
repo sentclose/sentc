@@ -470,6 +470,24 @@ fn wire_user_create_safety_number_impl(
 		},
 	)
 }
+fn wire_user_verify_user_public_key_impl(
+	port_: MessagePort,
+	verify_key: impl Wire2Api<String> + UnwindSafe,
+	public_key: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "user_verify_user_public_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_verify_key = verify_key.wire2api();
+			let api_public_key = public_key.wire2api();
+			move |task_callback| user_verify_user_public_key(api_verify_key, api_public_key)
+		},
+	)
+}
 fn wire_get_user_devices_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -3475,6 +3493,13 @@ impl support::IntoDart for GroupOutDataKeys {
 }
 impl support::IntoDartExceptPrimitive for GroupOutDataKeys {}
 
+impl support::IntoDart for GroupPublicKeyData {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.public_key.into_dart(), self.public_key_id.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupPublicKeyData {}
+
 impl support::IntoDart for GroupUserListItem {
 	fn into_dart(self) -> support::DartAbi {
 		vec![
@@ -3666,7 +3691,12 @@ impl support::IntoDartExceptPrimitive for UserKeyData {}
 
 impl support::IntoDart for UserPublicKeyData {
 	fn into_dart(self) -> support::DartAbi {
-		vec![self.public_key.into_dart(), self.public_key_id.into_dart()].into_dart()
+		vec![
+			self.public_key.into_dart(),
+			self.public_key_id.into_dart(),
+			self.public_key_sig_key_id.into_dart(),
+		]
+		.into_dart()
 	}
 }
 impl support::IntoDartExceptPrimitive for UserPublicKeyData {}

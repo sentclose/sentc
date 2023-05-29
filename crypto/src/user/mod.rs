@@ -5,6 +5,7 @@
 //!
 //! If rust feature is enabled the rust functions are used. The return is no longer just a json string but rust structs and enums to work with
 
+use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
@@ -43,6 +44,7 @@ use crate::util::{
 	export_raw_verify_key_to_pem,
 	hashed_authentication_key_to_string,
 	import_public_key_from_pem_with_alg,
+	import_sig_from_string,
 	import_verify_key_from_pem_with_alg,
 	DeviceKeyDataInt,
 	PrivateKeyFormatInt,
@@ -82,6 +84,7 @@ pub use self::user::{
 	register,
 	register_typed,
 	reset_password,
+	verify_user_public_key,
 	MasterKeyFormat,
 };
 //export when rust feature is enabled
@@ -105,6 +108,7 @@ pub use self::user_rust::{
 	register,
 	register_typed,
 	reset_password,
+	verify_user_public_key,
 };
 
 /**
@@ -267,10 +271,13 @@ fn prepare_register_device_internally(
 {
 	let out: UserDeviceRegisterOutput = handle_server_response(server_output)?;
 
+	//no sig for device keys
 	let exported_public_key = UserPublicKeyData {
 		public_key_pem: out.public_key_string,
 		public_key_alg: out.keypair_encrypt_alg,
 		public_key_id: out.device_id,
+		public_key_sig: None,
+		public_key_sig_key_id: None,
 	};
 
 	let user_keys = group::prepare_group_keys_for_new_member_private_internally(&exported_public_key, group_keys, key_session, None)?;
@@ -344,7 +351,7 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 
 	let mut user_keys = Vec::with_capacity(user_data.len());
 
-	for datum in &user_data {
+	for datum in user_data {
 		user_keys.push(done_login_internally_with_user_out(&device_keys.private_key, datum)?)
 	}
 
@@ -365,7 +372,7 @@ fn done_key_fetch_internally(private_key: &PrivateKeyFormatInt, server_output: &
 {
 	let out: GroupKeyServerOutput = handle_server_response(server_output)?;
 
-	let key = done_login_internally_with_user_out(private_key, &out)?;
+	let key = done_login_internally_with_user_out(private_key, out)?;
 
 	Ok(key)
 }
@@ -378,28 +385,28 @@ But decrypt the sign key too
 
 It can be immediately decrypt because the there is only one device key row not multiple like for group
 */
-fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_group_key: &GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
+fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_group_key: GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
 {
+	let keypair_sign_id = user_group_key.keypair_sign_id.to_owned();
+	let keypair_sign_alg = user_group_key.keypair_sign_alg.to_owned();
+	let verify_key = user_group_key.verify_key.to_owned();
+	let encrypted_sign_key = user_group_key.encrypted_sign_key.to_owned();
+
 	let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
 	//now get the verify key
-	let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (
-		&user_group_key.encrypted_sign_key,
-		&user_group_key.verify_key,
-		&user_group_key.keypair_sign_alg,
-		&user_group_key.keypair_sign_id,
-	) {
+	let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (encrypted_sign_key, verify_key, keypair_sign_alg, keypair_sign_id) {
 		(Some(encrypted_sign_key), Some(server_verify_key), Some(keypair_sign_alg), Some(keypair_sign_id)) => {
 			//handle it, only for user group
-			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+			let encrypted_sign_key = Base64::decode_vec(&encrypted_sign_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
 
-			let sign_key = sentc_crypto_core::decrypt_sign_key(&encrypted_sign_key, &keys.group_key.key, keypair_sign_alg)?;
+			let sign_key = sentc_crypto_core::decrypt_sign_key(&encrypted_sign_key, &keys.group_key.key, &keypair_sign_alg)?;
 
-			let verify_key = import_verify_key_from_pem_with_alg(server_verify_key.as_str(), keypair_sign_alg.as_str())?;
+			let verify_key = import_verify_key_from_pem_with_alg(&server_verify_key, &keypair_sign_alg)?;
 
 			let exported_verify_key = UserVerifyKeyData {
-				verify_key_pem: server_verify_key.to_string(),
-				verify_key_alg: keypair_sign_alg.to_string(),
+				verify_key_pem: server_verify_key,
+				verify_key_alg: keypair_sign_alg,
 				verify_key_id: keypair_sign_id.clone(),
 			};
 
@@ -415,11 +422,11 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 		time: keys.time,
 		sign_key: SignKeyFormatInt {
 			key: sign_key,
-			key_id: keypair_sign_id.to_string(),
+			key_id: keypair_sign_id.clone(),
 		},
 		verify_key: VerifyKeyFormatInt {
 			key: verify_key,
-			key_id: keypair_sign_id.to_string(),
+			key_id: keypair_sign_id,
 		},
 		exported_public_key: keys.exported_public_key,
 		exported_verify_key,
@@ -460,6 +467,8 @@ fn done_login_internally_with_device_out(
 		public_key_pem: server_output.public_key_string.to_string(),
 		public_key_alg: server_output.keypair_encrypt_alg.to_string(),
 		public_key_id: server_output.keypair_encrypt_id.clone(),
+		public_key_sig: None, //no sig for device keys
+		public_key_sig_key_id: None,
 	};
 
 	let exported_verify_key = UserVerifyKeyData {
@@ -655,6 +664,26 @@ fn create_safety_number_internally(
 	Ok(Base64UrlUnpadded::encode_string(&number))
 }
 
+extern crate std;
+
+fn verify_user_public_key_internally(verify_key: &UserVerifyKeyData, public_key: &UserPublicKeyData) -> Result<bool, SdkError>
+{
+	let raw_verify_key = import_verify_key_from_pem_with_alg(&verify_key.verify_key_pem, &verify_key.verify_key_alg)?;
+
+	let sig = match &public_key.public_key_sig {
+		Some(s) => s,
+		None => {
+			return Ok(false);
+		},
+	};
+
+	let sig = import_sig_from_string(sig, &verify_key.verify_key_alg)?;
+
+	let public_key = import_public_key_from_pem_with_alg(&public_key.public_key_pem, &public_key.public_key_alg)?;
+
+	Ok(core_user::verify_user_public_key(&raw_verify_key, &sig, &public_key)?)
+}
+
 #[cfg(test)]
 pub(crate) mod test_fn
 {
@@ -726,6 +755,8 @@ pub(crate) mod test_fn
 			verify_key: group.verify_key,
 			keypair_sign_alg: group.keypair_sign_alg,
 			keypair_sign_id: Some("abc".to_string()),
+			public_key_sig: group.public_key_sig,
+			public_key_sig_key_id: Some("abc".to_string()),
 		}];
 
 		let out = DoneLoginServerOutput {

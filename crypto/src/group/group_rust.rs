@@ -113,12 +113,12 @@ pub fn done_key_rotation(
 	done_key_rotation_internally(private_key, public_key, previous_group_key, server_output, verify_key)
 }
 
-pub fn decrypt_group_hmac_key(key: &SymKeyFormat, server_output: &GroupHmacData) -> Result<HmacKeyFormat, SdkError>
+pub fn decrypt_group_hmac_key(key: &SymKeyFormat, server_output: GroupHmacData) -> Result<HmacKeyFormat, SdkError>
 {
 	decrypt_group_hmac_key_internally(key, server_output)
 }
 
-pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: &GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
+pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
 {
 	decrypt_group_keys_internally(private_key, server_output)
 }
@@ -295,9 +295,13 @@ mod test
 
 		let group_keys_from_server_out = get_group_keys_from_server_output(server_key_out.as_str()).unwrap();
 
-		let group_keys_from_server_out = decrypt_group_keys(&user_keys.private_key, &group_keys_from_server_out[0]).unwrap();
+		let mut group_keys = Vec::with_capacity(group_keys_from_server_out.len());
 
-		match (&key_data[0].group_key.key, &group_keys_from_server_out.group_key.key) {
+		for k in group_keys_from_server_out {
+			group_keys.push(decrypt_group_keys(&user_keys.private_key, k).unwrap());
+		}
+
+		match (&key_data[0].group_key.key, &group_keys[0].group_key.key) {
 			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
 				assert_eq!(*k1, *k2);
 			},
@@ -306,7 +310,7 @@ mod test
 		//fetch the key single
 		let key = get_group_key_from_server_output(single_fetch.as_str()).unwrap();
 
-		let group_keys_from_single_server_out = decrypt_group_keys(&user_keys.private_key, &key).unwrap();
+		let group_keys_from_single_server_out = decrypt_group_keys(&user_keys.private_key, key).unwrap();
 
 		match (
 			&key_data[0].group_key.key,
@@ -344,6 +348,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -374,12 +380,16 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = decrypt_group_keys(&user_keys.private_key, &group_data_user_0.keys[0]).unwrap();
+		let mut group_keys = Vec::with_capacity(group_data_user_0.keys.len());
+
+		for key in group_data_user_0.keys {
+			group_keys.push(decrypt_group_keys(&user_keys.private_key, key).unwrap());
+		}
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member(
 			&user_keys1.exported_public_key,
-			&[&group_key_user_0.group_key],
+			&[&group_keys[0].group_key],
 			false,
 			None,
 		)
@@ -401,6 +411,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -430,11 +442,16 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = decrypt_group_keys(&user_keys1.private_key, &group_data_user_1.keys[0]).unwrap();
 
-		assert_eq!(group_key_user_0.group_key.key_id, group_key_user_1.group_key.key_id);
+		let mut group_keys_u2 = Vec::with_capacity(group_data_user_1.keys.len());
 
-		match (&group_key_user_0.group_key.key, &group_key_user_1.group_key.key) {
+		for key in group_data_user_1.keys {
+			group_keys_u2.push(decrypt_group_keys(&user_keys1.private_key, key).unwrap());
+		}
+
+		assert_eq!(group_keys_u2[0].group_key.key_id, group_keys_u2[0].group_key.key_id);
+
+		match (&group_keys[0].group_key.key, &group_keys_u2[0].group_key.key) {
 			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
 				assert_eq!(*k0, *k1);
 			},
@@ -468,6 +485,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_0 = GroupServerData {
@@ -498,12 +517,16 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = decrypt_group_keys(&user.user_keys[0].private_key, &group_data_user_0.keys[0]).unwrap();
+		let mut group_keys_u0 = Vec::with_capacity(group_data_user_0.keys.len());
+
+		for key in group_data_user_0.keys {
+			group_keys_u0.push(decrypt_group_keys(&user.user_keys[0].private_key, key).unwrap());
+		}
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member_via_session(
 			&user1.user_keys[0].exported_public_key,
-			&[&group_key_user_0.group_key],
+			&[&group_keys_u0[0].group_key],
 		)
 		.unwrap();
 
@@ -524,6 +547,8 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
 		let group_server_output_user_1 = GroupServerData {
@@ -553,11 +578,16 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = decrypt_group_keys(&user1.user_keys[0].private_key, &group_data_user_1.keys[0]).unwrap();
 
-		assert_eq!(group_key_user_0.group_key.key_id, group_key_user_1.group_key.key_id);
+		let mut group_keys_u1 = Vec::with_capacity(group_data_user_1.keys.len());
 
-		match (&group_key_user_0.group_key.key, &group_key_user_1.group_key.key) {
+		for key in group_data_user_1.keys {
+			group_keys_u1.push(decrypt_group_keys(&user1.user_keys[0].private_key, key).unwrap());
+		}
+
+		assert_eq!(group_keys_u0[0].group_key.key_id, group_keys_u1[0].group_key.key_id);
+
+		match (&group_keys_u0[0].group_key.key, &group_keys_u1[0].group_key.key) {
 			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
 				assert_eq!(*k0, *k1);
 			},
@@ -596,9 +626,11 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
-		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output_direct).unwrap();
+		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
 
 		//simulate server key rotation encrypt. encrypt the ephemeral_key (encrypted by the previous room key) with the public keys of all users
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
@@ -645,9 +677,11 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
-		let out = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output).unwrap();
+		let out = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
 		match (&key_data[0].group_key.key, &out.group_key.key) {
@@ -703,9 +737,11 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
-		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output_direct).unwrap();
+		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
 
 		//__________________________________________________________________________________________
 		//do the server part
@@ -756,9 +792,11 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
-		let out = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output).unwrap();
+		let out = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
 		match (&key_data[0].group_key.key, &out.group_key.key) {
@@ -817,9 +855,11 @@ mod test
 			verify_key: None,
 			keypair_sign_alg: None,
 			keypair_sign_id: None,
+			public_key_sig: None,
+			public_key_sig_key_id: None,
 		};
 
-		let out = decrypt_group_keys(&user.user_keys[0].private_key, &server_key_output).unwrap();
+		let out = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
 		match (&key_data[0].group_key.key, &out.group_key.key) {
