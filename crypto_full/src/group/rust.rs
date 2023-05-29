@@ -12,6 +12,7 @@ use sentc_crypto_common::group::{
 	KeyRotationInput,
 	ListGroups,
 };
+use sentc_crypto_common::user::UserPublicKeyData;
 
 use crate::error::SdkFullError;
 
@@ -30,3 +31,4 @@ pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, SdkFullError>;
 pub type KeyRotationRes = Result<Vec<KeyRotationInput>, SdkFullError>;
 pub type MemberRes = Result<Vec<GroupUserListItem>, SdkFullError>;
 pub type UserUpdateCheckRes = Result<GroupDataCheckUpdateServerOutput, SdkFullError>;
+pub type UserPublicKeyRes = Result<UserPublicKeyData, SdkFullError>;
