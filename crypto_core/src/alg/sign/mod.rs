@@ -12,6 +12,11 @@ pub enum VerifyK
 	Ed25519([u8; 32]),
 }
 
+pub enum Sig
+{
+	Ed25519([u8; 64]),
+}
+
 pub(crate) struct SignOutput
 {
 	pub alg: &'static str,
@@ -25,16 +30,23 @@ pub struct SafetyNumber<'a>
 	pub user_info: &'a str,
 }
 
-pub fn get_alg_from_sign_key(key: SignK) -> &'static str
+pub fn get_alg_from_sign_key(key: &SignK) -> &'static str
 {
 	match key {
 		SignK::Ed25519(_) => ED25519_OUTPUT,
 	}
 }
 
-pub fn get_alg_from_verify_key(key: VerifyK) -> &'static str
+pub fn get_alg_from_verify_key(key: &VerifyK) -> &'static str
 {
 	match key {
 		VerifyK::Ed25519(_) => ED25519_OUTPUT,
+	}
+}
+
+pub fn get_alg_from_sig(sig: &Sig) -> &'static str
+{
+	match sig {
+		Sig::Ed25519(_) => ED25519_OUTPUT,
 	}
 }

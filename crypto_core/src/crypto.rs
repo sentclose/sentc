@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::{alg, Error, HmacKey, PasswordEncryptOutput, Pk, SignK, Sk, SymKey, SymKeyOutput, VerifyK};
+use crate::{alg, Error, HmacKey, PasswordEncryptOutput, Pk, Sig, SignK, Sk, SymKey, SymKeyOutput, VerifyK};
 
 pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 {
@@ -118,10 +118,24 @@ pub fn sign(sign_key: &SignK, data_to_sign: &[u8]) -> Result<Vec<u8>, Error>
 	}
 }
 
+pub fn sign_only(sign_key: &SignK, data_to_sign: &[u8]) -> Result<Sig, Error>
+{
+	match sign_key {
+		SignK::Ed25519(_) => alg::sign::ed25519::sign_only(sign_key, data_to_sign),
+	}
+}
+
 pub fn verify<'a>(verify_key: &VerifyK, data_with_sign: &'a [u8]) -> Result<(&'a [u8], bool), Error>
 {
 	match verify_key {
 		VerifyK::Ed25519(_) => alg::sign::ed25519::verify(verify_key, data_with_sign),
+	}
+}
+
+pub fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool, Error>
+{
+	match verify_key {
+		VerifyK::Ed25519(_) => alg::sign::ed25519::verify_only(verify_key, sig, data),
 	}
 }
 

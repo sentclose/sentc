@@ -5,7 +5,7 @@ use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha256};
 
 use crate::error::Error;
-use crate::{get_rand, SafetyNumber, SignK, SignOutput, VerifyK};
+use crate::{get_rand, SafetyNumber, Sig, SignK, SignOutput, VerifyK};
 
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
@@ -25,6 +25,24 @@ pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
 
 pub(crate) fn sign(sign_key: &SignK, data: &[u8]) -> Result<Vec<u8>, Error>
 {
+	let sig = sign_only_raw(sign_key, data)?;
+
+	let mut output = Vec::with_capacity(sig.len() + data.len());
+	output.extend(sig);
+	output.extend(data);
+
+	Ok(output)
+}
+
+pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
+{
+	let sig = sign_only_raw(sign_key, data)?;
+
+	Ok(Sig::Ed25519(sig))
+}
+
+pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; 64], Error>
+{
 	//create the key pair like the from bytes functions but only from the select key not both to avoid select key leak
 	//see here: https://github.com/MystenLabs/ed25519-unsafe-libs
 	let keypair = match sign_key {
@@ -40,13 +58,8 @@ pub(crate) fn sign(sign_key: &SignK, data: &[u8]) -> Result<Vec<u8>, Error>
 	};
 
 	let sig = keypair.sign(data);
-	let sig = sig.to_bytes();
 
-	let mut output = Vec::with_capacity(sig.len() + data.len());
-	output.extend(sig);
-	output.extend(data);
-
-	Ok(output)
+	Ok(sig.to_bytes())
 }
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
@@ -66,6 +79,20 @@ pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Resul
 {
 	let (sig, data) = split_sig_and_data(data_with_sig)?;
 
+	Ok((data, verify_only_raw(verify_key, sig, data)?))
+}
+
+pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool, Error>
+{
+	let sig = match sig {
+		Sig::Ed25519(s) => s,
+	};
+
+	verify_only_raw(verify_key, sig, data)
+}
+
+pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
+{
 	let vk = match verify_key {
 		VerifyK::Ed25519(k) => PublicKey::from_bytes(k).map_err(|_| Error::InitVerifyFailed)?,
 	};
@@ -74,11 +101,9 @@ pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Resul
 
 	let result = vk.verify(data, &sig);
 
-	//get the data without the sig
-
 	match result {
-		Err(_e) => Ok((data, false)),
-		Ok(()) => Ok((data, true)),
+		Ok(()) => Ok(true),
+		Err(_e) => Ok(false),
 	}
 }
 
