@@ -39,9 +39,9 @@ dependencies = [
 
 [[package]]
 name = "allo-isolate"
-version = "0.1.14"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ed55848be9f41d44c79df6045b680a74a78bc579e0813f7f196cd7928e22fb1"
+checksum = "b1766cae4209194f40c58ac2fbe8dcf5cbd618f0a037f10d0078fea2e90b0249"
 dependencies = [
  "anyhow",
  "atomic",
@@ -328,6 +328,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dart-sys"
+version = "4.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d8b5680b5c2cc52f50acb2457d9b3a3b58adcca785db13a0e3655626f601de6"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -388,9 +397,9 @@ dependencies = [
 
 [[package]]
 name = "flutter_rust_bridge"
-version = "1.61.0"
+version = "1.77.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa15ce6d7dd19007534982224cd9304b2b0b4de23de27e2d6b92ac049e138011"
+checksum = "fa90dae49cfb554a15fbf2d601b0081c0d011483595045f21a4c24570c86ab32"
 dependencies = [
  "allo-isolate",
  "anyhow",
@@ -399,6 +408,7 @@ dependencies = [
  "cc",
  "chrono",
  "console_error_panic_hook",
+ "dart-sys",
  "flutter_rust_bridge_macros",
  "js-sys",
  "lazy_static",
