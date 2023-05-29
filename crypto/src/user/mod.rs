@@ -390,15 +390,21 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 	let keypair_sign_id = user_group_key.keypair_sign_id.to_owned();
 	let keypair_sign_alg = user_group_key.keypair_sign_alg.to_owned();
 	let verify_key = user_group_key.verify_key.to_owned();
-	let encrypted_sign_key = user_group_key.encrypted_sign_key.to_owned();
-
-	let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
 	//now get the verify key
-	let (sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (encrypted_sign_key, verify_key, keypair_sign_alg, keypair_sign_id) {
+	let (keys, sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (
+		&user_group_key.encrypted_sign_key,
+		verify_key,
+		keypair_sign_alg,
+		keypair_sign_id,
+	) {
 		(Some(encrypted_sign_key), Some(server_verify_key), Some(keypair_sign_alg), Some(keypair_sign_id)) => {
 			//handle it, only for user group
-			let encrypted_sign_key = Base64::decode_vec(&encrypted_sign_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+
+			//get the sign key first to not use to owned for it because we only need the ref here
+			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+
+			let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
 			let sign_key = sentc_crypto_core::decrypt_sign_key(&encrypted_sign_key, &keys.group_key.key, &keypair_sign_alg)?;
 
@@ -410,7 +416,7 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 				verify_key_id: keypair_sign_id.clone(),
 			};
 
-			(sign_key, verify_key, exported_verify_key, keypair_sign_id)
+			(keys, sign_key, verify_key, exported_verify_key, keypair_sign_id)
 		},
 		_ => return Err(SdkError::LoginServerOutputWrong),
 	};
