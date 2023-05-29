@@ -199,6 +199,11 @@ pub extern "C" fn wire_user_create_safety_number(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_user_verify_user_public_key(port_: i64, verify_key: *mut wire_uint_8_list, public_key: *mut wire_uint_8_list) {
+	wire_user_verify_user_public_key_impl(port_, verify_key, public_key)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_get_user_devices(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,

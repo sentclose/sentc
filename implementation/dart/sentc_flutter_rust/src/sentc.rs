@@ -487,6 +487,11 @@ pub fn user_create_safety_number(verify_key_1: String, user_id_1: String, verify
 	.map_err(|err| anyhow!(err))
 }
 
+pub fn user_verify_user_public_key(verify_key: String, public_key: String) -> Result<bool>
+{
+	user::verify_user_public_key(&verify_key, &public_key).map_err(|err| anyhow!(err))
+}
+
 //__________________________________________________________________________________________________
 
 #[repr(C)]
@@ -596,11 +601,12 @@ pub struct UserPublicKeyData
 {
 	pub public_key: String,
 	pub public_key_id: String,
+	pub public_key_sig_key_id: Option<String>,
 }
 
 pub fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicKeyData>
 {
-	let (public_key, public_key_id) = rt(sentc_crypto_full::user::fetch_user_public_key(
+	let (public_key, public_key_id, public_key_sig_key_id) = rt(sentc_crypto_full::user::fetch_user_public_key(
 		base_url,
 		auth_token.as_str(),
 		user_id.as_str(),
@@ -609,6 +615,7 @@ pub fn user_fetch_public_key(base_url: String, auth_token: String, user_id: Stri
 	Ok(UserPublicKeyData {
 		public_key,
 		public_key_id,
+		public_key_sig_key_id,
 	})
 }
 
@@ -1774,7 +1781,14 @@ pub fn group_delete_group(base_url: String, auth_token: String, jwt: String, id:
 	))
 }
 
-pub fn group_get_public_key_data(base_url: String, auth_token: String, id: String) -> Result<UserPublicKeyData>
+#[repr(C)]
+pub struct GroupPublicKeyData
+{
+	pub public_key: String,
+	pub public_key_id: String,
+}
+
+pub fn group_get_public_key_data(base_url: String, auth_token: String, id: String) -> Result<GroupPublicKeyData>
 {
 	let (public_key, public_key_id) = rt(sentc_crypto_full::group::get_public_key_data(
 		base_url,
@@ -1782,7 +1796,7 @@ pub fn group_get_public_key_data(base_url: String, auth_token: String, id: Strin
 		&id,
 	))?;
 
-	Ok(UserPublicKeyData {
+	Ok(GroupPublicKeyData {
 		public_key,
 		public_key_id,
 	})
