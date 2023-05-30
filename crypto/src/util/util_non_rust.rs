@@ -143,6 +143,7 @@ pub struct UserKeyData
 	pub sign_key: String,
 	pub verify_key: String,
 	pub exported_public_key: String,
+	pub exported_public_key_sig_key_id: Option<String>,
 	pub exported_verify_key: String,
 }
 
