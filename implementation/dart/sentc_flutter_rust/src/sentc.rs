@@ -110,6 +110,7 @@ pub struct UserKeyData
 	pub sign_key: String,
 	pub verify_key: String,
 	pub exported_public_key: String,
+	pub exported_public_key_sig_key_id: Option<String>,
 	pub exported_verify_key: String,
 }
 
@@ -126,6 +127,7 @@ impl From<sentc_crypto::util::UserKeyData> for UserKeyData
 			sign_key: data.sign_key,
 			verify_key: data.verify_key,
 			exported_public_key: data.exported_public_key,
+			exported_public_key_sig_key_id: data.exported_public_key_sig_key_id,
 			exported_verify_key: data.exported_verify_key,
 		}
 	}

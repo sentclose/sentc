@@ -304,6 +304,7 @@ fn export_user_key_data(user_key: UserKeyDataInt) -> Result<UserKeyData, String>
 			.exported_public_key
 			.to_string()
 			.map_err(|_e| SdkError::JsonToStringFailed)?,
+		exported_public_key_sig_key_id: user_key.exported_public_key.public_key_sig_key_id,
 		exported_verify_key: user_key
 			.exported_verify_key
 			.to_string()
