@@ -387,6 +387,12 @@ pub fn group_extract_group_keys(server_output: &str) -> Result<JsValue, JsValue>
 }
 
 #[wasm_bindgen]
+pub fn group_extract_group_key(server_output: &str) -> Result<GroupOutDataKeys, JsValue>
+{
+	Ok(group::get_group_key_from_server_output(server_output)?.into())
+}
+
+#[wasm_bindgen]
 pub async fn group_get_group_data(
 	base_url: String,
 	auth_token: String,
@@ -400,29 +406,6 @@ pub async fn group_get_group_data(
 		auth_token.as_str(),
 		jwt.as_str(),
 		id.as_str(),
-		get_group_as_member(&group_as_member),
-	)
-	.await?;
-
-	Ok(out.into())
-}
-
-#[wasm_bindgen]
-pub async fn group_get_group_key(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	id: String,
-	key_id: String,
-	group_as_member: String,
-) -> Result<GroupOutDataKeys, JsValue>
-{
-	let out = sentc_crypto_full::group::get_group_key(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		id.as_str(),
-		key_id.as_str(),
 		get_group_as_member(&group_as_member),
 	)
 	.await?;
