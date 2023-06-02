@@ -65,7 +65,7 @@ pub fn prepare_file_name_update(key: &str, file_name: &str) -> Result<String, St
 	Ok(prepare_file_name_update_internally(&key, file_name)?)
 }
 
-pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: &str) -> Result<(Vec<u8>, String), String>
+pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -81,7 +81,7 @@ pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: &str) -> Result
 	Ok((encrypted_part, exported_file_key))
 }
 
-pub fn encrypt_file_part(pre_content_key: &str, part: &[u8], sign_key: &str) -> Result<(Vec<u8>, String), String>
+pub fn encrypt_file_part(pre_content_key: &str, part: &[u8], sign_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -97,7 +97,7 @@ pub fn encrypt_file_part(pre_content_key: &str, part: &[u8], sign_key: &str) -> 
 	Ok((encrypted_part, exported_file_key))
 }
 
-pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: &str) -> Result<(Vec<u8>, String), String>
+pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let verify_key = prepare_verify_key(verify_key)?;
 	let key = import_sym_key(key)?;
@@ -112,7 +112,7 @@ pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: &str) -> Resu
 	Ok((decrypted, exported_file_key))
 }
 
-pub fn decrypt_file_part(pre_content_key: &str, part: &[u8], verify_key: &str) -> Result<(Vec<u8>, String), String>
+pub fn decrypt_file_part(pre_content_key: &str, part: &[u8], verify_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let verify_key = prepare_verify_key(verify_key)?;
 

@@ -1880,7 +1880,7 @@ fn wire_group_prepare_key_rotation_impl(
 	port_: MessagePort,
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
 	public_key: impl Wire2Api<String> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 	starter: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
@@ -1904,7 +1904,7 @@ fn wire_group_done_key_rotation_impl(
 	public_key: impl Wire2Api<String> + UnwindSafe,
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
 	server_output: impl Wire2Api<String> + UnwindSafe,
-	verify_key: impl Wire2Api<String> + UnwindSafe,
+	verify_key: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1938,7 +1938,7 @@ fn wire_group_key_rotation_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	public_key: impl Wire2Api<String> + UnwindSafe,
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 	starter: impl Wire2Api<String> + UnwindSafe,
 	group_as_member: impl Wire2Api<String> + UnwindSafe,
 ) {
@@ -2021,7 +2021,7 @@ fn wire_group_finish_key_rotation_impl(
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
 	public_key: impl Wire2Api<String> + UnwindSafe,
 	private_key: impl Wire2Api<String> + UnwindSafe,
-	verify_key: impl Wire2Api<String> + UnwindSafe,
+	verify_key: impl Wire2Api<Option<String>> + UnwindSafe,
 	group_as_member: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
@@ -2255,7 +2255,7 @@ fn wire_encrypt_raw_symmetric_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<Vec<u8>> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2276,7 +2276,7 @@ fn wire_decrypt_raw_symmetric_impl(
 	key: impl Wire2Api<String> + UnwindSafe,
 	encrypted_data: impl Wire2Api<Vec<u8>> + UnwindSafe,
 	head: impl Wire2Api<String> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2297,7 +2297,7 @@ fn wire_encrypt_symmetric_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<Vec<u8>> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2317,7 +2317,7 @@ fn wire_decrypt_symmetric_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
 	encrypted_data: impl Wire2Api<Vec<u8>> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2337,7 +2337,7 @@ fn wire_encrypt_string_symmetric_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<String> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2357,7 +2357,7 @@ fn wire_decrypt_string_symmetric_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
 	encrypted_data: impl Wire2Api<String> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2377,7 +2377,7 @@ fn wire_encrypt_raw_asymmetric_impl(
 	port_: MessagePort,
 	reply_public_key_data: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<Vec<u8>> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2398,7 +2398,7 @@ fn wire_decrypt_raw_asymmetric_impl(
 	private_key: impl Wire2Api<String> + UnwindSafe,
 	encrypted_data: impl Wire2Api<Vec<u8>> + UnwindSafe,
 	head: impl Wire2Api<String> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2419,7 +2419,7 @@ fn wire_encrypt_asymmetric_impl(
 	port_: MessagePort,
 	reply_public_key_data: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<Vec<u8>> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2439,7 +2439,7 @@ fn wire_decrypt_asymmetric_impl(
 	port_: MessagePort,
 	private_key: impl Wire2Api<String> + UnwindSafe,
 	encrypted_data: impl Wire2Api<Vec<u8>> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2459,7 +2459,7 @@ fn wire_encrypt_string_asymmetric_impl(
 	port_: MessagePort,
 	reply_public_key_data: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<String> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2479,7 +2479,7 @@ fn wire_decrypt_string_asymmetric_impl(
 	port_: MessagePort,
 	private_key: impl Wire2Api<String> + UnwindSafe,
 	encrypted_data: impl Wire2Api<String> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2897,7 +2897,7 @@ fn wire_file_download_and_decrypt_file_part_start_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	part_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2932,7 +2932,7 @@ fn wire_file_download_and_decrypt_file_part_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	part_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
-	verify_key_data: impl Wire2Api<String> + UnwindSafe,
+	verify_key_data: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -3084,7 +3084,7 @@ fn wire_file_upload_part_start_impl(
 	end: impl Wire2Api<bool> + UnwindSafe,
 	sequence: impl Wire2Api<i32> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 	part: impl Wire2Api<Vec<u8>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
@@ -3131,7 +3131,7 @@ fn wire_file_upload_part_impl(
 	end: impl Wire2Api<bool> + UnwindSafe,
 	sequence: impl Wire2Api<i32> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
-	sign_key: impl Wire2Api<String> + UnwindSafe,
+	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 	part: impl Wire2Api<Vec<u8>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(

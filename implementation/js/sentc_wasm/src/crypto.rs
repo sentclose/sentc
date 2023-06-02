@@ -92,9 +92,9 @@ pub fn deserialize_head_from_string(head: &str) -> Result<JsValue, JsValue>
 }
 
 #[wasm_bindgen]
-pub fn encrypt_raw_symmetric(key: String, data: &[u8], sign_key: &str) -> Result<CryptoRawOutput, JsValue>
+pub fn encrypt_raw_symmetric(key: String, data: &[u8], sign_key: Option<String>) -> Result<CryptoRawOutput, JsValue>
 {
-	let (head, data) = crypto::encrypt_raw_symmetric(key.as_str(), data, sign_key)?;
+	let (head, data) = crypto::encrypt_raw_symmetric(key.as_str(), data, sign_key.as_deref())?;
 
 	Ok(CryptoRawOutput {
 		head,
@@ -103,48 +103,52 @@ pub fn encrypt_raw_symmetric(key: String, data: &[u8], sign_key: &str) -> Result
 }
 
 #[wasm_bindgen]
-pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, JsValue>
+pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<String>) -> Result<Vec<u8>, JsValue>
 {
 	Ok(crypto::decrypt_raw_symmetric(
 		key,
 		encrypted_data,
 		head,
-		verify_key_data,
+		verify_key_data.as_deref(),
 	)?)
 }
 
 #[wasm_bindgen]
-pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<Vec<u8>, JsValue>
+pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<String>) -> Result<Vec<u8>, JsValue>
 {
-	Ok(crypto::encrypt_symmetric(key, data, sign_key)?)
+	Ok(crypto::encrypt_symmetric(key, data, sign_key.as_deref())?)
 }
 
 #[wasm_bindgen]
-pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: &str) -> Result<Vec<u8>, JsValue>
+pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: Option<String>) -> Result<Vec<u8>, JsValue>
 {
-	Ok(crypto::decrypt_symmetric(key, encrypted_data, verify_key_data)?)
+	Ok(crypto::decrypt_symmetric(
+		key,
+		encrypted_data,
+		verify_key_data.as_deref(),
+	)?)
 }
 
 #[wasm_bindgen]
-pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: &str) -> Result<String, JsValue>
+pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<String>) -> Result<String, JsValue>
 {
-	Ok(crypto::encrypt_string_symmetric(key, data, sign_key)?)
+	Ok(crypto::encrypt_string_symmetric(key, data, sign_key.as_deref())?)
 }
 
 #[wasm_bindgen]
-pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<String, JsValue>
+pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: Option<String>) -> Result<String, JsValue>
 {
 	Ok(crypto::decrypt_string_symmetric(
 		key,
 		encrypted_data,
-		verify_key_data,
+		verify_key_data.as_deref(),
 	)?)
 }
 
 #[wasm_bindgen]
-pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<CryptoRawOutput, JsValue>
+pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<String>) -> Result<CryptoRawOutput, JsValue>
 {
-	let (head, data) = crypto::encrypt_raw_asymmetric(reply_public_key_data, data, sign_key)?;
+	let (head, data) = crypto::encrypt_raw_asymmetric(reply_public_key_data, data, sign_key.as_deref())?;
 
 	Ok(CryptoRawOutput {
 		head,
@@ -153,49 +157,53 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 }
 
 #[wasm_bindgen]
-pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, JsValue>
+pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<String>) -> Result<Vec<u8>, JsValue>
 {
 	Ok(crypto::decrypt_raw_asymmetric(
 		private_key,
 		encrypted_data,
 		head,
-		verify_key_data,
+		verify_key_data.as_deref(),
 	)?)
 }
 
 #[wasm_bindgen]
-pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<Vec<u8>, JsValue>
+pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<String>) -> Result<Vec<u8>, JsValue>
 {
-	Ok(crypto::encrypt_asymmetric(reply_public_key_data, data, sign_key)?)
+	Ok(crypto::encrypt_asymmetric(
+		reply_public_key_data,
+		data,
+		sign_key.as_deref(),
+	)?)
 }
 
 #[wasm_bindgen]
-pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: &str) -> Result<Vec<u8>, JsValue>
+pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: Option<String>) -> Result<Vec<u8>, JsValue>
 {
 	Ok(crypto::decrypt_asymmetric(
 		private_key,
 		encrypted_data,
-		verify_key_data,
+		verify_key_data.as_deref(),
 	)?)
 }
 
 #[wasm_bindgen]
-pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_key: &str) -> Result<String, JsValue>
+pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_key: Option<String>) -> Result<String, JsValue>
 {
 	Ok(crypto::encrypt_string_asymmetric(
 		reply_public_key_data,
 		data,
-		sign_key,
+		sign_key.as_deref(),
 	)?)
 }
 
 #[wasm_bindgen]
-pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<String, JsValue>
+pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: Option<String>) -> Result<String, JsValue>
 {
 	Ok(crypto::decrypt_string_asymmetric(
 		private_key,
 		encrypted_data,
-		verify_key_data,
+		verify_key_data.as_deref(),
 	)?)
 }
 

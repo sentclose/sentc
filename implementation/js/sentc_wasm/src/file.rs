@@ -102,7 +102,7 @@ pub async fn file_download_and_decrypt_file_part_start(
 	auth_token: String,
 	part_id: String,
 	content_key: String,
-	verify_key_data: String,
+	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult, JsValue>
 {
 	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part_start(
@@ -111,7 +111,7 @@ pub async fn file_download_and_decrypt_file_part_start(
 		auth_token.as_str(),
 		part_id.as_str(),
 		content_key.as_str(),
-		verify_key_data.as_str(),
+		verify_key_data.as_deref(),
 	)
 	.await?;
 
@@ -129,7 +129,7 @@ pub async fn file_download_and_decrypt_file_part(
 	auth_token: String,
 	part_id: String,
 	content_key: String,
-	verify_key_data: String,
+	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult, JsValue>
 {
 	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part(
@@ -138,7 +138,7 @@ pub async fn file_download_and_decrypt_file_part(
 		auth_token.as_str(),
 		part_id.as_str(),
 		content_key.as_str(),
-		verify_key_data.as_str(),
+		verify_key_data.as_deref(),
 	)
 	.await?;
 
@@ -231,7 +231,7 @@ pub async fn file_upload_part_start(
 	end: bool,
 	sequence: i32,
 	content_key: String,
-	sign_key: String,
+	sign_key: Option<String>,
 	part: Vec<u8>,
 ) -> Result<String, JsValue>
 {
@@ -244,7 +244,7 @@ pub async fn file_upload_part_start(
 		end,
 		sequence,
 		content_key.as_str(),
-		sign_key.as_str(),
+		sign_key.as_deref(),
 		&part,
 	)
 	.await?)
@@ -260,7 +260,7 @@ pub async fn file_upload_part(
 	end: bool,
 	sequence: i32,
 	content_key: String,
-	sign_key: String,
+	sign_key: Option<String>,
 	part: Vec<u8>,
 ) -> Result<String, JsValue>
 {
@@ -273,7 +273,7 @@ pub async fn file_upload_part(
 		end,
 		sequence,
 		content_key.as_str(),
-		sign_key.as_str(),
+		sign_key.as_deref(),
 		&part,
 	)
 	.await?)

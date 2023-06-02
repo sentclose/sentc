@@ -1597,9 +1597,16 @@ pub fn leave_group(base_url: String, auth_token: String, jwt: String, id: String
 //__________________________________________________________________________________________________
 //key rotation
 
-pub fn group_prepare_key_rotation(pre_group_key: String, public_key: String, sign_key: String, starter: String) -> Result<String>
+pub fn group_prepare_key_rotation(pre_group_key: String, public_key: String, sign_key: Option<String>, starter: String) -> Result<String>
 {
-	sentc_crypto::group::key_rotation(pre_group_key.as_str(), public_key.as_str(), false, &sign_key, starter).map_err(|err| anyhow!(err))
+	sentc_crypto::group::key_rotation(
+		pre_group_key.as_str(),
+		public_key.as_str(),
+		false,
+		sign_key.as_deref(),
+		starter,
+	)
+	.map_err(|err| anyhow!(err))
 }
 
 pub fn group_done_key_rotation(
@@ -1607,7 +1614,7 @@ pub fn group_done_key_rotation(
 	public_key: String,
 	pre_group_key: String,
 	server_output: String,
-	verify_key: String,
+	verify_key: Option<String>,
 ) -> Result<String>
 {
 	sentc_crypto::group::done_key_rotation(
@@ -1615,7 +1622,7 @@ pub fn group_done_key_rotation(
 		public_key.as_str(),
 		pre_group_key.as_str(),
 		server_output.as_str(),
-		&verify_key,
+		verify_key.as_deref(),
 	)
 	.map_err(|err| anyhow!(err))
 }
@@ -1627,7 +1634,7 @@ pub fn group_key_rotation(
 	id: String,
 	public_key: String,
 	pre_group_key: String,
-	sign_key: String,
+	sign_key: Option<String>,
 	starter: String,
 	group_as_member: String,
 ) -> Result<String>
@@ -1640,7 +1647,7 @@ pub fn group_key_rotation(
 		public_key.as_str(),
 		pre_group_key.as_str(),
 		false,
-		&sign_key,
+		sign_key.as_deref(),
 		starter,
 		get_group_as_member(&group_as_member),
 	))
@@ -1697,7 +1704,7 @@ pub fn group_finish_key_rotation(
 	pre_group_key: String,
 	public_key: String,
 	private_key: String,
-	verify_key: String,
+	verify_key: Option<String>,
 	group_as_member: String,
 ) -> Result<()>
 {
@@ -1711,7 +1718,7 @@ pub fn group_finish_key_rotation(
 		public_key.as_str(),
 		private_key.as_str(),
 		false,
-		&verify_key,
+		verify_key.as_deref(),
 		get_group_as_member(&group_as_member),
 	))
 }
@@ -1876,9 +1883,9 @@ pub fn deserialize_head_from_string(head: String) -> Result<EncryptedHead>
 	Ok(head.into())
 }
 
-pub fn encrypt_raw_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Result<CryptoRawOutput>
+pub fn encrypt_raw_symmetric(key: String, data: Vec<u8>, sign_key: Option<String>) -> Result<CryptoRawOutput>
 {
-	let (head, data) = sentc_crypto::crypto::encrypt_raw_symmetric(key.as_str(), &data, &sign_key).map_err(|err| anyhow!(err))?;
+	let (head, data) = sentc_crypto::crypto::encrypt_raw_symmetric(key.as_str(), &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(CryptoRawOutput {
 		head,
@@ -1886,40 +1893,42 @@ pub fn encrypt_raw_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Re
 	})
 }
 
-pub fn decrypt_raw_symmetric(key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
+pub fn decrypt_raw_symmetric(key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::decrypt_raw_symmetric(key.as_str(), &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))?;
+	let vec =
+		sentc_crypto::crypto::decrypt_raw_symmetric(key.as_str(), &encrypted_data, &head, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn encrypt_symmetric(key: String, data: Vec<u8>, sign_key: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
+pub fn encrypt_symmetric(key: String, data: Vec<u8>, sign_key: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::encrypt_symmetric(&key, &data, &sign_key).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::encrypt_symmetric(&key, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn decrypt_symmetric(key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
+pub fn decrypt_symmetric(key: String, encrypted_data: Vec<u8>, verify_key_data: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::decrypt_symmetric(&key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::decrypt_symmetric(&key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn encrypt_string_symmetric(key: String, data: String, sign_key: String) -> Result<String>
+pub fn encrypt_string_symmetric(key: String, data: String, sign_key: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::encrypt_string_symmetric(&key, &data, &sign_key).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::encrypt_string_symmetric(&key, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))
 }
 
-pub fn decrypt_string_symmetric(key: String, encrypted_data: String, verify_key_data: String) -> Result<String>
+pub fn decrypt_string_symmetric(key: String, encrypted_data: String, verify_key_data: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::decrypt_string_symmetric(&key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::decrypt_string_symmetric(&key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))
 }
 
-pub fn encrypt_raw_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: String) -> Result<CryptoRawOutput>
+pub fn encrypt_raw_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: Option<String>) -> Result<CryptoRawOutput>
 {
-	let (head, data) = sentc_crypto::crypto::encrypt_raw_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))?;
+	let (head, data) =
+		sentc_crypto::crypto::encrypt_raw_asymmetric(&reply_public_key_data, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(CryptoRawOutput {
 		head,
@@ -1927,36 +1936,41 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign
 	})
 }
 
-pub fn decrypt_raw_asymmetric(private_key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: String)
-	-> Result<ZeroCopyBuffer<Vec<u8>>>
+pub fn decrypt_raw_asymmetric(
+	private_key: String,
+	encrypted_data: Vec<u8>,
+	head: String,
+	verify_key_data: Option<String>,
+) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::decrypt_raw_asymmetric(&private_key, &encrypted_data, &head, &verify_key_data).map_err(|err| anyhow!(err))?;
+	let vec =
+		sentc_crypto::crypto::decrypt_raw_asymmetric(&private_key, &encrypted_data, &head, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn encrypt_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
+pub fn encrypt_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::encrypt_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::encrypt_asymmetric(&reply_public_key_data, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn decrypt_asymmetric(private_key: String, encrypted_data: Vec<u8>, verify_key_data: String) -> Result<ZeroCopyBuffer<Vec<u8>>>
+pub fn decrypt_asymmetric(private_key: String, encrypted_data: Vec<u8>, verify_key_data: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::decrypt_asymmetric(&private_key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::decrypt_asymmetric(&private_key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
-pub fn encrypt_string_asymmetric(reply_public_key_data: String, data: String, sign_key: String) -> Result<String>
+pub fn encrypt_string_asymmetric(reply_public_key_data: String, data: String, sign_key: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::encrypt_string_asymmetric(&reply_public_key_data, &data, &sign_key).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::encrypt_string_asymmetric(&reply_public_key_data, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))
 }
 
-pub fn decrypt_string_asymmetric(private_key: String, encrypted_data: String, verify_key_data: String) -> Result<String>
+pub fn decrypt_string_asymmetric(private_key: String, encrypted_data: String, verify_key_data: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::decrypt_string_asymmetric(&private_key, &encrypted_data, &verify_key_data).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::decrypt_string_asymmetric(&private_key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))
 }
 
 //__________________________________________________________________________________________________
@@ -2390,7 +2404,7 @@ pub fn file_download_and_decrypt_file_part_start(
 	auth_token: String,
 	part_id: String,
 	content_key: String,
-	verify_key_data: String,
+	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult>
 {
 	let (file, next_file_key) = rt(sentc_crypto_full::file::download_and_decrypt_file_part_start(
@@ -2399,7 +2413,7 @@ pub fn file_download_and_decrypt_file_part_start(
 		auth_token.as_str(),
 		part_id.as_str(),
 		content_key.as_str(),
-		verify_key_data.as_str(),
+		verify_key_data.as_deref(),
 	))?;
 
 	Ok(FileDownloadResult {
@@ -2414,7 +2428,7 @@ pub fn file_download_and_decrypt_file_part(
 	auth_token: String,
 	part_id: String,
 	content_key: String,
-	verify_key_data: String,
+	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult>
 {
 	let (file, next_file_key) = rt(sentc_crypto_full::file::download_and_decrypt_file_part(
@@ -2423,7 +2437,7 @@ pub fn file_download_and_decrypt_file_part(
 		auth_token.as_str(),
 		part_id.as_str(),
 		content_key.as_str(),
-		verify_key_data.as_str(),
+		verify_key_data.as_deref(),
 	))?;
 
 	Ok(FileDownloadResult {
@@ -2543,7 +2557,7 @@ pub fn file_upload_part_start(
 	end: bool,
 	sequence: i32,
 	content_key: String,
-	sign_key: String,
+	sign_key: Option<String>,
 	part: Vec<u8>,
 ) -> Result<String>
 {
@@ -2556,7 +2570,7 @@ pub fn file_upload_part_start(
 		end,
 		sequence,
 		content_key.as_str(),
-		sign_key.as_str(),
+		sign_key.as_deref(),
 		&part,
 	))
 }
@@ -2570,7 +2584,7 @@ pub fn file_upload_part(
 	end: bool,
 	sequence: i32,
 	content_key: String,
-	sign_key: String,
+	sign_key: Option<String>,
 	part: Vec<u8>,
 ) -> Result<String>
 {
@@ -2583,7 +2597,7 @@ pub fn file_upload_part(
 		end,
 		sequence,
 		content_key.as_str(),
-		sign_key.as_str(),
+		sign_key.as_deref(),
 		&part,
 	))
 }

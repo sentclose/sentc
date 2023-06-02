@@ -749,7 +749,7 @@ pub async fn key_rotation(
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
 	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::util::SymKeyFormat,
 	user_group: bool,
-	#[cfg(not(feature = "rust"))] sign_key: &str,
+	#[cfg(not(feature = "rust"))] sign_key: Option<&str>,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
 	starter: UserId,
 	group_as_member: Option<&str>,
@@ -854,7 +854,7 @@ pub async fn done_key_rotation(
 	#[cfg(not(feature = "rust"))] private_key: &str,
 	#[cfg(feature = "rust")] private_key: &sentc_crypto::util::PrivateKeyFormat,
 	user_group: bool,
-	#[cfg(not(feature = "rust"))] verify_key: &str,
+	#[cfg(not(feature = "rust"))] verify_key: Option<&str>,
 	#[cfg(feature = "rust")] verify_key: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 	group_as_member: Option<&str>,
 ) -> VoidRes

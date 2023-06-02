@@ -594,9 +594,9 @@ pub async fn group_join_user_session(
 //key rotation
 
 #[wasm_bindgen]
-pub fn group_prepare_key_rotation(pre_group_key: &str, public_key: &str, sign_key: &str, starter: String) -> Result<String, JsValue>
+pub fn group_prepare_key_rotation(pre_group_key: &str, public_key: &str, sign_key: Option<String>, starter: String) -> Result<String, JsValue>
 {
-	let out = group::key_rotation(pre_group_key, public_key, false, sign_key, starter)?;
+	let out = group::key_rotation(pre_group_key, public_key, false, sign_key.as_deref(), starter)?;
 
 	Ok(out)
 }
@@ -646,7 +646,7 @@ pub async fn group_finish_key_rotation(
 	pre_group_key: String,
 	public_key: String,
 	private_key: String,
-	verify_key: String,
+	verify_key: Option<String>,
 	group_as_member: String,
 ) -> Result<(), JsValue>
 {
@@ -660,7 +660,7 @@ pub async fn group_finish_key_rotation(
 		public_key.as_str(),
 		private_key.as_str(),
 		false,
-		&verify_key,
+		verify_key.as_deref(),
 		get_group_as_member(&group_as_member),
 	)
 	.await?;

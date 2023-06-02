@@ -163,7 +163,13 @@ pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String
 	Ok((out.0, public_key, group_key))
 }
 
-pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str, user_group: bool, sign_key: &str, starter: UserId) -> Result<String, String>
+pub fn key_rotation(
+	previous_group_key: &str,
+	invoker_public_key: &str,
+	user_group: bool,
+	sign_key: Option<&str>,
+	starter: UserId,
+) -> Result<String, String>
 {
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -191,7 +197,7 @@ pub fn done_key_rotation(
 	public_key: &str,
 	previous_group_key: &str,
 	server_output: &str,
-	verify_key: &str,
+	verify_key: Option<&str>,
 ) -> Result<String, String>
 {
 	let verify_key = prepare_verify_key(verify_key)?;
@@ -882,7 +888,7 @@ mod test
 			key_data[0].group_key.as_str(),
 			user_keys.public_key.as_str(),
 			false,
-			"",
+			None,
 			"".to_string(),
 		)
 		.unwrap();
@@ -943,7 +949,7 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			"",
+			None,
 		)
 		.unwrap();
 		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();
@@ -1006,7 +1012,7 @@ mod test
 			key_data[0].group_key.as_str(),
 			user_keys.public_key.as_str(),
 			false,
-			&user_keys.sign_key,
+			Some(&user_keys.sign_key),
 			user.user_id.clone(),
 		)
 		.unwrap();
@@ -1077,7 +1083,7 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			"",
+			None,
 		)
 		.unwrap();
 		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
@@ -1135,7 +1141,7 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			&user_keys.exported_verify_key,
+			Some(&user_keys.exported_verify_key),
 		)
 		.unwrap();
 		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();

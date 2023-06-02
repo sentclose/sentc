@@ -35,12 +35,12 @@ use crate::crypto::{
 use crate::util::{export_sym_key_to_string, import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
 use crate::SdkError;
 
-pub(crate) fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt>, SdkError>
+pub(crate) fn prepare_sign_key(sign_key: Option<&str>) -> Result<Option<SignKeyFormatInt>, SdkError>
 {
 	let sign_key = match sign_key {
-		"" => None,
-		_ => {
-			let k = import_sign_key(sign_key)?;
+		None => None,
+		Some(k) => {
+			let k = import_sign_key(k)?;
 
 			Some(k)
 		},
@@ -49,12 +49,12 @@ pub(crate) fn prepare_sign_key(sign_key: &str) -> Result<Option<SignKeyFormatInt
 	Ok(sign_key)
 }
 
-pub(crate) fn prepare_verify_key(verify_key_data: &str) -> Result<Option<UserVerifyKeyData>, SdkError>
+pub(crate) fn prepare_verify_key(verify_key_data: Option<&str>) -> Result<Option<UserVerifyKeyData>, SdkError>
 {
 	let verify_key = match verify_key_data {
-		"" => None,
-		_ => {
-			let k = UserVerifyKeyData::from_string(verify_key_data).map_err(SdkError::JsonParseFailed)?;
+		None => None,
+		Some(k) => {
+			let k = UserVerifyKeyData::from_string(k).map_err(SdkError::JsonParseFailed)?;
 
 			Some(k)
 		},
@@ -78,7 +78,7 @@ pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, String>
 	Ok(deserialize_head_from_string_internally(head)?)
 }
 
-pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
+pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
 {
 	let key = import_sym_key(key)?;
 
@@ -97,7 +97,7 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<(
 	Ok((head, encrypted))
 }
 
-pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
+pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
 	let key = import_sym_key(key)?;
 
@@ -113,7 +113,7 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 	Ok(decrypted)
 }
 
-pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<(String, Vec<u8>), String>
+pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
 {
 	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(SdkError::JsonParseFailed)?;
 
@@ -132,7 +132,7 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 	Ok((head, encrypted))
 }
 
-pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: &str) -> Result<Vec<u8>, String>
+pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
 	let private_key = import_private_key(private_key)?;
 
@@ -148,7 +148,7 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 	Ok(decrypted)
 }
 
-pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<Vec<u8>, String>
+pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
 {
 	let key = import_sym_key(key)?;
 
@@ -163,7 +163,7 @@ pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: &str) -> Result<Vec<u
 	Ok(encrypted)
 }
 
-pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: &str) -> Result<Vec<u8>, String>
+pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
 	let key = import_sym_key(key)?;
 
@@ -177,7 +177,7 @@ pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: &str
 	Ok(decrypted)
 }
 
-pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &str) -> Result<Vec<u8>, String>
+pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
 {
 	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(SdkError::JsonParseFailed)?;
 
@@ -192,7 +192,7 @@ pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: &s
 	Ok(encrypted)
 }
 
-pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: &str) -> Result<Vec<u8>, String>
+pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
 	let private_key = import_private_key(private_key)?;
 
@@ -206,7 +206,7 @@ pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_d
 	Ok(decrypted)
 }
 
-pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: &str) -> Result<String, String>
+pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<&str>) -> Result<String, String>
 {
 	let key = import_sym_key(key)?;
 
@@ -221,7 +221,7 @@ pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: &str) -> Result
 	Ok(encrypted)
 }
 
-pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<String, String>
+pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
 {
 	let key = import_sym_key(key)?;
 
@@ -235,7 +235,7 @@ pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data
 	Ok(decrypted)
 }
 
-pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_key: &str) -> Result<String, String>
+pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_key: Option<&str>) -> Result<String, String>
 {
 	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(SdkError::JsonParseFailed)?;
 
@@ -250,7 +250,7 @@ pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_k
 	Ok(encrypted)
 }
 
-pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: &str) -> Result<String, String>
+pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
 {
 	let private_key = import_private_key(private_key)?;
 
@@ -400,9 +400,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
-		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), "").unwrap();
+		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), None).unwrap();
 
-		let decrypted = decrypt_raw_symmetric(group_key, &encrypted, &head, "").unwrap();
+		let decrypted = decrypt_raw_symmetric(group_key, &encrypted, &head, None).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -418,9 +418,15 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
-		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), user_keys.sign_key.as_str()).unwrap();
+		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_raw_symmetric(group_key, &encrypted, &head, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_raw_symmetric(
+			group_key,
+			&encrypted,
+			&head,
+			Some(user_keys.exported_verify_key.as_str()),
+		)
+		.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -432,9 +438,9 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let (head, encrypted) = encrypt_raw_asymmetric(user_keys.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
+		let (head, encrypted) = encrypt_raw_asymmetric(user_keys.exported_public_key.as_str(), text.as_bytes(), None).unwrap();
 
-		let decrypted = decrypt_raw_asymmetric(user_keys.private_key.as_str(), &encrypted, &head, "").unwrap();
+		let decrypted = decrypt_raw_asymmetric(user_keys.private_key.as_str(), &encrypted, &head, None).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -449,7 +455,7 @@ mod test
 		let (head, encrypted) = encrypt_raw_asymmetric(
 			user_keys.exported_public_key.as_str(),
 			text.as_bytes(),
-			user_keys.sign_key.as_str(),
+			Some(user_keys.sign_key.as_str()),
 		)
 		.unwrap();
 
@@ -457,7 +463,7 @@ mod test
 			user_keys.private_key.as_str(),
 			&encrypted,
 			&head,
-			user_keys.exported_verify_key.as_str(),
+			Some(user_keys.exported_verify_key.as_str()),
 		)
 		.unwrap();
 
@@ -474,9 +480,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
-		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), "").unwrap();
+		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), None).unwrap();
 
-		let decrypted = decrypt_symmetric(group_key, &encrypted, "").unwrap();
+		let decrypted = decrypt_symmetric(group_key, &encrypted, None).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -492,9 +498,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
-		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_symmetric(group_key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_symmetric(group_key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -506,9 +512,9 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let encrypted = encrypt_asymmetric(user_keys.exported_public_key.as_str(), text.as_bytes(), "").unwrap();
+		let encrypted = encrypt_asymmetric(user_keys.exported_public_key.as_str(), text.as_bytes(), None).unwrap();
 
-		let decrypted = decrypt_asymmetric(user_keys.private_key.as_str(), &encrypted, "").unwrap();
+		let decrypted = decrypt_asymmetric(user_keys.private_key.as_str(), &encrypted, None).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -523,14 +529,14 @@ mod test
 		let encrypted = encrypt_asymmetric(
 			user_keys.exported_public_key.as_str(),
 			text.as_bytes(),
-			user_keys.sign_key.as_str(),
+			Some(user_keys.sign_key.as_str()),
 		)
 		.unwrap();
 
 		let decrypted = decrypt_asymmetric(
 			user_keys.private_key.as_str(),
 			&encrypted,
-			user_keys.exported_verify_key.as_str(),
+			Some(user_keys.exported_verify_key.as_str()),
 		)
 		.unwrap();
 
@@ -546,9 +552,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 
-		let encrypted = encrypt_string_symmetric(group_key, text, "").unwrap();
+		let encrypted = encrypt_string_symmetric(group_key, text, None).unwrap();
 
-		let decrypted = decrypt_string_symmetric(group_key, &encrypted, "").unwrap();
+		let decrypted = decrypt_string_symmetric(group_key, &encrypted, None).unwrap();
 
 		assert_eq!(text, decrypted);
 	}
@@ -564,9 +570,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-		let encrypted = encrypt_string_symmetric(group_key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(group_key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(group_key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(group_key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
 
 		assert_eq!(text, decrypted);
 	}
@@ -578,9 +584,9 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let encrypted = encrypt_string_asymmetric(user_keys.exported_public_key.as_str(), text, "").unwrap();
+		let encrypted = encrypt_string_asymmetric(user_keys.exported_public_key.as_str(), text, None).unwrap();
 
-		let decrypted = decrypt_string_asymmetric(user_keys.private_key.as_str(), &encrypted, "").unwrap();
+		let decrypted = decrypt_string_asymmetric(user_keys.private_key.as_str(), &encrypted, None).unwrap();
 
 		assert_eq!(text, decrypted);
 	}
@@ -595,14 +601,14 @@ mod test
 		let encrypted = encrypt_string_asymmetric(
 			user_keys.exported_public_key.as_str(),
 			text,
-			user_keys.sign_key.as_str(),
+			Some(user_keys.sign_key.as_str()),
 		)
 		.unwrap();
 
 		let decrypted = decrypt_string_asymmetric(
 			user_keys.private_key.as_str(),
 			&encrypted,
-			user_keys.exported_verify_key.as_str(),
+			Some(user_keys.exported_verify_key.as_str()),
 		)
 		.unwrap();
 
@@ -637,9 +643,14 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(
+			&decrypted_key,
+			&encrypted,
+			Some(user_keys.exported_verify_key.as_str()),
+		)
+		.unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -678,9 +689,14 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(
+			&decrypted_key,
+			&encrypted,
+			Some(user_keys.exported_verify_key.as_str()),
+		)
+		.unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -728,9 +744,14 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		for decrypted_key in decrypted_keys {
-			let encrypted = encrypt_string_symmetric(&decrypted_key, text, user_keys.sign_key.as_str()).unwrap();
+			let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-			let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+			let decrypted = decrypt_string_symmetric(
+				&decrypted_key,
+				&encrypted,
+				Some(user_keys.exported_verify_key.as_str()),
+			)
+			.unwrap();
 
 			assert_eq!(decrypted, text);
 		}
@@ -750,9 +771,9 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(&key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
 
 		assert_eq!(decrypted, text);
 
@@ -785,9 +806,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(&key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
 
 		assert_eq!(decrypted, text);
 
@@ -817,9 +838,14 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(
+			&decrypted_key,
+			&encrypted,
+			Some(user_keys.exported_verify_key.as_str()),
+		)
+		.unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -835,9 +861,9 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(&key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
 
 		assert_eq!(decrypted, text);
 
@@ -847,9 +873,14 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, user_keys.sign_key.as_str()).unwrap();
+		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
 
-		let decrypted = decrypt_string_symmetric(&decrypted_key, &encrypted, user_keys.exported_verify_key.as_str()).unwrap();
+		let decrypted = decrypt_string_symmetric(
+			&decrypted_key,
+			&encrypted,
+			Some(user_keys.exported_verify_key.as_str()),
+		)
+		.unwrap();
 
 		assert_eq!(decrypted, text);
 

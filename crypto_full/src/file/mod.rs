@@ -75,7 +75,7 @@ pub async fn download_and_decrypt_file_part_start(
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
-	#[cfg(not(feature = "rust"))] verify_key_data: &str,
+	#[cfg(not(feature = "rust"))] verify_key_data: Option<&str>,
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
 {
@@ -111,7 +111,7 @@ pub async fn download_and_decrypt_file_part(
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] pre_key: &str,
 	#[cfg(feature = "rust")] pre_key: &sentc_crypto::sdk_core::SymKey,
-	#[cfg(not(feature = "rust"))] verify_key_data: &str,
+	#[cfg(not(feature = "rust"))] verify_key_data: Option<&str>,
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
 {
@@ -196,7 +196,7 @@ pub async fn upload_part_start(
 	sequence: i32,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
-	#[cfg(not(feature = "rust"))] sign_key: &str,
+	#[cfg(not(feature = "rust"))] sign_key: Option<&str>,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
 	part: &[u8],
 ) -> KeyRes
@@ -234,7 +234,7 @@ pub async fn upload_part(
 	sequence: i32,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::sdk_core::SymKey,
-	#[cfg(not(feature = "rust"))] sign_key: &str,
+	#[cfg(not(feature = "rust"))] sign_key: Option<&str>,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
 	part: &[u8],
 ) -> KeyRes
