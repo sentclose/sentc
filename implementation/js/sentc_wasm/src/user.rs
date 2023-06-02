@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 
 use sentc_crypto::user;
 use wasm_bindgen::prelude::*;
@@ -49,6 +49,94 @@ impl From<sentc_crypto::util::DeviceKeyData> for DeviceKeyData
 			exported_public_key: key.exported_public_key,
 			exported_verify_key: key.exported_verify_key,
 		}
+	}
+}
+
+#[wasm_bindgen]
+pub struct UserKeyData
+{
+	private_key: String,
+	public_key: String,
+	group_key: String,
+	time: String,
+	group_key_id: String,
+	sign_key: String,
+	verify_key: String,
+	exported_public_key: String,
+	exported_public_key_sig_key_id: Option<String>,
+	exported_verify_key: String,
+}
+
+impl From<sentc_crypto::util::UserKeyData> for UserKeyData
+{
+	fn from(value: sentc_crypto::UserKeyData) -> Self
+	{
+		Self {
+			private_key: value.private_key,
+			public_key: value.public_key,
+			group_key: value.group_key,
+			time: value.time.to_string(),
+			group_key_id: value.group_key_id,
+			sign_key: value.sign_key,
+			verify_key: value.verify_key,
+			exported_public_key: value.exported_public_key,
+			exported_public_key_sig_key_id: value.exported_public_key_sig_key_id,
+			exported_verify_key: value.exported_verify_key,
+		}
+	}
+}
+
+#[wasm_bindgen]
+impl UserKeyData
+{
+	pub fn get_private_key(&self) -> String
+	{
+		self.private_key.clone()
+	}
+
+	pub fn get_public_key(&self) -> String
+	{
+		self.public_key.clone()
+	}
+
+	pub fn get_group_key(&self) -> String
+	{
+		self.group_key.clone()
+	}
+
+	pub fn get_time(&self) -> String
+	{
+		self.time.clone()
+	}
+
+	pub fn get_group_key_id(&self) -> String
+	{
+		self.group_key_id.clone()
+	}
+
+	pub fn get_sign_key(&self) -> String
+	{
+		self.sign_key.clone()
+	}
+
+	pub fn get_verify_key(&self) -> String
+	{
+		self.verify_key.clone()
+	}
+
+	pub fn get_exported_public_key(&self) -> String
+	{
+		self.exported_public_key.clone()
+	}
+
+	pub fn get_exported_public_key_sig_key_id(&self) -> Option<String>
+	{
+		self.exported_public_key_sig_key_id.clone()
+	}
+
+	pub fn get_exported_verify_key(&self) -> String
+	{
+		self.exported_verify_key.clone()
 	}
 }
 
@@ -548,26 +636,11 @@ pub async fn login(base_url: String, auth_token: String, user_identifier: String
 }
 
 #[wasm_bindgen]
-pub fn done_fetch_user_key(private_key: &str, server_output: &str) -> Result<JsValue, JsValue>
+pub fn done_fetch_user_key(private_key: &str, server_output: &str) -> Result<UserKeyData, JsValue>
 {
 	let data = user::done_key_fetch(private_key, server_output)?;
 
-	Ok(JsValue::from_serde(&data).unwrap())
-}
-
-#[wasm_bindgen]
-pub async fn fetch_user_key(base_url: String, auth_token: String, jwt: String, key_id: String, private_key: String) -> Result<JsValue, JsValue>
-{
-	let data = sentc_crypto_full::user::fetch_user_key(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		key_id.as_str(),
-		private_key.as_str(),
-	)
-	.await?;
-
-	Ok(JsValue::from_serde(&data).unwrap())
+	Ok(data.into())
 }
 
 #[wasm_bindgen]
