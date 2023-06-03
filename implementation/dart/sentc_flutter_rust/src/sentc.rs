@@ -2428,7 +2428,7 @@ pub struct FileDownloadResult
 
 pub fn file_download_and_decrypt_file_part_start(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	part_id: String,
 	content_key: String,
@@ -2452,7 +2452,7 @@ pub fn file_download_and_decrypt_file_part_start(
 
 pub fn file_download_and_decrypt_file_part(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	part_id: String,
 	content_key: String,
@@ -2578,7 +2578,7 @@ pub fn file_done_register_file(server_output: String) -> Result<FileDoneRegister
 
 pub fn file_upload_part_start(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	jwt: String,
 	session_id: String,
@@ -2605,7 +2605,7 @@ pub fn file_upload_part_start(
 
 pub fn file_upload_part(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	jwt: String,
 	session_id: String,

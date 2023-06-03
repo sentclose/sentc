@@ -51,8 +51,7 @@ pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &st
 #[allow(clippy::needless_question_mark)]
 pub async fn download_and_decrypt_file_part_start(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] content_key: &str,
@@ -61,12 +60,6 @@ pub async fn download_and_decrypt_file_part_start(
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",
@@ -87,8 +80,7 @@ pub async fn download_and_decrypt_file_part_start(
 #[allow(clippy::needless_question_mark)]
 pub async fn download_and_decrypt_file_part(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] pre_key: &str,
@@ -97,12 +89,6 @@ pub async fn download_and_decrypt_file_part(
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",
@@ -158,8 +144,7 @@ pub async fn register_file(
 
 pub async fn upload_part_start(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	jwt: &str,
 	session_id: &str,
@@ -172,12 +157,6 @@ pub async fn upload_part_start(
 	part: &[u8],
 ) -> KeyRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",
@@ -196,8 +175,7 @@ pub async fn upload_part_start(
 
 pub async fn upload_part(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	jwt: &str,
 	session_id: &str,
@@ -210,12 +188,6 @@ pub async fn upload_part(
 	part: &[u8],
 ) -> KeyRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",

@@ -2893,7 +2893,7 @@ fn wire_file_download_file_meta_impl(
 fn wire_file_download_and_decrypt_file_part_start_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
-	url_prefix: impl Wire2Api<String> + UnwindSafe,
+	url_prefix: impl Wire2Api<Option<String>> + UnwindSafe,
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	part_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
@@ -2928,7 +2928,7 @@ fn wire_file_download_and_decrypt_file_part_start_impl(
 fn wire_file_download_and_decrypt_file_part_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
-	url_prefix: impl Wire2Api<String> + UnwindSafe,
+	url_prefix: impl Wire2Api<Option<String>> + UnwindSafe,
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	part_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
@@ -3077,7 +3077,7 @@ fn wire_file_done_register_file_impl(port_: MessagePort, server_output: impl Wir
 fn wire_file_upload_part_start_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
-	url_prefix: impl Wire2Api<String> + UnwindSafe,
+	url_prefix: impl Wire2Api<Option<String>> + UnwindSafe,
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	session_id: impl Wire2Api<String> + UnwindSafe,
@@ -3124,7 +3124,7 @@ fn wire_file_upload_part_start_impl(
 fn wire_file_upload_part_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
-	url_prefix: impl Wire2Api<String> + UnwindSafe,
+	url_prefix: impl Wire2Api<Option<String>> + UnwindSafe,
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	session_id: impl Wire2Api<String> + UnwindSafe,
