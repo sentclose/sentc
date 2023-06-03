@@ -98,11 +98,11 @@ impl FileDownloadResult
 #[wasm_bindgen]
 pub async fn file_download_and_decrypt_file_part_start(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	part_id: String,
 	content_key: String,
-	verify_key_data: String,
+	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult, JsValue>
 {
 	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part_start(
@@ -111,7 +111,7 @@ pub async fn file_download_and_decrypt_file_part_start(
 		auth_token.as_str(),
 		part_id.as_str(),
 		content_key.as_str(),
-		verify_key_data.as_str(),
+		verify_key_data.as_deref(),
 	)
 	.await?;
 
@@ -125,11 +125,11 @@ pub async fn file_download_and_decrypt_file_part_start(
 #[wasm_bindgen]
 pub async fn file_download_and_decrypt_file_part(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	part_id: String,
 	content_key: String,
-	verify_key_data: String,
+	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult, JsValue>
 {
 	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part(
@@ -138,7 +138,7 @@ pub async fn file_download_and_decrypt_file_part(
 		auth_token.as_str(),
 		part_id.as_str(),
 		content_key.as_str(),
-		verify_key_data.as_str(),
+		verify_key_data.as_deref(),
 	)
 	.await?;
 
@@ -158,30 +158,24 @@ pub async fn file_register_file(
 	jwt: String,
 	master_key_id: String,
 	content_key: String,
-	belongs_to_id: String,
+	belongs_to_id: Option<String>,
 	belongs_to_type: String,
-	file_name: String,
-	group_id: String,
-	group_as_member: String,
+	file_name: Option<String>,
+	group_id: Option<String>,
+	group_as_member: Option<String>,
 ) -> Result<FileRegisterOutput, JsValue>
 {
-	let group_as_member = if group_as_member.is_empty() {
-		None
-	} else {
-		Some(group_as_member.as_str())
-	};
-
 	let (file_id, session_id, encrypted_file_name) = sentc_crypto_full::file::register_file(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
 		master_key_id,
 		content_key.as_str(),
-		belongs_to_id.as_str(),
+		belongs_to_id,
 		belongs_to_type.as_str(),
-		file_name.as_str(),
-		group_id.as_str(),
-		group_as_member,
+		file_name,
+		group_id.as_deref(),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -196,9 +190,9 @@ pub async fn file_register_file(
 pub fn file_prepare_register_file(
 	master_key_id: String,
 	content_key: &str,
-	belongs_to_id: &str,
+	belongs_to_id: Option<String>,
 	belongs_to_type: &str,
-	file_name: &str,
+	file_name: Option<String>,
 ) -> Result<FilePrepareRegister, JsValue>
 {
 	let (input, encrypted_file_name) =
@@ -224,14 +218,14 @@ pub fn file_done_register_file(server_output: &str) -> Result<FileDoneRegister, 
 #[wasm_bindgen]
 pub async fn file_upload_part_start(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	jwt: String,
 	session_id: String,
 	end: bool,
 	sequence: i32,
 	content_key: String,
-	sign_key: String,
+	sign_key: Option<String>,
 	part: Vec<u8>,
 ) -> Result<String, JsValue>
 {
@@ -244,7 +238,7 @@ pub async fn file_upload_part_start(
 		end,
 		sequence,
 		content_key.as_str(),
-		sign_key.as_str(),
+		sign_key.as_deref(),
 		&part,
 	)
 	.await?)
@@ -253,14 +247,14 @@ pub async fn file_upload_part_start(
 #[wasm_bindgen]
 pub async fn file_upload_part(
 	base_url: String,
-	url_prefix: String,
+	url_prefix: Option<String>,
 	auth_token: String,
 	jwt: String,
 	session_id: String,
 	end: bool,
 	sequence: i32,
 	content_key: String,
-	sign_key: String,
+	sign_key: Option<String>,
 	part: Vec<u8>,
 ) -> Result<String, JsValue>
 {
@@ -273,7 +267,7 @@ pub async fn file_upload_part(
 		end,
 		sequence,
 		content_key.as_str(),
-		sign_key.as_str(),
+		sign_key.as_deref(),
 		&part,
 	)
 	.await?)
@@ -296,35 +290,6 @@ pub async fn file_file_name_update(
 		file_id.as_str(),
 		content_key.as_str(),
 		file_name.as_str(),
-	)
-	.await?;
-
-	Ok(())
-}
-
-#[wasm_bindgen]
-pub async fn file_delete_file(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	file_id: String,
-	group_id: String,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	let group_as_member = if group_as_member.is_empty() {
-		None
-	} else {
-		Some(group_as_member.as_str())
-	};
-
-	sentc_crypto_full::file::delete_file(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		file_id.as_str(),
-		group_id.as_str(),
-		group_as_member,
 	)
 	.await?;
 

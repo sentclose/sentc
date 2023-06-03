@@ -20,29 +20,11 @@ pub async fn download_file_meta(
 	base_url: String,
 	auth_token: &str,
 	file_id: &str,
-	#[cfg(not(feature = "rust"))] jwt: &str,
-	#[cfg(feature = "rust")] jwt: Option<&str>,
-	#[cfg(not(feature = "rust"))] group_id: &str,
-	#[cfg(feature = "rust")] group_id: Option<&str>,
+	jwt: Option<&str>,
+	group_id: Option<&str>,
 	group_as_member: Option<&str>,
 ) -> FileRes
 {
-	#[cfg(not(feature = "rust"))]
-	let jwt = {
-		match jwt {
-			"" => None,
-			_ => Some(jwt),
-		}
-	};
-
-	#[cfg(not(feature = "rust"))]
-	let group_id = {
-		match group_id {
-			"" => None,
-			_ => Some(group_id),
-		}
-	};
-
 	let url = match group_id {
 		Some(id) => base_url + "/api/v1/group/" + id + "/file/" + file_id,
 		None => base_url + "/api/v1/file/" + file_id,
@@ -69,22 +51,15 @@ pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &st
 #[allow(clippy::needless_question_mark)]
 pub async fn download_and_decrypt_file_part_start(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
-	#[cfg(not(feature = "rust"))] verify_key_data: &str,
+	#[cfg(not(feature = "rust"))] verify_key_data: Option<&str>,
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",
@@ -105,22 +80,15 @@ pub async fn download_and_decrypt_file_part_start(
 #[allow(clippy::needless_question_mark)]
 pub async fn download_and_decrypt_file_part(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	part_id: &str,
 	#[cfg(not(feature = "rust"))] pre_key: &str,
 	#[cfg(feature = "rust")] pre_key: &sentc_crypto::sdk_core::SymKey,
-	#[cfg(not(feature = "rust"))] verify_key_data: &str,
+	#[cfg(not(feature = "rust"))] verify_key_data: Option<&str>,
 	#[cfg(feature = "rust")] verify_key_data: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
 ) -> ByteRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",
@@ -143,27 +111,16 @@ pub async fn register_file(
 	master_key_id: String,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
-	#[cfg(not(feature = "rust"))] belongs_to_id: &str,
-	#[cfg(feature = "rust")] belongs_to_id: Option<String>,
+	belongs_to_id: Option<String>,
 	#[cfg(not(feature = "rust"))] belongs_to_type: &str,
 	#[cfg(feature = "rust")] belongs_to_type: sentc_crypto_common::file::BelongsToType,
-	#[cfg(not(feature = "rust"))] file_name: &str,
-	#[cfg(feature = "rust")] file_name: Option<String>,
-	#[cfg(not(feature = "rust"))] group_id: &str,
-	#[cfg(feature = "rust")] group_id: Option<&str>,
+	file_name: Option<String>,
+	group_id: Option<&str>,
 	group_as_member: Option<&str>,
 ) -> FileRegRes
 {
 	let (input, encrypted_file_name) =
 		sentc_crypto::file::prepare_register_file(master_key_id, content_key, belongs_to_id, belongs_to_type, file_name)?;
-
-	#[cfg(not(feature = "rust"))]
-	let group_id = {
-		match group_id {
-			"" => None,
-			_ => Some(group_id),
-		}
-	};
 
 	let url = match group_id {
 		Some(id) => base_url + "/api/v1/group/" + id + "/file",
@@ -187,8 +144,7 @@ pub async fn register_file(
 
 pub async fn upload_part_start(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	jwt: &str,
 	session_id: &str,
@@ -196,17 +152,11 @@ pub async fn upload_part_start(
 	sequence: i32,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::util::SymKeyFormat,
-	#[cfg(not(feature = "rust"))] sign_key: &str,
+	#[cfg(not(feature = "rust"))] sign_key: Option<&str>,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
 	part: &[u8],
 ) -> KeyRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",
@@ -225,8 +175,7 @@ pub async fn upload_part_start(
 
 pub async fn upload_part(
 	base_url: String,
-	#[cfg(not(feature = "rust"))] url_prefix: String,
-	#[cfg(feature = "rust")] url_prefix: Option<String>,
+	url_prefix: Option<String>,
 	auth_token: &str,
 	jwt: &str,
 	session_id: &str,
@@ -234,17 +183,11 @@ pub async fn upload_part(
 	sequence: i32,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::sdk_core::SymKey,
-	#[cfg(not(feature = "rust"))] sign_key: &str,
+	#[cfg(not(feature = "rust"))] sign_key: Option<&str>,
 	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::util::SignKeyFormat>,
 	part: &[u8],
 ) -> KeyRes
 {
-	#[cfg(not(feature = "rust"))]
-	let url_prefix = match url_prefix.as_str() {
-		"" => None,
-		_ => Some(url_prefix),
-	};
-
 	let url_prefix = match url_prefix {
 		Some(p) => p,
 		None => base_url + "/api/v1/file/part",
@@ -294,19 +237,10 @@ pub async fn delete_file(
 	auth_token: &str,
 	jwt: &str,
 	file_id: &str,
-	#[cfg(not(feature = "rust"))] group_id: &str,
-	#[cfg(feature = "rust")] group_id: Option<&str>,
+	group_id: Option<&str>,
 	group_as_member: Option<&str>,
 ) -> VoidRes
 {
-	#[cfg(not(feature = "rust"))]
-	let group_id = {
-		match group_id {
-			"" => None,
-			_ => Some(group_id),
-		}
-	};
-
 	let url = match group_id {
 		Some(id) => base_url + "/api/v1/group/" + id + "/file/" + file_id,
 		None => base_url + "/api/v1/file/" + file_id,

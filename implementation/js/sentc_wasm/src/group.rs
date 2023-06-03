@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 pub struct GroupOutData
 {
 	group_id: String,
-	parent_group_id: String,
+	parent_group_id: Option<String>,
 	rank: i32,
 	key_update: bool,
 	created_time: u128,
@@ -58,7 +58,7 @@ impl GroupOutData
 		self.hmac_keys.clone()
 	}
 
-	pub fn get_parent_group_id(&self) -> String
+	pub fn get_parent_group_id(&self) -> Option<String>
 	{
 		self.parent_group_id.clone()
 	}
@@ -293,7 +293,7 @@ pub async fn group_create_group(
 	auth_token: String,
 	jwt: String,
 	creators_public_key: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::create(
@@ -301,7 +301,7 @@ pub async fn group_create_group(
 		auth_token.as_str(),
 		jwt.as_str(),
 		creators_public_key.as_str(),
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -316,7 +316,7 @@ pub async fn group_create_child_group(
 	parent_public_key: String,
 	parent_id: String,
 	admin_rank: i32,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::create_child_group(
@@ -326,7 +326,7 @@ pub async fn group_create_child_group(
 		parent_id.as_str(),
 		admin_rank,
 		parent_public_key.as_str(),
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -341,7 +341,7 @@ pub async fn group_create_connected_group(
 	connected_group_id: String,
 	admin_rank: i32,
 	parent_public_key: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::create_connected_group(
@@ -351,7 +351,7 @@ pub async fn group_create_connected_group(
 		&connected_group_id,
 		admin_rank,
 		&parent_public_key,
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -398,7 +398,7 @@ pub async fn group_get_group_data(
 	auth_token: String,
 	jwt: String,
 	id: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<GroupOutData, JsValue>
 {
 	let out = sentc_crypto_full::group::get_group(
@@ -406,7 +406,7 @@ pub async fn group_get_group_data(
 		auth_token.as_str(),
 		jwt.as_str(),
 		id.as_str(),
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -468,7 +468,7 @@ pub async fn group_invite_user(
 	re_invite: bool,
 	user_public_key: String,
 	group_keys: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::invite_user(
@@ -485,7 +485,7 @@ pub async fn group_invite_user(
 		re_invite,
 		user_public_key.as_str(),
 		group_keys.as_str(),
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -505,7 +505,7 @@ pub async fn group_invite_user_session(
 	session_id: String,
 	user_public_key: String,
 	group_keys: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::invite_user_session(
@@ -517,7 +517,7 @@ pub async fn group_invite_user_session(
 		auto_invite,
 		user_public_key.as_str(),
 		group_keys.as_str(),
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -539,7 +539,7 @@ pub async fn group_accept_join_req(
 	admin_rank: i32,
 	user_public_key: String,
 	group_keys: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::group::accept_join_req(
@@ -553,7 +553,7 @@ pub async fn group_accept_join_req(
 		admin_rank,
 		user_public_key.as_str(),
 		group_keys.as_str(),
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -572,7 +572,7 @@ pub async fn group_join_user_session(
 	session_id: String,
 	user_public_key: String,
 	group_keys: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::join_user_session(
@@ -583,7 +583,7 @@ pub async fn group_join_user_session(
 		session_id.as_str(),
 		user_public_key.as_str(),
 		group_keys.as_str(),
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -594,9 +594,9 @@ pub async fn group_join_user_session(
 //key rotation
 
 #[wasm_bindgen]
-pub fn group_prepare_key_rotation(pre_group_key: &str, public_key: &str, sign_key: &str, starter: String) -> Result<String, JsValue>
+pub fn group_prepare_key_rotation(pre_group_key: &str, public_key: &str, sign_key: Option<String>, starter: String) -> Result<String, JsValue>
 {
-	let out = group::key_rotation(pre_group_key, public_key, false, sign_key, starter)?;
+	let out = group::key_rotation(pre_group_key, public_key, false, sign_key.as_deref(), starter)?;
 
 	Ok(out)
 }
@@ -612,7 +612,7 @@ pub async fn group_pre_done_key_rotation(
 	auth_token: String,
 	jwt: String,
 	id: String,
-	group_as_member: String,
+	group_as_member: Option<String>,
 ) -> Result<JsValue, JsValue>
 {
 	let out = sentc_crypto_full::group::prepare_done_key_rotation(
@@ -621,7 +621,7 @@ pub async fn group_pre_done_key_rotation(
 		jwt.as_str(),
 		id.as_str(),
 		false,
-		get_group_as_member(&group_as_member),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -646,8 +646,8 @@ pub async fn group_finish_key_rotation(
 	pre_group_key: String,
 	public_key: String,
 	private_key: String,
-	verify_key: String,
-	group_as_member: String,
+	verify_key: Option<String>,
+	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::group::done_key_rotation(
@@ -660,8 +660,8 @@ pub async fn group_finish_key_rotation(
 		public_key.as_str(),
 		private_key.as_str(),
 		false,
-		&verify_key,
-		get_group_as_member(&group_as_member),
+		verify_key.as_deref(),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -711,14 +711,4 @@ pub async fn group_get_public_key_data(base_url: String, auth_token: String, id:
 		public_key,
 		public_key_id,
 	})
-}
-
-#[inline(never)]
-fn get_group_as_member(group_as_member: &String) -> Option<&str>
-{
-	if group_as_member.is_empty() {
-		None
-	} else {
-		Some(group_as_member.as_str())
-	}
 }

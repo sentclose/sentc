@@ -52,7 +52,7 @@ use crate::SdkError;
 pub struct GroupOutDataLight
 {
 	pub group_id: String,
-	pub parent_group_id: String,
+	pub parent_group_id: Option<GroupId>,
 	pub rank: i32,
 	pub created_time: u128,
 	pub joined_time: u128,
@@ -82,7 +82,7 @@ First fetch of the group data
 pub struct GroupOutData
 {
 	pub group_id: GroupId,
-	pub parent_group_id: GroupId,
+	pub parent_group_id: Option<GroupId>,
 	pub rank: i32,
 	pub key_update: bool,
 	pub created_time: u128,
@@ -163,7 +163,13 @@ pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String
 	Ok((out.0, public_key, group_key))
 }
 
-pub fn key_rotation(previous_group_key: &str, invoker_public_key: &str, user_group: bool, sign_key: &str, starter: UserId) -> Result<String, String>
+pub fn key_rotation(
+	previous_group_key: &str,
+	invoker_public_key: &str,
+	user_group: bool,
+	sign_key: Option<&str>,
+	starter: UserId,
+) -> Result<String, String>
 {
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -191,7 +197,7 @@ pub fn done_key_rotation(
 	public_key: &str,
 	previous_group_key: &str,
 	server_output: &str,
-	verify_key: &str,
+	verify_key: Option<&str>,
 ) -> Result<String, String>
 {
 	let verify_key = prepare_verify_key(verify_key)?;
@@ -294,16 +300,11 @@ pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, St
 {
 	let server_output: GroupLightServerData = handle_server_response(server_output)?;
 
-	let parent_group_id = match server_output.parent_group_id {
-		Some(v) => v,
-		None => String::from(""),
-	};
-
 	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
 
 	Ok(GroupOutDataLight {
 		group_id: server_output.group_id,
-		parent_group_id,
+		parent_group_id: server_output.parent_group_id,
 		rank: server_output.rank,
 		created_time: server_output.created_time,
 		joined_time: server_output.joined_time,
@@ -321,11 +322,6 @@ Returns the server keys to use get_group_keys to decrypt each group key with the
 pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 {
 	let server_output: GroupServerData = handle_server_response(server_output)?;
-
-	let parent_group_id = match server_output.parent_group_id {
-		Some(v) => v,
-		None => String::from(""),
-	};
 
 	let mut keys = Vec::with_capacity(server_output.keys.len());
 
@@ -360,7 +356,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, String>
 
 	Ok(GroupOutData {
 		group_id: server_output.group_id,
-		parent_group_id,
+		parent_group_id: server_output.parent_group_id,
 		rank: server_output.rank,
 		key_update: server_output.key_update,
 		created_time: server_output.created_time,
@@ -882,7 +878,7 @@ mod test
 			key_data[0].group_key.as_str(),
 			user_keys.public_key.as_str(),
 			false,
-			"",
+			None,
 			"".to_string(),
 		)
 		.unwrap();
@@ -943,7 +939,7 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			"",
+			None,
 		)
 		.unwrap();
 		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();
@@ -1006,7 +1002,7 @@ mod test
 			key_data[0].group_key.as_str(),
 			user_keys.public_key.as_str(),
 			false,
-			&user_keys.sign_key,
+			Some(&user_keys.sign_key),
 			user.user_id.clone(),
 		)
 		.unwrap();
@@ -1077,7 +1073,7 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			"",
+			None,
 		)
 		.unwrap();
 		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
@@ -1135,7 +1131,7 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			&user_keys.exported_verify_key,
+			Some(&user_keys.exported_verify_key),
 		)
 		.unwrap();
 		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
