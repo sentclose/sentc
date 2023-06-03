@@ -158,30 +158,24 @@ pub async fn file_register_file(
 	jwt: String,
 	master_key_id: String,
 	content_key: String,
-	belongs_to_id: String,
+	belongs_to_id: Option<String>,
 	belongs_to_type: String,
-	file_name: String,
-	group_id: String,
-	group_as_member: String,
+	file_name: Option<String>,
+	group_id: Option<String>,
+	group_as_member: Option<String>,
 ) -> Result<FileRegisterOutput, JsValue>
 {
-	let group_as_member = if group_as_member.is_empty() {
-		None
-	} else {
-		Some(group_as_member.as_str())
-	};
-
 	let (file_id, session_id, encrypted_file_name) = sentc_crypto_full::file::register_file(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
 		master_key_id,
 		content_key.as_str(),
-		belongs_to_id.as_str(),
+		belongs_to_id,
 		belongs_to_type.as_str(),
-		file_name.as_str(),
-		group_id.as_str(),
-		group_as_member,
+		file_name,
+		group_id.as_deref(),
+		group_as_member.as_deref(),
 	)
 	.await?;
 
@@ -196,9 +190,9 @@ pub async fn file_register_file(
 pub fn file_prepare_register_file(
 	master_key_id: String,
 	content_key: &str,
-	belongs_to_id: &str,
+	belongs_to_id: Option<String>,
 	belongs_to_type: &str,
-	file_name: &str,
+	file_name: Option<String>,
 ) -> Result<FilePrepareRegister, JsValue>
 {
 	let (input, encrypted_file_name) =
@@ -296,35 +290,6 @@ pub async fn file_file_name_update(
 		file_id.as_str(),
 		content_key.as_str(),
 		file_name.as_str(),
-	)
-	.await?;
-
-	Ok(())
-}
-
-#[wasm_bindgen]
-pub async fn file_delete_file(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	file_id: String,
-	group_id: String,
-	group_as_member: String,
-) -> Result<(), JsValue>
-{
-	let group_as_member = if group_as_member.is_empty() {
-		None
-	} else {
-		Some(group_as_member.as_str())
-	};
-
-	sentc_crypto_full::file::delete_file(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		file_id.as_str(),
-		group_id.as_str(),
-		group_as_member,
 	)
 	.await?;
 

@@ -19,22 +19,12 @@ use crate::SdkError;
 pub fn prepare_register_file(
 	master_key_id: String,
 	key: &str,
-	belongs_to_id: &str,
+	belongs_to_id: Option<String>,
 	belongs_to_type: &str,
-	file_name: &str,
+	file_name: Option<String>,
 ) -> Result<(String, String), String>
 {
 	let key = import_sym_key(key)?;
-
-	let belongs_to_id = match belongs_to_id {
-		"" => None,
-		_ => Some(belongs_to_id.to_string()),
-	};
-
-	let file_name = match file_name {
-		"" => None,
-		_ => Some(file_name.to_string()),
-	};
 
 	let belongs_to_type: BelongsToType = serde_json::from_str(belongs_to_type).map_err(SdkError::JsonParseFailed)?;
 

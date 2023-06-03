@@ -827,7 +827,7 @@ fn wire_group_create_group_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	creators_public_key: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -861,7 +861,7 @@ fn wire_group_create_child_group_impl(
 	parent_public_key: impl Wire2Api<String> + UnwindSafe,
 	parent_id: impl Wire2Api<String> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -899,7 +899,7 @@ fn wire_group_create_connected_group_impl(
 	connected_group_id: impl Wire2Api<String> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	parent_public_key: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -961,7 +961,7 @@ fn wire_group_get_group_data_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -987,7 +987,7 @@ fn wire_group_get_group_keys_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_key_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1024,7 +1024,7 @@ fn wire_group_get_group_key_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
 	key_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1096,7 +1096,7 @@ fn wire_group_get_member_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1132,7 +1132,7 @@ fn wire_group_get_group_updates_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1158,7 +1158,7 @@ fn wire_group_get_all_first_level_children_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1195,7 +1195,7 @@ fn wire_group_get_groups_for_user_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
+	group_id: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1270,7 +1270,7 @@ fn wire_group_invite_user_impl(
 	re_invite: impl Wire2Api<bool> + UnwindSafe,
 	user_public_key: impl Wire2Api<String> + UnwindSafe,
 	group_keys: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1324,7 +1324,7 @@ fn wire_group_invite_user_session_impl(
 	session_id: impl Wire2Api<String> + UnwindSafe,
 	user_public_key: impl Wire2Api<String> + UnwindSafe,
 	group_keys: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1365,8 +1365,8 @@ fn wire_group_get_invites_for_user_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_id: impl Wire2Api<Option<String>> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1402,8 +1402,8 @@ fn wire_group_accept_invite_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_id: impl Wire2Api<Option<String>> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1437,8 +1437,8 @@ fn wire_group_reject_invite_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_id: impl Wire2Api<Option<String>> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1473,7 +1473,7 @@ fn wire_group_get_sent_join_req_user_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1510,7 +1510,7 @@ fn wire_group_get_sent_join_req_impl(
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1548,7 +1548,7 @@ fn wire_group_delete_sent_join_req_user_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	join_req_group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1582,7 +1582,7 @@ fn wire_group_delete_sent_join_req_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	join_req_group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1619,7 +1619,7 @@ fn wire_group_join_req_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
 	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1656,7 +1656,7 @@ fn wire_group_get_join_reqs_impl(
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1696,7 +1696,7 @@ fn wire_group_reject_join_req_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	rejected_user_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1738,7 +1738,7 @@ fn wire_group_accept_join_req_impl(
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
 	user_public_key: impl Wire2Api<String> + UnwindSafe,
 	group_keys: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1785,7 +1785,7 @@ fn wire_group_join_user_session_impl(
 	session_id: impl Wire2Api<String> + UnwindSafe,
 	user_public_key: impl Wire2Api<String> + UnwindSafe,
 	group_keys: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1824,7 +1824,7 @@ fn wire_group_stop_group_invites_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1858,7 +1858,7 @@ fn wire_leave_group_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1940,7 +1940,7 @@ fn wire_group_key_rotation_impl(
 	pre_group_key: impl Wire2Api<String> + UnwindSafe,
 	sign_key: impl Wire2Api<Option<String>> + UnwindSafe,
 	starter: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -1980,7 +1980,7 @@ fn wire_group_pre_done_key_rotation_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2022,7 +2022,7 @@ fn wire_group_finish_key_rotation_impl(
 	public_key: impl Wire2Api<String> + UnwindSafe,
 	private_key: impl Wire2Api<String> + UnwindSafe,
 	verify_key: impl Wire2Api<Option<String>> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2087,7 +2087,7 @@ fn wire_group_update_rank_impl(
 	user_id: impl Wire2Api<String> + UnwindSafe,
 	rank: impl Wire2Api<i32> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2127,7 +2127,7 @@ fn wire_group_kick_user_impl(
 	id: impl Wire2Api<String> + UnwindSafe,
 	user_id: impl Wire2Api<String> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2164,7 +2164,7 @@ fn wire_group_delete_group_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
 	admin_rank: impl Wire2Api<i32> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2770,7 +2770,7 @@ fn wire_search_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 	key: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<String> + UnwindSafe,
 	cat_id: impl Wire2Api<String> + UnwindSafe,
@@ -2817,7 +2817,7 @@ fn wire_content_fetch_for_group_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 	cat_id: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
 	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
@@ -2859,10 +2859,10 @@ fn wire_file_download_file_meta_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
 	auth_token: impl Wire2Api<String> + UnwindSafe,
-	jwt: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<Option<String>> + UnwindSafe,
 	id: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_id: impl Wire2Api<Option<String>> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -2989,11 +2989,11 @@ fn wire_file_register_file_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	master_key_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
-	belongs_to_id: impl Wire2Api<String> + UnwindSafe,
+	belongs_to_id: impl Wire2Api<Option<String>> + UnwindSafe,
 	belongs_to_type: impl Wire2Api<String> + UnwindSafe,
-	file_name: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	file_name: impl Wire2Api<Option<String>> + UnwindSafe,
+	group_id: impl Wire2Api<Option<String>> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -3033,9 +3033,9 @@ fn wire_file_prepare_register_file_impl(
 	port_: MessagePort,
 	master_key_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
-	belongs_to_id: impl Wire2Api<String> + UnwindSafe,
+	belongs_to_id: impl Wire2Api<Option<String>> + UnwindSafe,
 	belongs_to_type: impl Wire2Api<String> + UnwindSafe,
-	file_name: impl Wire2Api<String> + UnwindSafe,
+	file_name: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -3209,8 +3209,8 @@ fn wire_file_delete_file_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	file_id: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<String> + UnwindSafe,
+	group_id: impl Wire2Api<Option<String>> + UnwindSafe,
+	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
