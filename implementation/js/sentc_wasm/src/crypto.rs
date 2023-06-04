@@ -275,20 +275,19 @@ pub async fn generate_and_register_sym_key_by_public_key(
 }
 
 #[wasm_bindgen]
-pub async fn get_sym_key_by_id(base_url: String, auth_token: String, key_id: String, master_key: String) -> Result<String, JsValue>
+pub fn done_fetch_sym_key(master_key: &str, server_out: &str, non_registered: bool) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::crypto::get_sym_key_by_id(base_url, auth_token.as_str(), key_id.as_str(), master_key.as_str()).await?;
-
-	Ok(out)
+	Ok(crypto::done_fetch_sym_key(master_key, server_out, non_registered)?)
 }
 
 #[wasm_bindgen]
-pub async fn get_sym_key_by_id_by_private_key(base_url: String, auth_token: String, key_id: String, private_key: String) -> Result<String, JsValue>
+pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str, non_registered: bool) -> Result<String, JsValue>
 {
-	let out =
-		sentc_crypto_full::crypto::get_sym_key_by_id_by_private_key(base_url, auth_token.as_str(), key_id.as_str(), private_key.as_str()).await?;
-
-	Ok(out)
+	Ok(crypto::done_fetch_sym_key_by_private_key(
+		private_key,
+		server_out,
+		non_registered,
+	)?)
 }
 
 #[wasm_bindgen]
@@ -343,14 +342,6 @@ pub async fn get_keys_for_master_key(
 		last_key_id,
 		keys,
 	})
-}
-
-#[wasm_bindgen]
-pub async fn delete_sym_key(base_url: String, auth_token: String, jwt: String, key_id: String) -> Result<(), JsValue>
-{
-	sentc_crypto_full::crypto::delete_key(base_url, auth_token.as_str(), jwt.as_str(), key_id.as_str()).await?;
-
-	Ok(())
 }
 
 //__________________________________________________________________________________________________

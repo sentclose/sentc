@@ -7,14 +7,14 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub struct FilePrepareRegister
 {
-	encrypted_file_name: String,
+	encrypted_file_name: Option<String>,
 	server_input: String,
 }
 
 #[wasm_bindgen]
 impl FilePrepareRegister
 {
-	pub fn get_encrypted_file_name(&self) -> String
+	pub fn get_encrypted_file_name(&self) -> Option<String>
 	{
 		self.encrypted_file_name.clone()
 	}
@@ -51,7 +51,7 @@ pub struct FileRegisterOutput
 {
 	file_id: String,
 	session_id: String,
-	encrypted_file_name: String,
+	encrypted_file_name: Option<String>,
 }
 
 #[wasm_bindgen]
@@ -67,7 +67,7 @@ impl FileRegisterOutput
 		self.session_id.clone()
 	}
 
-	pub fn get_encrypted_file_name(&self) -> String
+	pub fn get_encrypted_file_name(&self) -> Option<String>
 	{
 		self.encrypted_file_name.clone()
 	}
@@ -158,6 +158,7 @@ pub async fn file_register_file(
 	jwt: String,
 	master_key_id: String,
 	content_key: String,
+	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: String,
 	file_name: Option<String>,
@@ -167,12 +168,13 @@ pub async fn file_register_file(
 {
 	let (file_id, session_id, encrypted_file_name) = sentc_crypto_full::file::register_file(
 		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
+		&auth_token,
+		&jwt,
 		master_key_id,
-		content_key.as_str(),
+		&content_key,
+		encrypted_content_key,
 		belongs_to_id,
-		belongs_to_type.as_str(),
+		&belongs_to_type,
 		file_name,
 		group_id.as_deref(),
 		group_as_member.as_deref(),
@@ -190,13 +192,20 @@ pub async fn file_register_file(
 pub fn file_prepare_register_file(
 	master_key_id: String,
 	content_key: &str,
+	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: &str,
 	file_name: Option<String>,
 ) -> Result<FilePrepareRegister, JsValue>
 {
-	let (input, encrypted_file_name) =
-		sentc_crypto::file::prepare_register_file(master_key_id, content_key, belongs_to_id, belongs_to_type, file_name)?;
+	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(
+		master_key_id,
+		content_key,
+		encrypted_content_key,
+		belongs_to_id,
+		belongs_to_type,
+		file_name,
+	)?;
 
 	Ok(FilePrepareRegister {
 		encrypted_file_name,

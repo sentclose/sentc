@@ -2099,6 +2099,16 @@ pub fn get_sym_key_by_id_by_private_key(base_url: String, auth_token: String, ke
 	))
 }
 
+pub fn done_fetch_sym_key(master_key: String, server_out: String, non_registered: bool) -> Result<String>
+{
+	sentc_crypto::crypto::done_fetch_sym_key(&master_key, &server_out, non_registered).map_err(|err| anyhow!(err))
+}
+
+pub fn done_fetch_sym_key_by_private_key(private_key: String, server_out: String, non_registered: bool) -> Result<String>
+{
+	sentc_crypto::crypto::done_fetch_sym_key_by_private_key(&private_key, &server_out, non_registered).map_err(|err| anyhow!(err))
+}
+
 //__________________________________________________________________________________________________
 
 #[repr(C)]
@@ -2376,7 +2386,8 @@ pub struct FileData
 	pub owner: String,
 	pub belongs_to: Option<String>, //can be a group or a user. if belongs to type is none then this is Option::None
 	pub belongs_to_type: BelongsToType,
-	pub key_id: String,
+	pub encrypted_key: String,
+	pub encrypted_key_alg: String,
 	pub encrypted_file_name: Option<String>,
 	pub part_list: Vec<FilePartListItem>,
 }
@@ -2391,7 +2402,8 @@ impl From<sentc_crypto_common::file::FileData> for FileData
 			owner: data.owner,
 			belongs_to: data.belongs_to,
 			belongs_to_type: data.belongs_to_type.into(),
-			key_id: data.key_id,
+			encrypted_key: data.encrypted_key,
+			encrypted_key_alg: data.encrypted_key_alg,
 			encrypted_file_name: data.encrypted_file_name,
 			part_list: data.part_list.into_iter().map(|part| part.into()).collect(),
 		}
@@ -2493,13 +2505,13 @@ pub struct FileRegisterOutput
 {
 	pub file_id: String,
 	pub session_id: String,
-	pub encrypted_file_name: String,
+	pub encrypted_file_name: Option<String>,
 }
 
 #[repr(C)]
 pub struct FilePrepareRegister
 {
-	pub encrypted_file_name: String,
+	pub encrypted_file_name: Option<String>,
 	pub server_input: String,
 }
 
@@ -2516,6 +2528,7 @@ pub fn file_register_file(
 	jwt: String,
 	master_key_id: String,
 	content_key: String,
+	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: String,
 	file_name: Option<String>,
@@ -2525,12 +2538,13 @@ pub fn file_register_file(
 {
 	let (file_id, session_id, encrypted_file_name) = rt(sentc_crypto_full::file::register_file(
 		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
+		&auth_token,
+		&jwt,
 		master_key_id,
-		content_key.as_str(),
+		&content_key,
+		encrypted_content_key,
 		belongs_to_id,
-		belongs_to_type.as_str(),
+		&belongs_to_type,
 		file_name,
 		group_id.as_deref(),
 		group_as_member.as_deref(),
@@ -2546,6 +2560,7 @@ pub fn file_register_file(
 pub fn file_prepare_register_file(
 	master_key_id: String,
 	content_key: String,
+	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: String,
 	file_name: Option<String>,
@@ -2554,6 +2569,7 @@ pub fn file_prepare_register_file(
 	let (input, encrypted_file_name) = sentc_crypto::file::prepare_register_file(
 		master_key_id,
 		&content_key,
+		encrypted_content_key,
 		belongs_to_id,
 		&belongs_to_type,
 		file_name,

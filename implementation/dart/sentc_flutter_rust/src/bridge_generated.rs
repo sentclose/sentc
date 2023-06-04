@@ -2645,6 +2645,46 @@ fn wire_get_sym_key_by_id_by_private_key_impl(
 		},
 	)
 }
+fn wire_done_fetch_sym_key_impl(
+	port_: MessagePort,
+	master_key: impl Wire2Api<String> + UnwindSafe,
+	server_out: impl Wire2Api<String> + UnwindSafe,
+	non_registered: impl Wire2Api<bool> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "done_fetch_sym_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_master_key = master_key.wire2api();
+			let api_server_out = server_out.wire2api();
+			let api_non_registered = non_registered.wire2api();
+			move |task_callback| done_fetch_sym_key(api_master_key, api_server_out, api_non_registered)
+		},
+	)
+}
+fn wire_done_fetch_sym_key_by_private_key_impl(
+	port_: MessagePort,
+	private_key: impl Wire2Api<String> + UnwindSafe,
+	server_out: impl Wire2Api<String> + UnwindSafe,
+	non_registered: impl Wire2Api<bool> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "done_fetch_sym_key_by_private_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_server_out = server_out.wire2api();
+			let api_non_registered = non_registered.wire2api();
+			move |task_callback| done_fetch_sym_key_by_private_key(api_private_key, api_server_out, api_non_registered)
+		},
+	)
+}
 fn wire_get_keys_for_master_key_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -2989,6 +3029,7 @@ fn wire_file_register_file_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	master_key_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
+	encrypted_content_key: impl Wire2Api<String> + UnwindSafe,
 	belongs_to_id: impl Wire2Api<Option<String>> + UnwindSafe,
 	belongs_to_type: impl Wire2Api<String> + UnwindSafe,
 	file_name: impl Wire2Api<Option<String>> + UnwindSafe,
@@ -3007,6 +3048,7 @@ fn wire_file_register_file_impl(
 			let api_jwt = jwt.wire2api();
 			let api_master_key_id = master_key_id.wire2api();
 			let api_content_key = content_key.wire2api();
+			let api_encrypted_content_key = encrypted_content_key.wire2api();
 			let api_belongs_to_id = belongs_to_id.wire2api();
 			let api_belongs_to_type = belongs_to_type.wire2api();
 			let api_file_name = file_name.wire2api();
@@ -3019,6 +3061,7 @@ fn wire_file_register_file_impl(
 					api_jwt,
 					api_master_key_id,
 					api_content_key,
+					api_encrypted_content_key,
 					api_belongs_to_id,
 					api_belongs_to_type,
 					api_file_name,
@@ -3033,6 +3076,7 @@ fn wire_file_prepare_register_file_impl(
 	port_: MessagePort,
 	master_key_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
+	encrypted_content_key: impl Wire2Api<String> + UnwindSafe,
 	belongs_to_id: impl Wire2Api<Option<String>> + UnwindSafe,
 	belongs_to_type: impl Wire2Api<String> + UnwindSafe,
 	file_name: impl Wire2Api<Option<String>> + UnwindSafe,
@@ -3046,6 +3090,7 @@ fn wire_file_prepare_register_file_impl(
 		move || {
 			let api_master_key_id = master_key_id.wire2api();
 			let api_content_key = content_key.wire2api();
+			let api_encrypted_content_key = encrypted_content_key.wire2api();
 			let api_belongs_to_id = belongs_to_id.wire2api();
 			let api_belongs_to_type = belongs_to_type.wire2api();
 			let api_file_name = file_name.wire2api();
@@ -3053,6 +3098,7 @@ fn wire_file_prepare_register_file_impl(
 				file_prepare_register_file(
 					api_master_key_id,
 					api_content_key,
+					api_encrypted_content_key,
 					api_belongs_to_id,
 					api_belongs_to_type,
 					api_file_name,
@@ -3360,7 +3406,8 @@ impl support::IntoDart for FileData {
 			self.owner.into_dart(),
 			self.belongs_to.into_dart(),
 			self.belongs_to_type.into_dart(),
-			self.key_id.into_dart(),
+			self.encrypted_key.into_dart(),
+			self.encrypted_key_alg.into_dart(),
 			self.encrypted_file_name.into_dart(),
 			self.part_list.into_dart(),
 		]
