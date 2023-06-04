@@ -19,21 +19,24 @@ use crate::SdkError;
 pub fn prepare_register_file(
 	master_key_id: String,
 	key: &str,
+	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: &str,
 	file_name: Option<String>,
-) -> Result<(String, String), String>
+) -> Result<(String, Option<String>), String>
 {
 	let key = import_sym_key(key)?;
 
 	let belongs_to_type: BelongsToType = serde_json::from_str(belongs_to_type).map_err(SdkError::JsonParseFailed)?;
 
-	let (server_input, encrypted_file_name) = prepare_register_file_internally(master_key_id, &key, belongs_to_id, belongs_to_type, file_name)?;
-
-	let encrypted_file_name = match encrypted_file_name {
-		None => "".to_string(),
-		Some(n) => n,
-	};
+	let (server_input, encrypted_file_name) = prepare_register_file_internally(
+		master_key_id,
+		&key,
+		encrypted_content_key,
+		belongs_to_id,
+		belongs_to_type,
+		file_name,
+	)?;
 
 	Ok((server_input, encrypted_file_name))
 }

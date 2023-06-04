@@ -40,12 +40,13 @@ use crate::{crypto, SdkError};
 fn prepare_register_file_internally(
 	master_key_id: String,
 	key: &SymKeyFormatInt,
+	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: BelongsToType,
 	file_name: Option<String>,
 ) -> Result<(String, Option<String>), SdkError>
 {
-	let key_id = key.key_id.clone();
+	let encrypted_key_alg = sentc_crypto_core::getting_alg_from_sym_key(&key.key);
 
 	// this check is already done in the backend too
 	let (belongs_to_type, belongs_to_id) = match belongs_to_type {
@@ -72,10 +73,11 @@ fn prepare_register_file_internally(
 	Ok((
 		serde_json::to_string(&FileRegisterInput {
 			master_key_id,
-			key_id,
+			encrypted_key: encrypted_content_key,
 			belongs_to_id,
 			belongs_to_type,
 			encrypted_file_name: encrypted_file_name.clone(),
+			encrypted_key_alg: encrypted_key_alg.to_string(),
 		})
 		.map_err(|_e| SdkError::JsonToStringFailed)?,
 		encrypted_file_name,

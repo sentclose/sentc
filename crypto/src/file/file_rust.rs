@@ -20,12 +20,20 @@ use crate::{SdkError, SignKeyFormat, SymKeyFormat};
 pub fn prepare_register_file(
 	master_key_id: String,
 	key: &SymKeyFormat,
+	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: BelongsToType,
 	file_name: Option<String>,
 ) -> Result<(String, Option<String>), SdkError>
 {
-	prepare_register_file_internally(master_key_id, key, belongs_to_id, belongs_to_type, file_name)
+	prepare_register_file_internally(
+		master_key_id,
+		key,
+		encrypted_content_key,
+		belongs_to_id,
+		belongs_to_type,
+		file_name,
+	)
 }
 
 pub fn done_register_file(server_output: &str) -> Result<(FileId, FileSessionId), SdkError>
