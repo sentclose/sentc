@@ -373,6 +373,14 @@ fn decrypt_string_asymmetric_internally(
 */
 fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<(String, SymKeyFormatInt), SdkError>
 {
+	let (out, key) = prepare_registered_sym_key_internally_private(master_key)?;
+
+	Ok((out.to_string().map_err(|_| SdkError::JsonToStringFailed)?, key))
+}
+
+fn prepare_registered_sym_key_internally_private(master_key: &SymKeyFormatInt)
+	-> Result<(GeneratedSymKeyHeadServerInput, SymKeyFormatInt), SdkError>
+{
 	let (encrypted_key, sym_key_alg, key) = crypto_core::generate_symmetric_with_master_key(&master_key.key)?;
 
 	let encrypted_key_string = Base64::encode_string(&encrypted_key);
@@ -387,9 +395,7 @@ fn prepare_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<(
 			encrypted_key_string,
 			alg: sym_key_alg.to_string(),
 			master_key_id: master_key.key_id.to_string(),
-		}
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?,
+		},
 		sym_key_format,
 	))
 }
@@ -413,6 +419,15 @@ then put the id back in
 */
 fn prepare_register_sym_key_by_public_key_internally(reply_public_key: &UserPublicKeyData) -> Result<(String, SymKeyFormatInt), SdkError>
 {
+	let (out, key) = prepare_register_sym_key_by_public_key_internally_private(reply_public_key)?;
+
+	Ok((out.to_string().map_err(|_| SdkError::JsonToStringFailed)?, key))
+}
+
+fn prepare_register_sym_key_by_public_key_internally_private(
+	reply_public_key: &UserPublicKeyData,
+) -> Result<(GeneratedSymKeyHeadServerInput, SymKeyFormatInt), SdkError>
+{
 	let public_key = import_public_key_from_pem_with_alg(
 		reply_public_key.public_key_pem.as_str(),
 		reply_public_key.public_key_alg.as_str(),
@@ -432,9 +447,7 @@ fn prepare_register_sym_key_by_public_key_internally(reply_public_key: &UserPubl
 			encrypted_key_string,
 			alg: sym_key_alg.to_string(),
 			master_key_id: reply_public_key.public_key_id.to_string(),
-		}
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?,
+		},
 		sym_key_format,
 	))
 }
@@ -444,11 +457,15 @@ fn prepare_register_sym_key_by_public_key_internally(reply_public_key: &UserPubl
 
 Decrypted the server output with the master key
 */
-fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<SymKeyFormatInt, SdkError>
+fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str, non_registered: bool) -> Result<SymKeyFormatInt, SdkError>
 {
-	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
+	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+		GeneratedSymKeyHeadServerOutput::from_string(server_out).map_err(SdkError::JsonParseFailed)?
+	} else {
+		handle_server_response(server_out)?
+	};
 
-	decrypt_sym_key_internally(master_key, &server_out)
+	decrypt_sym_key_internally(master_key, &out)
 }
 
 /**
@@ -456,11 +473,19 @@ fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str)
 
 decrypt it with the private key
 */
-fn done_fetch_sym_key_by_private_key_internally(private_key: &PrivateKeyFormatInt, server_out: &str) -> Result<SymKeyFormatInt, SdkError>
+fn done_fetch_sym_key_by_private_key_internally(
+	private_key: &PrivateKeyFormatInt,
+	server_out: &str,
+	non_registered: bool,
+) -> Result<SymKeyFormatInt, SdkError>
 {
-	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
+	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+		GeneratedSymKeyHeadServerOutput::from_string(server_out).map_err(SdkError::JsonParseFailed)?
+	} else {
+		handle_server_response(server_out)?
+	};
 
-	decrypt_sym_key_by_private_key_internally(private_key, &server_out)
+	decrypt_sym_key_by_private_key_internally(private_key, &out)
 }
 
 /**
@@ -546,40 +571,32 @@ Return both, the decrypted to use it, the encrypted to save it and use it for th
 */
 fn generate_non_register_sym_key_internally(master_key: &SymKeyFormatInt) -> Result<(SymKeyFormatInt, GeneratedSymKeyHeadServerOutput), SdkError>
 {
-	let (pre_out, _key) = prepare_register_sym_key_internally(master_key)?;
-
-	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(SdkError::JsonParseFailed)?;
+	let (pre_out, key) = prepare_registered_sym_key_internally_private(master_key)?;
 
 	let server_output = GeneratedSymKeyHeadServerOutput {
-		alg: server_input.alg,
-		encrypted_key_string: server_input.encrypted_key_string,
-		master_key_id: server_input.master_key_id,
+		alg: pre_out.alg,
+		encrypted_key_string: pre_out.encrypted_key_string,
+		master_key_id: pre_out.master_key_id,
 		key_id: "non_registered".to_string(),
 		time: 0,
 	};
 
-	let decrypt_out = decrypt_sym_key_internally(master_key, &server_output)?;
-
-	Ok((decrypt_out, server_output))
+	Ok((key, server_output))
 }
 
 fn generate_non_register_sym_key_by_public_key_internally(
 	reply_public_key: &UserPublicKeyData,
 ) -> Result<(SymKeyFormatInt, GeneratedSymKeyHeadServerOutput), SdkError>
 {
-	let (pre_out, mut key) = prepare_register_sym_key_by_public_key_internally(reply_public_key)?;
-
-	let server_input = GeneratedSymKeyHeadServerInput::from_string(pre_out.as_str()).map_err(SdkError::JsonParseFailed)?;
+	let (pre_out, key) = prepare_register_sym_key_by_public_key_internally_private(reply_public_key)?;
 
 	let server_output = GeneratedSymKeyHeadServerOutput {
-		alg: server_input.alg,
-		encrypted_key_string: server_input.encrypted_key_string,
-		master_key_id: server_input.master_key_id,
+		alg: pre_out.alg,
+		encrypted_key_string: pre_out.encrypted_key_string,
+		master_key_id: pre_out.master_key_id,
 		key_id: "non_registered".to_string(),
 		time: 0,
 	};
-
-	key.key_id = "non_registered".to_string();
 
 	Ok((key, server_output))
 }

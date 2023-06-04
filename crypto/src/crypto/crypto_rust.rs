@@ -152,9 +152,9 @@ pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &mut SymKeyFo
 	done_register_sym_key_internally(key_id, non_registered_sym_key)
 }
 
-pub fn done_fetch_sym_key(master_key: &SymKeyFormat, server_out: &str) -> Result<SymKeyFormat, SdkError>
+pub fn done_fetch_sym_key(master_key: &SymKeyFormat, server_out: &str, non_registered: bool) -> Result<SymKeyFormat, SdkError>
 {
-	done_fetch_sym_key_internally(master_key, server_out)
+	done_fetch_sym_key_internally(master_key, server_out, non_registered)
 }
 
 pub fn done_fetch_sym_keys(master_key: &SymKeyFormat, server_out: &str) -> Result<(Vec<SymKeyFormat>, u128, SymKeyId), SdkError>
@@ -162,9 +162,9 @@ pub fn done_fetch_sym_keys(master_key: &SymKeyFormat, server_out: &str) -> Resul
 	done_fetch_sym_keys_internally(master_key, server_out)
 }
 
-pub fn done_fetch_sym_key_by_private_key(private_key: &PrivateKeyFormat, server_out: &str) -> Result<SymKeyFormat, SdkError>
+pub fn done_fetch_sym_key_by_private_key(private_key: &PrivateKeyFormat, server_out: &str, non_registered: bool) -> Result<SymKeyFormat, SdkError>
 {
-	done_fetch_sym_key_by_private_key_internally(private_key, server_out)
+	done_fetch_sym_key_by_private_key_internally(private_key, server_out, non_registered)
 }
 
 pub fn decrypt_sym_key(master_key: &SymKeyFormat, encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput) -> Result<SymKeyFormat, SdkError>
@@ -503,7 +503,7 @@ mod test
 			result: Some(server_out),
 		};
 
-		let decrypted_key = done_fetch_sym_key(master_key, server_response.to_string().unwrap().as_str()).unwrap();
+		let decrypted_key = done_fetch_sym_key(master_key, server_response.to_string().unwrap().as_str(), false).unwrap();
 
 		let text = "123*+^êéèüöß@€&$";
 
@@ -644,6 +644,7 @@ mod test
 		let decrypted_key = done_fetch_sym_key_by_private_key(
 			&user.user_keys[0].private_key,
 			server_response.to_string().unwrap().as_str(),
+			false,
 		)
 		.unwrap();
 

@@ -1293,6 +1293,21 @@ pub extern "C" fn wire_get_sym_key_by_id_by_private_key(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_done_fetch_sym_key(port_: i64, master_key: *mut wire_uint_8_list, server_out: *mut wire_uint_8_list, non_registered: bool) {
+	wire_done_fetch_sym_key_impl(port_, master_key, server_out, non_registered)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_done_fetch_sym_key_by_private_key(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	server_out: *mut wire_uint_8_list,
+	non_registered: bool,
+) {
+	wire_done_fetch_sym_key_by_private_key_impl(port_, private_key, server_out, non_registered)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_get_keys_for_master_key(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -1483,6 +1498,7 @@ pub extern "C" fn wire_file_register_file(
 	jwt: *mut wire_uint_8_list,
 	master_key_id: *mut wire_uint_8_list,
 	content_key: *mut wire_uint_8_list,
+	encrypted_content_key: *mut wire_uint_8_list,
 	belongs_to_id: *mut wire_uint_8_list,
 	belongs_to_type: *mut wire_uint_8_list,
 	file_name: *mut wire_uint_8_list,
@@ -1496,6 +1512,7 @@ pub extern "C" fn wire_file_register_file(
 		jwt,
 		master_key_id,
 		content_key,
+		encrypted_content_key,
 		belongs_to_id,
 		belongs_to_type,
 		file_name,
@@ -1509,6 +1526,7 @@ pub extern "C" fn wire_file_prepare_register_file(
 	port_: i64,
 	master_key_id: *mut wire_uint_8_list,
 	content_key: *mut wire_uint_8_list,
+	encrypted_content_key: *mut wire_uint_8_list,
 	belongs_to_id: *mut wire_uint_8_list,
 	belongs_to_type: *mut wire_uint_8_list,
 	file_name: *mut wire_uint_8_list,
@@ -1517,6 +1535,7 @@ pub extern "C" fn wire_file_prepare_register_file(
 		port_,
 		master_key_id,
 		content_key,
+		encrypted_content_key,
 		belongs_to_id,
 		belongs_to_type,
 		file_name,

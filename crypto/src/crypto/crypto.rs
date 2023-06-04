@@ -291,20 +291,20 @@ pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &str) -> Resu
 	Ok(export_sym_key_to_string(non_registered_sym_key)?)
 }
 
-pub fn done_fetch_sym_key(master_key: &str, server_out: &str) -> Result<String, String>
+pub fn done_fetch_sym_key(master_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
 {
 	let master_key = import_sym_key(master_key)?;
 
-	let out = done_fetch_sym_key_internally(&master_key, server_out)?;
+	let out = done_fetch_sym_key_internally(&master_key, server_out, non_registered)?;
 
 	Ok(export_sym_key_to_string(out)?)
 }
 
-pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str) -> Result<String, String>
+pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
 {
 	let private_key = import_private_key(private_key)?;
 
-	let out = done_fetch_sym_key_by_private_key_internally(&private_key, server_out)?;
+	let out = done_fetch_sym_key_by_private_key_internally(&private_key, server_out, non_registered)?;
 
 	Ok(export_sym_key_to_string(out)?)
 }
@@ -685,7 +685,7 @@ mod test
 			result: Some(server_out),
 		};
 
-		let decrypted_key = done_fetch_sym_key(master_key, server_response.to_string().unwrap().as_str()).unwrap();
+		let decrypted_key = done_fetch_sym_key(master_key, server_response.to_string().unwrap().as_str(), false).unwrap();
 
 		let text = "123*+^êéèüöß@€&$";
 
@@ -833,6 +833,7 @@ mod test
 		let decrypted_key = done_fetch_sym_key_by_private_key(
 			user_keys.private_key.as_str(),
 			server_response.to_string().unwrap().as_str(),
+			false,
 		)
 		.unwrap();
 

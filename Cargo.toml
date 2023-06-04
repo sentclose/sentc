@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.dependencies]
-sentc-crypto-common = "0.1.2"
+sentc-crypto-common = "0.1.3"
 #sentc-crypto-common = { version="0.1.2", path = "../backend/sentc-api/sdk-common" }    # for local dev
 
 [profile.dev]
