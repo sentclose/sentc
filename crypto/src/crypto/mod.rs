@@ -444,11 +444,15 @@ fn prepare_register_sym_key_by_public_key_internally(reply_public_key: &UserPubl
 
 Decrypted the server output with the master key
 */
-fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str) -> Result<SymKeyFormatInt, SdkError>
+fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str, non_registered: bool) -> Result<SymKeyFormatInt, SdkError>
 {
-	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
+	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+		GeneratedSymKeyHeadServerOutput::from_string(server_out).map_err(SdkError::JsonParseFailed)?
+	} else {
+		handle_server_response(server_out)?
+	};
 
-	decrypt_sym_key_internally(master_key, &server_out)
+	decrypt_sym_key_internally(master_key, &out)
 }
 
 /**
@@ -456,11 +460,19 @@ fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str)
 
 decrypt it with the private key
 */
-fn done_fetch_sym_key_by_private_key_internally(private_key: &PrivateKeyFormatInt, server_out: &str) -> Result<SymKeyFormatInt, SdkError>
+fn done_fetch_sym_key_by_private_key_internally(
+	private_key: &PrivateKeyFormatInt,
+	server_out: &str,
+	non_registered: bool,
+) -> Result<SymKeyFormatInt, SdkError>
 {
-	let server_out: GeneratedSymKeyHeadServerOutput = handle_server_response(server_out)?;
+	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+		GeneratedSymKeyHeadServerOutput::from_string(server_out).map_err(SdkError::JsonParseFailed)?
+	} else {
+		handle_server_response(server_out)?
+	};
 
-	decrypt_sym_key_by_private_key_internally(private_key, &server_out)
+	decrypt_sym_key_by_private_key_internally(private_key, &out)
 }
 
 /**
