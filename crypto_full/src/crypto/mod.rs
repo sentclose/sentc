@@ -61,7 +61,7 @@ pub async fn get_sym_key_by_id(
 
 	let res = non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
-	let sym_key = sentc_crypto::crypto::done_fetch_sym_key(master_key, res.as_str())?;
+	let sym_key = sentc_crypto::crypto::done_fetch_sym_key(master_key, res.as_str(), false)?;
 
 	Ok(sym_key)
 }
@@ -142,7 +142,7 @@ pub async fn get_sym_key_by_id_by_private_key(
 
 	let res = non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
-	let sym_key = sentc_crypto::crypto::done_fetch_sym_key_by_private_key(private_key, res.as_str())?;
+	let sym_key = sentc_crypto::crypto::done_fetch_sym_key_by_private_key(private_key, res.as_str(), false)?;
 
 	Ok(sym_key)
 }
