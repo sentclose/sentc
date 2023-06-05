@@ -1,7 +1,7 @@
 use alloc::string::String;
-use alloc::vec;
 use alloc::vec::Vec;
 
+use sentc_crypto_common::group::GroupHmacData;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
@@ -49,6 +49,7 @@ pub struct UserDataInt
 
 	pub user_keys: Vec<UserKeyDataInt>,
 	pub device_keys: DeviceKeyDataInt,
+	pub hmac_keys: Vec<GroupHmacData>,
 }
 
 //==================================================================================================
@@ -111,12 +112,14 @@ impl TryFrom<UserKeyDataInt> for UserKeyDataExport
 
 	fn try_from(value: UserKeyDataInt) -> Result<Self, Self::Error>
 	{
+		let group_key_id = value.group_key.key_id.clone();
+
 		Ok(Self {
 			private_key: value.private_key.to_string()?,
 			public_key: value.public_key.to_string()?,
+			group_key_id,
 			group_key: value.group_key.to_string()?,
 			time: value.time,
-			group_key_id: value.group_key.key_id,
 			sign_key: value.sign_key.to_string()?,
 			verify_key: value.verify_key.to_string()?,
 			exported_public_key: value
@@ -157,13 +160,17 @@ impl TryFrom<UserDataInt> for UserDataExport
 				.user_keys
 				.into_iter()
 				.map(|k| k.try_into())
-				.collect::<Result<Vec<UserKeyDataExport>, SdkError>>()?,
+				.collect::<Result<_, SdkError>>()?,
 			device_keys: value.device_keys.try_into()?,
 			jwt: value.jwt,
 			refresh_token: value.refresh_token,
 			user_id: value.user_id,
 			device_id: value.device_id,
-			hmac_keys: vec![],
+			hmac_keys: value
+				.hmac_keys
+				.into_iter()
+				.map(|k| k.try_into())
+				.collect::<Result<_, SdkError>>()?,
 		})
 	}
 }
