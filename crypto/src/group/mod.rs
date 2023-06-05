@@ -15,6 +15,8 @@ use sentc_crypto_common::group::{
 	GroupKeyServerOutput,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
+	GroupLightServerData,
+	GroupServerData,
 	GroupUserAccessBy,
 	KeyRotationData,
 	KeyRotationInput,
@@ -23,18 +25,10 @@ use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
+use crate::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
+use crate::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::util::public::handle_server_response;
-use crate::util::{
-	export_raw_public_key_to_pem,
-	export_raw_verify_key_to_pem,
-	import_public_key_from_pem_with_alg,
-	sig_to_string,
-	HmacKeyFormatInt,
-	PrivateKeyFormatInt,
-	PublicKeyFormatInt,
-	SignKeyFormatInt,
-	SymKeyFormatInt,
-};
+use crate::util::{export_raw_public_key_to_pem, export_raw_verify_key_to_pem, import_public_key_from_pem_with_alg, sig_to_string};
 use crate::{crypto, SdkError};
 
 #[cfg(not(feature = "rust"))]
@@ -66,11 +60,6 @@ pub use self::group::{
 	prepare_group_keys_for_new_member_typed,
 	prepare_group_keys_for_new_member_via_session,
 	prepare_group_keys_for_new_member_with_group_public_key,
-	GroupKeyData,
-	GroupOutData,
-	GroupOutDataHmacKeys,
-	GroupOutDataKeys,
-	GroupOutDataLight,
 };
 pub use self::group_rank_check::{
 	check_create_sub_group,
@@ -101,20 +90,7 @@ pub use self::group_rust::{
 	prepare_group_keys_for_new_member_typed,
 	prepare_group_keys_for_new_member_via_session,
 	prepare_group_keys_for_new_member_with_group_public_key,
-	GroupOutData,
-	GroupOutDataLight,
 };
-#[cfg(feature = "rust")]
-pub use self::DoneGettingGroupKeysOutput as GroupKeyData;
-
-pub struct DoneGettingGroupKeysOutput
-{
-	pub group_key: SymKeyFormatInt,
-	pub private_group_key: PrivateKeyFormatInt,
-	pub public_group_key: PublicKeyFormatInt,
-	pub exported_public_key: UserPublicKeyData,
-	pub time: u128,
-}
 
 fn get_access_by(access_by: GroupUserAccessBy) -> (Option<GroupId>, Option<GroupId>)
 {
@@ -425,6 +401,45 @@ fn get_group_key_from_server_output_internally(server_output: &str) -> Result<Gr
 	Ok(server_output)
 }
 
+fn get_group_data_internally(server_output: &str) -> Result<GroupOutData, SdkError>
+{
+	let server_output: GroupServerData = handle_server_response(server_output)?;
+
+	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+
+	Ok(GroupOutData {
+		keys: server_output.keys,
+		hmac_keys: server_output.hmac_keys,
+		key_update: server_output.key_update,
+		parent_group_id: server_output.parent_group_id,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
+		rank: server_output.rank,
+		group_id: server_output.group_id,
+		access_by_group_as_member,
+		access_by_parent_group,
+		is_connected_group: server_output.is_connected_group,
+	})
+}
+
+fn get_group_light_data_internally(server_output: &str) -> Result<GroupOutDataLight, SdkError>
+{
+	let server_output: GroupLightServerData = handle_server_response(server_output)?;
+
+	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+
+	Ok(GroupOutDataLight {
+		group_id: server_output.group_id,
+		parent_group_id: server_output.parent_group_id,
+		rank: server_output.rank,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
+		is_connected_group: server_output.is_connected_group,
+		access_by_group_as_member,
+		access_by_parent_group,
+	})
+}
+
 /**
 Decrypt the group hmac key which is used for searchable encryption.
 */
@@ -443,10 +458,8 @@ pub(crate) fn decrypt_group_hmac_key_internally(group_key: &SymKeyFormatInt, ser
 /**
 Call this fn for each key, with the right private key
 */
-pub(crate) fn decrypt_group_keys_internally(
-	private_key: &PrivateKeyFormatInt,
-	server_output: GroupKeyServerOutput,
-) -> Result<DoneGettingGroupKeysOutput, SdkError>
+pub(crate) fn decrypt_group_keys_internally(private_key: &PrivateKeyFormatInt, server_output: GroupKeyServerOutput)
+	-> Result<GroupKeyData, SdkError>
 {
 	//the user_public_key_id is used to get the right private key
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
@@ -475,7 +488,7 @@ pub(crate) fn decrypt_group_keys_internally(
 		public_key_sig_key_id: server_output.public_key_sig_key_id,
 	};
 
-	Ok(DoneGettingGroupKeysOutput {
+	Ok(GroupKeyData {
 		group_key: SymKeyFormatInt {
 			key: group_key,
 			key_id: server_output.group_key_id,
@@ -657,16 +670,15 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
-	use crate::UserKeyData;
 
 	#[cfg(feature = "rust")]
 	pub(crate) fn create_group(
-		user: &UserKeyData,
+		user: &crate::entities::user::UserKeyDataInt,
 	) -> (
 		GroupOutData,
 		Vec<GroupKeyData>,
 		GroupServerData,
-		Vec<crate::util::HmacKeyFormat>,
+		Vec<HmacKeyFormatInt>,
 	)
 	{
 		#[cfg(feature = "rust")]
@@ -757,7 +769,14 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_group(user: &UserKeyData) -> (GroupOutData, Vec<GroupKeyData>, GroupServerData, Vec<String>)
+	pub(crate) fn create_group(
+		user: &crate::entities::user::UserKeyDataExport,
+	) -> (
+		crate::entities::group::GroupOutDataExport,
+		Vec<crate::entities::group::GroupKeyDataExport>,
+		GroupServerData,
+		Vec<String>,
+	)
 	{
 		#[cfg(not(feature = "rust"))]
 		let group = prepare_create(user.public_key.as_str()).unwrap();
