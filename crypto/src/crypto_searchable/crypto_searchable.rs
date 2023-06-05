@@ -8,16 +8,18 @@ use crate::crypto_searchable::{
 	prepare_create_searchable_light_internally,
 	search_internally,
 };
-use crate::util::import_hmac_key;
 
 pub fn create_searchable(key: &str, item_ref: &str, category: &str, data: &str, full: bool, limit: Option<usize>) -> Result<String, String>
 {
-	let key = import_hmac_key(key)?;
-
 	let category = if category.is_empty() { None } else { Some(category) };
 
 	Ok(create_searchable_internally(
-		&key, item_ref, category, data, full, limit,
+		&key.parse()?,
+		item_ref,
+		category,
+		data,
+		full,
+		limit,
 	)?)
 }
 
@@ -30,29 +32,23 @@ pub fn prepare_create_searchable(
 	limit: Option<usize>,
 ) -> Result<SearchCreateData, String>
 {
-	let key = import_hmac_key(key)?;
-
 	let category = if category.is_empty() { None } else { Some(category) };
 
-	let out = prepare_create_searchable_internally(&key, item_ref, category, data, full, limit)?;
+	let out = prepare_create_searchable_internally(&key.parse()?, item_ref, category, data, full, limit)?;
 
 	Ok(out)
 }
 
 pub fn prepare_create_searchable_light(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<SearchCreateDataLight, String>
 {
-	let key = import_hmac_key(key)?;
-
-	let out = prepare_create_searchable_light_internally(&key, data, full, limit)?;
+	let out = prepare_create_searchable_light_internally(&key.parse()?, data, full, limit)?;
 
 	Ok(out)
 }
 
 pub fn search(key: &str, data: &str) -> Result<String, String>
 {
-	let key = import_hmac_key(key)?;
-
-	Ok(search_internally(&key, data)?)
+	Ok(search_internally(&key.parse()?, data)?)
 }
 
 #[cfg(test)]

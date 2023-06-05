@@ -8,11 +8,11 @@ use crate::crypto_searchable::{
 	prepare_create_searchable_light_internally,
 	search_internally,
 };
-use crate::util::HmacKeyFormat;
+use crate::entities::keys::HmacKeyFormatInt;
 use crate::SdkError;
 
 pub fn create_searchable(
-	key: &HmacKeyFormat,
+	key: &HmacKeyFormatInt,
 	item_ref: &str,
 	category: Option<&str>,
 	data: &str,
@@ -24,7 +24,7 @@ pub fn create_searchable(
 }
 
 pub fn prepare_create_searchable(
-	key: &HmacKeyFormat,
+	key: &HmacKeyFormatInt,
 	item_ref: &str,
 	category: Option<&str>,
 	data: &str,
@@ -35,12 +35,17 @@ pub fn prepare_create_searchable(
 	prepare_create_searchable_internally(key, item_ref, category, data, full, limit)
 }
 
-pub fn prepare_create_searchable_light(key: &HmacKeyFormat, data: &str, full: bool, limit: Option<usize>) -> Result<SearchCreateDataLight, SdkError>
+pub fn prepare_create_searchable_light(
+	key: &HmacKeyFormatInt,
+	data: &str,
+	full: bool,
+	limit: Option<usize>,
+) -> Result<SearchCreateDataLight, SdkError>
 {
 	prepare_create_searchable_light_internally(key, data, full, limit)
 }
 
-pub fn search(key: &HmacKeyFormat, data: &str) -> Result<String, SdkError>
+pub fn search(key: &HmacKeyFormatInt, data: &str) -> Result<String, SdkError>
 {
 	search_internally(key, data)
 }
