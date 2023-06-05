@@ -12,6 +12,7 @@ extern crate alloc;
 
 pub mod crypto;
 pub mod crypto_searchable;
+pub mod entities;
 mod error;
 pub mod file;
 pub mod group;
@@ -30,4 +31,3 @@ Reexport of the crypto core crate to access the raw types
 pub use sentc_crypto_core as sdk_core;
 
 pub use self::error::{err_to_msg, SdkError};
-pub use self::util::{DeviceKeyData, PrivateKeyFormat, PublicKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData, VerifyKeyFormat};
