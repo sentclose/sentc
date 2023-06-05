@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto::group::{GroupKeyData, GroupOutData, GroupOutDataKeys, GroupOutDataLight};
+use sentc_crypto::entities::group::{GroupKeyDataExport, GroupOutDataExport, GroupOutDataKeyExport, GroupOutDataLightExport};
 use sentc_crypto_common::group::{
 	GroupChildrenList,
 	GroupDataCheckUpdateServerOutput,
@@ -15,11 +15,11 @@ use serde::{Deserialize, Serialize};
 
 pub type Res = Result<String, String>;
 pub type VoidRes = Result<(), String>;
-pub type DataRes = Result<GroupOutData, String>;
-pub type DataLightRes = Result<GroupOutDataLight, String>;
-pub type KeyFetchRes = Result<Vec<GroupOutDataKeys>, String>;
-pub type SingleKeyRes = Result<GroupOutDataKeys, String>;
-pub type KeyRes = Result<GroupKeyData, String>;
+pub type DataRes = Result<GroupOutDataExport, String>;
+pub type DataLightRes = Result<GroupOutDataLightExport, String>;
+pub type KeyFetchRes = Result<Vec<GroupOutDataKeyExport>, String>;
+pub type SingleKeyRes = Result<GroupOutDataKeyExport, String>;
+pub type KeyRes = Result<GroupKeyDataExport, String>;
 pub type GroupListRes = Result<Vec<ListGroups>, String>;
 pub type ChildrenRes = Result<Vec<GroupChildrenList>, String>;
 pub type SessionRes = Result<Option<String>, String>;
