@@ -84,9 +84,9 @@ pub struct DeviceKeyData
 	pub exported_verify_key: String,
 }
 
-impl From<sentc_crypto::util::DeviceKeyData> for DeviceKeyData
+impl From<sentc_crypto::entities::user::DeviceKeyDataExport> for DeviceKeyData
 {
-	fn from(keys: sentc_crypto::DeviceKeyData) -> Self
+	fn from(keys: sentc_crypto::entities::user::DeviceKeyDataExport) -> Self
 	{
 		Self {
 			private_key: keys.private_key,
@@ -114,9 +114,9 @@ pub struct UserKeyData
 	pub exported_verify_key: String,
 }
 
-impl From<sentc_crypto::util::UserKeyData> for UserKeyData
+impl From<sentc_crypto::entities::user::UserKeyDataExport> for UserKeyData
 {
-	fn from(data: sentc_crypto::UserKeyData) -> Self
+	fn from(data: sentc_crypto::entities::user::UserKeyDataExport) -> Self
 	{
 		Self {
 			private_key: data.private_key,
@@ -145,9 +145,9 @@ pub struct UserData
 	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
 }
 
-impl From<sentc_crypto::util::UserData> for UserData
+impl From<sentc_crypto::entities::user::UserDataExport> for UserData
 {
-	fn from(data: sentc_crypto::UserData) -> Self
+	fn from(data: sentc_crypto::entities::user::UserDataExport) -> Self
 	{
 		Self {
 			jwt: data.jwt,
@@ -727,9 +727,9 @@ pub struct GroupKeyData
 	pub group_key_id: String,
 }
 
-impl From<sentc_crypto::group::GroupKeyData> for GroupKeyData
+impl From<sentc_crypto::entities::group::GroupKeyDataExport> for GroupKeyData
 {
-	fn from(data: sentc_crypto::group::GroupKeyData) -> Self
+	fn from(data: sentc_crypto::entities::group::GroupKeyDataExport) -> Self
 	{
 		Self {
 			private_group_key: data.private_group_key,
@@ -749,9 +749,9 @@ pub struct GroupOutDataKeys
 	pub key_data: String, //serde string
 }
 
-impl From<sentc_crypto::group::GroupOutDataKeys> for GroupOutDataKeys
+impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutDataKeys
 {
-	fn from(key: sentc_crypto::group::GroupOutDataKeys) -> Self
+	fn from(key: sentc_crypto::entities::group::GroupOutDataKeyExport) -> Self
 	{
 		Self {
 			private_key_id: key.private_key_id,
@@ -767,9 +767,9 @@ pub struct GroupOutDataHmacKeys
 	pub key_data: String, //serde string
 }
 
-impl From<sentc_crypto::group::GroupOutDataHmacKeys> for GroupOutDataHmacKeys
+impl From<sentc_crypto::entities::group::GroupOutDataHmacKeyExport> for GroupOutDataHmacKeys
 {
-	fn from(key: sentc_crypto::group::GroupOutDataHmacKeys) -> Self
+	fn from(key: sentc_crypto::entities::group::GroupOutDataHmacKeyExport) -> Self
 	{
 		Self {
 			group_key_id: key.group_key_id,
@@ -794,9 +794,9 @@ pub struct GroupOutData
 	pub is_connected_group: bool,
 }
 
-impl From<sentc_crypto::group::GroupOutData> for GroupOutData
+impl From<sentc_crypto::entities::group::GroupOutDataExport> for GroupOutData
 {
-	fn from(data: sentc_crypto::group::GroupOutData) -> Self
+	fn from(data: sentc_crypto::entities::group::GroupOutDataExport) -> Self
 	{
 		Self {
 			group_id: data.group_id,
