@@ -9,18 +9,12 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
-use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, SignKeyPairId, SymKeyId, UserId};
 use sentc_crypto_core::{
 	ClientRandomValue,
 	DeriveAuthKeyForAuth,
 	HashedAuthenticationKey,
-	HmacKey,
 	Pk,
 	Sig,
-	SignK,
-	Sk,
-	SymKey,
 	VerifyK,
 	ARGON_2_OUTPUT,
 	ECIES_OUTPUT,
@@ -28,137 +22,8 @@ use sentc_crypto_core::{
 };
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::util_non_rust::{
-	export_core_sym_key_to_string,
-	export_hmac_key_to_string,
-	export_private_key_to_string,
-	export_public_key_to_string,
-	export_sign_key_to_string,
-	export_sym_key_to_string,
-	export_verify_key_to_string,
-	import_core_sym_key,
-	import_hmac_key,
-	import_private_key,
-	import_public_key,
-	import_sign_key,
-	import_sym_key,
-	import_sym_key_from_format,
-};
-#[cfg(not(feature = "rust"))]
-pub use self::util_non_rust::{
-	DeviceKeyData,
-	HmacFormat,
-	PrivateKeyFormat,
-	PublicKeyFormat,
-	SignKeyFormat,
-	SymKeyFormat,
-	UserData,
-	UserKeyData,
-	VerifyKeyFormat,
-};
-//if rust feature is enabled export the internally functions as externally
-#[cfg(feature = "rust")]
-pub use self::{
-	DeviceKeyDataInt as DeviceKeyData,
-	HmacKeyFormatInt as HmacKeyFormat,
-	PrivateKeyFormatInt as PrivateKeyFormat,
-	PublicKeyFormatInt as PublicKeyFormat,
-	SignKeyFormatInt as SignKeyFormat,
-	SymKeyFormatInt as SymKeyFormat,
-	UserKeyDataInt as UserKeyData,
-	VerifyKeyFormatInt as VerifyKeyFormat,
-};
+pub(crate) use self::util_non_rust::{export_core_sym_key_to_string, import_core_sym_key};
 use crate::SdkError;
-
-pub struct SymKeyFormatInt
-{
-	pub key: SymKey,
-	pub key_id: SymKeyId,
-}
-
-pub struct HmacKeyFormatInt
-{
-	pub key_id: SymKeyId,
-	pub key: HmacKey,
-}
-
-pub struct PrivateKeyFormatInt
-{
-	pub key: Sk,
-	pub key_id: EncryptionKeyPairId,
-}
-
-pub struct PublicKeyFormatInt
-{
-	pub key: Pk,
-	pub key_id: EncryptionKeyPairId,
-}
-
-pub struct SignKeyFormatInt
-{
-	pub key: SignK,
-	pub key_id: SignKeyPairId,
-}
-
-pub struct VerifyKeyFormatInt
-{
-	pub key: VerifyK,
-	pub key_id: SignKeyPairId,
-}
-
-/**
-# key storage structure for the rust feature
-
-It can be used with other rust programs.
-
-The different to the internally DoneLoginOutput ist that,
-the KeyFormat is sued for each where, were the key id is saved too
- */
-pub struct DeviceKeyDataInt
-{
-	pub private_key: PrivateKeyFormatInt,
-	pub sign_key: SignKeyFormatInt,
-	pub public_key: PublicKeyFormatInt,
-	pub verify_key: VerifyKeyFormatInt,
-	pub exported_public_key: UserPublicKeyData,
-	pub exported_verify_key: UserVerifyKeyData,
-}
-
-pub struct UserKeyDataInt
-{
-	pub group_key: SymKeyFormatInt,
-	pub private_key: PrivateKeyFormatInt,
-	pub public_key: PublicKeyFormatInt,
-	pub time: u128,
-	pub sign_key: SignKeyFormatInt,
-	pub verify_key: VerifyKeyFormatInt,
-	pub exported_public_key: UserPublicKeyData,
-	pub exported_verify_key: UserVerifyKeyData,
-}
-
-pub struct UserDataInt
-{
-	pub jwt: String,
-	pub refresh_token: String,
-	pub user_id: UserId,
-	pub device_id: DeviceId,
-
-	pub user_keys: Vec<UserKeyDataInt>,
-	pub device_keys: DeviceKeyDataInt,
-}
-
-#[cfg(feature = "rust")]
-pub struct UserData
-{
-	pub jwt: String,
-	pub refresh_token: String,
-	pub user_id: UserId,
-	pub device_id: DeviceId,
-
-	pub user_keys: Vec<UserKeyDataInt>,
-	pub device_keys: DeviceKeyDataInt,
-	pub hmac_keys: Vec<sentc_crypto_common::group::GroupHmacData>,
-}
 
 pub(crate) fn export_key_to_pem(key: &[u8]) -> Result<String, SdkError>
 {
