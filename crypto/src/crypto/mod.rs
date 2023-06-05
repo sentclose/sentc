@@ -71,8 +71,9 @@ pub use self::crypto_rust::{
 	split_head_and_encrypted_data,
 	split_head_and_encrypted_string,
 };
+use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
+use crate::util::import_verify_key_from_pem_with_alg;
 use crate::util::public::handle_server_response;
-use crate::util::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg, PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
 
 pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(SignHead, Vec<u8>), SdkError>
@@ -94,6 +95,7 @@ pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Si
 
 pub(crate) fn verify_internally<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkError>
 {
+	//use here the old way to get the verify key because we do not need to own the key id
 	let verify_k = import_verify_key_from_pem_with_alg(verify_key.verify_key_pem.as_str(), verify_key.verify_key_alg.as_str())?;
 
 	//check if the verify key is the right key id
@@ -229,17 +231,14 @@ fn encrypt_raw_asymmetric_internally(
 	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
-	let public_key = import_public_key_from_pem_with_alg(
-		reply_public_key.public_key_pem.as_str(),
-		reply_public_key.public_key_alg.as_str(),
-	)?;
+	let public_key = PublicKeyFormatInt::try_from(reply_public_key)?;
 
 	let mut encrypt_head = EncryptedHead {
-		id: reply_public_key.public_key_id.to_string(),
+		id: public_key.key_id,
 		sign: None,
 	};
 
-	let mut encrypted = crypto_core::encrypt_asymmetric(&public_key, data)?;
+	let mut encrypted = crypto_core::encrypt_asymmetric(&public_key.key, data)?;
 
 	//sign the data
 	if let Some(sk) = sign_key {
@@ -428,12 +427,9 @@ fn prepare_register_sym_key_by_public_key_internally_private(
 	reply_public_key: &UserPublicKeyData,
 ) -> Result<(GeneratedSymKeyHeadServerInput, SymKeyFormatInt), SdkError>
 {
-	let public_key = import_public_key_from_pem_with_alg(
-		reply_public_key.public_key_pem.as_str(),
-		reply_public_key.public_key_alg.as_str(),
-	)?;
+	let public_key = PublicKeyFormatInt::try_from(reply_public_key)?;
 
-	let (encrypted_key, sym_key_alg, key) = crypto_core::generate_symmetric_with_public_key(&public_key)?;
+	let (encrypted_key, sym_key_alg, key) = crypto_core::generate_symmetric_with_public_key(&public_key.key)?;
 
 	let encrypted_key_string = Base64::encode_string(&encrypted_key);
 
@@ -446,7 +442,7 @@ fn prepare_register_sym_key_by_public_key_internally_private(
 		GeneratedSymKeyHeadServerInput {
 			encrypted_key_string,
 			alg: sym_key_alg.to_string(),
-			master_key_id: reply_public_key.public_key_id.to_string(),
+			master_key_id: public_key.key_id,
 		},
 		sym_key_format,
 	))
