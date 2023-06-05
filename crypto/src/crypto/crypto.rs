@@ -32,18 +32,14 @@ use crate::crypto::{
 	split_head_and_encrypted_data_internally,
 	split_head_and_encrypted_string_internally,
 };
-use crate::util::{export_sym_key_to_string, import_private_key, import_sign_key, import_sym_key, SignKeyFormatInt};
+use crate::entities::keys::SignKeyFormatInt;
 use crate::SdkError;
 
 pub(crate) fn prepare_sign_key(sign_key: Option<&str>) -> Result<Option<SignKeyFormatInt>, SdkError>
 {
 	let sign_key = match sign_key {
 		None => None,
-		Some(k) => {
-			let k = import_sign_key(k)?;
-
-			Some(k)
-		},
+		Some(k) => Some(k.parse()?),
 	};
 
 	Ok(sign_key)
@@ -80,7 +76,7 @@ pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, String>
 
 pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
 {
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -99,7 +95,7 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> 
 
 pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
@@ -134,7 +130,7 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 
 pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
-	let private_key = import_private_key(private_key)?;
+	let private_key = private_key.parse()?;
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
@@ -150,7 +146,7 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 
 pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
 {
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -165,7 +161,7 @@ pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Resu
 
 pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
@@ -194,7 +190,7 @@ pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Op
 
 pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
-	let private_key = import_private_key(private_key)?;
+	let private_key = private_key.parse()?;
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
@@ -208,7 +204,7 @@ pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_d
 
 pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<&str>) -> Result<String, String>
 {
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
@@ -223,7 +219,7 @@ pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<&str>) -
 
 pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
 {
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
@@ -252,7 +248,7 @@ pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_k
 
 pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
 {
-	let private_key = import_private_key(private_key)?;
+	let private_key = private_key.parse()?;
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
@@ -266,11 +262,11 @@ pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify
 
 pub fn prepare_register_sym_key(master_key: &str) -> Result<(String, String), String>
 {
-	let master_key = import_sym_key(master_key)?;
+	let master_key = master_key.parse()?;
 
 	let (server_input, key) = prepare_register_sym_key_internally(&master_key)?;
 
-	Ok((server_input, export_sym_key_to_string(key)?))
+	Ok((server_input, key.to_string()?))
 }
 
 pub fn prepare_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
@@ -279,46 +275,46 @@ pub fn prepare_register_sym_key_by_public_key(reply_public_key: &str) -> Result<
 
 	let (server_input, key) = prepare_register_sym_key_by_public_key_internally(&reply_public_key)?;
 
-	Ok((server_input, export_sym_key_to_string(key)?))
+	Ok((server_input, key.to_string()?))
 }
 
 pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &str) -> Result<String, String>
 {
-	let mut non_registered_sym_key = import_sym_key(non_registered_sym_key)?;
+	let mut non_registered_sym_key = non_registered_sym_key.parse()?;
 
 	done_register_sym_key_internally(key_id, &mut non_registered_sym_key);
 
-	Ok(export_sym_key_to_string(non_registered_sym_key)?)
+	Ok(non_registered_sym_key.to_string()?)
 }
 
 pub fn done_fetch_sym_key(master_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
 {
-	let master_key = import_sym_key(master_key)?;
+	let master_key = master_key.parse()?;
 
 	let out = done_fetch_sym_key_internally(&master_key, server_out, non_registered)?;
 
-	Ok(export_sym_key_to_string(out)?)
+	Ok(out.to_string()?)
 }
 
 pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
 {
-	let private_key = import_private_key(private_key)?;
+	let private_key = private_key.parse()?;
 
 	let out = done_fetch_sym_key_by_private_key_internally(&private_key, server_out, non_registered)?;
 
-	Ok(export_sym_key_to_string(out)?)
+	Ok(out.to_string()?)
 }
 
 pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<(Vec<String>, u128, SymKeyId), String>
 {
-	let master_key = import_sym_key(master_key)?;
+	let master_key = master_key.parse()?;
 
 	let (out, last_time, last_id) = done_fetch_sym_keys_internally(&master_key, server_out)?;
 
 	let mut out_vec = Vec::with_capacity(out.len());
 
 	for o in out {
-		out_vec.push(export_sym_key_to_string(o)?);
+		out_vec.push(o.to_string()?);
 	}
 
 	Ok((out_vec, last_time, last_id))
@@ -326,34 +322,34 @@ pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<(Vec<St
 
 pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
 {
-	let master_key = import_sym_key(master_key)?;
+	let master_key = master_key.parse()?;
 	let encrypted_symmetric_key_info =
 		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(SdkError::JsonParseFailed)?;
 
 	let out = decrypt_sym_key_internally(&master_key, &encrypted_symmetric_key_info)?;
 
-	Ok(export_sym_key_to_string(out)?)
+	Ok(out.to_string()?)
 }
 
 pub fn decrypt_sym_key_by_private_key(private_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
 {
-	let private_key = import_private_key(private_key)?;
+	let private_key = private_key.parse()?;
 
 	let encrypted_symmetric_key_info =
 		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(SdkError::JsonParseFailed)?;
 
 	let out = decrypt_sym_key_by_private_key_internally(&private_key, &encrypted_symmetric_key_info)?;
 
-	Ok(export_sym_key_to_string(out)?)
+	Ok(out.to_string()?)
 }
 
 pub fn generate_non_register_sym_key(master_key: &str) -> Result<(String, String), String>
 {
-	let master_key = import_sym_key(master_key)?;
+	let master_key = master_key.parse()?;
 
 	let (key, encrypted_key) = generate_non_register_sym_key_internally(&master_key)?;
 
-	let exported_key = export_sym_key_to_string(key)?;
+	let exported_key = key.to_string()?;
 
 	let exported_encrypted_key = encrypted_key
 		.to_string()
@@ -368,7 +364,7 @@ pub fn generate_non_register_sym_key_by_public_key(reply_public_key: &str) -> Re
 
 	let (key, encrypted_key) = generate_non_register_sym_key_by_public_key_internally(&reply_public_key)?;
 
-	let exported_key = export_sym_key_to_string(key)?;
+	let exported_key = key.to_string()?;
 
 	let exported_encrypted_key = encrypted_key
 		.to_string()
@@ -382,12 +378,14 @@ mod test
 {
 	use alloc::string::ToString;
 	use alloc::vec;
+	use core::str::FromStr;
 
 	use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::SymKey;
 
 	use super::*;
+	use crate::entities::keys::SymKeyFormatInt;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
 
@@ -781,8 +779,8 @@ mod test
 
 		let decrypted_key = decrypt_sym_key(master_key, &encrypted_key).unwrap();
 
-		let key = import_sym_key(&key).unwrap();
-		let decrypted_key = import_sym_key(&decrypted_key).unwrap();
+		let key = SymKeyFormatInt::from_str(&key).unwrap();
+		let decrypted_key = SymKeyFormatInt::from_str(&decrypted_key).unwrap();
 
 		match (key.key, decrypted_key.key) {
 			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
@@ -885,8 +883,8 @@ mod test
 
 		assert_eq!(decrypted, text);
 
-		let key = import_sym_key(&key).unwrap();
-		let decrypted_key = import_sym_key(&decrypted_key).unwrap();
+		let key = SymKeyFormatInt::from_str(&key).unwrap();
+		let decrypted_key = SymKeyFormatInt::from_str(&decrypted_key).unwrap();
 
 		match (key.key, decrypted_key.key) {
 			(SymKey::Aes(k1), SymKey::Aes(k2)) => {

@@ -10,7 +10,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Base64UrlUnpadded, Encoding};
-use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput};
+use sentc_crypto_common::group::GroupKeyServerOutput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginServerInput,
@@ -36,6 +36,8 @@ use sentc_crypto_common::user::{
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, Pk};
 
+use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+use crate::entities::user::{DeviceKeyDataInt, UserDataInt, UserKeyDataInt};
 use crate::util::public::handle_server_response;
 use crate::util::{
 	client_random_value_to_string,
@@ -46,14 +48,6 @@ use crate::util::{
 	import_public_key_from_pem_with_alg,
 	import_sig_from_string,
 	import_verify_key_from_pem_with_alg,
-	DeviceKeyDataInt,
-	PrivateKeyFormatInt,
-	PublicKeyFormatInt,
-	SignKeyFormatInt,
-	SymKeyFormatInt,
-	UserDataInt,
-	UserKeyDataInt,
-	VerifyKeyFormatInt,
 };
 use crate::{group, SdkError};
 
@@ -340,7 +334,7 @@ fn prepare_login_internally(user_identifier: &str, password: &str, server_output
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<(UserDataInt, Vec<GroupHmacData>), SdkError>
+fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserDataInt, SdkError>
 {
 	let server_output: DoneLoginServerOutput = handle_server_response(server_output)?;
 
@@ -355,17 +349,16 @@ fn done_login_internally(master_key_encryption: &DeriveMasterKeyForAuth, server_
 		user_keys.push(done_login_internally_with_user_out(&device_keys.private_key, datum)?)
 	}
 
-	let out = UserDataInt {
+	//export the hmac keys to decrypt it later
+	Ok(UserDataInt {
 		user_keys,
 		device_keys,
 		jwt: server_output.jwt,
 		refresh_token: server_output.refresh_token,
 		user_id: device_data.user_id,
 		device_id: device_data.device_id,
-	};
-
-	//export the hmac keys to decrypt it later
-	Ok((out, server_output.hmac_keys))
+		hmac_keys: server_output.hmac_keys,
+	})
 }
 
 fn done_key_fetch_internally(private_key: &PrivateKeyFormatInt, server_output: &str) -> Result<UserKeyDataInt, SdkError>
@@ -701,8 +694,9 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
+	#[cfg(not(feature = "rust"))]
+	use crate::entities::user::UserDataExport;
 	use crate::util::server::generate_salt_from_base64_to_string;
-	use crate::util::UserData;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
@@ -790,7 +784,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(feature = "rust")]
-	pub(crate) fn create_user() -> UserData
+	pub(crate) fn create_user() -> UserDataInt
 	{
 		let username = "admin";
 		let password = "12345";
@@ -812,7 +806,7 @@ pub(crate) mod test_fn
 	}
 
 	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_user() -> UserData
+	pub(crate) fn create_user() -> UserDataExport
 	{
 		let username = "admin";
 		let password = "12345";

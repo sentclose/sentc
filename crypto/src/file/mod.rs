@@ -33,8 +33,8 @@ pub use self::file_rust::{
 	prepare_register_file,
 };
 use crate::crypto::{put_head_and_encrypted_data_internally, sign_internally, split_head_and_encrypted_data_internally, verify_internally};
+use crate::entities::keys::{SignKeyFormatInt, SymKeyFormatInt};
 use crate::util::public::handle_server_response;
-use crate::util::{SignKeyFormatInt, SymKeyFormatInt};
 use crate::{crypto, SdkError};
 
 fn prepare_register_file_internally(

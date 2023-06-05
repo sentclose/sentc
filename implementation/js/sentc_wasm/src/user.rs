@@ -37,9 +37,9 @@ pub struct DeviceKeyData
 	exported_verify_key: String,
 }
 
-impl From<sentc_crypto::util::DeviceKeyData> for DeviceKeyData
+impl From<sentc_crypto::entities::user::DeviceKeyDataExport> for DeviceKeyData
 {
-	fn from(key: sentc_crypto::DeviceKeyData) -> Self
+	fn from(key: sentc_crypto::entities::user::DeviceKeyDataExport) -> Self
 	{
 		Self {
 			private_key: key.private_key,
@@ -67,9 +67,9 @@ pub struct UserKeyData
 	exported_verify_key: String,
 }
 
-impl From<sentc_crypto::util::UserKeyData> for UserKeyData
+impl From<sentc_crypto::entities::user::UserKeyDataExport> for UserKeyData
 {
-	fn from(value: sentc_crypto::UserKeyData) -> Self
+	fn from(value: sentc_crypto::entities::user::UserKeyDataExport) -> Self
 	{
 		Self {
 			private_key: value.private_key,
@@ -153,9 +153,9 @@ pub struct UserData
 	hmac_keys: JsValue,
 }
 
-impl From<sentc_crypto::util::UserData> for UserData
+impl From<sentc_crypto::entities::user::UserDataExport> for UserData
 {
-	fn from(data: sentc_crypto::util::UserData) -> Self
+	fn from(data: sentc_crypto::entities::user::UserDataExport) -> Self
 	{
 		Self {
 			device_keys: data.device_keys.into(),

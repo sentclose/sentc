@@ -20,9 +20,9 @@ pub struct GroupOutData
 	is_connected_group: bool,
 }
 
-impl From<group::GroupOutData> for GroupOutData
+impl From<sentc_crypto::entities::group::GroupOutDataExport> for GroupOutData
 {
-	fn from(data: group::GroupOutData) -> Self
+	fn from(data: sentc_crypto::entities::group::GroupOutDataExport) -> Self
 	{
 		Self {
 			group_id: data.group_id,
@@ -106,9 +106,9 @@ pub struct GroupOutDataKeys
 	key_data: String, //serde string
 }
 
-impl From<group::GroupOutDataKeys> for GroupOutDataKeys
+impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutDataKeys
 {
-	fn from(key: group::GroupOutDataKeys) -> Self
+	fn from(key: sentc_crypto::entities::group::GroupOutDataKeyExport) -> Self
 	{
 		Self {
 			private_key_id: key.private_key_id,
@@ -145,9 +145,9 @@ pub struct GroupKeyData
 	group_key_id: String,
 }
 
-impl From<group::GroupKeyData> for GroupKeyData
+impl From<sentc_crypto::entities::group::GroupKeyDataExport> for GroupKeyData
 {
-	fn from(key: group::GroupKeyData) -> Self
+	fn from(key: sentc_crypto::entities::group::GroupKeyDataExport) -> Self
 	{
 		Self {
 			private_group_key: key.private_group_key,

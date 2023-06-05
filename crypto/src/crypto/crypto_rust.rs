@@ -33,8 +33,8 @@ use crate::crypto::{
 	split_head_and_encrypted_string_internally,
 	EncryptedHead,
 };
-use crate::util::SymKeyFormatInt;
-use crate::{PrivateKeyFormat, SdkError, SignKeyFormat, SymKeyFormat};
+use crate::entities::keys::{PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
+use crate::SdkError;
 
 pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>
 {
@@ -51,13 +51,13 @@ pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, SdkErro
 	deserialize_head_from_string_internally(head)
 }
 
-pub fn encrypt_raw_symmetric(key: &SymKeyFormat, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<(EncryptedHead, Vec<u8>), SdkError>
+pub fn encrypt_raw_symmetric(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
 	encrypt_raw_symmetric_internally(key, data, sign_key)
 }
 
 pub fn decrypt_raw_symmetric(
-	key: &SymKeyFormat,
+	key: &SymKeyFormatInt,
 	encrypted_data: &[u8],
 	head: &EncryptedHead,
 	verify_key: Option<&UserVerifyKeyData>,
@@ -69,14 +69,14 @@ pub fn decrypt_raw_symmetric(
 pub fn encrypt_raw_asymmetric(
 	reply_public_key: &UserPublicKeyData,
 	data: &[u8],
-	sign_key: Option<&SignKeyFormat>,
+	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
 	encrypt_raw_asymmetric_internally(reply_public_key, data, sign_key)
 }
 
 pub fn decrypt_raw_asymmetric(
-	private_key: &PrivateKeyFormat,
+	private_key: &PrivateKeyFormatInt,
 	encrypted_data: &[u8],
 	head: &EncryptedHead,
 	verify_key: Option<&UserVerifyKeyData>,
@@ -85,23 +85,24 @@ pub fn decrypt_raw_asymmetric(
 	decrypt_raw_asymmetric_internally(private_key, encrypted_data, head, verify_key)
 }
 
-pub fn encrypt_symmetric(key: &SymKeyFormat, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<Vec<u8>, SdkError>
+pub fn encrypt_symmetric(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, SdkError>
 {
 	encrypt_symmetric_internally(key, data, sign_key)
 }
 
-pub fn decrypt_symmetric(key: &SymKeyFormat, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkError>
+pub fn decrypt_symmetric(key: &SymKeyFormatInt, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>)
+	-> Result<Vec<u8>, SdkError>
 {
 	decrypt_symmetric_internally(key, encrypted_data_with_head, verify_key)
 }
 
-pub fn encrypt_asymmetric(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormat>) -> Result<Vec<u8>, SdkError>
+pub fn encrypt_asymmetric(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, SdkError>
 {
 	encrypt_asymmetric_internally(reply_public_key, data, sign_key)
 }
 
 pub fn decrypt_asymmetric(
-	private_key: &PrivateKeyFormat,
+	private_key: &PrivateKeyFormatInt,
 	encrypted_data_with_head: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<Vec<u8>, SdkError>
@@ -109,13 +110,13 @@ pub fn decrypt_asymmetric(
 	decrypt_asymmetric_internally(private_key, encrypted_data_with_head, verify_key)
 }
 
-pub fn encrypt_string_symmetric(key: &SymKeyFormat, data: &str, sign_key: Option<&SignKeyFormat>) -> Result<String, SdkError>
+pub fn encrypt_string_symmetric(key: &SymKeyFormatInt, data: &str, sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
 {
 	encrypt_string_symmetric_internally(key, data, sign_key)
 }
 
 pub fn decrypt_string_symmetric(
-	key: &SymKeyFormat,
+	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<String, SdkError>
@@ -123,13 +124,13 @@ pub fn decrypt_string_symmetric(
 	decrypt_string_symmetric_internally(key, encrypted_data_with_head, verify_key)
 }
 
-pub fn encrypt_string_asymmetric(reply_public_key: &UserPublicKeyData, data: &str, sign_key: Option<&SignKeyFormat>) -> Result<String, SdkError>
+pub fn encrypt_string_asymmetric(reply_public_key: &UserPublicKeyData, data: &str, sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
 {
 	encrypt_string_asymmetric_internally(reply_public_key, data, sign_key)
 }
 
 pub fn decrypt_string_asymmetric(
-	private_key: &PrivateKeyFormat,
+	private_key: &PrivateKeyFormatInt,
 	encrypted_data_with_head: &str,
 	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<String, SdkError>
@@ -137,50 +138,57 @@ pub fn decrypt_string_asymmetric(
 	decrypt_string_asymmetric_internally(private_key, encrypted_data_with_head, verify_key)
 }
 
-pub fn prepare_register_sym_key(master_key: &SymKeyFormat) -> Result<(String, SymKeyFormat), SdkError>
+pub fn prepare_register_sym_key(master_key: &SymKeyFormatInt) -> Result<(String, SymKeyFormatInt), SdkError>
 {
 	prepare_register_sym_key_internally(master_key)
 }
 
-pub fn prepare_register_sym_key_by_public_key(reply_public_key: &UserPublicKeyData) -> Result<(String, SymKeyFormat), SdkError>
+pub fn prepare_register_sym_key_by_public_key(reply_public_key: &UserPublicKeyData) -> Result<(String, SymKeyFormatInt), SdkError>
 {
 	prepare_register_sym_key_by_public_key_internally(reply_public_key)
 }
 
-pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &mut SymKeyFormat)
+pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &mut SymKeyFormatInt)
 {
 	done_register_sym_key_internally(key_id, non_registered_sym_key)
 }
 
-pub fn done_fetch_sym_key(master_key: &SymKeyFormat, server_out: &str, non_registered: bool) -> Result<SymKeyFormat, SdkError>
+pub fn done_fetch_sym_key(master_key: &SymKeyFormatInt, server_out: &str, non_registered: bool) -> Result<SymKeyFormatInt, SdkError>
 {
 	done_fetch_sym_key_internally(master_key, server_out, non_registered)
 }
 
-pub fn done_fetch_sym_keys(master_key: &SymKeyFormat, server_out: &str) -> Result<(Vec<SymKeyFormat>, u128, SymKeyId), SdkError>
+pub fn done_fetch_sym_keys(master_key: &SymKeyFormatInt, server_out: &str) -> Result<(Vec<SymKeyFormatInt>, u128, SymKeyId), SdkError>
 {
 	done_fetch_sym_keys_internally(master_key, server_out)
 }
 
-pub fn done_fetch_sym_key_by_private_key(private_key: &PrivateKeyFormat, server_out: &str, non_registered: bool) -> Result<SymKeyFormat, SdkError>
+pub fn done_fetch_sym_key_by_private_key(
+	private_key: &PrivateKeyFormatInt,
+	server_out: &str,
+	non_registered: bool,
+) -> Result<SymKeyFormatInt, SdkError>
 {
 	done_fetch_sym_key_by_private_key_internally(private_key, server_out, non_registered)
 }
 
-pub fn decrypt_sym_key(master_key: &SymKeyFormat, encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput) -> Result<SymKeyFormat, SdkError>
+pub fn decrypt_sym_key(
+	master_key: &SymKeyFormatInt,
+	encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput,
+) -> Result<SymKeyFormatInt, SdkError>
 {
 	decrypt_sym_key_internally(master_key, encrypted_symmetric_key_info)
 }
 
 pub fn decrypt_sym_key_by_private_key(
-	private_key: &PrivateKeyFormat,
+	private_key: &PrivateKeyFormatInt,
 	encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput,
 ) -> Result<SymKeyFormatInt, SdkError>
 {
 	decrypt_sym_key_by_private_key_internally(private_key, encrypted_symmetric_key_info)
 }
 
-pub fn generate_non_register_sym_key(master_key: &SymKeyFormat) -> Result<(SymKeyFormat, GeneratedSymKeyHeadServerOutput), SdkError>
+pub fn generate_non_register_sym_key(master_key: &SymKeyFormatInt) -> Result<(SymKeyFormatInt, GeneratedSymKeyHeadServerOutput), SdkError>
 {
 	generate_non_register_sym_key_internally(master_key)
 }

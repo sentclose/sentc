@@ -6,7 +6,7 @@ use base64ct::{Base64UrlUnpadded, Encoding};
 use sentc_crypto_common::content_searchable::{SearchCreateData, SearchCreateDataLight};
 use sentc_crypto_core::getting_alg_from_hmac_key;
 
-use crate::util::HmacKeyFormatInt;
+use crate::entities::keys::HmacKeyFormatInt;
 use crate::SdkError;
 
 #[cfg(not(feature = "rust"))]

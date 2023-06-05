@@ -1,26 +1,21 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{
-	CreateData,
-	GroupHmacData,
-	GroupKeyServerOutput,
-	GroupKeysForNewMemberServerInput,
-	GroupLightServerData,
-	GroupServerData,
-	KeyRotationInput,
-};
+use sentc_crypto_common::group::{CreateData, GroupHmacData, GroupKeyServerOutput, GroupKeysForNewMemberServerInput, KeyRotationInput};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_common::UserId;
 
+use crate::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
+use crate::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::group::{
 	decrypt_group_hmac_key_internally,
 	decrypt_group_keys_internally,
 	done_key_rotation_internally,
-	get_access_by,
 	get_done_key_rotation_server_input_internally,
+	get_group_data_internally,
 	get_group_key_from_server_output_internally,
 	get_group_keys_from_server_output_internally,
+	get_group_light_data_internally,
 	key_rotation_internally,
 	prepare_change_rank_internally,
 	prepare_create_internally,
@@ -29,68 +24,38 @@ use crate::group::{
 	prepare_group_keys_for_new_member_internally_with_group_public_key,
 	prepare_group_keys_for_new_member_typed_internally,
 	prepare_group_keys_for_new_member_via_session_internally,
-	GroupKeyData,
 };
-use crate::util::public::handle_server_response;
-use crate::util::{HmacKeyFormat, PrivateKeyFormat, PrivateKeyFormatInt, PublicKeyFormat, SignKeyFormat, SymKeyFormat};
 use crate::SdkError;
 
-pub struct GroupOutData
-{
-	pub keys: Vec<GroupKeyServerOutput>,
-	pub hmac_keys: Vec<GroupHmacData>,
-	pub parent_group_id: Option<GroupId>,
-	pub key_update: bool,
-	pub created_time: u128,
-	pub joined_time: u128,
-	pub rank: i32,
-	pub group_id: GroupId,
-	pub access_by_group_as_member: Option<GroupId>,
-	pub access_by_parent_group: Option<GroupId>,
-	pub is_connected_group: bool,
-}
-
-pub struct GroupOutDataLight
-{
-	pub group_id: GroupId,
-	pub parent_group_id: Option<GroupId>,
-	pub rank: i32,
-	pub created_time: u128,
-	pub joined_time: u128,
-	pub access_by_group_as_member: Option<GroupId>,
-	pub access_by_parent_group: Option<GroupId>,
-	pub is_connected_group: bool,
-}
-
-pub fn prepare_create_typed(creators_public_key: &PublicKeyFormat) -> Result<CreateData, SdkError>
+pub fn prepare_create_typed(creators_public_key: &PublicKeyFormatInt) -> Result<CreateData, SdkError>
 {
 	let out = prepare_create_typed_internally(creators_public_key)?;
 
 	Ok(out.0)
 }
 
-pub fn prepare_create(creators_public_key: &PublicKeyFormat) -> Result<String, SdkError>
+pub fn prepare_create(creators_public_key: &PublicKeyFormatInt) -> Result<String, SdkError>
 {
 	let out = prepare_create_internally(creators_public_key)?;
 
 	Ok(out.0)
 }
 
-pub fn prepare_create_batch_typed(creators_public_key: &PublicKeyFormat) -> Result<(CreateData, PublicKeyFormat, SymKeyFormat), SdkError>
+pub fn prepare_create_batch_typed(creators_public_key: &PublicKeyFormatInt) -> Result<(CreateData, PublicKeyFormatInt, SymKeyFormatInt), SdkError>
 {
 	prepare_create_typed_internally(creators_public_key)
 }
 
-pub fn prepare_create_batch(creators_public_key: &PublicKeyFormat) -> Result<(String, PublicKeyFormat, SymKeyFormat), SdkError>
+pub fn prepare_create_batch(creators_public_key: &PublicKeyFormatInt) -> Result<(String, PublicKeyFormatInt, SymKeyFormatInt), SdkError>
 {
 	prepare_create_internally(creators_public_key)
 }
 
 pub fn key_rotation(
-	previous_group_key: &SymKeyFormat,
-	invoker_public_key: &PublicKeyFormat,
+	previous_group_key: &SymKeyFormatInt,
+	invoker_public_key: &PublicKeyFormatInt,
 	user_group: bool,
-	sign_key: Option<&SignKeyFormat>,
+	sign_key: Option<&SignKeyFormatInt>,
 	starter: UserId,
 ) -> Result<String, SdkError>
 {
@@ -103,9 +68,9 @@ pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRota
 }
 
 pub fn done_key_rotation(
-	private_key: &PrivateKeyFormat,
-	public_key: &PublicKeyFormat,
-	previous_group_key: &SymKeyFormat,
+	private_key: &PrivateKeyFormatInt,
+	public_key: &PublicKeyFormatInt,
+	previous_group_key: &SymKeyFormatInt,
 	server_output: KeyRotationInput,
 	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<String, SdkError>
@@ -113,7 +78,7 @@ pub fn done_key_rotation(
 	done_key_rotation_internally(private_key, public_key, previous_group_key, server_output, verify_key)
 }
 
-pub fn decrypt_group_hmac_key(key: &SymKeyFormat, server_output: GroupHmacData) -> Result<HmacKeyFormat, SdkError>
+pub fn decrypt_group_hmac_key(key: &SymKeyFormatInt, server_output: GroupHmacData) -> Result<HmacKeyFormatInt, SdkError>
 {
 	decrypt_group_hmac_key_internally(key, server_output)
 }
@@ -135,46 +100,17 @@ pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupKeyS
 
 pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, SdkError>
 {
-	let server_output: GroupLightServerData = handle_server_response(server_output)?;
-
-	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
-
-	Ok(GroupOutDataLight {
-		group_id: server_output.group_id,
-		parent_group_id: server_output.parent_group_id,
-		rank: server_output.rank,
-		created_time: server_output.created_time,
-		joined_time: server_output.joined_time,
-		is_connected_group: server_output.is_connected_group,
-		access_by_group_as_member,
-		access_by_parent_group,
-	})
+	get_group_light_data_internally(server_output)
 }
 
 pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 {
-	let server_output: GroupServerData = handle_server_response(server_output)?;
-
-	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
-
-	Ok(GroupOutData {
-		keys: server_output.keys,
-		hmac_keys: server_output.hmac_keys,
-		key_update: server_output.key_update,
-		parent_group_id: server_output.parent_group_id,
-		created_time: server_output.created_time,
-		joined_time: server_output.joined_time,
-		rank: server_output.rank,
-		group_id: server_output.group_id,
-		access_by_group_as_member,
-		access_by_parent_group,
-		is_connected_group: server_output.is_connected_group,
-	})
+	get_group_data_internally(server_output)
 }
 
 pub fn prepare_group_keys_for_new_member_with_group_public_key(
-	requester_public_key: &PublicKeyFormat,
-	group_keys: &[&SymKeyFormat],
+	requester_public_key: &PublicKeyFormatInt,
+	group_keys: &[&SymKeyFormatInt],
 	key_session: bool,
 	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, SdkError>
@@ -185,7 +121,7 @@ pub fn prepare_group_keys_for_new_member_with_group_public_key(
 
 pub fn prepare_group_keys_for_new_member_typed(
 	requester_public_key_data: &UserPublicKeyData,
-	group_keys: &[&SymKeyFormat],
+	group_keys: &[&SymKeyFormatInt],
 	key_session: bool,
 	rank: Option<i32>,
 ) -> Result<GroupKeysForNewMemberServerInput, SdkError>
@@ -195,7 +131,7 @@ pub fn prepare_group_keys_for_new_member_typed(
 
 pub fn prepare_group_keys_for_new_member(
 	requester_public_key_data: &UserPublicKeyData,
-	group_keys: &[&SymKeyFormat],
+	group_keys: &[&SymKeyFormatInt],
 	key_session: bool,
 	rank: Option<i32>,
 ) -> Result<String, SdkError>
@@ -205,7 +141,7 @@ pub fn prepare_group_keys_for_new_member(
 
 pub fn prepare_group_keys_for_new_member_via_session(
 	requester_public_key_data: &UserPublicKeyData,
-	group_keys: &[&SymKeyFormat],
+	group_keys: &[&SymKeyFormatInt],
 ) -> Result<String, SdkError>
 {
 	prepare_group_keys_for_new_member_via_session_internally(requester_public_key_data, group_keys)
@@ -228,6 +164,7 @@ mod test
 		DoneKeyRotationData,
 		GroupKeysForNewMember,
 		GroupKeysForNewMemberServerInput,
+		GroupServerData,
 		GroupUserAccessBy,
 		KeyRotationData,
 	};
