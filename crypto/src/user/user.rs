@@ -1,4 +1,4 @@
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
@@ -8,7 +8,8 @@ use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::group::GroupOutDataHmacKeys;
+use crate::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
+use crate::entities::user::{UserDataExport, UserKeyDataExport};
 use crate::user::{
 	change_password_internally,
 	create_safety_number_internally,
@@ -30,23 +31,7 @@ use crate::user::{
 	reset_password_internally,
 	verify_user_public_key_internally,
 };
-use crate::util::{
-	export_private_key_to_string,
-	export_public_key_to_string,
-	export_sign_key_to_string,
-	export_sym_key_to_string,
-	export_verify_key_to_string,
-	import_private_key,
-	import_sign_key,
-	import_sym_key_from_format,
-	DeviceKeyData,
-	DeviceKeyDataInt,
-	UserData,
-	UserDataInt,
-	UserKeyData,
-	UserKeyDataInt,
-};
-use crate::{group, SdkError, SymKeyFormat};
+use crate::{group, SdkError};
 
 #[derive(Serialize, Deserialize)]
 pub enum MasterKeyFormat
@@ -109,15 +94,12 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), String>
 
 pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session: bool) -> Result<(String, String), String>
 {
-	let user_keys: Vec<SymKeyFormat> = from_str(user_keys).map_err(SdkError::JsonParseFailed)?;
+	let user_keys: Vec<SymKeyFormatExport> = from_str(user_keys).map_err(SdkError::JsonParseFailed)?;
 
-	let mut saved_keys = Vec::with_capacity(user_keys.len());
-
-	for user_key in user_keys {
-		let key = import_sym_key_from_format(&user_key)?;
-
-		saved_keys.push(key);
-	}
+	let saved_keys = user_keys
+		.iter()
+		.map(|k| k.try_into())
+		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
 
 	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -161,7 +143,7 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 pub fn done_login(
 	master_key_encryption: &str, //from the prepare login as base64 for exporting
 	server_output: &str,
-) -> Result<UserData, String>
+) -> Result<UserDataExport, String>
 {
 	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(SdkError::JsonParseFailed)?;
 
@@ -176,33 +158,16 @@ pub fn done_login(
 		},
 	};
 
-	let (result, hmac_keys) = done_login_internally(&master_key_encryption, server_output)?;
+	let result = done_login_internally(&master_key_encryption, server_output)?;
 
-	let mut encrypted_hmac_keys = Vec::with_capacity(hmac_keys.len());
-
-	for hmac_key in hmac_keys {
-		let group_key_id = hmac_key.encrypted_hmac_encryption_key_id.clone();
-
-		let key_data = to_string(&hmac_key).map_err(SdkError::JsonParseFailed)?;
-
-		encrypted_hmac_keys.push(GroupOutDataHmacKeys {
-			group_key_id,
-			key_data,
-		})
-	}
-
-	export_user_data(result, encrypted_hmac_keys)
+	Ok(result.try_into()?)
 }
 
-pub fn done_key_fetch(private_key: &str, server_output: &str) -> Result<UserKeyData, String>
+pub fn done_key_fetch(private_key: &str, server_output: &str) -> Result<UserKeyDataExport, String>
 {
-	let private_key = import_private_key(private_key)?;
+	let key = done_key_fetch_internally(&private_key.parse()?, server_output)?;
 
-	let key = done_key_fetch_internally(&private_key, server_output)?;
-
-	let user_keys = export_user_key_data(key)?;
-
-	Ok(user_keys)
+	Ok(key.try_into()?)
 }
 
 pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, String>
@@ -227,14 +192,10 @@ pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &st
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
 {
-	let decrypted_private_key = import_private_key(decrypted_private_key)?;
-
-	let decrypted_sign_key = import_sign_key(decrypted_sign_key)?;
-
 	Ok(reset_password_internally(
 		new_password,
-		&decrypted_private_key,
-		&decrypted_sign_key,
+		&decrypted_private_key.parse()?,
+		&decrypted_sign_key.parse()?,
 	)?)
 }
 
@@ -262,85 +223,12 @@ pub fn verify_user_public_key(verify_key: &str, public_key: &str) -> Result<bool
 	Ok(verify_user_public_key_internally(&verify_key, &public_key)?)
 }
 
-fn export_user_data(user_data: UserDataInt, hmac_keys: Vec<GroupOutDataHmacKeys>) -> Result<UserData, String>
-{
-	let device_keys = export_device_key_data(user_data.device_keys)?;
-
-	let mut user_keys = Vec::with_capacity(user_data.user_keys.len());
-
-	for user_key in user_data.user_keys {
-		user_keys.push(export_user_key_data(user_key)?)
-	}
-
-	Ok(UserData {
-		hmac_keys,
-		user_keys,
-		device_keys,
-		jwt: user_data.jwt,
-		refresh_token: user_data.refresh_token,
-		user_id: user_data.user_id,
-		device_id: user_data.device_id,
-	})
-}
-
-fn export_user_key_data(user_key: UserKeyDataInt) -> Result<UserKeyData, String>
-{
-	let private_key = export_private_key_to_string(user_key.private_key)?;
-	let public_key = export_public_key_to_string(user_key.public_key)?;
-	let sign_key = export_sign_key_to_string(user_key.sign_key)?;
-	let verify_key = export_verify_key_to_string(user_key.verify_key)?;
-	let group_key_id = user_key.group_key.key_id.to_string();
-	let group_key = export_sym_key_to_string(user_key.group_key)?;
-
-	Ok(UserKeyData {
-		private_key,
-		public_key,
-		group_key,
-		time: user_key.time,
-		group_key_id,
-		sign_key,
-		verify_key,
-		exported_public_key: user_key
-			.exported_public_key
-			.to_string()
-			.map_err(|_e| SdkError::JsonToStringFailed)?,
-		exported_public_key_sig_key_id: user_key.exported_public_key.public_key_sig_key_id,
-		exported_verify_key: user_key
-			.exported_verify_key
-			.to_string()
-			.map_err(|_e| SdkError::JsonToStringFailed)?,
-	})
-}
-
-fn export_device_key_data(key_data: DeviceKeyDataInt) -> Result<DeviceKeyData, String>
-{
-	let private_key = export_private_key_to_string(key_data.private_key)?;
-	//the public key was decode from pem before by the done_login_internally function, so we can import it later one without checking err
-	let public_key = export_public_key_to_string(key_data.public_key)?;
-	let sign_key = export_sign_key_to_string(key_data.sign_key)?;
-	let verify_key = export_verify_key_to_string(key_data.verify_key)?;
-
-	Ok(DeviceKeyData {
-		private_key,
-		public_key,
-		sign_key,
-		verify_key,
-		exported_public_key: key_data
-			.exported_public_key
-			.to_string()
-			.map_err(|_e| SdkError::JsonToStringFailed)?,
-		exported_verify_key: key_data
-			.exported_verify_key
-			.to_string()
-			.map_err(|_e| SdkError::JsonToStringFailed)?,
-	})
-}
-
 #[cfg(test)]
 mod test
 {
 	extern crate std;
 
+	use alloc::string::ToString;
 	use alloc::vec;
 
 	use sentc_crypto_common::group::CreateData;
@@ -354,8 +242,8 @@ mod test
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
+	use crate::entities::keys::PrivateKeyFormatExport;
 	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login};
-	use crate::util::PrivateKeyFormat;
 
 	#[test]
 	fn test_register()
@@ -400,8 +288,8 @@ mod test
 		)
 		.unwrap();
 
-		let private_key = match PrivateKeyFormat::from_string(login_out.user_keys[0].private_key.as_str()).unwrap() {
-			PrivateKeyFormat::Ecies {
+		let private_key = match from_str(&login_out.user_keys[0].private_key).unwrap() {
+			PrivateKeyFormatExport::Ecies {
 				key_id: _,
 				key,
 			} => key,
@@ -496,7 +384,8 @@ mod test
 		done_register_device_start(&server_output).unwrap();
 
 		//6. register the device with the main device
-		let user_keys = to_string(&vec![SymKeyFormat::from_string(&user.user_keys[0].group_key).unwrap()]).unwrap();
+		let g_k: SymKeyFormatExport = from_str(&user.user_keys[0].group_key).unwrap();
+		let user_keys = to_string(&vec![g_k]).unwrap();
 
 		let (out, _) = prepare_register_device(&server_output, &user_keys, false).unwrap();
 

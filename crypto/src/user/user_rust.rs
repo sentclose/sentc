@@ -4,6 +4,8 @@ use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyDa
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
+use crate::entities::keys::{PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
+use crate::entities::user::{UserDataInt, UserKeyDataInt};
 use crate::user::{
 	change_password_internally,
 	create_safety_number_internally,
@@ -25,7 +27,6 @@ use crate::user::{
 	reset_password_internally,
 	verify_user_public_key_internally,
 };
-use crate::util::{PrivateKeyFormat, SignKeyFormat, SymKeyFormat, UserData, UserKeyData};
 use crate::SdkError;
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
@@ -68,7 +69,11 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), SdkError>
 	done_register_device_start_internally(server_output)
 }
 
-pub fn prepare_register_device(server_output: &str, user_keys: &[&SymKeyFormat], key_session: bool) -> Result<(String, UserPublicKeyData), SdkError>
+pub fn prepare_register_device(
+	server_output: &str,
+	user_keys: &[&SymKeyFormatInt],
+	key_session: bool,
+) -> Result<(String, UserPublicKeyData), SdkError>
 {
 	prepare_register_device_internally(server_output, user_keys, key_session)
 }
@@ -83,23 +88,12 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 	prepare_login_internally(user_identifier, password, server_output)
 }
 
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserData, SdkError>
+pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserDataInt, SdkError>
 {
-	let (result, hmac_keys) = done_login_internally(master_key_encryption, server_output)?;
-
-	Ok(UserData {
-		jwt: result.jwt,
-		refresh_token: result.refresh_token,
-		user_id: result.user_id,
-		device_id: result.device_id,
-
-		user_keys: result.user_keys,
-		device_keys: result.device_keys,
-		hmac_keys,
-	})
+	done_login_internally(master_key_encryption, server_output)
 }
 
-pub fn done_key_fetch(private_key: &PrivateKeyFormat, server_output: &str) -> Result<UserKeyData, SdkError>
+pub fn done_key_fetch(private_key: &PrivateKeyFormatInt, server_output: &str) -> Result<UserKeyDataInt, SdkError>
 {
 	done_key_fetch_internally(private_key, server_output)
 }
@@ -119,7 +113,11 @@ pub fn prepare_refresh_jwt(refresh_token: &str) -> Result<String, SdkError>
 	prepare_refresh_jwt_internally(refresh_token)
 }
 
-pub fn reset_password(new_password: &str, decrypted_private_key: &PrivateKeyFormat, decrypted_sign_key: &SignKeyFormat) -> Result<String, SdkError>
+pub fn reset_password(
+	new_password: &str,
+	decrypted_private_key: &PrivateKeyFormatInt,
+	decrypted_sign_key: &SignKeyFormatInt,
+) -> Result<String, SdkError>
 {
 	reset_password_internally(new_password, decrypted_private_key, decrypted_sign_key)
 }
