@@ -13,7 +13,7 @@ use crate::file::{
 	prepare_file_name_update_internally,
 	prepare_register_file_internally,
 };
-use crate::util::{export_core_sym_key_to_string, import_core_sym_key, import_sym_key};
+use crate::util::{export_core_sym_key_to_string, import_core_sym_key};
 use crate::SdkError;
 
 pub fn prepare_register_file(
@@ -25,13 +25,11 @@ pub fn prepare_register_file(
 	file_name: Option<String>,
 ) -> Result<(String, Option<String>), String>
 {
-	let key = import_sym_key(key)?;
-
 	let belongs_to_type: BelongsToType = serde_json::from_str(belongs_to_type).map_err(SdkError::JsonParseFailed)?;
 
 	let (server_input, encrypted_file_name) = prepare_register_file_internally(
 		master_key_id,
-		&key,
+		&key.parse()?,
 		encrypted_content_key,
 		belongs_to_id,
 		belongs_to_type,
@@ -48,21 +46,19 @@ pub fn done_register_file(server_output: &str) -> Result<(String, String), Strin
 
 pub fn prepare_file_name_update(key: &str, file_name: &str) -> Result<String, String>
 {
-	let key = import_sym_key(key)?;
-
 	let file_name = match file_name {
 		"" => None,
 		_ => Some(file_name.to_string()),
 	};
 
-	Ok(prepare_file_name_update_internally(&key, file_name)?)
+	Ok(prepare_file_name_update_internally(&key.parse()?, file_name)?)
 }
 
 pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let (encrypted_part, file_key) = match sign_key {
 		None => encrypt_file_part_start_internally(&key, part, None)?,
@@ -93,7 +89,7 @@ pub fn encrypt_file_part(pre_content_key: &str, part: &[u8], sign_key: Option<&s
 pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let verify_key = prepare_verify_key(verify_key)?;
-	let key = import_sym_key(key)?;
+	let key = key.parse()?;
 
 	let (decrypted, next_key) = match verify_key {
 		None => decrypt_file_part_start_internally(&key, part, None)?,
