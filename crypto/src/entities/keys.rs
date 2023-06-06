@@ -20,18 +20,7 @@ impl SymKeyFormatInt
 {
 	pub fn to_string(self) -> Result<String, SdkError>
 	{
-		match self.key {
-			SymKey::Aes(k) => {
-				let sym_key = Base64::encode_string(&k);
-
-				let key = SymKeyFormatExport::Aes {
-					key_id: self.key_id,
-					key: sym_key,
-				};
-
-				serde_json::to_string(&key).map_err(|_e| SdkError::JsonToStringFailed)
-			},
-		}
+		serde_json::to_string(&Into::<SymKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
 	}
 }
 
@@ -45,18 +34,7 @@ impl HmacKeyFormatInt
 {
 	pub fn to_string(self) -> Result<String, SdkError>
 	{
-		match self.key {
-			HmacKey::HmacSha256(k) => {
-				let key = Base64::encode_string(&k);
-
-				let key = HmacFormatExport::HmacSha256 {
-					key,
-					key_id: self.key_id,
-				};
-
-				serde_json::to_string(&key).map_err(|_e| SdkError::JsonToStringFailed)
-			},
-		}
+		serde_json::to_string(&Into::<HmacFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
 	}
 }
 
@@ -70,18 +48,7 @@ impl PrivateKeyFormatInt
 {
 	pub fn to_string(self) -> Result<String, SdkError>
 	{
-		match self.key {
-			Sk::Ecies(k) => {
-				let key = Base64::encode_string(&k);
-
-				let key = PrivateKeyFormatExport::Ecies {
-					key_id: self.key_id,
-					key,
-				};
-
-				serde_json::to_string(&key).map_err(|_e| SdkError::JsonToStringFailed)
-			},
-		}
+		serde_json::to_string(&Into::<PrivateKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
 	}
 }
 
@@ -95,18 +62,7 @@ impl PublicKeyFormatInt
 {
 	pub fn to_string(self) -> Result<String, SdkError>
 	{
-		match self.key {
-			Pk::Ecies(k) => {
-				let key = Base64::encode_string(&k);
-
-				let key = PublicKeyFormatExport::Ecies {
-					key_id: self.key_id,
-					key,
-				};
-
-				serde_json::to_string(&key).map_err(|_e| SdkError::JsonToStringFailed)
-			},
-		}
+		serde_json::to_string(&Into::<PublicKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
 	}
 }
 
@@ -120,18 +76,7 @@ impl SignKeyFormatInt
 {
 	pub fn to_string(self) -> Result<String, SdkError>
 	{
-		match self.key {
-			SignK::Ed25519(k) => {
-				let key = Base64::encode_string(&k);
-
-				let key = SignKeyFormatExport::Ed25519 {
-					key_id: self.key_id,
-					key,
-				};
-
-				serde_json::to_string(&key).map_err(|_e| SdkError::JsonToStringFailed)
-			},
-		}
+		serde_json::to_string(&Into::<SignKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
 	}
 }
 
@@ -145,18 +90,7 @@ impl VerifyKeyFormatInt
 {
 	pub fn to_string(self) -> Result<String, SdkError>
 	{
-		match self.key {
-			VerifyK::Ed25519(k) => {
-				let key = Base64::encode_string(&k);
-
-				let key = VerifyKeyFormatExport::Ed25519 {
-					key_id: self.key_id,
-					key,
-				};
-
-				serde_json::to_string(&key).map_err(|_e| SdkError::JsonToStringFailed)
-			},
-		}
+		serde_json::to_string(&Into::<VerifyKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
 	}
 }
 
@@ -226,6 +160,23 @@ impl<'a> TryInto<SymKeyFormatInt> for &'a SymKeyFormatExport
 	}
 }
 
+impl From<SymKeyFormatInt> for SymKeyFormatExport
+{
+	fn from(value: SymKeyFormatInt) -> Self
+	{
+		match value.key {
+			SymKey::Aes(k) => {
+				let sym_key = Base64::encode_string(&k);
+
+				Self::Aes {
+					key_id: value.key_id,
+					key: sym_key,
+				}
+			},
+		}
+	}
+}
+
 impl FromStr for SymKeyFormatInt
 {
 	type Err = SdkError;
@@ -270,6 +221,23 @@ impl TryInto<HmacKeyFormatInt> for HmacFormatExport
 					key: HmacKey::HmacSha256(key),
 					key_id,
 				})
+			},
+		}
+	}
+}
+
+impl From<HmacKeyFormatInt> for HmacFormatExport
+{
+	fn from(value: HmacKeyFormatInt) -> Self
+	{
+		match value.key {
+			HmacKey::HmacSha256(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::HmacSha256 {
+					key,
+					key_id: value.key_id,
+				}
 			},
 		}
 	}
@@ -325,6 +293,23 @@ impl TryInto<PrivateKeyFormatInt> for PrivateKeyFormatExport
 	}
 }
 
+impl From<PrivateKeyFormatInt> for PrivateKeyFormatExport
+{
+	fn from(value: PrivateKeyFormatInt) -> Self
+	{
+		match value.key {
+			Sk::Ecies(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Ecies {
+					key_id: value.key_id,
+					key,
+				}
+			},
+		}
+	}
+}
+
 impl FromStr for PrivateKeyFormatInt
 {
 	type Err = SdkError;
@@ -369,6 +354,23 @@ impl TryInto<PublicKeyFormatInt> for PublicKeyFormatExport
 					key_id,
 					key: Pk::Ecies(key),
 				})
+			},
+		}
+	}
+}
+
+impl From<PublicKeyFormatInt> for PublicKeyFormatExport
+{
+	fn from(value: PublicKeyFormatInt) -> Self
+	{
+		match value.key {
+			Pk::Ecies(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Ecies {
+					key_id: value.key_id,
+					key,
+				}
 			},
 		}
 	}
@@ -447,6 +449,23 @@ impl TryInto<SignKeyFormatInt> for SignKeyFormatExport
 	}
 }
 
+impl From<SignKeyFormatInt> for SignKeyFormatExport
+{
+	fn from(value: SignKeyFormatInt) -> Self
+	{
+		match value.key {
+			SignK::Ed25519(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Ed25519 {
+					key_id: value.key_id,
+					key,
+				}
+			},
+		}
+	}
+}
+
 impl FromStr for SignKeyFormatInt
 {
 	type Err = SdkError;
@@ -491,6 +510,23 @@ impl TryInto<VerifyKeyFormatInt> for VerifyKeyFormatExport
 					key: VerifyK::Ed25519(verify_key),
 					key_id,
 				})
+			},
+		}
+	}
+}
+
+impl From<VerifyKeyFormatInt> for VerifyKeyFormatExport
+{
+	fn from(value: VerifyKeyFormatInt) -> Self
+	{
+		match value.key {
+			VerifyK::Ed25519(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Ed25519 {
+					key_id: value.key_id,
+					key,
+				}
 			},
 		}
 	}
