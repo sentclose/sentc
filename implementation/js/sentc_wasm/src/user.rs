@@ -733,10 +733,9 @@ pub fn user_prepare_user_identifier_update(user_identifier: String) -> Result<St
 //__________________________________________________________________________________________________
 
 #[wasm_bindgen]
-pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id: String) -> Result<UserPublicKeyData, JsValue>
+pub fn user_extract_public_key_data(res: &str) -> Result<UserPublicKeyData, JsValue>
 {
-	let (public_key, public_key_id, public_key_sig_key_id) =
-		sentc_crypto_full::user::fetch_user_public_key(base_url, auth_token.as_str(), user_id.as_str()).await?;
+	let (public_key, public_key_id, public_key_sig_key_id) = sentc_crypto::util::public::import_public_key_from_string_into_export_string(res)?;
 
 	Ok(UserPublicKeyData {
 		public_key,
@@ -746,17 +745,9 @@ pub async fn user_fetch_public_key(base_url: String, auth_token: String, user_id
 }
 
 #[wasm_bindgen]
-pub async fn user_fetch_verify_key(base_url: String, auth_token: String, user_id: String, verify_key_id: String) -> Result<String, JsValue>
+pub fn user_extract_verify_key_data(res: &str) -> Result<String, JsValue>
 {
-	let verify_key = sentc_crypto_full::user::fetch_user_verify_key_by_id(
-		base_url,
-		auth_token.as_str(),
-		user_id.as_str(),
-		verify_key_id.as_str(),
-	)
-	.await?;
-
-	Ok(verify_key)
+	Ok(sentc_crypto::util::public::import_verify_key_from_string_into_export_string(res)?.0)
 }
 
 //__________________________________________________________________________________________________
