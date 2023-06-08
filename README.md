@@ -17,7 +17,7 @@ Available in:
 ## Build from source
 
 #### Requirements:
-- Rust MRV 1.6.0
+- Rust MRV 1.69.0
 - For flutter:
   - flutter_rust_bridge_codegen (`cargo install flutter_rust_bridge_codegen`)
   - cargo-ndk
