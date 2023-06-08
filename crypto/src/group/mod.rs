@@ -670,6 +670,8 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
+	#[cfg(not(feature = "rust"))]
+	use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport};
 
 	#[cfg(feature = "rust")]
 	pub(crate) fn create_group(
@@ -737,7 +739,9 @@ pub(crate) mod test_fn
 
 		let mut group_keys = Vec::with_capacity(out.keys.len());
 
+		#[cfg(feature = "rust")]
 		for key in out.keys {
+			#[cfg(feature = "rust")]
 			group_keys.push(decrypt_group_keys(&user.private_key, key).unwrap());
 		}
 
@@ -772,8 +776,8 @@ pub(crate) mod test_fn
 	pub(crate) fn create_group(
 		user: &crate::entities::user::UserKeyDataExport,
 	) -> (
-		crate::entities::group::GroupOutDataExport,
-		Vec<crate::entities::group::GroupKeyDataExport>,
+		GroupOutDataExport,
+		Vec<GroupKeyDataExport>,
 		GroupServerData,
 		Vec<String>,
 	)
