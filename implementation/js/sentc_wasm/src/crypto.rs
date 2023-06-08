@@ -318,24 +318,9 @@ impl KeysToMasterKeyFetch
 }
 
 #[wasm_bindgen]
-pub async fn get_keys_for_master_key(
-	base_url: String,
-	auth_token: String,
-	master_key_id: String,
-	last_fetched_time: String,
-	last_key_id: String,
-	master_key: String,
-) -> Result<KeysToMasterKeyFetch, JsValue>
+pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<KeysToMasterKeyFetch, JsValue>
 {
-	let (keys, last_fetched_time, last_key_id) = sentc_crypto_full::crypto::get_keys_for_master_key(
-		base_url,
-		auth_token.as_str(),
-		master_key_id.as_str(),
-		last_fetched_time.as_str(),
-		last_key_id.as_str(),
-		master_key.as_str(),
-	)
-	.await?;
+	let (keys, last_fetched_time, last_key_id) = crypto::done_fetch_sym_keys(master_key, server_out)?;
 
 	Ok(KeysToMasterKeyFetch {
 		last_fetched_time,
