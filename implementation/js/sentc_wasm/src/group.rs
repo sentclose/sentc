@@ -682,9 +682,9 @@ impl GroupPublicKeyData
 }
 
 #[wasm_bindgen]
-pub async fn group_get_public_key_data(base_url: String, auth_token: String, id: String) -> Result<GroupPublicKeyData, JsValue>
+pub fn group_extract_public_key_data(res: &str) -> Result<GroupPublicKeyData, JsValue>
 {
-	let (public_key, public_key_id) = sentc_crypto_full::group::get_public_key_data(base_url, &auth_token, &id).await?;
+	let (public_key, public_key_id, _) = sentc_crypto::util::public::import_public_key_from_string_into_export_string(res)?;
 
 	Ok(GroupPublicKeyData {
 		public_key,
