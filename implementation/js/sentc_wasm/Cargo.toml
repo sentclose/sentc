@@ -4,7 +4,7 @@ version = "0.8.0"
 edition = "2021"
 
 description = "Wasm for sentc. End-to-end encryption sdk"
-license-file = "../../../LICENSE"
+license-file = "LICENSE"
 authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
 homepage = "https://sentc.com/"
 documentation = "https://sentc.com/"
