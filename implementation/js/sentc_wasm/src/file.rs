@@ -283,24 +283,7 @@ pub async fn file_upload_part(
 }
 
 #[wasm_bindgen]
-pub async fn file_file_name_update(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	file_id: String,
-	content_key: String,
-	file_name: String,
-) -> Result<(), JsValue>
+pub fn file_prepare_file_name_update(content_key: &str, file_name: Option<String>) -> Result<String, JsValue>
 {
-	sentc_crypto_full::file::update_file_name(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		file_id.as_str(),
-		content_key.as_str(),
-		file_name.as_str(),
-	)
-	.await?;
-
-	Ok(())
+	Ok(sentc_crypto::file::prepare_file_name_update(content_key, file_name)?)
 }

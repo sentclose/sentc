@@ -1,4 +1,4 @@
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::file::BelongsToType;
@@ -44,13 +44,8 @@ pub fn done_register_file(server_output: &str) -> Result<(String, String), Strin
 	Ok(done_register_file_internally(server_output)?)
 }
 
-pub fn prepare_file_name_update(key: &str, file_name: &str) -> Result<String, String>
+pub fn prepare_file_name_update(key: &str, file_name: Option<String>) -> Result<String, String>
 {
-	let file_name = match file_name {
-		"" => None,
-		_ => Some(file_name.to_string()),
-	};
-
 	Ok(prepare_file_name_update_internally(&key.parse()?, file_name)?)
 }
 

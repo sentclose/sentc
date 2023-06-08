@@ -311,13 +311,12 @@ pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<(Vec<St
 
 	let (out, last_time, last_id) = done_fetch_sym_keys_internally(&master_key, server_out)?;
 
-	let mut out_vec = Vec::with_capacity(out.len());
+	let out = out
+		.into_iter()
+		.map(|k| k.to_string())
+		.collect::<Result<Vec<String>, SdkError>>()?;
 
-	for o in out {
-		out_vec.push(o.to_string()?);
-	}
-
-	Ok((out_vec, last_time, last_id))
+	Ok((out, last_time, last_id))
 }
 
 pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
