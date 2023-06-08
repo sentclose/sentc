@@ -1,7 +1,12 @@
 [package]
 name = "sentc_flutter"
-version = "0.1.0"
+version = "0.8.0"
 edition = "2021"
+description = "The flutter implementation for sentc."
+license-file = "../../../LICENSE"
+authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
+homepage = "https://sentc.com/"
+documentation = "https://sentc.com/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,9 +16,9 @@ crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 # own crypto lib
-sentc-crypto = {version = "0.1.0", path = "../../../crypto"}
+sentc-crypto = {workspace=true, features = ["default"]}
 
-sentc-crypto-full = {version = "0.1.0", path = "../../../crypto_full", features = ["rustls"]}
+sentc-crypto-full = {workspace=true, features = ["rustls"]}
 
 sentc-crypto-common = {workspace=true}
 

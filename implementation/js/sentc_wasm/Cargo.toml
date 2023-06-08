@@ -1,10 +1,13 @@
 [package]
 name = "sentc_wasm"
-version = "0.7.2"
+version = "0.8.0"
 edition = "2021"
-license = "AGPL-3.0"
+
 description = "Wasm for sentc. End-to-end encryption sdk"
+license-file = "../../../LICENSE"
 authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
+homepage = "https://sentc.com/"
+documentation = "https://sentc.com/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,9 +16,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # own crypto lib
-sentc-crypto = {version = "0.1.0", path = "../../../crypto"}
+sentc-crypto = {workspace=true, features = ["default"]}
 
-sentc-crypto-full = {version = "0.1.0", path = "../../../crypto_full", features = ["wasm"]}
+sentc-crypto-full = {workspace=true, features = ["wasm"]}
 
 sentc-crypto-common = {workspace=true}
 

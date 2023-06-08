@@ -1,9 +1,18 @@
 [package]
 name = "sentc-crypto-core"
-version = "0.1.0"
+version = "0.8.0"
 edition = "2021"
+description = "The core of sentc encryption sdk with all alg."
+license-file = "../LICENSE"
+authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
+homepage = "https://sentc.com/"
+documentation = "https://sentc.com/"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+include = [
+    "Cargo.toml",
+    "../LICENSE",
+    "src/**/*",
+]
 
 [dependencies]
 aes-gcm = "0.9.4"
