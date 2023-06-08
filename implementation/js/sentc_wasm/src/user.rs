@@ -357,17 +357,6 @@ impl UserInitServerOutput
 }
 
 /**
-# Check if the identifier is available for this app
-*/
-#[wasm_bindgen]
-pub async fn check_user_identifier_available(base_url: String, auth_token: String, user_identifier: String) -> Result<bool, JsValue>
-{
-	let out = sentc_crypto_full::user::check_user_identifier_available(base_url, auth_token.as_str(), user_identifier.as_str()).await?;
-
-	Ok(out)
-}
-
-/**
 # Check if the identifier is available
 
 but without making a request
