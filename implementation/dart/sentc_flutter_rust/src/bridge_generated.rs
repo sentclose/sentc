@@ -3221,7 +3221,7 @@ fn wire_file_file_name_update_impl(
 	jwt: impl Wire2Api<String> + UnwindSafe,
 	file_id: impl Wire2Api<String> + UnwindSafe,
 	content_key: impl Wire2Api<String> + UnwindSafe,
-	file_name: impl Wire2Api<String> + UnwindSafe,
+	file_name: impl Wire2Api<Option<String>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
