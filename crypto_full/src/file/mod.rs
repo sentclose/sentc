@@ -218,8 +218,7 @@ pub async fn update_file_name(
 	file_id: &str,
 	#[cfg(not(feature = "rust"))] content_key: &str,
 	#[cfg(feature = "rust")] content_key: &sentc_crypto::entities::keys::SymKeyFormatInt,
-	#[cfg(not(feature = "rust"))] file_name: &str,
-	#[cfg(feature = "rust")] file_name: Option<String>,
+	file_name: Option<String>,
 ) -> VoidRes
 {
 	let input = sentc_crypto::file::prepare_file_name_update(content_key, file_name)?;

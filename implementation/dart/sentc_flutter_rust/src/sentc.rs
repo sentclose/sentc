@@ -2646,8 +2646,14 @@ pub fn file_upload_part(
 	))
 }
 
-pub fn file_file_name_update(base_url: String, auth_token: String, jwt: String, file_id: String, content_key: String, file_name: String)
-	-> Result<()>
+pub fn file_file_name_update(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	file_id: String,
+	content_key: String,
+	file_name: Option<String>,
+) -> Result<()>
 {
 	rt(sentc_crypto_full::file::update_file_name(
 		base_url,
@@ -2655,7 +2661,7 @@ pub fn file_file_name_update(base_url: String, auth_token: String, jwt: String, 
 		jwt.as_str(),
 		file_id.as_str(),
 		content_key.as_str(),
-		file_name.as_str(),
+		file_name,
 	))
 }
 
