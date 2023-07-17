@@ -131,7 +131,7 @@ pub(crate) fn split_head_and_encrypted_data_internally<'a, T: Deserialize<'a>>(d
 		i += 1;
 	}
 
-	let head = serde_json::from_slice(&data_with_head[..i]).map_err(SdkError::JsonParseFailed)?;
+	let head = serde_json::from_slice(&data_with_head[..i])?;
 
 	//ignore the zero byte
 	Ok((head, &data_with_head[i + 1..]))
@@ -171,7 +171,7 @@ This can be used to get the head struct when getting the head as string, like ra
 */
 fn deserialize_head_from_string_internally(head: &str) -> Result<EncryptedHead, SdkError>
 {
-	EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)
+	Ok(EncryptedHead::from_string(head)?)
 }
 
 fn encrypt_raw_symmetric_internally(
@@ -456,7 +456,7 @@ Decrypted the server output with the master key
 fn done_fetch_sym_key_internally(master_key: &SymKeyFormatInt, server_out: &str, non_registered: bool) -> Result<SymKeyFormatInt, SdkError>
 {
 	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
-		GeneratedSymKeyHeadServerOutput::from_string(server_out).map_err(SdkError::JsonParseFailed)?
+		GeneratedSymKeyHeadServerOutput::from_string(server_out)?
 	} else {
 		handle_server_response(server_out)?
 	};
@@ -476,7 +476,7 @@ fn done_fetch_sym_key_by_private_key_internally(
 ) -> Result<SymKeyFormatInt, SdkError>
 {
 	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
-		GeneratedSymKeyHeadServerOutput::from_string(server_out).map_err(SdkError::JsonParseFailed)?
+		GeneratedSymKeyHeadServerOutput::from_string(server_out)?
 	} else {
 		handle_server_response(server_out)?
 	};
