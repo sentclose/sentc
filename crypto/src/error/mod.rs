@@ -70,6 +70,14 @@ impl From<SdkError> for String
 	}
 }
 
+impl From<serde_json::Error> for SdkError
+{
+	fn from(value: serde_json::Error) -> Self
+	{
+		Self::JsonParseFailed(value)
+	}
+}
+
 pub fn err_to_msg(error: SdkError) -> String
 {
 	match error {
