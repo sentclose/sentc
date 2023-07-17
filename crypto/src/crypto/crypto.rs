@@ -50,7 +50,7 @@ pub(crate) fn prepare_verify_key(verify_key_data: Option<&str>) -> Result<Option
 	let verify_key = match verify_key_data {
 		None => None,
 		Some(k) => {
-			let k = UserVerifyKeyData::from_string(k).map_err(SdkError::JsonParseFailed)?;
+			let k = UserVerifyKeyData::from_string(k)?;
 
 			Some(k)
 		},

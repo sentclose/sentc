@@ -62,7 +62,7 @@ impl TryFrom<GroupKeyServerOutput> for GroupOutDataKeyExport
 	fn try_from(value: GroupKeyServerOutput) -> Result<Self, Self::Error>
 	{
 		Ok(Self {
-			key_data: serde_json::to_string(&value).map_err(SdkError::JsonParseFailed)?,
+			key_data: serde_json::to_string(&value)?,
 			private_key_id: value.user_public_key_id,
 		})
 	}
@@ -84,7 +84,7 @@ impl TryFrom<GroupHmacData> for GroupOutDataHmacKeyExport
 	fn try_from(value: GroupHmacData) -> Result<Self, Self::Error>
 	{
 		Ok(Self {
-			key_data: serde_json::to_string(&value).map_err(SdkError::JsonParseFailed)?,
+			key_data: serde_json::to_string(&value)?,
 			group_key_id: value.encrypted_hmac_encryption_key_id,
 		})
 	}
