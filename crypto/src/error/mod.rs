@@ -129,6 +129,10 @@ pub fn err_to_msg(error: SdkError) -> String
 				Error::InitVerifyFailed => out_error("client_43", "Can't verify the data"),
 
 				Error::HmacAuthFailedLength => out_error("client_50", "Can't auth the hmac"),
+
+				Error::OpeRangeError => out_error("client_60", "Invalid input range"),
+				Error::OpeStringToLarge => out_error("client_61", "String is too large to process"),
+				Error::OpeHdgInvalidInputs => out_error("client_62", "Invalid inputs"),
 			}
 		},
 		SdkError::AlgNotFound => out_error("client_1", "The algorithms for this action was not found."),
