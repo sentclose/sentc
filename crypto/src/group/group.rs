@@ -1,7 +1,14 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{CreateData, GroupHmacData, GroupKeyServerOutput, GroupKeysForNewMemberServerInput, KeyRotationInput};
+use sentc_crypto_common::group::{
+	CreateData,
+	GroupHmacData,
+	GroupKeyServerOutput,
+	GroupKeysForNewMemberServerInput,
+	GroupSortableData,
+	KeyRotationInput,
+};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::UserId;
 use serde_json::from_str;
@@ -12,6 +19,7 @@ use crate::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
 use crate::group::{
 	decrypt_group_hmac_key_internally,
 	decrypt_group_keys_internally,
+	decrypt_group_sortable_key_internally,
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
 	get_group_data_internally,
@@ -117,6 +125,15 @@ pub fn decrypt_group_hmac_key(group_key: &str, server_key_output: &str) -> Resul
 	let hmac_key = decrypt_group_hmac_key_internally(&group_key.parse()?, server_output)?;
 
 	Ok(hmac_key.to_string()?)
+}
+
+pub fn decrypt_group_sortable_key(group_key: &str, server_key_output: &str) -> Result<String, String>
+{
+	let server_output: GroupSortableData = from_str(server_key_output).map_err(SdkError::JsonParseFailed)?;
+
+	let key = decrypt_group_sortable_key_internally(&group_key.parse()?, server_output)?;
+
+	Ok(key.to_string()?)
 }
 
 pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<GroupKeyDataExport, String>
@@ -301,6 +318,7 @@ mod test
 		GroupKeysForNewMember,
 		GroupKeysForNewMemberServerInput,
 		GroupServerData,
+		GroupSortableData,
 		GroupUserAccessBy,
 		KeyRotationData,
 	};
@@ -335,7 +353,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _, _, _) = create_group(&user.user_keys[0]);
+		let (data, _, _, _, _) = create_group(&user.user_keys[0]);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -345,7 +363,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (_, key_data, group_server_out, _) = create_group(&user.user_keys[0]);
+		let (_, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
 
 		let keys = group_server_out.keys;
 
@@ -431,6 +449,13 @@ mod test
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
@@ -496,6 +521,13 @@ mod test
 				encrypted_hmac_encryption_key_id: "".to_string(),
 				encrypted_hmac_key: group_create.encrypted_hmac_key,
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg,
+				time: 0,
+			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
 				time: 0,
 			}],
 			key_update: false,
@@ -573,6 +605,13 @@ mod test
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
@@ -640,6 +679,13 @@ mod test
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg,
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -674,7 +720,7 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let (_data, key_data, group_server_out, _) = create_group(user_keys);
+		let (_data, key_data, group_server_out, _, _) = create_group(user_keys);
 
 		let rotation_out = key_rotation(
 			key_data[0].group_key.as_str(),
@@ -798,7 +844,7 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let (_data, key_data, group_server_out, _) = create_group(user_keys);
+		let (_data, key_data, group_server_out, _, _) = create_group(user_keys);
 
 		let rotation_out = key_rotation(
 			key_data[0].group_key.as_str(),

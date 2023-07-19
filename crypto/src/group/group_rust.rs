@@ -1,15 +1,23 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{CreateData, GroupHmacData, GroupKeyServerOutput, GroupKeysForNewMemberServerInput, KeyRotationInput};
+use sentc_crypto_common::group::{
+	CreateData,
+	GroupHmacData,
+	GroupKeyServerOutput,
+	GroupKeysForNewMemberServerInput,
+	GroupSortableData,
+	KeyRotationInput,
+};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 
 use crate::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
-use crate::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
+use crate::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SortableKeyFormatInt, SymKeyFormatInt};
 use crate::group::{
 	decrypt_group_hmac_key_internally,
 	decrypt_group_keys_internally,
+	decrypt_group_sortable_key_internally,
 	done_key_rotation_internally,
 	get_done_key_rotation_server_input_internally,
 	get_group_data_internally,
@@ -81,6 +89,11 @@ pub fn done_key_rotation(
 pub fn decrypt_group_hmac_key(key: &SymKeyFormatInt, server_output: GroupHmacData) -> Result<HmacKeyFormatInt, SdkError>
 {
 	decrypt_group_hmac_key_internally(key, server_output)
+}
+
+pub fn decrypt_group_sortable_key(key: &SymKeyFormatInt, server_output: GroupSortableData) -> Result<SortableKeyFormatInt, SdkError>
+{
+	decrypt_group_sortable_key_internally(key, server_output)
 }
 
 pub fn decrypt_group_keys(private_key: &PrivateKeyFormatInt, server_output: GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
@@ -196,7 +209,7 @@ mod test
 
 		let user = create_user();
 
-		let (data, _, _, _) = create_group(&user.user_keys[0]);
+		let (data, _, _, _, _) = create_group(&user.user_keys[0]);
 
 		assert_eq!(data.group_id, "123".to_string());
 	}
@@ -207,7 +220,7 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let (_, key_data, group_server_out, _) = create_group(user_keys);
+		let (_, key_data, group_server_out, _, _) = create_group(user_keys);
 
 		let keys = group_server_out.keys;
 
@@ -306,6 +319,13 @@ mod test
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -367,6 +387,13 @@ mod test
 				encrypted_hmac_encryption_key_id: "".to_string(),
 				encrypted_hmac_key: group_create.encrypted_hmac_key,
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg,
+				time: 0,
+			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
 				time: 0,
 			}],
 		};
@@ -443,6 +470,13 @@ mod test
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg.clone(),
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -505,6 +539,13 @@ mod test
 				encrypted_hmac_alg: group_create.encrypted_hmac_alg,
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group_create.encrypted_sortable_key.clone(),
+				encrypted_sortable_alg: group_create.encrypted_sortable_alg.clone(),
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 		};
 
 		let server_output = ServerOutput {
@@ -536,7 +577,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (_data, key_data, group_server_out, _) = create_group(&user.user_keys[0]);
+		let (_data, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
 
 		let rotation_out = key_rotation(
 			&key_data[0].group_key,
@@ -640,7 +681,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (_data, key_data, group_server_out, _) = create_group(&user.user_keys[0]);
+		let (_data, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
 
 		let rotation_out = key_rotation(
 			&key_data[0].group_key,

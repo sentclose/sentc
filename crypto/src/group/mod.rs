@@ -17,6 +17,7 @@ use sentc_crypto_common::group::{
 	GroupKeysForNewMemberServerInput,
 	GroupLightServerData,
 	GroupServerData,
+	GroupSortableData,
 	GroupUserAccessBy,
 	KeyRotationData,
 	KeyRotationInput,
@@ -26,7 +27,7 @@ use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
 
 use crate::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
-use crate::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
+use crate::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SortableKeyFormatInt, SymKeyFormatInt};
 use crate::util::public::handle_server_response;
 use crate::util::{export_raw_public_key_to_pem, export_raw_verify_key_to_pem, import_public_key_from_pem_with_alg, sig_to_string};
 use crate::{crypto, SdkError};
@@ -44,6 +45,7 @@ pub(crate) use self::group::prepare_group_keys_for_new_member_with_ref;
 pub use self::group::{
 	decrypt_group_hmac_key,
 	decrypt_group_keys,
+	decrypt_group_sortable_key,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
@@ -74,6 +76,7 @@ pub use self::group_rank_check::{
 pub use self::group_rust::{
 	decrypt_group_hmac_key,
 	decrypt_group_keys,
+	decrypt_group_sortable_key,
 	done_key_rotation,
 	get_done_key_rotation_server_input,
 	get_group_data,
@@ -140,6 +143,7 @@ pub(crate) fn prepare_create_private_internally(
 	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
 	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
 	let encrypted_hmac_key = Base64::encode_string(&out.encrypted_hmac_key);
+	let encrypted_sortable_key = Base64::encode_string(&out.encrypted_sortable_key);
 
 	//2. export the public key
 	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
@@ -181,6 +185,8 @@ pub(crate) fn prepare_create_private_internally(
 		creator_public_key_id: creators_public_key.key_id.clone(),
 		encrypted_hmac_key,
 		encrypted_hmac_alg: out.encrypted_hmac_alg.to_string(),
+		encrypted_sortable_key,
+		encrypted_sortable_alg: out.encrypted_sortable_key_alg.to_string(),
 
 		//user group values
 		encrypted_sign_key,
@@ -419,6 +425,7 @@ fn get_group_data_internally(server_output: &str) -> Result<GroupOutData, SdkErr
 		access_by_group_as_member,
 		access_by_parent_group,
 		is_connected_group: server_output.is_connected_group,
+		sortable_keys: server_output.sortable_keys,
 	})
 }
 
@@ -450,6 +457,21 @@ pub(crate) fn decrypt_group_hmac_key_internally(group_key: &SymKeyFormatInt, ser
 	let key = core_group::get_group_hmac_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
 
 	Ok(HmacKeyFormatInt {
+		key_id: server_output.id,
+		key,
+	})
+}
+
+pub(crate) fn decrypt_group_sortable_key_internally(
+	group_key: &SymKeyFormatInt,
+	server_output: GroupSortableData,
+) -> Result<SortableKeyFormatInt, SdkError>
+{
+	let encrypted_key = Base64::decode_vec(&server_output.encrypted_sortable_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+
+	let key = core_group::get_group_sortable_key(&group_key.key, &encrypted_key, &server_output.encrypted_sortable_alg)?;
+
+	Ok(SortableKeyFormatInt {
 		key_id: server_output.id,
 		key,
 	})
@@ -666,7 +688,7 @@ pub(crate) mod test_fn
 {
 	use alloc::vec;
 
-	use sentc_crypto_common::group::{GroupHmacData, GroupServerData, GroupUserAccessBy};
+	use sentc_crypto_common::group::{GroupHmacData, GroupServerData, GroupSortableData, GroupUserAccessBy};
 	use sentc_crypto_common::ServerOutput;
 
 	use super::*;
@@ -681,6 +703,7 @@ pub(crate) mod test_fn
 		Vec<GroupKeyData>,
 		GroupServerData,
 		Vec<HmacKeyFormatInt>,
+		Vec<SortableKeyFormatInt>,
 	)
 	{
 		#[cfg(feature = "rust")]
@@ -716,6 +739,13 @@ pub(crate) mod test_fn
 				encrypted_hmac_alg: group.encrypted_hmac_alg,
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group.encrypted_sortable_key,
+				encrypted_sortable_alg: group.encrypted_sortable_alg,
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
@@ -737,25 +767,30 @@ pub(crate) mod test_fn
 		#[cfg(feature = "rust")]
 		let out = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let mut group_keys = Vec::with_capacity(out.keys.len());
-
 		#[cfg(feature = "rust")]
-		for key in out.keys {
-			#[cfg(feature = "rust")]
-			group_keys.push(decrypt_group_keys(&user.private_key, key).unwrap());
-		}
+		let group_keys: Vec<_> = out
+			.keys
+			.into_iter()
+			.map(|k| decrypt_group_keys(&user.private_key, k).unwrap())
+			.collect();
 
-		//get the hmac key
-		let mut hmac_keys = Vec::with_capacity(out.hmac_keys.len());
+		let hmac_keys = out
+			.hmac_keys
+			.into_iter()
+			.map(|k| decrypt_group_hmac_key(&group_keys[0].group_key, k).unwrap())
+			.collect();
 
-		for hmac_key in out.hmac_keys {
-			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, hmac_key).unwrap());
-		}
+		let sortable_keys = out
+			.sortable_keys
+			.into_iter()
+			.map(|k| decrypt_group_sortable_key(&group_keys[0].group_key, k).unwrap())
+			.collect();
 
 		(
 			GroupOutData {
 				keys: vec![],
 				hmac_keys: vec![],
+				sortable_keys: vec![],
 				parent_group_id: out.parent_group_id,
 				key_update: out.key_update,
 				created_time: out.created_time,
@@ -769,6 +804,7 @@ pub(crate) mod test_fn
 			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
 			hmac_keys,
+			sortable_keys,
 		)
 	}
 
@@ -779,6 +815,7 @@ pub(crate) mod test_fn
 		GroupOutDataExport,
 		Vec<GroupKeyDataExport>,
 		GroupServerData,
+		Vec<String>,
 		Vec<String>,
 	)
 	{
@@ -815,6 +852,13 @@ pub(crate) mod test_fn
 				encrypted_hmac_alg: group.encrypted_hmac_alg,
 				time: 0,
 			}],
+			sortable_keys: vec![GroupSortableData {
+				id: "123".to_string(),
+				encrypted_sortable_key: group.encrypted_sortable_key,
+				encrypted_sortable_alg: group.encrypted_sortable_alg,
+				encrypted_sortable_encryption_key_id: "".to_string(),
+				time: 0,
+			}],
 			key_update: false,
 			rank: 0,
 			created_time: 0,
@@ -836,27 +880,30 @@ pub(crate) mod test_fn
 		#[cfg(not(feature = "rust"))]
 		let group_data = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		//get the group keys
-		let mut group_keys = Vec::with_capacity(group_data.keys.len());
+		let group_keys: Vec<_> = group_data
+			.keys
+			.iter()
+			.map(|k| decrypt_group_keys(user.private_key.as_str(), &k.key_data).unwrap())
+			.collect();
 
-		#[cfg(not(feature = "rust"))]
-		for key in &group_data.keys {
-			group_keys.push(decrypt_group_keys(user.private_key.as_str(), &key.key_data).unwrap());
-		}
+		let hmac_keys = group_data
+			.hmac_keys
+			.iter()
+			.map(|k| decrypt_group_hmac_key(&group_keys[0].group_key, &k.key_data).unwrap())
+			.collect();
 
-		//get the hmac key
-		let mut hmac_keys = Vec::with_capacity(group_data.hmac_keys.len());
-
-		#[cfg(not(feature = "rust"))]
-		for hmac_key in &group_data.hmac_keys {
-			hmac_keys.push(decrypt_group_hmac_key(&group_keys[0].group_key, &hmac_key.key_data).unwrap());
-		}
+		let sortable_keys = group_data
+			.sortable_keys
+			.iter()
+			.map(|k| decrypt_group_sortable_key(&group_keys[0].group_key, &k.key_data).unwrap())
+			.collect();
 
 		(
 			group_data,
 			group_keys,
 			GroupServerData::from_string(group_ser_str.as_str()).unwrap(),
 			hmac_keys,
+			sortable_keys,
 		)
 	}
 }

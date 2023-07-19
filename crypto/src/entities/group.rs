@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput};
+use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput, GroupSortableData};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
 use serde::{Deserialize, Serialize};
@@ -13,6 +13,7 @@ pub struct GroupOutData
 {
 	pub keys: Vec<GroupKeyServerOutput>,
 	pub hmac_keys: Vec<GroupHmacData>,
+	pub sortable_keys: Vec<GroupSortableData>,
 	pub parent_group_id: Option<GroupId>,
 	pub key_update: bool,
 	pub created_time: u128,
@@ -90,6 +91,26 @@ impl TryFrom<GroupHmacData> for GroupOutDataHmacKeyExport
 	}
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct GroupOutDataSortableEyExport
+{
+	pub group_key_id: SymKeyId,
+	pub key_data: String, //serde string
+}
+
+impl TryFrom<GroupSortableData> for GroupOutDataSortableEyExport
+{
+	type Error = SdkError;
+
+	fn try_from(value: GroupSortableData) -> Result<Self, Self::Error>
+	{
+		Ok(Self {
+			key_data: serde_json::to_string(&value)?,
+			group_key_id: value.encrypted_sortable_encryption_key_id,
+		})
+	}
+}
+
 //__________________________________________________________________________________________________
 
 #[derive(Serialize, Deserialize)]
@@ -103,6 +124,7 @@ pub struct GroupOutDataExport
 	pub joined_time: u128,
 	pub keys: Vec<GroupOutDataKeyExport>,
 	pub hmac_keys: Vec<GroupOutDataHmacKeyExport>,
+	pub sortable_keys: Vec<GroupOutDataSortableEyExport>,
 	pub access_by_group_as_member: Option<GroupId>,
 	pub access_by_parent_group: Option<GroupId>,
 	pub is_connected_group: bool,
@@ -128,6 +150,11 @@ impl TryFrom<GroupOutData> for GroupOutDataExport
 				.collect::<Result<_, SdkError>>()?,
 			hmac_keys: value
 				.hmac_keys
+				.into_iter()
+				.map(|k| k.try_into())
+				.collect::<Result<_, SdkError>>()?,
+			sortable_keys: value
+				.sortable_keys
 				.into_iter()
 				.map(|k| k.try_into())
 				.collect::<Result<_, SdkError>>()?,
