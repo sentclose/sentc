@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::{alg, Error, HmacKey, PasswordEncryptOutput, Pk, Sig, SignK, Sk, SymKey, SymKeyOutput, VerifyK};
+use crate::{alg, Error, HmacKey, PasswordEncryptOutput, Pk, Sig, SignK, Sk, SortableKey, SymKey, SymKeyOutput, VerifyK};
 
 pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 {
@@ -179,5 +179,15 @@ pub fn verify_encrypted_searchable(key: &HmacKey, data: &[u8], check_mac: &[u8])
 {
 	match key {
 		HmacKey::HmacSha256(k) => alg::hmac::hmac_sha256::verify_with_generated_key(k, data, check_mac),
+	}
+}
+
+//__________________________________________________________________________________________________
+//sortable
+
+pub fn encrypt_sortable(key: &SortableKey, data: u64) -> Result<u64, Error>
+{
+	match key {
+		SortableKey::Ope(k) => alg::sortable::ope::encrypt_with_generated_key(k, data),
 	}
 }
