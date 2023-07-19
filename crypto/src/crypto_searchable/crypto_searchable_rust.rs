@@ -64,7 +64,7 @@ mod test
 	{
 		//create a group and use the hmac key
 		let user = create_user();
-		let (_, _, _, hmac_keys) = create_group(&user.user_keys[0]);
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
 		let hmac_key = &hmac_keys[0];
 
@@ -83,7 +83,7 @@ mod test
 	{
 		//create a group and use the hmac key
 		let user = create_user();
-		let (_, _, _, hmac_keys) = create_group(&user.user_keys[0]);
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
 		let hmac_key = &hmac_keys[0];
 
@@ -101,7 +101,7 @@ mod test
 	{
 		//create a group and use the hmac key
 		let user = create_user();
-		let (_, _, _, hmac_keys) = create_group(&user.user_keys[0]);
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
 		let hmac_key = &hmac_keys[0];
 
@@ -130,7 +130,7 @@ mod test
 	{
 		//create a group and use the hmac key
 		let user = create_user();
-		let (_, _, _, hmac_keys) = create_group(&user.user_keys[0]);
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
 		let hmac_key = &hmac_keys[0];
 
@@ -152,10 +152,10 @@ mod test
 	fn test_not_create_same_output_with_different_hmac_keys()
 	{
 		let user = create_user();
-		let (_, _, _, hmac_keys) = create_group(&user.user_keys[0]);
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 		let hmac_key = &hmac_keys[0];
 
-		let (_, _, _, hmac_keys2) = create_group(&user.user_keys[0]);
+		let (_, _, _, hmac_keys2, _) = create_group(&user.user_keys[0]);
 		let hmac_key2 = &hmac_keys2[0];
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
