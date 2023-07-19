@@ -393,3 +393,73 @@ pub fn prepare_search(key: &str, data: &str) -> Result<String, JsValue>
 {
 	Ok(sentc_crypto::crypto_searchable::search(key, data)?)
 }
+
+//__________________________________________________________________________________________________
+//sortable
+
+#[wasm_bindgen]
+pub struct SortableEncryptOutput
+{
+	number: u64,
+	alg: String,
+	key_id: String,
+}
+
+#[wasm_bindgen]
+impl SortableEncryptOutput
+{
+	pub fn get_number(&self) -> u64
+	{
+		self.number
+	}
+
+	pub fn get_alg(&self) -> String
+	{
+		self.alg.clone()
+	}
+
+	pub fn get_key_id(&self) -> String
+	{
+		self.key_id.clone()
+	}
+}
+
+impl From<sentc_crypto_common::content_sortable::SortableEncryptOutput> for SortableEncryptOutput
+{
+	fn from(value: sentc_crypto_common::content_sortable::SortableEncryptOutput) -> Self
+	{
+		Self {
+			number: value.number,
+			alg: value.alg,
+			key_id: value.key_id,
+		}
+	}
+}
+
+#[wasm_bindgen]
+pub fn encrypt_raw_number(key: &str, data: u64) -> Result<u64, JsValue>
+{
+	Ok(sentc_crypto::crypto_sortable::encrypt_raw_number(key, data)?)
+}
+
+#[wasm_bindgen]
+pub fn encrypt_number(key: &str, data: u64) -> Result<SortableEncryptOutput, JsValue>
+{
+	let out = sentc_crypto::crypto_sortable::encrypt_number(key, data)?;
+
+	Ok(out.into())
+}
+
+#[wasm_bindgen]
+pub fn encrypt_raw_string(key: &str, data: &str) -> Result<u64, JsValue>
+{
+	Ok(sentc_crypto::crypto_sortable::encrypt_raw_string(key, data)?)
+}
+
+#[wasm_bindgen]
+pub fn encrypt_string(key: &str, data: &str) -> Result<SortableEncryptOutput, JsValue>
+{
+	let out = sentc_crypto::crypto_sortable::encrypt_string(key, data)?;
+
+	Ok(out.into())
+}

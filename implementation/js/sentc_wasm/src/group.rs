@@ -15,6 +15,7 @@ pub struct GroupOutData
 	joined_time: u128,
 	keys: JsValue,
 	hmac_keys: JsValue,
+	sortable_keys: JsValue,
 	access_by_group_as_member: Option<String>,
 	access_by_parent_group: Option<String>,
 	is_connected_group: bool,
@@ -33,6 +34,7 @@ impl From<sentc_crypto::entities::group::GroupOutDataExport> for GroupOutData
 			joined_time: data.joined_time,
 			keys: JsValue::from_serde(&data.keys).unwrap(),
 			hmac_keys: JsValue::from_serde(&data.hmac_keys).unwrap(),
+			sortable_keys: JsValue::from_serde(&data.sortable_keys).unwrap(),
 			access_by_group_as_member: data.access_by_group_as_member,
 			access_by_parent_group: data.access_by_parent_group,
 			is_connected_group: data.is_connected_group,
@@ -56,6 +58,11 @@ impl GroupOutData
 	pub fn get_hmac_keys(&self) -> JsValue
 	{
 		self.hmac_keys.clone()
+	}
+
+	pub fn get_sortable_keys(&self) -> JsValue
+	{
+		self.sortable_keys.clone()
 	}
 
 	pub fn get_parent_group_id(&self) -> Option<String>
@@ -404,6 +411,12 @@ pub fn group_decrypt_key(private_key: &str, server_key_data: &str) -> Result<Gro
 pub fn group_decrypt_hmac_key(group_key: &str, server_key_data: &str) -> Result<String, JsValue>
 {
 	Ok(group::decrypt_group_hmac_key(group_key, server_key_data)?)
+}
+
+#[wasm_bindgen]
+pub fn group_decrypt_sortable_key(group_key: &str, server_key_data: &str) -> Result<String, JsValue>
+{
+	Ok(group::decrypt_group_sortable_key(group_key, server_key_data)?)
 }
 
 //__________________________________________________________________________________________________
