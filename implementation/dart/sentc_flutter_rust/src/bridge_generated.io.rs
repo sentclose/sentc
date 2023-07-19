@@ -492,6 +492,11 @@ pub extern "C" fn wire_group_decrypt_hmac_key(port_: i64, group_key: *mut wire_u
 }
 
 #[no_mangle]
+pub extern "C" fn wire_group_decrypt_sortable_key(port_: i64, group_key: *mut wire_uint_8_list, server_key_data: *mut wire_uint_8_list) {
+	wire_group_decrypt_sortable_key_impl(port_, group_key, server_key_data)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_group_get_member(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -1395,6 +1400,26 @@ pub extern "C" fn wire_search(
 		last_fetched_time,
 		last_fetched_group_id,
 	)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_raw_number(port_: i64, key: *mut wire_uint_8_list, data: u64) {
+	wire_encrypt_raw_number_impl(port_, key, data)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_number(port_: i64, key: *mut wire_uint_8_list, data: u64) {
+	wire_encrypt_number_impl(port_, key, data)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_raw_string(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
+	wire_encrypt_raw_string_impl(port_, key, data)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_encrypt_string(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
+	wire_encrypt_string_impl(port_, key, data)
 }
 
 #[no_mangle]
