@@ -2869,59 +2869,59 @@ fn wire_search_impl(
 		},
 	)
 }
-fn wire_encrypt_raw_number_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<u64> + UnwindSafe) {
+fn wire_sortable_encrypt_raw_number_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<u64> + UnwindSafe) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
-			debug_name: "encrypt_raw_number",
+			debug_name: "sortable_encrypt_raw_number",
 			port: Some(port_),
 			mode: FfiCallMode::Normal,
 		},
 		move || {
 			let api_key = key.wire2api();
 			let api_data = data.wire2api();
-			move |task_callback| encrypt_raw_number(api_key, api_data)
+			move |task_callback| sortable_encrypt_raw_number(api_key, api_data)
 		},
 	)
 }
-fn wire_encrypt_number_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<u64> + UnwindSafe) {
+fn wire_sortable_encrypt_number_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<u64> + UnwindSafe) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
-			debug_name: "encrypt_number",
+			debug_name: "sortable_encrypt_number",
 			port: Some(port_),
 			mode: FfiCallMode::Normal,
 		},
 		move || {
 			let api_key = key.wire2api();
 			let api_data = data.wire2api();
-			move |task_callback| encrypt_number(api_key, api_data)
+			move |task_callback| sortable_encrypt_number(api_key, api_data)
 		},
 	)
 }
-fn wire_encrypt_raw_string_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
+fn wire_sortable_encrypt_raw_string_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
-			debug_name: "encrypt_raw_string",
+			debug_name: "sortable_encrypt_raw_string",
 			port: Some(port_),
 			mode: FfiCallMode::Normal,
 		},
 		move || {
 			let api_key = key.wire2api();
 			let api_data = data.wire2api();
-			move |task_callback| encrypt_raw_string(api_key, api_data)
+			move |task_callback| sortable_encrypt_raw_string(api_key, api_data)
 		},
 	)
 }
-fn wire_encrypt_string_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
+fn wire_sortable_encrypt_string_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
-			debug_name: "encrypt_string",
+			debug_name: "sortable_encrypt_string",
 			port: Some(port_),
 			mode: FfiCallMode::Normal,
 		},
 		move || {
 			let api_key = key.wire2api();
 			let api_data = data.wire2api();
-			move |task_callback| encrypt_string(api_key, api_data)
+			move |task_callback| sortable_encrypt_string(api_key, api_data)
 		},
 	)
 }

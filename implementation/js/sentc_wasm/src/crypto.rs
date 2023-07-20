@@ -437,13 +437,13 @@ impl From<sentc_crypto_common::content_sortable::SortableEncryptOutput> for Sort
 }
 
 #[wasm_bindgen]
-pub fn encrypt_raw_number(key: &str, data: u64) -> Result<u64, JsValue>
+pub fn sortable_encrypt_raw_number(key: &str, data: u64) -> Result<u64, JsValue>
 {
 	Ok(sentc_crypto::crypto_sortable::encrypt_raw_number(key, data)?)
 }
 
 #[wasm_bindgen]
-pub fn encrypt_number(key: &str, data: u64) -> Result<SortableEncryptOutput, JsValue>
+pub fn sortable_encrypt_number(key: &str, data: u64) -> Result<SortableEncryptOutput, JsValue>
 {
 	let out = sentc_crypto::crypto_sortable::encrypt_number(key, data)?;
 
@@ -451,13 +451,13 @@ pub fn encrypt_number(key: &str, data: u64) -> Result<SortableEncryptOutput, JsV
 }
 
 #[wasm_bindgen]
-pub fn encrypt_raw_string(key: &str, data: &str) -> Result<u64, JsValue>
+pub fn sortable_encrypt_raw_string(key: &str, data: &str) -> Result<u64, JsValue>
 {
 	Ok(sentc_crypto::crypto_sortable::encrypt_raw_string(key, data)?)
 }
 
 #[wasm_bindgen]
-pub fn encrypt_string(key: &str, data: &str) -> Result<SortableEncryptOutput, JsValue>
+pub fn sortable_encrypt_string(key: &str, data: &str) -> Result<SortableEncryptOutput, JsValue>
 {
 	let out = sentc_crypto::crypto_sortable::encrypt_string(key, data)?;
 

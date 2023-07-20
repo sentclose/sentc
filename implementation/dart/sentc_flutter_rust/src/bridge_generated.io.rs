@@ -1403,23 +1403,23 @@ pub extern "C" fn wire_search(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_encrypt_raw_number(port_: i64, key: *mut wire_uint_8_list, data: u64) {
-	wire_encrypt_raw_number_impl(port_, key, data)
+pub extern "C" fn wire_sortable_encrypt_raw_number(port_: i64, key: *mut wire_uint_8_list, data: u64) {
+	wire_sortable_encrypt_raw_number_impl(port_, key, data)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_encrypt_number(port_: i64, key: *mut wire_uint_8_list, data: u64) {
-	wire_encrypt_number_impl(port_, key, data)
+pub extern "C" fn wire_sortable_encrypt_number(port_: i64, key: *mut wire_uint_8_list, data: u64) {
+	wire_sortable_encrypt_number_impl(port_, key, data)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_encrypt_raw_string(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
-	wire_encrypt_raw_string_impl(port_, key, data)
+pub extern "C" fn wire_sortable_encrypt_raw_string(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
+	wire_sortable_encrypt_raw_string_impl(port_, key, data)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_encrypt_string(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
-	wire_encrypt_string_impl(port_, key, data)
+pub extern "C" fn wire_sortable_encrypt_string(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
+	wire_sortable_encrypt_string_impl(port_, key, data)
 }
 
 #[no_mangle]

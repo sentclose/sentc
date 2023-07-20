@@ -2302,24 +2302,24 @@ impl From<sentc_crypto_common::content_sortable::SortableEncryptOutput> for Sort
 	}
 }
 
-pub fn encrypt_raw_number(key: String, data: u64) -> Result<u64>
+pub fn sortable_encrypt_raw_number(key: String, data: u64) -> Result<u64>
 {
 	sentc_crypto::crypto_sortable::encrypt_raw_number(&key, data).map_err(|err| anyhow!(err))
 }
 
-pub fn encrypt_number(key: String, data: u64) -> Result<SortableEncryptOutput>
+pub fn sortable_encrypt_number(key: String, data: u64) -> Result<SortableEncryptOutput>
 {
 	let out = sentc_crypto::crypto_sortable::encrypt_number(&key, data).map_err(|err| anyhow!(err))?;
 
 	Ok(out.into())
 }
 
-pub fn encrypt_raw_string(key: String, data: String) -> Result<u64>
+pub fn sortable_encrypt_raw_string(key: String, data: String) -> Result<u64>
 {
 	sentc_crypto::crypto_sortable::encrypt_raw_string(&key, &data).map_err(|err| anyhow!(err))
 }
 
-pub fn encrypt_string(key: String, data: String) -> Result<SortableEncryptOutput>
+pub fn sortable_encrypt_string(key: String, data: String) -> Result<SortableEncryptOutput>
 {
 	let out = sentc_crypto::crypto_sortable::encrypt_string(&key, &data).map_err(|err| anyhow!(err))?;
 
