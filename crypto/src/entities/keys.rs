@@ -4,7 +4,7 @@ use core::str::FromStr;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
-use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SymKey, VerifyK, ECIES_OUTPUT};
+use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SortableKey, SymKey, VerifyK, ECIES_OUTPUT};
 use serde::{Deserialize, Serialize};
 
 use crate::util::import_key_from_pem;
@@ -35,6 +35,20 @@ impl HmacKeyFormatInt
 	pub fn to_string(self) -> Result<String, SdkError>
 	{
 		serde_json::to_string(&Into::<HmacFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+	}
+}
+
+pub struct SortableKeyFormatInt
+{
+	pub key_id: SymKeyId,
+	pub key: SortableKey,
+}
+
+impl SortableKeyFormatInt
+{
+	pub fn to_string(self) -> Result<String, SdkError>
+	{
+		serde_json::to_string(&Into::<SortableFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
 	}
 }
 
@@ -250,6 +264,72 @@ impl FromStr for HmacKeyFormatInt
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
 		let key: HmacFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+		key.try_into()
+	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub enum SortableFormatExport
+{
+	Ope16
+	{
+		key: String, key_id: SymKeyId
+	},
+}
+
+impl TryInto<SortableKeyFormatInt> for SortableFormatExport
+{
+	type Error = SdkError;
+
+	fn try_into(self) -> Result<SortableKeyFormatInt, Self::Error>
+	{
+		match self {
+			SortableFormatExport::Ope16 {
+				key,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+				let key = bytes
+					.try_into()
+					.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+
+				Ok(SortableKeyFormatInt {
+					key: SortableKey::Ope(key),
+					key_id,
+				})
+			},
+		}
+	}
+}
+
+impl From<SortableKeyFormatInt> for SortableFormatExport
+{
+	fn from(value: SortableKeyFormatInt) -> Self
+	{
+		match value.key {
+			SortableKey::Ope(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Ope16 {
+					key,
+					key_id: value.key_id,
+				}
+			},
+		}
+	}
+}
+
+impl FromStr for SortableKeyFormatInt
+{
+	type Err = SdkError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err>
+	{
+		let key: SortableFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
 
 		key.try_into()
 	}

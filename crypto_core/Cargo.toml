@@ -1,6 +1,6 @@
 [package]
 name = "sentc-crypto-core"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 description = "The core of sentc encryption sdk with all alg."
 license-file = "../LICENSE"
@@ -26,6 +26,7 @@ sha2 = { version = "0.10.2", default-features = false }
 hkdf = { version = "0.12.3", default-features = false }
 hmac = "0.12.1"
 argon2 = "0.3"
+ope = "0.1.1"
 
 [features]
 default = ["argon2_aes_ecies_ed25519", "default_env"]

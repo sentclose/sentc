@@ -779,6 +779,24 @@ impl From<sentc_crypto::entities::group::GroupOutDataHmacKeyExport> for GroupOut
 }
 
 #[repr(C)]
+pub struct GroupOutDataSortableKeys
+{
+	pub group_key_id: String,
+	pub key_data: String, //serde string
+}
+
+impl From<sentc_crypto::entities::group::GroupOutDataSortableEyExport> for GroupOutDataSortableKeys
+{
+	fn from(key: sentc_crypto::entities::group::GroupOutDataSortableEyExport) -> Self
+	{
+		Self {
+			group_key_id: key.group_key_id,
+			key_data: key.key_data,
+		}
+	}
+}
+
+#[repr(C)]
 pub struct GroupOutData
 {
 	pub group_id: String,
@@ -789,6 +807,7 @@ pub struct GroupOutData
 	pub joined_time: String,
 	pub keys: Vec<GroupOutDataKeys>,
 	pub hmac_keys: Vec<GroupOutDataHmacKeys>,
+	pub sortable_keys: Vec<GroupOutDataSortableKeys>,
 	pub access_by_group_as_member: Option<String>,
 	pub access_by_parent_group: Option<String>,
 	pub is_connected_group: bool,
@@ -808,6 +827,11 @@ impl From<sentc_crypto::entities::group::GroupOutDataExport> for GroupOutData
 			keys: data.keys.into_iter().map(|key| key.into()).collect(),
 			hmac_keys: data
 				.hmac_keys
+				.into_iter()
+				.map(|hmac_key| hmac_key.into())
+				.collect(),
+			sortable_keys: data
+				.sortable_keys
 				.into_iter()
 				.map(|hmac_key| hmac_key.into())
 				.collect(),
@@ -1035,6 +1059,11 @@ pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result
 pub fn group_decrypt_hmac_key(group_key: String, server_key_data: String) -> Result<String>
 {
 	sentc_crypto::group::decrypt_group_hmac_key(&group_key, &server_key_data).map_err(|err| anyhow!(err))
+}
+
+pub fn group_decrypt_sortable_key(group_key: String, server_key_data: String) -> Result<String>
+{
+	sentc_crypto::group::decrypt_group_sortable_key(&group_key, &server_key_data).map_err(|err| anyhow!(err))
 }
 
 //__________________________________________________________________________________________________
@@ -2248,6 +2277,53 @@ pub fn search(
 	))?;
 
 	Ok(out.into_iter().map(|item| item.into()).collect())
+}
+
+//__________________________________________________________________________________________________
+//sortable
+
+#[repr(C)]
+pub struct SortableEncryptOutput
+{
+	pub number: u64,
+	pub alg: String,
+	pub key_id: String,
+}
+
+impl From<sentc_crypto_common::content_sortable::SortableEncryptOutput> for SortableEncryptOutput
+{
+	fn from(value: sentc_crypto_common::content_sortable::SortableEncryptOutput) -> Self
+	{
+		Self {
+			number: value.number,
+			alg: value.alg,
+			key_id: value.key_id,
+		}
+	}
+}
+
+pub fn sortable_encrypt_raw_number(key: String, data: u64) -> Result<u64>
+{
+	sentc_crypto::crypto_sortable::encrypt_raw_number(&key, data).map_err(|err| anyhow!(err))
+}
+
+pub fn sortable_encrypt_number(key: String, data: u64) -> Result<SortableEncryptOutput>
+{
+	let out = sentc_crypto::crypto_sortable::encrypt_number(&key, data).map_err(|err| anyhow!(err))?;
+
+	Ok(out.into())
+}
+
+pub fn sortable_encrypt_raw_string(key: String, data: String) -> Result<u64>
+{
+	sentc_crypto::crypto_sortable::encrypt_raw_string(&key, &data).map_err(|err| anyhow!(err))
+}
+
+pub fn sortable_encrypt_string(key: String, data: String) -> Result<SortableEncryptOutput>
+{
+	let out = sentc_crypto::crypto_sortable::encrypt_string(&key, &data).map_err(|err| anyhow!(err))?;
+
+	Ok(out.into())
 }
 
 //__________________________________________________________________________________________________

@@ -412,6 +412,8 @@ mod test
 				creator_public_key_id: "abc".to_string(),
 				encrypted_hmac_key: out_new_device.group.encrypted_hmac_key,
 				encrypted_hmac_alg: out_new_device.group.encrypted_hmac_alg,
+				encrypted_sortable_key: out_new_device.group.encrypted_sortable_key,
+				encrypted_sortable_alg: out_new_device.group.encrypted_sortable_alg,
 				encrypted_sign_key: out_new_device.group.encrypted_sign_key,
 				verify_key: out_new_device.group.verify_key,
 				keypair_sign_alg: out_new_device.group.keypair_sign_alg,

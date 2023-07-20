@@ -1088,6 +1088,24 @@ fn wire_group_decrypt_hmac_key_impl(
 		},
 	)
 }
+fn wire_group_decrypt_sortable_key_impl(
+	port_: MessagePort,
+	group_key: impl Wire2Api<String> + UnwindSafe,
+	server_key_data: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "group_decrypt_sortable_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_group_key = group_key.wire2api();
+			let api_server_key_data = server_key_data.wire2api();
+			move |task_callback| group_decrypt_sortable_key(api_group_key, api_server_key_data)
+		},
+	)
+}
 fn wire_group_get_member_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -2851,6 +2869,62 @@ fn wire_search_impl(
 		},
 	)
 }
+fn wire_sortable_encrypt_raw_number_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<u64> + UnwindSafe) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "sortable_encrypt_raw_number",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			move |task_callback| sortable_encrypt_raw_number(api_key, api_data)
+		},
+	)
+}
+fn wire_sortable_encrypt_number_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<u64> + UnwindSafe) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "sortable_encrypt_number",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			move |task_callback| sortable_encrypt_number(api_key, api_data)
+		},
+	)
+}
+fn wire_sortable_encrypt_raw_string_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "sortable_encrypt_raw_string",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			move |task_callback| sortable_encrypt_raw_string(api_key, api_data)
+		},
+	)
+}
+fn wire_sortable_encrypt_string_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "sortable_encrypt_string",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_key = key.wire2api();
+			let api_data = data.wire2api();
+			move |task_callback| sortable_encrypt_string(api_key, api_data)
+		},
+	)
+}
 fn wire_content_fetch_for_group_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -3335,6 +3409,11 @@ impl Wire2Api<u32> for u32 {
 		self
 	}
 }
+impl Wire2Api<u64> for u64 {
+	fn wire2api(self) -> u64 {
+		self
+	}
+}
 impl Wire2Api<u8> for u8 {
 	fn wire2api(self) -> u8 {
 		self
@@ -3517,6 +3596,7 @@ impl support::IntoDart for GroupOutData {
 			self.joined_time.into_dart(),
 			self.keys.into_dart(),
 			self.hmac_keys.into_dart(),
+			self.sortable_keys.into_dart(),
 			self.access_by_group_as_member.into_dart(),
 			self.access_by_parent_group.into_dart(),
 			self.is_connected_group.into_dart(),
@@ -3539,6 +3619,13 @@ impl support::IntoDart for GroupOutDataKeys {
 	}
 }
 impl support::IntoDartExceptPrimitive for GroupOutDataKeys {}
+
+impl support::IntoDart for GroupOutDataSortableKeys {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.group_key_id.into_dart(), self.key_data.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for GroupOutDataSortableKeys {}
 
 impl support::IntoDart for GroupPublicKeyData {
 	fn into_dart(self) -> support::DartAbi {
@@ -3687,6 +3774,13 @@ impl support::IntoDart for SignHead {
 	}
 }
 impl support::IntoDartExceptPrimitive for SignHead {}
+
+impl support::IntoDart for SortableEncryptOutput {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.number.into_dart(), self.alg.into_dart(), self.key_id.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for SortableEncryptOutput {}
 
 impl support::IntoDart for UserData {
 	fn into_dart(self) -> support::DartAbi {

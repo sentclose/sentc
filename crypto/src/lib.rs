@@ -12,6 +12,7 @@ extern crate alloc;
 
 pub mod crypto;
 pub mod crypto_searchable;
+pub mod crypto_sortable;
 pub mod entities;
 mod error;
 pub mod file;

@@ -1,9 +1,9 @@
 use alloc::vec::Vec;
 
 use crate::alg::sym::aes_gcm::AesKey;
-use crate::alg::{asym, hmac, sign, sym};
+use crate::alg::{asym, hmac, sign, sortable, sym};
 use crate::crypto::{decrypt_asymmetric, decrypt_symmetric, encrypt_asymmetric};
-use crate::{AsymKeyOutput, Error, HmacKey, Pk, Sig, SignK, Sk, SymKey, VerifyK};
+use crate::{AsymKeyOutput, Error, HmacKey, Pk, Sig, SignK, Sk, SortableKey, SymKey, VerifyK};
 
 pub struct CreateGroupOutput
 {
@@ -15,6 +15,8 @@ pub struct CreateGroupOutput
 	pub keypair_encrypt_alg: &'static str,
 	pub encrypted_hmac_key: Vec<u8>,
 	pub encrypted_hmac_alg: &'static str,
+	pub encrypted_sortable_key: Vec<u8>,
+	pub encrypted_sortable_key_alg: &'static str,
 
 	//for user group
 	pub verify_key: Option<VerifyK>,
@@ -81,6 +83,13 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 		HmacKey::HmacSha256(k) => sym::aes_gcm::encrypt_with_generated_key(raw_group_key, k)?,
 	};
 
+	//4. create sortable key
+
+	let sortable_encryption = sortable::ope::generate_key()?;
+	let encrypted_sortable_key = match &sortable_encryption.key {
+		SortableKey::Ope(k) => sym::aes_gcm::encrypt_with_generated_key(raw_group_key, k)?,
+	};
+
 	Ok((
 		CreateGroupOutput {
 			encrypted_group_key,
@@ -90,6 +99,8 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 			keypair_encrypt_alg: keypair.alg,
 			encrypted_hmac_key,
 			encrypted_hmac_alg: searchable_encryption.alg,
+			encrypted_sortable_key,
+			encrypted_sortable_key_alg: sortable_encryption.alg,
 			encrypted_group_key_alg,
 			verify_key,
 			encrypted_sign_key,
@@ -277,6 +288,18 @@ pub fn get_group_hmac_key(group_key: &SymKey, encrypted_hmac_key: &[u8], encrypt
 
 	let key = match encrypted_hmac_alg {
 		hmac::hmac_sha256::HMAC_SHA256_OUTPUT => HmacKey::HmacSha256(hmac_key.try_into().map_err(|_| Error::KeyDecryptFailed)?),
+		_ => return Err(Error::AlgNotFound),
+	};
+
+	Ok(key)
+}
+
+pub fn get_group_sortable_key(group_key: &SymKey, encrypted_key: &[u8], encrypted_alg: &str) -> Result<SortableKey, Error>
+{
+	let hmac_key = decrypt_symmetric(group_key, encrypted_key)?;
+
+	let key = match encrypted_alg {
+		sortable::ope::OPE_OUT => SortableKey::Ope(hmac_key.try_into().map_err(|_| Error::KeyDecryptFailed)?),
 		_ => return Err(Error::AlgNotFound),
 	};
 

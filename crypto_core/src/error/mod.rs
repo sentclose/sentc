@@ -1,3 +1,5 @@
+use ope::OpeError;
+
 #[derive(Debug)]
 pub enum Error
 {
@@ -26,4 +28,19 @@ pub enum Error
 	DecodePrivateKeyFailed,
 
 	HmacAuthFailedLength,
+
+	OpeRangeError,
+	OpeHdgInvalidInputs,
+	OpeStringToLarge,
+}
+
+impl From<OpeError> for Error
+{
+	fn from(value: OpeError) -> Self
+	{
+		match value {
+			OpeError::OpeRange => Self::OpeRangeError,
+			OpeError::HdgInvalidInputs => Self::OpeHdgInvalidInputs,
+		}
+	}
 }
