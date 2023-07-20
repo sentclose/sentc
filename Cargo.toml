@@ -8,11 +8,11 @@ members = [
 ]
 
 [workspace.dependencies]
-sentc-crypto-common = "0.8.0"
-#sentc-crypto-common = { version="0.1.2", path = "../backend/sentc-api/sdk-common" }    # for local dev
+sentc-crypto-common = "0.9.0"
+#sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" }    # for local dev
 
-sentc-crypto = {version = "0.8.0", path = "crypto", default-features = false}
-sentc-crypto-full = {version = "0.8.0", path = "crypto_full"}
+sentc-crypto = {version = "0.9.0", path = "crypto", default-features = false}
+sentc-crypto-full = {version = "0.9.0", path = "crypto_full"}
 
 [profile.dev]
 # Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.
