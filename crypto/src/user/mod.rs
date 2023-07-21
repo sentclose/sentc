@@ -664,8 +664,6 @@ fn create_safety_number_internally(
 	Ok(Base64UrlUnpadded::encode_string(&number))
 }
 
-extern crate std;
-
 fn verify_user_public_key_internally(verify_key: &UserVerifyKeyData, public_key: &UserPublicKeyData) -> Result<bool, SdkError>
 {
 	let raw_verify_key = import_verify_key_from_pem_with_alg(&verify_key.verify_key_pem, &verify_key.verify_key_alg)?;
