@@ -108,7 +108,7 @@ pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String,
 	prepare_user_identifier_update_internally(user_identifier)
 }
 
-pub fn prepare_refresh_jwt(refresh_token: &str) -> Result<String, SdkError>
+pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, SdkError>
 {
 	prepare_refresh_jwt_internally(refresh_token)
 }

@@ -455,7 +455,7 @@ pub fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_to
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
-		refresh_token.as_str(),
+		refresh_token,
 	))
 }
 
@@ -465,7 +465,7 @@ pub fn init_user(base_url: String, auth_token: String, jwt: String, refresh_toke
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
-		refresh_token.as_str(),
+		refresh_token,
 	))?;
 
 	Ok(UserInitServerOutput {

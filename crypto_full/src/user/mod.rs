@@ -189,7 +189,7 @@ pub async fn fetch_user_key(
 	Ok(keys)
 }
 
-pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: &str) -> Res
+pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> Res
 {
 	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token)?;
 
@@ -202,7 +202,7 @@ pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_
 	Ok(server_output.jwt)
 }
 
-pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_token: &str) -> InitRes
+pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> InitRes
 {
 	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token)?;
 

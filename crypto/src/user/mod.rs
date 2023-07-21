@@ -510,10 +510,10 @@ fn prepare_user_identifier_update_internally(user_identifier: String) -> Result<
 	input.to_string().map_err(|_| SdkError::JsonToStringFailed)
 }
 
-fn prepare_refresh_jwt_internally(refresh_token: &str) -> Result<String, SdkError>
+fn prepare_refresh_jwt_internally(refresh_token: String) -> Result<String, SdkError>
 {
 	JwtRefreshInput {
-		refresh_token: refresh_token.to_string(),
+		refresh_token,
 	}
 	.to_string()
 	.map_err(|_| SdkError::JsonToStringFailed)
