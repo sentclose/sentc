@@ -24,6 +24,8 @@ pub enum SdkUtilError
 	ImportSymmetricKeyFailed,
 	ImportingSignKeyFailed,
 	ImportVerifyKeyFailed,
+
+	DerivedKeyWrongFormat,
 }
 
 /**
@@ -123,6 +125,8 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 			)
 		},
 
+		//key decode error (from base64 string to the enum
+		SdkUtilError::DerivedKeyWrongFormat => out_error("client_2", "The encrypted key has a wrong format."),
 		SdkUtilError::DecodeRandomValueFailed => out_error("client_5", "Can't decode the client random value from registration"),
 		//salt decode error (from base64 string to bytes)
 		SdkUtilError::DecodeSaltFailed => out_error("client_4", "The salt has a wrong format"),

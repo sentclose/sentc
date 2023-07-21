@@ -25,6 +25,7 @@ use sentc_crypto_common::group::{
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_core::{getting_alg_from_public_key, group as core_group, Pk};
+use sentc_crypto_utils::error::SdkUtilError;
 use sentc_crypto_utils::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SortableKeyFormatInt, SymKeyFormatInt};
 use sentc_crypto_utils::{export_raw_public_key_to_pem, export_raw_verify_key_to_pem, import_public_key_from_pem_with_alg, sig_to_string};
 
@@ -452,7 +453,7 @@ Decrypt the group hmac key which is used for searchable encryption.
 */
 pub(crate) fn decrypt_group_hmac_key_internally(group_key: &SymKeyFormatInt, server_output: GroupHmacData) -> Result<HmacKeyFormatInt, SdkError>
 {
-	let encrypted_hmac_key = Base64::decode_vec(&server_output.encrypted_hmac_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_hmac_key = Base64::decode_vec(&server_output.encrypted_hmac_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
 	let key = core_group::get_group_hmac_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
 
@@ -467,7 +468,7 @@ pub(crate) fn decrypt_group_sortable_key_internally(
 	server_output: GroupSortableData,
 ) -> Result<SortableKeyFormatInt, SdkError>
 {
-	let encrypted_key = Base64::decode_vec(&server_output.encrypted_sortable_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_key = Base64::decode_vec(&server_output.encrypted_sortable_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
 	let key = core_group::get_group_sortable_key(&group_key.key, &encrypted_key, &server_output.encrypted_sortable_alg)?;
 
@@ -484,9 +485,9 @@ pub(crate) fn decrypt_group_keys_internally(private_key: &PrivateKeyFormatInt, s
 	-> Result<GroupKeyData, SdkError>
 {
 	//the user_public_key_id is used to get the right private key
-	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let encrypted_private_key =
-		Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+		Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
 	let (group_key, private_group_key) = core_group::get_group(
 		&private_key.key,

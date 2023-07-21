@@ -17,8 +17,6 @@ pub enum SdkError
 	DecodeEncryptedDataFailed,
 	DecodeSymKeyFailed,
 
-	DerivedKeyWrongFormat,
-
 	SigFoundNotKey,
 	VerifyFailed,
 	KeyDecryptFailed,
@@ -84,8 +82,6 @@ pub fn err_to_msg(error: SdkError) -> String
 		SdkError::JsonParseFailed(err) => {
 			format!("{{\"status\": {}, \"error_message\": \"{}\"}}", "client_101", err)
 		},
-		//key decode error (from base64 string to the enum
-		SdkError::DerivedKeyWrongFormat => out_error("client_2", "The encrypted key has a wrong format."),
 
 		SdkError::DecodeHashedAuthKey => out_error("client_6", "Can't decode the hashed authentication key"),
 		SdkError::DecodeSymKeyFailed => {

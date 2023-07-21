@@ -396,7 +396,7 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 			//handle it, only for user group
 
 			//get the sign key first to not use to owned for it because we only need the ref here
-			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
 			let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
@@ -438,9 +438,9 @@ fn done_login_internally_with_device_out(
 	server_output: &DoneLoginServerKeysOutput,
 ) -> Result<DeviceKeyDataInt, SdkError>
 {
-	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
-	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
-	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
+	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
+	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
 	let out = core_user::done_login(
 		master_key_encryption,
@@ -537,7 +537,7 @@ fn change_password_internally(old_pw: &str, new_pw: &str, server_output_prep_log
 			.encrypted_master_key
 			.as_str(),
 	)
-	.map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	.map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 
 	let output = core_user::change_password(
