@@ -5,10 +5,10 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_utils::keys::{SymKeyFormatExport, SymKeyFormatInt};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
 use crate::entities::user::{UserDataExport, UserKeyDataExport};
 use crate::user::{
 	change_password_internally,
@@ -99,7 +99,7 @@ pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session
 	let saved_keys = user_keys
 		.iter()
 		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
 
 	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -240,9 +240,9 @@ mod test
 		UserDeviceRegisterOutput,
 	};
 	use sentc_crypto_common::ServerOutput;
+	use sentc_crypto_utils::keys::PrivateKeyFormatExport;
 
 	use super::*;
-	use crate::entities::keys::PrivateKeyFormatExport;
 	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login};
 
 	#[test]

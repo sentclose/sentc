@@ -5,8 +5,8 @@ use sentc_crypto_common::file::BelongsToType;
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::{FileId, FileSessionId};
 use sentc_crypto_core::SymKey;
+use sentc_crypto_utils::keys::{SignKeyFormatInt, SymKeyFormatInt};
 
-use crate::entities::keys::{SignKeyFormatInt, SymKeyFormatInt};
 use crate::file::{
 	decrypt_file_part_internally,
 	decrypt_file_part_start_internally,

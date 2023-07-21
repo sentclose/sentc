@@ -35,11 +35,9 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, Pk};
-
-use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
-use crate::entities::user::{DeviceKeyDataInt, UserDataInt, UserKeyDataInt};
-use crate::util::public::handle_server_response;
-use crate::util::{
+use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+use sentc_crypto_utils::{
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
 	export_raw_public_key_to_pem,
@@ -49,6 +47,9 @@ use crate::util::{
 	import_sig_from_string,
 	import_verify_key_from_pem_with_alg,
 };
+
+use crate::entities::user::{DeviceKeyDataInt, UserDataInt, UserKeyDataInt};
+use crate::util::public::handle_server_response;
 use crate::{group, SdkError};
 
 #[cfg(feature = "rust")]
@@ -311,7 +312,7 @@ fn prepare_login_internally(user_identifier: &str, password: &str, server_output
 {
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
-	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
+	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 	let result = core_user::prepare_login(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
@@ -537,7 +538,7 @@ fn change_password_internally(old_pw: &str, new_pw: &str, server_output_prep_log
 			.as_str(),
 	)
 	.map_err(|_| SdkError::DerivedKeyWrongFormat)?;
-	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
+	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 
 	let output = core_user::change_password(
 		old_pw,

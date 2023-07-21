@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::SymKeyId;
+use sentc_crypto_utils::keys::{PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 
 use crate::crypto::{
 	decrypt_asymmetric_internally,
@@ -33,7 +34,6 @@ use crate::crypto::{
 	split_head_and_encrypted_string_internally,
 	EncryptedHead,
 };
-use crate::entities::keys::{PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
 
 pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), SdkError>

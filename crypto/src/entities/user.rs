@@ -4,10 +4,10 @@ use alloc::vec::Vec;
 use sentc_crypto_common::group::GroupHmacData;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, SymKeyId, UserId};
+use sentc_crypto_utils::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use serde::{Deserialize, Serialize};
 
 use crate::entities::group::GroupOutDataHmacKeyExport;
-use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use crate::SdkError;
 
 /**
