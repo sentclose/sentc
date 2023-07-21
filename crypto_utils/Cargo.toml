@@ -1,0 +1,19 @@
+[package]
+name = "sentc-crypto-utils"
+version = "0.10.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sentc-crypto-common = {workspace=true}
+
+sentc-crypto-core = {workspace=true}
+
+# json handling
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+
+# key and data export
+base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}  # must use this version because it is not comp. with password_hash from argon2
+pem-rfc7468 = {version = "0.3.1", features = ["alloc"]}

@@ -7,8 +7,8 @@ use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SortableKey, SymKey, VerifyK, ECIES_OUTPUT};
 use serde::{Deserialize, Serialize};
 
-use crate::util::import_key_from_pem;
-use crate::SdkError;
+use crate::error::SdkUtilError;
+use crate::import_key_from_pem;
 
 pub struct SymKeyFormatInt
 {
@@ -18,9 +18,9 @@ pub struct SymKeyFormatInt
 
 impl SymKeyFormatInt
 {
-	pub fn to_string(self) -> Result<String, SdkError>
+	pub fn to_string(self) -> Result<String, SdkUtilError>
 	{
-		serde_json::to_string(&Into::<SymKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+		serde_json::to_string(&Into::<SymKeyFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
 }
 
@@ -32,9 +32,9 @@ pub struct HmacKeyFormatInt
 
 impl HmacKeyFormatInt
 {
-	pub fn to_string(self) -> Result<String, SdkError>
+	pub fn to_string(self) -> Result<String, SdkUtilError>
 	{
-		serde_json::to_string(&Into::<HmacFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+		serde_json::to_string(&Into::<HmacFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
 }
 
@@ -46,9 +46,9 @@ pub struct SortableKeyFormatInt
 
 impl SortableKeyFormatInt
 {
-	pub fn to_string(self) -> Result<String, SdkError>
+	pub fn to_string(self) -> Result<String, SdkUtilError>
 	{
-		serde_json::to_string(&Into::<SortableFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+		serde_json::to_string(&Into::<SortableFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
 }
 
@@ -60,9 +60,9 @@ pub struct PrivateKeyFormatInt
 
 impl PrivateKeyFormatInt
 {
-	pub fn to_string(self) -> Result<String, SdkError>
+	pub fn to_string(self) -> Result<String, SdkUtilError>
 	{
-		serde_json::to_string(&Into::<PrivateKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+		serde_json::to_string(&Into::<PrivateKeyFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
 }
 
@@ -74,9 +74,9 @@ pub struct PublicKeyFormatInt
 
 impl PublicKeyFormatInt
 {
-	pub fn to_string(self) -> Result<String, SdkError>
+	pub fn to_string(self) -> Result<String, SdkUtilError>
 	{
-		serde_json::to_string(&Into::<PublicKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+		serde_json::to_string(&Into::<PublicKeyFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
 }
 
@@ -88,9 +88,9 @@ pub struct SignKeyFormatInt
 
 impl SignKeyFormatInt
 {
-	pub fn to_string(self) -> Result<String, SdkError>
+	pub fn to_string(self) -> Result<String, SdkUtilError>
 	{
-		serde_json::to_string(&Into::<SignKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+		serde_json::to_string(&Into::<SignKeyFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
 }
 
@@ -102,9 +102,9 @@ pub struct VerifyKeyFormatInt
 
 impl VerifyKeyFormatInt
 {
-	pub fn to_string(self) -> Result<String, SdkError>
+	pub fn to_string(self) -> Result<String, SdkUtilError>
 	{
-		serde_json::to_string(&Into::<VerifyKeyFormatExport>::into(self)).map_err(|_e| SdkError::JsonToStringFailed)
+		serde_json::to_string(&Into::<VerifyKeyFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
 }
 
@@ -122,7 +122,7 @@ pub enum SymKeyFormatExport
 
 impl TryInto<SymKeyFormatInt> for SymKeyFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<SymKeyFormatInt, Self::Error>
 	{
@@ -132,11 +132,11 @@ impl TryInto<SymKeyFormatInt> for SymKeyFormatExport
 				key_id,
 			} => {
 				//to bytes via base64
-				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				let key = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				Ok(SymKeyFormatInt {
 					key_id,
@@ -149,7 +149,7 @@ impl TryInto<SymKeyFormatInt> for SymKeyFormatExport
 
 impl<'a> TryInto<SymKeyFormatInt> for &'a SymKeyFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<SymKeyFormatInt, Self::Error>
 	{
@@ -159,11 +159,11 @@ impl<'a> TryInto<SymKeyFormatInt> for &'a SymKeyFormatExport
 				key_id,
 			} => {
 				//to bytes via base64
-				let bytes = Base64::decode_vec(key).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+				let bytes = Base64::decode_vec(key).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				let key = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				Ok(SymKeyFormatInt {
 					key_id: key_id.clone(),
@@ -193,11 +193,11 @@ impl From<SymKeyFormatInt> for SymKeyFormatExport
 
 impl FromStr for SymKeyFormatInt
 {
-	type Err = SdkError;
+	type Err = SdkUtilError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		let key: SymKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+		let key: SymKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 		key.try_into()
 	}
@@ -216,7 +216,7 @@ pub enum HmacFormatExport
 
 impl TryInto<HmacKeyFormatInt> for HmacFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<HmacKeyFormatInt, Self::Error>
 	{
@@ -225,11 +225,11 @@ impl TryInto<HmacKeyFormatInt> for HmacFormatExport
 				key,
 				key_id,
 			} => {
-				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				let key = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				Ok(HmacKeyFormatInt {
 					key: HmacKey::HmacSha256(key),
@@ -259,11 +259,11 @@ impl From<HmacKeyFormatInt> for HmacFormatExport
 
 impl FromStr for HmacKeyFormatInt
 {
-	type Err = SdkError;
+	type Err = SdkUtilError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		let key: HmacFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+		let key: HmacFormatExport = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 		key.try_into()
 	}
@@ -282,7 +282,7 @@ pub enum SortableFormatExport
 
 impl TryInto<SortableKeyFormatInt> for SortableFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<SortableKeyFormatInt, Self::Error>
 	{
@@ -291,11 +291,11 @@ impl TryInto<SortableKeyFormatInt> for SortableFormatExport
 				key,
 				key_id,
 			} => {
-				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				let key = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 				Ok(SortableKeyFormatInt {
 					key: SortableKey::Ope(key),
@@ -325,11 +325,11 @@ impl From<SortableKeyFormatInt> for SortableFormatExport
 
 impl FromStr for SortableKeyFormatInt
 {
-	type Err = SdkError;
+	type Err = SdkUtilError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		let key: SortableFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+		let key: SortableFormatExport = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 		key.try_into()
 	}
@@ -348,7 +348,7 @@ pub enum PrivateKeyFormatExport
 
 impl TryInto<PrivateKeyFormatInt> for PrivateKeyFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<PrivateKeyFormatInt, Self::Error>
 	{
@@ -358,11 +358,11 @@ impl TryInto<PrivateKeyFormatInt> for PrivateKeyFormatExport
 				key,
 			} => {
 				//to bytes via base64
-				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportingPrivateKeyFailed)?;
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
 
 				let private_key: [u8; 32] = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportingPrivateKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
 
 				Ok(PrivateKeyFormatInt {
 					key_id,
@@ -392,11 +392,11 @@ impl From<PrivateKeyFormatInt> for PrivateKeyFormatExport
 
 impl FromStr for PrivateKeyFormatInt
 {
-	type Err = SdkError;
+	type Err = SdkUtilError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		let key: PrivateKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportingPrivateKeyFailed)?;
+		let key: PrivateKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
 
 		key.try_into()
 	}
@@ -415,7 +415,7 @@ pub enum PublicKeyFormatExport
 
 impl TryInto<PublicKeyFormatInt> for PublicKeyFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<PublicKeyFormatInt, Self::Error>
 	{
@@ -424,11 +424,11 @@ impl TryInto<PublicKeyFormatInt> for PublicKeyFormatExport
 				key,
 				key_id,
 			} => {
-				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportPublicKeyFailed)?;
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
 
 				let key = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportPublicKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
 
 				Ok(PublicKeyFormatInt {
 					key_id,
@@ -458,11 +458,11 @@ impl From<PublicKeyFormatInt> for PublicKeyFormatExport
 
 impl FromStr for PublicKeyFormatInt
 {
-	type Err = SdkError;
+	type Err = SdkUtilError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		let key: PublicKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportPublicKeyFailed)?;
+		let key: PublicKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
 
 		key.try_into()
 	}
@@ -470,7 +470,7 @@ impl FromStr for PublicKeyFormatInt
 
 impl<'a> TryFrom<&'a UserPublicKeyData> for PublicKeyFormatInt
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_from(value: &'a UserPublicKeyData) -> Result<Self, Self::Error>
 	{
@@ -480,14 +480,14 @@ impl<'a> TryFrom<&'a UserPublicKeyData> for PublicKeyFormatInt
 			ECIES_OUTPUT => {
 				let public_key = public_key
 					.try_into()
-					.map_err(|_| SdkError::DecodePublicKeyFailed)?;
+					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 
 				Ok(Self {
 					key_id: value.public_key_id.clone(),
 					key: Pk::Ecies(public_key),
 				})
 			},
-			_ => Err(SdkError::AlgNotFound),
+			_ => Err(SdkUtilError::AlgNotFound),
 		}
 	}
 }
@@ -505,7 +505,7 @@ pub enum SignKeyFormatExport
 
 impl TryInto<SignKeyFormatInt> for SignKeyFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<SignKeyFormatInt, Self::Error>
 	{
@@ -514,11 +514,11 @@ impl TryInto<SignKeyFormatInt> for SignKeyFormatExport
 				key,
 				key_id,
 			} => {
-				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportingSignKeyFailed)?;
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
 
 				let sign_key: [u8; 32] = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportingSignKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
 
 				Ok(SignKeyFormatInt {
 					key_id,
@@ -548,11 +548,11 @@ impl From<SignKeyFormatInt> for SignKeyFormatExport
 
 impl FromStr for SignKeyFormatInt
 {
-	type Err = SdkError;
+	type Err = SdkUtilError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		let key: SignKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportingSignKeyFailed)?;
+		let key: SignKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
 
 		key.try_into()
 	}
@@ -571,7 +571,7 @@ pub enum VerifyKeyFormatExport
 
 impl TryInto<VerifyKeyFormatInt> for VerifyKeyFormatExport
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_into(self) -> Result<VerifyKeyFormatInt, Self::Error>
 	{
@@ -580,11 +580,11 @@ impl TryInto<VerifyKeyFormatInt> for VerifyKeyFormatExport
 				key,
 				key_id,
 			} => {
-				let bytes = Base64::decode_vec(&key).map_err(|_| SdkError::ImportVerifyKeyFailed)?;
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
 
 				let verify_key: [u8; 32] = bytes
 					.try_into()
-					.map_err(|_| SdkError::ImportVerifyKeyFailed)?;
+					.map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
 
 				Ok(VerifyKeyFormatInt {
 					key: VerifyK::Ed25519(verify_key),
@@ -614,11 +614,11 @@ impl From<VerifyKeyFormatInt> for VerifyKeyFormatExport
 
 impl FromStr for VerifyKeyFormatInt
 {
-	type Err = SdkError;
+	type Err = SdkUtilError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err>
 	{
-		let key: VerifyKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkError::ImportingSignKeyFailed)?;
+		let key: VerifyKeyFormatExport = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
 
 		key.try_into()
 	}
@@ -626,7 +626,7 @@ impl FromStr for VerifyKeyFormatInt
 
 impl<'a> TryFrom<&'a UserVerifyKeyData> for VerifyKeyFormatInt
 {
-	type Error = SdkError;
+	type Error = SdkUtilError;
 
 	fn try_from(value: &'a UserVerifyKeyData) -> Result<Self, Self::Error>
 	{
@@ -636,14 +636,14 @@ impl<'a> TryFrom<&'a UserVerifyKeyData> for VerifyKeyFormatInt
 			ECIES_OUTPUT => {
 				let verify_key = verify_key
 					.try_into()
-					.map_err(|_| SdkError::DecodePublicKeyFailed)?;
+					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 
 				Ok(Self {
 					key_id: value.verify_key_id.clone(),
 					key: VerifyK::Ed25519(verify_key),
 				})
 			},
-			_ => Err(SdkError::AlgNotFound),
+			_ => Err(SdkUtilError::AlgNotFound),
 		}
 	}
 }
