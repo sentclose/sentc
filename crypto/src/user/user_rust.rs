@@ -44,9 +44,9 @@ pub fn generate_user_register_data() -> Result<(String, String), SdkError>
 	generate_user_register_data_internally()
 }
 
-pub fn register_typed(user_identifier: &str, password: &str) -> Result<RegisterData, String>
+pub fn register_typed(user_identifier: &str, password: &str) -> Result<RegisterData, SdkError>
 {
-	Ok(register_typed_internally(user_identifier, password)?)
+	register_typed_internally(user_identifier, password)
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
