@@ -25,6 +25,7 @@ use serde::Deserialize;
 use crate::error::SdkUtilError;
 
 pub mod error;
+pub mod group;
 #[cfg(any(feature = "rustls", feature = "wasm"))]
 pub mod http;
 pub mod jwt;
