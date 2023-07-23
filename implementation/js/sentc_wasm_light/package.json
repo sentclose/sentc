@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "babel_node": "babel pkg/sentc_wasm.js --out-file pkg/sentc_wasm_cjs.js --plugins babel-plugin-transform-import-meta",
-    "babel_browser": "babel pkg/sentc_wasm.js --out-file pkg/sentc_wasm_bjs.js",
+    "babel_node": "babel pkg/sentc_wasm_light.js --out-file pkg/sentc_wasm_light_cjs.js --plugins babel-plugin-transform-import-meta",
+    "babel_browser": "babel pkg/sentc_wasm_light.js --out-file pkg/sentc_wasm_light_bjs.js",
     "babel": "npm run babel_browser && npm run babel_node"
   },
   "author": "",
