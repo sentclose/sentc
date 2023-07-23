@@ -6,15 +6,15 @@ mod rust;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::content_searchable::ListSearchItem;
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerRegisterOutput;
+use sentc_crypto_utils::http::{auth_req, make_req, non_auth_req, HttpMethod};
+use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{GenKeyRes, KeyRes, KeysRes, SearchRes, VoidRes};
 #[cfg(feature = "rust")]
 pub(crate) use self::rust::{GenKeyRes, KeyRes, KeysRes, SearchRes, VoidRes};
-use crate::util::{auth_req, make_req, non_auth_req, HttpMethod};
 
 pub async fn register_sym_key(
 	base_url: String,

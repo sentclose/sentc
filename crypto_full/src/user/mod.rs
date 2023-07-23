@@ -7,7 +7,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::future::Future;
 
-use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
+use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{
@@ -35,7 +36,6 @@ pub(crate) use self::rust::{
 	UserVerifyKeyRes,
 	VoidRes,
 };
-use crate::util::{auth_req, non_auth_req, HttpMethod};
 
 //Register
 pub async fn check_user_identifier_available(base_url: String, auth_token: &str, user_identifier: &str) -> BoolRes

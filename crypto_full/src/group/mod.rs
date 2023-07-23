@@ -7,7 +7,6 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::future::Future;
 
-use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::group::{
 	GroupAcceptJoinReqServerOutput,
 	GroupChildrenList,
@@ -22,6 +21,8 @@ use sentc_crypto_common::group::{
 	ListGroups,
 };
 use sentc_crypto_common::UserId;
+use sentc_crypto_utils::http::{make_req, HttpMethod};
+use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{
@@ -62,7 +63,6 @@ pub(crate) use self::rust::{
 	UserUpdateCheckRes,
 	VoidRes,
 };
-use crate::util::{make_req, HttpMethod};
 
 #[inline(never)]
 async fn create_group(

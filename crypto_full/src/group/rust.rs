@@ -2,6 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{
 	GroupChildrenList,
 	GroupDataCheckUpdateServerOutput,
@@ -14,21 +15,19 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::UserPublicKeyData;
 
-use crate::error::SdkFullError;
-
-pub type Res = Result<String, SdkFullError>;
-pub type VoidRes = Result<(), SdkFullError>;
-pub type DataRes = Result<GroupOutData, SdkFullError>;
-pub type DataLightRes = Result<GroupOutDataLight, SdkFullError>;
-pub type KeyRes = Result<GroupKeyData, SdkFullError>;
-pub type KeyFetchRes = Result<Vec<GroupKeyServerOutput>, SdkFullError>;
-pub type SingleKeyRes = Result<GroupKeyServerOutput, SdkFullError>;
-pub type GroupListRes = Result<Vec<ListGroups>, SdkFullError>;
-pub type ChildrenRes = Result<Vec<GroupChildrenList>, SdkFullError>;
-pub type SessionRes = Result<Option<String>, SdkFullError>;
-pub type InviteListRes = Result<Vec<GroupInviteReqList>, SdkFullError>;
-pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, SdkFullError>;
-pub type KeyRotationRes = Result<Vec<KeyRotationInput>, SdkFullError>;
-pub type MemberRes = Result<Vec<GroupUserListItem>, SdkFullError>;
-pub type UserUpdateCheckRes = Result<GroupDataCheckUpdateServerOutput, SdkFullError>;
-pub type UserPublicKeyRes = Result<UserPublicKeyData, SdkFullError>;
+pub type Res = Result<String, SdkError>;
+pub type VoidRes = Result<(), SdkError>;
+pub type DataRes = Result<GroupOutData, SdkError>;
+pub type DataLightRes = Result<GroupOutDataLight, SdkError>;
+pub type KeyRes = Result<GroupKeyData, SdkError>;
+pub type KeyFetchRes = Result<Vec<GroupKeyServerOutput>, SdkError>;
+pub type SingleKeyRes = Result<GroupKeyServerOutput, SdkError>;
+pub type GroupListRes = Result<Vec<ListGroups>, SdkError>;
+pub type ChildrenRes = Result<Vec<GroupChildrenList>, SdkError>;
+pub type SessionRes = Result<Option<String>, SdkError>;
+pub type InviteListRes = Result<Vec<GroupInviteReqList>, SdkError>;
+pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, SdkError>;
+pub type KeyRotationRes = Result<Vec<KeyRotationInput>, SdkError>;
+pub type MemberRes = Result<Vec<GroupUserListItem>, SdkError>;
+pub type UserUpdateCheckRes = Result<GroupDataCheckUpdateServerOutput, SdkError>;
+pub type UserPublicKeyRes = Result<UserPublicKeyData, SdkError>;

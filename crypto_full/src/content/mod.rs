@@ -5,13 +5,13 @@ mod rust;
 
 use alloc::string::String;
 
-use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto_utils::handle_server_response;
+use sentc_crypto_utils::http::{make_req, HttpMethod};
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use crate::content::non_rust::ContentRes;
 #[cfg(feature = "rust")]
 pub(crate) use crate::content::rust::ContentRes;
-use crate::util::{make_req, HttpMethod};
 
 pub enum ContentFetchLimit
 {
