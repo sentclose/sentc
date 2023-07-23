@@ -51,7 +51,7 @@ impl From<sentc_crypto_common::user::Claims> for Claims
 
 pub fn decode_jwt(jwt: String) -> Result<Claims>
 {
-	let claims = sentc_crypto_full::jwt::decode_jwt(&jwt).map_err(|err| anyhow!(err))?;
+	let claims = sentc_crypto_full::decode_jwt(&jwt).map_err(|err| anyhow!(err))?;
 
 	Ok(claims.into())
 }
@@ -1907,10 +1907,7 @@ impl From<sentc_crypto_common::crypto::EncryptedHead> for EncryptedHead
 {
 	fn from(head: sentc_crypto_common::crypto::EncryptedHead) -> Self
 	{
-		let sign = match head.sign {
-			Some(s) => Some(s.into()),
-			None => None,
-		};
+		let sign = head.sign.map(|s| s.into());
 
 		Self {
 			id: head.id,
@@ -2228,7 +2225,7 @@ impl From<sentc_crypto_common::content_searchable::SearchCreateDataLight> for Se
 pub fn prepare_create_searchable(key: String, item_ref: String, category: String, data: String, full: bool, limit: Option<u32>) -> Result<String>
 {
 	//flutter rust bridge don't support usize
-	let limit = if let Some(l) = limit { Some(l as usize) } else { None };
+	let limit = limit.map(|l| l as usize);
 
 	sentc_crypto::crypto_searchable::create_searchable(&key, &item_ref, &category, &data, full, limit).map_err(|err| anyhow!(err))
 }
@@ -2236,7 +2233,7 @@ pub fn prepare_create_searchable(key: String, item_ref: String, category: String
 pub fn prepare_create_searchable_light(key: String, data: String, full: bool, limit: Option<u32>) -> Result<SearchCreateDataLight>
 {
 	//flutter rust bridge don't support usize
-	let limit = if let Some(l) = limit { Some(l as usize) } else { None };
+	let limit = limit.map(|l| l as usize);
 
 	let out = sentc_crypto::crypto_searchable::prepare_create_searchable_light(&key, &data, full, limit).map_err(|err| anyhow!(err))?;
 
