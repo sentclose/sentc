@@ -12,6 +12,8 @@
     "url": "https://github.com/sentclose/sentc"
   },
   "files": [
+    "sentc_wasm_light_cjs.js",
+    "sentc_wasm_light_light.js",
     "sentc_wasm_light_bg.wasm",
     "sentc_wasm_light.js",
     "sentc_wasm_light.d.ts"
