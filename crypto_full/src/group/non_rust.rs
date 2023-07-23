@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto::entities::group::{GroupKeyDataExport, GroupOutDataExport, GroupOutDataKeyExport, GroupOutDataLightExport};
+use sentc_crypto::entities::group::{GroupKeyDataExport, GroupOutDataExport, GroupOutDataKeyExport};
 use sentc_crypto_common::group::{
 	GroupChildrenList,
 	GroupDataCheckUpdateServerOutput,
@@ -11,6 +11,7 @@ use sentc_crypto_common::group::{
 	ListGroups,
 };
 use sentc_crypto_common::EncryptionKeyPairId;
+use sentc_crypto_utils::group::GroupOutDataLightExport;
 use serde::{Deserialize, Serialize};
 
 pub type Res = Result<String, String>;

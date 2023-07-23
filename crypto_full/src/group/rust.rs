@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
+use sentc_crypto::entities::group::{GroupKeyData, GroupOutData};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{
 	GroupChildrenList,
@@ -14,6 +14,7 @@ use sentc_crypto_common::group::{
 	ListGroups,
 };
 use sentc_crypto_common::user::UserPublicKeyData;
+use sentc_crypto_utils::group::GroupOutDataLight;
 
 pub type Res = Result<String, SdkError>;
 pub type VoidRes = Result<(), SdkError>;
