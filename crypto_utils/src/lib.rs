@@ -25,6 +25,9 @@ use serde::Deserialize;
 use crate::error::SdkUtilError;
 
 pub mod error;
+#[cfg(any(feature = "rustls", feature = "wasm"))]
+pub mod http;
+pub mod jwt;
 pub mod keys;
 
 pub fn handle_server_response<'de, T: Deserialize<'de>>(res: &'de str) -> Result<T, SdkUtilError>

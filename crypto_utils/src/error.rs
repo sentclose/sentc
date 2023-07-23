@@ -26,6 +26,15 @@ pub enum SdkUtilError
 	ImportVerifyKeyFailed,
 
 	DerivedKeyWrongFormat,
+	InvalidJwt,
+	InvalidJwtFormat,
+
+	#[cfg(any(feature = "rustls", feature = "wasm"))]
+	RequestErr(String),
+	#[cfg(any(feature = "rustls", feature = "wasm"))]
+	ResponseErrText,
+	#[cfg(any(feature = "rustls", feature = "wasm"))]
+	ResponseErrBytes,
 }
 
 /**
@@ -147,6 +156,16 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 				"Can't export the public key. It doesn't fit in a pem format",
 			)
 		},
+
+		SdkUtilError::InvalidJwt => out_error("client_1100", "Jwt is invalid"),
+		SdkUtilError::InvalidJwtFormat => out_error("client_1101", "Jwt has a wrong format"),
+
+		#[cfg(any(feature = "rustls", feature = "wasm"))]
+		SdkUtilError::RequestErr(e) => out_error("client_1000", format!("Can't send the request: {}", e).as_str()),
+		#[cfg(any(feature = "rustls", feature = "wasm"))]
+		SdkUtilError::ResponseErrText => out_error("client_1002", "Can't decode the response to text"),
+		#[cfg(any(feature = "rustls", feature = "wasm"))]
+		SdkUtilError::ResponseErrBytes => out_error("client_1003", "Can't get bytes from response"),
 	}
 }
 
