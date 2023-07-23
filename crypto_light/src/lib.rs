@@ -10,6 +10,7 @@ use alloc::string::String;
 
 #[cfg(feature = "server_test")]
 pub use sentc_crypto_common as sdk_common;
+pub use sentc_crypto_utils as sdk_utils;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, UserId};
 use sentc_crypto_utils::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, VerifyKeyFormatInt};
