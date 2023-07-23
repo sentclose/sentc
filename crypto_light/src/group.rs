@@ -61,7 +61,7 @@ pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Res
 }
 
 #[cfg(feature = "rust")]
-pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, SdkError>
+pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, SdkLightError>
 {
 	prepare_change_rank_internally(user_id, new_rank, admin_rank)
 }
