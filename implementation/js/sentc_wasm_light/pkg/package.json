@@ -1,0 +1,23 @@
+{
+  "name": "sentc_wasm_light",
+  "collaborators": [
+    "Sentclose <contact@sentclose.com>",
+    "Jörn Heinemann <j.heinemann@sentclose.com>"
+  ],
+  "description": "Wasm for sentc. End-to-end encryption sdk light",
+  "version": "0.10.0",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sentclose/sentc"
+  },
+  "files": [
+    "sentc_wasm_light_bg.wasm",
+    "sentc_wasm_light.js",
+    "sentc_wasm_light.d.ts"
+  ],
+  "module": "sentc_wasm_light.js",
+  "homepage": "https://sentc.com/",
+  "types": "sentc_wasm_light.d.ts",
+  "sideEffects": false
+}

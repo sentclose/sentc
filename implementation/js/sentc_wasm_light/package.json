@@ -1,0 +1,20 @@
+{
+  "name": "sentc_wasm_light",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "babel_node": "babel pkg/sentc_wasm.js --out-file pkg/sentc_wasm_cjs.js --plugins babel-plugin-transform-import-meta",
+    "babel_browser": "babel pkg/sentc_wasm.js --out-file pkg/sentc_wasm_bjs.js",
+    "babel": "npm run babel_browser && npm run babel_node"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/cli": "^7.18.10",
+    "@babel/core": "^7.18.10",
+    "@babel/plugin-transform-modules-commonjs": "^7.18.6",
+    "@babel/preset-env": "^7.18.10",
+    "babel-plugin-transform-import-meta": "^2.2.0"
+  }
+}

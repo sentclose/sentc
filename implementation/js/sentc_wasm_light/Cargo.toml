@@ -1,0 +1,35 @@
+[package]
+name = "sentc_wasm_light"
+version = "0.10.0"
+edition = "2021"
+
+description = "Wasm for sentc. End-to-end encryption sdk light"
+license-file = "LICENSE"
+authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
+homepage = "https://sentc.com/"
+documentation = "https://sentc.com/"
+repository = "https://github.com/sentclose/sentc"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sentc-crypto-common = {workspace=true}
+sentc-crypto-light = {workspace=true, features = ["default"]}
+sentc-crypto-light-full={workspace=true, features = ["default","wasm"]}
+
+# must be js feature for wasm
+getrandom = { version = "0.2", features = ["js"] }
+
+# wasm dep
+wasm-bindgen = {version = "0.2.74", features = ["serde-serialize"]}
+js-sys = "0.3.58"
+
+# sha2 with non std
+sha2 = { version = "0.10", default-features = false }
+
+wasm-bindgen-futures = "0.4.31"
+
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
