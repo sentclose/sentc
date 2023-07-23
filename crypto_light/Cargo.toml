@@ -1,9 +1,21 @@
 [package]
 name = "sentc-crypto-light"
-version = "0.1.0"
+version = "0.10.0"
 edition = "2021"
+license-file = "../LICENSE"
+description = "The main implementation of the sentc light sdk."
+authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
+homepage = "https://sentc.com/"
+documentation = "https://sentc.com/"
+repository = "https://github.com/sentclose/sentc"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+include = [
+    "Cargo.toml",
+    "LICENSE",
+    "src/**/*",
+]
 
 [dependencies]
 sentc-crypto-common = {workspace=true}
