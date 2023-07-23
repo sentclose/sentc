@@ -1,0 +1,14 @@
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupUserListItem};
+use sentc_crypto_light::error::SdkLightError;
+use sentc_crypto_utils::group::GroupOutDataLightExport;
+
+pub type Res = Result<String, SdkLightError>;
+pub type VoidRes = Result<(), SdkLightError>;
+pub type DataRes = Result<GroupOutDataLightExport, SdkLightError>;
+pub type MemberRes = Result<Vec<GroupUserListItem>, SdkLightError>;
+pub type UserUpdateCheckRes = Result<i32, SdkLightError>;
+pub type InviteListRes = Result<Vec<GroupInviteReqList>, SdkLightError>;
+pub type JoinReqListRes = Result<Vec<GroupJoinReqList>, SdkLightError>;

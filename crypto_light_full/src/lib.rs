@@ -1,5 +1,6 @@
 #![no_std]
 
+pub mod group;
 pub mod user;
 
 extern crate alloc;
