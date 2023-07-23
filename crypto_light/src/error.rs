@@ -11,6 +11,8 @@ pub enum SdkLightError
 	JsonToStringFailed,
 	JsonParseFailed(serde_json::Error),
 	KeyDecryptFailed,
+	GroupPermission,
+	GroupRank,
 }
 
 /**
@@ -57,5 +59,14 @@ pub fn err_to_msg(error: SdkLightError) -> String
 			format!("{{\"status\": {}, \"error_message\": \"{}\"}}", "client_101", err)
 		},
 		SdkLightError::KeyDecryptFailed => out_error("client_21", "Can't decrypt a key. Maybe the format is wrong"),
+
+		//group error
+		SdkLightError::GroupRank => {
+			out_error(
+				"client_200",
+				"No valid group rank. Please choose between 1 (highest) and 4 (lowest)",
+			)
+		},
+		SdkLightError::GroupPermission => out_error("client_201", "No permission to fulfill this action"),
 	}
 }

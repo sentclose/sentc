@@ -3,6 +3,7 @@
 extern crate alloc;
 
 pub mod error;
+pub mod group;
 pub mod user;
 
 use alloc::string::String;
