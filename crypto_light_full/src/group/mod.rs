@@ -8,21 +8,23 @@ use alloc::vec::Vec;
 use core::future::Future;
 
 use sentc_crypto_common::group::{
+	GroupChildrenList,
 	GroupCreateOutput,
 	GroupDataCheckUpdateServerOutputLight,
 	GroupInviteReqList,
 	GroupJoinReqList,
 	GroupNewMemberLightInput,
 	GroupUserListItem,
+	ListGroups,
 };
 use sentc_crypto_light::error::SdkLightError;
 use sentc_crypto_utils::http::{make_req, HttpMethod};
 use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{DataRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
+pub(crate) use self::non_rust::{ChildrenRes, DataRes, GroupListRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{DataRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
+pub(crate) use self::rust::{ChildrenRes, DataRes, GroupListRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
 
 #[inline(never)]
 async fn create_group(
@@ -149,6 +151,49 @@ pub async fn get_group_updates(base_url: String, auth_token: &str, jwt: &str, id
 	Ok(out.rank)
 }
 
+pub async fn get_groups_for_user(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	last_fetched_time: &str,
+	last_fetched_group_id: &str,
+	group_id: Option<&str>,
+) -> GroupListRes
+{
+	//not needed group as member id because
+	// the user can only enter groups which are directly connected to this group not connected by a connected group
+
+	let url = match group_id {
+		Some(id) => base_url + "/api/v1/group/" + id + "/all/" + last_fetched_time + "/" + last_fetched_group_id,
+		None => base_url + "/api/v1/group/all/" + last_fetched_time + "/" + last_fetched_group_id,
+	};
+
+	let res = make_req(HttpMethod::GET, &url, auth_token, None, Some(jwt), None).await?;
+
+	let list: Vec<ListGroups> = handle_server_response(&res)?;
+
+	Ok(list)
+}
+
+pub async fn get_all_first_level_children(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	group_id: &str,
+	last_fetched_time: &str,
+	last_fetched_group_id: &str,
+	group_as_member: Option<&str>,
+) -> ChildrenRes
+{
+	let url = base_url + "/api/v1/group/" + group_id + "/children/" + last_fetched_time + "/" + last_fetched_group_id;
+
+	let res = make_req(HttpMethod::GET, &url, auth_token, None, Some(jwt), group_as_member).await?;
+
+	let list: Vec<GroupChildrenList> = handle_server_response(&res)?;
+
+	Ok(list)
+}
+
 //__________________________________________________________________________________________________
 //invite
 
@@ -266,6 +311,8 @@ pub async fn reject_invite(
 
 	Ok(handle_general_server_response(&res)?)
 }
+
+//__________________________________________________________________________________________________
 
 pub async fn join_req(
 	base_url: String,
