@@ -208,7 +208,6 @@ pub async fn invite_user(
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
-	re_invite: bool,
 	group_as_member: Option<&str>,
 ) -> VoidRes
 {
@@ -216,19 +215,11 @@ pub async fn invite_user(
 		return Err(SdkLightError::GroupPermission)?;
 	}
 
-	let endpoint = if re_invite {
-		if group_invite {
-			"re_invite_group"
-		} else {
-			"re_invite"
-		}
-	} else {
-		match (group_invite, auto_invite) {
-			(true, true) => "invite_group_auto",
-			(false, true) => "invite_auto",
-			(true, false) => "invite_group",
-			(false, false) => "invite",
-		}
+	let endpoint = match (group_invite, auto_invite) {
+		(true, true) => "invite_group_auto",
+		(false, true) => "invite_auto",
+		(true, false) => "invite_group",
+		(false, false) => "invite",
 	};
 
 	let url = base_url + "/api/v1/group/" + id + "/" + endpoint + "/" + user_to_invite_id + "/light";

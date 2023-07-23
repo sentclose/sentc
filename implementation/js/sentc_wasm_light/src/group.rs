@@ -172,7 +172,6 @@ pub async fn group_invite_user(
 	admin_rank: i32,
 	auto_invite: bool,
 	group_invite: bool,
-	re_invite: bool,
 	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
@@ -186,7 +185,6 @@ pub async fn group_invite_user(
 		admin_rank,
 		auto_invite,
 		group_invite,
-		re_invite,
 		group_as_member.as_deref(),
 	)
 	.await?;
