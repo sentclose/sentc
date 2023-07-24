@@ -12,7 +12,7 @@ repository = "https://github.com/sentclose/sentc"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "sentc_flutter"
+name = "sentc_light_flutter"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
