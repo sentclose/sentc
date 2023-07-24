@@ -3,16 +3,25 @@ members = [
     "crypto",
     "crypto_core",
     "crypto_full",
+    "crypto_utils",
+    "crypto_light",
+    "crypto_light_full",
     "implementation/js/sentc_wasm",
-    "implementation/dart/sentc_flutter_rust"
+    "implementation/js/sentc_wasm_light",
+    "implementation/dart/sentc_flutter_rust",
+    "implementation/dart/sentc_flutter_rust_light"
 ]
 
 [workspace.dependencies]
-sentc-crypto-common = "0.9.0"
+sentc-crypto-common = "0.9.1"
 #sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" }    # for local dev
 
+sentc-crypto-core = {version = "0.9.0", path = "crypto_core"}
+sentc-crypto-utils = {version = "0.10.0", path = "crypto_utils"}
 sentc-crypto = {version = "0.9.0", path = "crypto", default-features = false}
-sentc-crypto-full = {version = "0.9.0", path = "crypto_full"}
+sentc-crypto-full = {version = "0.9.0", path = "crypto_full", default-features = false}
+sentc-crypto-light = {version = "0.10.0", path = "crypto_light", default-features = false}
+sentc-crypto-light-full = {version = "0.10.0", path = "crypto_light_full", default-features = false}
 
 [profile.dev]
 # Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.
@@ -24,6 +33,13 @@ panic = "abort"
 strip = true
 
 [profile.release.package.sentc_wasm]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+debug-assertions = false
+codegen-units = 1
+
+[profile.release.package.sentc_wasm_light]
 opt-level = "z"
 overflow-checks = true
 debug = 0
