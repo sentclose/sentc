@@ -360,14 +360,14 @@ pub fn update_user(base_url: String, auth_token: String, jwt: String, user_ident
 #[repr(C)]
 pub struct GroupOutDataLightExport
 {
-	group_id: String,
-	parent_group_id: Option<String>,
-	rank: i32,
-	created_time: String,
-	joined_time: String,
-	access_by_group_as_member: Option<String>,
-	access_by_parent_group: Option<String>,
-	is_connected_group: bool,
+	pub group_id: String,
+	pub parent_group_id: Option<String>,
+	pub rank: i32,
+	pub created_time: String,
+	pub joined_time: String,
+	pub access_by_group_as_member: Option<String>,
+	pub access_by_parent_group: Option<String>,
+	pub is_connected_group: bool,
 }
 
 impl From<sentc_crypto_light::sdk_utils::group::GroupOutDataLightExport> for GroupOutDataLightExport
