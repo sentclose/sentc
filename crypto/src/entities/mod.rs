@@ -1,3 +1,4 @@
 pub mod group;
-pub mod keys;
 pub mod user;
+
+pub use sentc_crypto_utils::keys;

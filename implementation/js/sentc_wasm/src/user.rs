@@ -635,7 +635,7 @@ pub fn done_fetch_user_key(private_key: &str, server_output: &str) -> Result<Use
 #[wasm_bindgen]
 pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::user::refresh_jwt(base_url, auth_token.as_str(), jwt.as_str(), refresh_token.as_str()).await?;
+	let out = sentc_crypto_full::user::refresh_jwt(base_url, auth_token.as_str(), jwt.as_str(), refresh_token).await?;
 
 	Ok(out)
 }
@@ -643,7 +643,7 @@ pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refr
 #[wasm_bindgen]
 pub async fn init_user(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<UserInitServerOutput, JsValue>
 {
-	let out = sentc_crypto_full::user::init_user(base_url, auth_token.as_str(), jwt.as_str(), refresh_token.as_str()).await?;
+	let out = sentc_crypto_full::user::init_user(base_url, auth_token.as_str(), jwt.as_str(), refresh_token).await?;
 
 	Ok(UserInitServerOutput {
 		jwt: out.jwt,

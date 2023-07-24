@@ -1,10 +1,9 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::file::{FileData, FilePartListItem};
-
-use crate::util::{make_req, make_req_buffer, make_req_buffer_body, HttpMethod};
+use sentc_crypto_utils::http::{make_req, make_req_buffer, make_req_buffer_body, HttpMethod};
+use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
 #[cfg(not(feature = "rust"))]
 mod non_rust;

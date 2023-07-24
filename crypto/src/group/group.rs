@@ -198,7 +198,7 @@ pub fn prepare_group_keys_for_new_member_with_group_public_key(
 	let saved_keys = group_keys
 		.iter()
 		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -225,7 +225,7 @@ pub fn prepare_group_keys_for_new_member_typed(
 	let saved_keys = group_keys
 		.iter()
 		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -252,7 +252,7 @@ pub fn prepare_group_keys_for_new_member(
 	let saved_keys = group_keys
 		.iter()
 		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -274,7 +274,7 @@ pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: 
 	let saved_keys = group_keys
 		.iter()
 		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -325,10 +325,10 @@ mod test
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::crypto::encrypt_asymmetric as encrypt_asymmetric_core;
 	use sentc_crypto_core::SymKey;
+	use sentc_crypto_utils::keys::PublicKeyFormatInt;
 	use serde_json::to_string;
 
 	use super::*;
-	use crate::entities::keys::PublicKeyFormatInt;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
 

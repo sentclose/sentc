@@ -35,11 +35,8 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, Pk};
-
-use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
-use crate::entities::user::{DeviceKeyDataInt, UserDataInt, UserKeyDataInt};
-use crate::util::public::handle_server_response;
-use crate::util::{
+use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::{
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
 	export_raw_public_key_to_pem,
@@ -49,6 +46,10 @@ use crate::util::{
 	import_sig_from_string,
 	import_verify_key_from_pem_with_alg,
 };
+
+use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+use crate::entities::user::{DeviceKeyDataInt, UserDataInt, UserKeyDataInt};
+use crate::util::public::handle_server_response;
 use crate::{group, SdkError};
 
 #[cfg(feature = "rust")]
@@ -311,7 +312,7 @@ fn prepare_login_internally(user_identifier: &str, password: &str, server_output
 {
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
-	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
+	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 	let result = core_user::prepare_login(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
@@ -395,7 +396,7 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 			//handle it, only for user group
 
 			//get the sign key first to not use to owned for it because we only need the ref here
-			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
 			let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
 
@@ -437,9 +438,9 @@ fn done_login_internally_with_device_out(
 	server_output: &DoneLoginServerKeysOutput,
 ) -> Result<DeviceKeyDataInt, SdkError>
 {
-	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
-	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
-	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkError::DerivedKeyWrongFormat)?;
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
+	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
+	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
 	let out = core_user::done_login(
 		master_key_encryption,
@@ -509,10 +510,10 @@ fn prepare_user_identifier_update_internally(user_identifier: String) -> Result<
 	input.to_string().map_err(|_| SdkError::JsonToStringFailed)
 }
 
-fn prepare_refresh_jwt_internally(refresh_token: &str) -> Result<String, SdkError>
+fn prepare_refresh_jwt_internally(refresh_token: String) -> Result<String, SdkError>
 {
 	JwtRefreshInput {
-		refresh_token: refresh_token.to_string(),
+		refresh_token,
 	}
 	.to_string()
 	.map_err(|_| SdkError::JsonToStringFailed)
@@ -536,8 +537,8 @@ fn change_password_internally(old_pw: &str, new_pw: &str, server_output_prep_log
 			.encrypted_master_key
 			.as_str(),
 	)
-	.map_err(|_| SdkError::DerivedKeyWrongFormat)?;
-	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkError::DecodeSaltFailed)?;
+	.map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
+	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 
 	let output = core_user::change_password(
 		old_pw,
@@ -662,8 +663,6 @@ fn create_safety_number_internally(
 
 	Ok(Base64UrlUnpadded::encode_string(&number))
 }
-
-extern crate std;
 
 fn verify_user_public_key_internally(verify_key: &UserVerifyKeyData, public_key: &UserPublicKeyData) -> Result<bool, SdkError>
 {

@@ -23,23 +23,12 @@ sentc-crypto = {workspace=true}
 
 sentc-crypto-common = {workspace=true}
 
-#_______________________________________________________________________________________________________________________
-# req handling
-reqwest = {version = "0.11.18", optional = true, default-features = false}
-
-wasm-bindgen = {version = "0.2.74", optional = true}
-
-wasm-bindgen-futures = {version = "0.4.31", optional = true}
-
-web-sys = {version = "0.3.4", optional = true, features = ['Headers', 'Request','RequestInit','RequestMode', 'Response','Window']}
-
-js-sys = {version = "0.3.58", optional = true}
+sentc-crypto-utils = {workspace=true}
 
 #_______________________________________________________________________________________________________________________
-# to decode the jwt to check the exp
-base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}
-serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
 
 [features]
 default = ["sentc-crypto/default", "rustls"]
@@ -47,6 +36,5 @@ default = ["sentc-crypto/default", "rustls"]
 rust = ["sentc-crypto/rust"]
 
 # req handling
-default_tls = ["reqwest/default"]
-rustls = ["reqwest/rustls-tls"]
-wasm = ["wasm-bindgen","wasm-bindgen-futures","web-sys","js-sys"]
+rustls = ["sentc-crypto-utils/rustls"]
+wasm = ["sentc-crypto-utils/wasm"]

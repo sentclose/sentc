@@ -3,34 +3,34 @@ use alloc::vec::Vec;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::Response;
-use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 
-use crate::error::SdkFullError;
-use crate::util::{auth_header, HttpMethod};
+use crate::error::SdkUtilError;
+use crate::handle_server_response;
+use crate::http::{auth_header, HttpMethod};
 
-pub async fn make_req(
+pub(super) async fn make_req(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
 	body: Option<String>,
 	jwt: Option<&str>,
 	group_as_member: Option<&str>,
-) -> Result<String, SdkFullError>
+) -> Result<String, SdkUtilError>
 {
 	let res = make_req_raw(method, url, auth_token, body, jwt, group_as_member).await?;
 
-	res.text().await.map_err(|_e| SdkFullError::ResponseErrText)
+	res.text().await.map_err(|_e| SdkUtilError::ResponseErrText)
 }
 
-pub async fn make_req_buffer(
+pub(super) async fn make_req_buffer(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
 	body: Option<String>,
 	jwt: Option<&str>,
 	group_as_member: Option<&str>,
-) -> Result<Vec<u8>, SdkFullError>
+) -> Result<Vec<u8>, SdkUtilError>
 {
 	let res = make_req_raw(method, url, auth_token, body, jwt, group_as_member).await?;
 
@@ -38,7 +38,7 @@ pub async fn make_req_buffer(
 		let text = res
 			.text()
 			.await
-			.map_err(|_e| SdkFullError::ResponseErrText)?;
+			.map_err(|_e| SdkUtilError::ResponseErrText)?;
 		handle_server_response::<ServerSuccessOutput>(text.as_str())?;
 		return Ok(Vec::new());
 	}
@@ -46,20 +46,20 @@ pub async fn make_req_buffer(
 	let buffer = res
 		.bytes()
 		.await
-		.map_err(|_e| SdkFullError::ResponseErrBytes)?
+		.map_err(|_e| SdkUtilError::ResponseErrBytes)?
 		.to_vec();
 
 	Ok(buffer)
 }
 
-pub async fn make_req_buffer_body(
+pub(super) async fn make_req_buffer_body(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
 	body: Vec<u8>,
 	jwt: Option<&str>,
 	group_as_member: Option<&str>,
-) -> Result<String, SdkFullError>
+) -> Result<String, SdkUtilError>
 {
 	let client = reqwest::Client::new();
 
@@ -88,9 +88,9 @@ pub async fn make_req_buffer_body(
 	let res = builder
 		.send()
 		.await
-		.map_err(|e| SdkFullError::RequestErr(e.to_string()))?;
+		.map_err(|e| SdkUtilError::RequestErr(e.to_string()))?;
 
-	res.text().await.map_err(|_e| SdkFullError::ResponseErrText)
+	res.text().await.map_err(|_e| SdkUtilError::ResponseErrText)
 }
 
 async fn make_req_raw(
@@ -100,7 +100,7 @@ async fn make_req_raw(
 	body: Option<String>,
 	jwt: Option<&str>,
 	group_as_member: Option<&str>,
-) -> Result<Response, SdkFullError>
+) -> Result<Response, SdkUtilError>
 {
 	let client = reqwest::Client::new();
 
@@ -132,7 +132,7 @@ async fn make_req_raw(
 	let res = builder
 		.send()
 		.await
-		.map_err(|e| SdkFullError::RequestErr(e.to_string()))?;
+		.map_err(|e| SdkUtilError::RequestErr(e.to_string()))?;
 
 	Ok(res)
 }

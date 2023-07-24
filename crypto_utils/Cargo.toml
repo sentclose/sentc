@@ -1,0 +1,37 @@
+[package]
+name = "sentc-crypto-utils"
+version = "0.10.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sentc-crypto-common = {workspace=true}
+
+sentc-crypto-core = {workspace=true}
+
+# json handling
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+
+# key and data export
+base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}  # must use this version because it is not comp. with password_hash from argon2
+pem-rfc7468 = {version = "0.3.1", features = ["alloc"]}
+
+#_______________________________________________________________________________________________________________________
+# req handling
+reqwest = {version = "0.11.18", optional = true, default-features = false}
+
+wasm-bindgen = {version = "0.2.74", optional = true}
+
+wasm-bindgen-futures = {version = "0.4.31", optional = true}
+
+web-sys = {version = "0.3.4", optional = true, features = ['Headers', 'Request','RequestInit','RequestMode', 'Response','Window']}
+
+js-sys = {version = "0.3.58", optional = true}
+
+
+[features]
+# req handling
+rustls = ["reqwest/rustls-tls"]
+wasm = ["wasm-bindgen","wasm-bindgen-futures","web-sys","js-sys"]

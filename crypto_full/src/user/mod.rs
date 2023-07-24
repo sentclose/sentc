@@ -7,7 +7,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::future::Future;
 
-use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
+use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
 #[cfg(not(feature = "rust"))]
 pub(crate) use self::non_rust::{
@@ -35,7 +36,6 @@ pub(crate) use self::rust::{
 	UserVerifyKeyRes,
 	VoidRes,
 };
-use crate::util::{auth_req, non_auth_req, HttpMethod};
 
 //Register
 pub async fn check_user_identifier_available(base_url: String, auth_token: &str, user_identifier: &str) -> BoolRes
@@ -189,7 +189,7 @@ pub async fn fetch_user_key(
 	Ok(keys)
 }
 
-pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: &str) -> Res
+pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> Res
 {
 	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token)?;
 
@@ -202,7 +202,7 @@ pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_
 	Ok(server_output.jwt)
 }
 
-pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_token: &str) -> InitRes
+pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> InitRes
 {
 	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token)?;
 

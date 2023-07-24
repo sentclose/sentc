@@ -2,6 +2,7 @@ use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_core::SymKey;
+use sentc_crypto_utils::error::SdkUtilError;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
@@ -43,7 +44,7 @@ pub(crate) fn export_core_sym_key_to_string(key: SymKey) -> Result<String, SdkEr
 
 pub(crate) fn import_core_sym_key(key_string: &str) -> Result<SymKey, SdkError>
 {
-	let key_format = from_str(key_string).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+	let key_format = from_str(key_string).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 	import_core_sym_key_from_format(&key_format)
 }
@@ -55,11 +56,11 @@ pub(crate) fn import_core_sym_key_from_format(key: &ExportedCoreSymKey) -> Resul
 			key,
 		} => {
 			//to bytes via base64
-			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+			let bytes = Base64::decode_vec(key.as_str()).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 			let key = bytes
 				.try_into()
-				.map_err(|_| SdkError::ImportSymmetricKeyFailed)?;
+				.map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 			Ok(SymKey::Aes(key))
 		},

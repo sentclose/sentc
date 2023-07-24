@@ -11,6 +11,7 @@ use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerInput,
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::SymKeyId;
 use sentc_crypto_core::{crypto as crypto_core, SignK, ED25519_OUTPUT};
+use sentc_crypto_utils::import_verify_key_from_pem_with_alg;
 use serde::{Deserialize, Serialize};
 
 #[cfg(not(feature = "rust"))]
@@ -72,7 +73,6 @@ pub use self::crypto_rust::{
 	split_head_and_encrypted_string,
 };
 use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
-use crate::util::import_verify_key_from_pem_with_alg;
 use crate::util::public::handle_server_response;
 use crate::SdkError;
 

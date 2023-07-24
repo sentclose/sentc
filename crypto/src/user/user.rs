@@ -99,7 +99,7 @@ pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session
 	let saved_keys = user_keys
 		.iter()
 		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, SdkError>>()?;
+		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
 
 	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -175,7 +175,7 @@ pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String,
 	Ok(prepare_user_identifier_update_internally(user_identifier)?)
 }
 
-pub fn prepare_refresh_jwt(refresh_token: &str) -> Result<String, String>
+pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, String>
 {
 	Ok(prepare_refresh_jwt_internally(refresh_token)?)
 }
@@ -240,9 +240,9 @@ mod test
 		UserDeviceRegisterOutput,
 	};
 	use sentc_crypto_common::ServerOutput;
+	use sentc_crypto_utils::keys::PrivateKeyFormatExport;
 
 	use super::*;
-	use crate::entities::keys::PrivateKeyFormatExport;
 	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login};
 
 	#[test]

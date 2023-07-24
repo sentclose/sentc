@@ -2,40 +2,19 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
-use sentc_crypto_common::ServerOutput;
 #[cfg(not(feature = "rust"))]
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
 use sentc_crypto_core::generate_salt;
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
+use sentc_crypto_utils::client_random_value_from_string;
 use serde::Deserialize;
 
 use crate::error::SdkError;
-use crate::util::client_random_value_from_string;
 
 pub fn handle_server_response<'de, T: Deserialize<'de>>(res: &'de str) -> Result<T, SdkError>
 {
-	let server_output = ServerOutput::<T>::from_string(res)?;
-
-	if !server_output.status {
-		let err_code = match server_output.err_code {
-			Some(c) => c,
-			None => return Err(SdkError::JsonParse),
-		};
-
-		let err_msg = match server_output.err_msg {
-			Some(m) => m,
-			None => return Err(SdkError::JsonParse),
-		};
-
-		return Err(SdkError::ServerErr(err_code, err_msg));
-	}
-
-	match server_output.result {
-		Some(r) => Ok(r),
-		None => Err(SdkError::JsonParse),
-	}
+	Ok(sentc_crypto_utils::handle_server_response(res)?)
 }
 
 /**
@@ -43,9 +22,7 @@ Getting the result of a simple server response.
  */
 pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
 {
-	handle_server_response::<ServerSuccessOutput>(res)?;
-
-	Ok(())
+	Ok(sentc_crypto_utils::handle_general_server_response(res)?)
 }
 
 pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Result<Vec<u8>, SdkError>

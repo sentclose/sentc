@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerOutput};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::SymKeyId;
+use sentc_crypto_utils::keys::SignKeyFormatInt;
 
 use crate::crypto::{
 	decrypt_asymmetric_internally,
@@ -32,7 +33,6 @@ use crate::crypto::{
 	split_head_and_encrypted_data_internally,
 	split_head_and_encrypted_string_internally,
 };
-use crate::entities::keys::SignKeyFormatInt;
 use crate::SdkError;
 
 pub(crate) fn prepare_sign_key(sign_key: Option<&str>) -> Result<Option<SignKeyFormatInt>, SdkError>
@@ -314,7 +314,7 @@ pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<(Vec<St
 	let out = out
 		.into_iter()
 		.map(|k| k.to_string())
-		.collect::<Result<Vec<String>, SdkError>>()?;
+		.collect::<Result<Vec<String>, _>>()?;
 
 	Ok((out, last_time, last_id))
 }
@@ -382,9 +382,9 @@ mod test
 	use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::SymKey;
+	use sentc_crypto_utils::keys::SymKeyFormatInt;
 
 	use super::*;
-	use crate::entities::keys::SymKeyFormatInt;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
 
