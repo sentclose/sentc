@@ -5,10 +5,10 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
-use sentc_crypto_utils::keys::{SymKeyFormatExport, SymKeyFormatInt};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
+use crate::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
 use crate::entities::user::{UserDataExport, UserKeyDataExport};
 use crate::user::{
 	change_password_internally,

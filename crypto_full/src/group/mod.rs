@@ -72,7 +72,7 @@ async fn create_group(
 	parent_group_id: Option<&str>,
 	connected_group_id: Option<&str>,
 	#[cfg(not(feature = "rust"))] public_key: &str,
-	#[cfg(feature = "rust")] public_key: &sentc_crypto_utils::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] public_key: &sentc_crypto::entities::keys::PublicKeyFormatInt,
 	group_as_member: Option<&str>,
 ) -> Res
 {
@@ -104,7 +104,7 @@ pub fn create<'a>(
 	auth_token: &'a str,
 	jwt: &'a str,
 	#[cfg(not(feature = "rust"))] creators_public_key: &'a str,
-	#[cfg(feature = "rust")] creators_public_key: &'a sentc_crypto_utils::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] creators_public_key: &'a sentc_crypto::entities::keys::PublicKeyFormatInt,
 	group_as_member: Option<&'a str>,
 ) -> impl Future<Output = Res> + 'a
 {
@@ -126,7 +126,7 @@ pub async fn create_child_group(
 	parent_group_id: &str,
 	admin_rank: i32,
 	#[cfg(not(feature = "rust"))] parent_public_key: &str,
-	#[cfg(feature = "rust")] parent_public_key: &sentc_crypto_utils::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] parent_public_key: &sentc_crypto::entities::keys::PublicKeyFormatInt,
 	group_as_member: Option<&str>,
 ) -> Res
 {
@@ -151,7 +151,7 @@ pub async fn create_connected_group(
 	connected_group_id: &str,
 	admin_rank: i32,
 	#[cfg(not(feature = "rust"))] parent_public_key: &str,
-	#[cfg(feature = "rust")] parent_public_key: &sentc_crypto_utils::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] parent_public_key: &sentc_crypto::entities::keys::PublicKeyFormatInt,
 	group_as_member: Option<&str>,
 ) -> Res
 {
@@ -261,7 +261,7 @@ pub fn decrypt_key(
 	#[cfg(not(feature = "rust"))] server_key_output: &str,
 	#[cfg(feature = "rust")] server_key_output: sentc_crypto_common::group::GroupKeyServerOutput,
 	#[cfg(not(feature = "rust"))] private_key: &str,
-	#[cfg(feature = "rust")] private_key: &sentc_crypto_utils::keys::PrivateKeyFormatInt,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::entities::keys::PrivateKeyFormatInt,
 ) -> KeyRes
 {
 	Ok(sentc_crypto::group::decrypt_group_keys(
@@ -377,7 +377,7 @@ pub async fn invite_user(
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
-	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto_utils::keys::SymKeyFormatInt],
+	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::entities::keys::SymKeyFormatInt],
 	group_as_member: Option<&str>,
 ) -> SessionRes
 {
@@ -430,7 +430,7 @@ pub fn invite_user_session<'a>(
 	#[cfg(not(feature = "rust"))] user_public_key: &'a str,
 	#[cfg(feature = "rust")] user_public_key: &'a sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &'a str,
-	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto_utils::keys::SymKeyFormatInt],
+	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::entities::keys::SymKeyFormatInt],
 	group_as_member: Option<&'a str>,
 ) -> impl Future<Output = VoidRes> + 'a
 {
@@ -637,7 +637,7 @@ pub async fn accept_join_req(
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
-	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto_utils::keys::SymKeyFormatInt],
+	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::entities::keys::SymKeyFormatInt],
 	group_as_member: Option<&str>,
 ) -> SessionRes
 {
@@ -674,7 +674,7 @@ pub fn join_user_session<'a>(
 	#[cfg(not(feature = "rust"))] user_public_key: &'a str,
 	#[cfg(feature = "rust")] user_public_key: &'a sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &'a str,
-	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto_utils::keys::SymKeyFormatInt],
+	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::entities::keys::SymKeyFormatInt],
 	group_as_member: Option<&'a str>,
 ) -> impl Future<Output = VoidRes> + 'a
 {
@@ -745,12 +745,12 @@ pub async fn key_rotation(
 	jwt: &str,
 	group_id: &str,
 	#[cfg(not(feature = "rust"))] public_key: &str,
-	#[cfg(feature = "rust")] public_key: &sentc_crypto_utils::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] public_key: &sentc_crypto::entities::keys::PublicKeyFormatInt,
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
-	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto_utils::keys::SymKeyFormatInt,
+	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::entities::keys::SymKeyFormatInt,
 	user_group: bool,
 	#[cfg(not(feature = "rust"))] sign_key: Option<&str>,
-	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto_utils::keys::SignKeyFormatInt>,
+	#[cfg(feature = "rust")] sign_key: Option<&sentc_crypto::entities::keys::SignKeyFormatInt>,
 	starter: UserId,
 	group_as_member: Option<&str>,
 ) -> Res
@@ -848,11 +848,11 @@ pub async fn done_key_rotation(
 	#[cfg(not(feature = "rust"))] server_output: &str,
 	#[cfg(feature = "rust")] server_output: KeyRotationInput,
 	#[cfg(not(feature = "rust"))] pre_group_key: &str,
-	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto_utils::keys::SymKeyFormatInt,
+	#[cfg(feature = "rust")] pre_group_key: &sentc_crypto::entities::keys::SymKeyFormatInt,
 	#[cfg(not(feature = "rust"))] public_key: &str,
-	#[cfg(feature = "rust")] public_key: &sentc_crypto_utils::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] public_key: &sentc_crypto::entities::keys::PublicKeyFormatInt,
 	#[cfg(not(feature = "rust"))] private_key: &str,
-	#[cfg(feature = "rust")] private_key: &sentc_crypto_utils::keys::PrivateKeyFormatInt,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::entities::keys::PrivateKeyFormatInt,
 	user_group: bool,
 	#[cfg(not(feature = "rust"))] verify_key: Option<&str>,
 	#[cfg(feature = "rust")] verify_key: Option<&sentc_crypto_common::user::UserVerifyKeyData>,
@@ -1060,7 +1060,7 @@ pub(crate) async fn insert_session_keys(
 	#[cfg(not(feature = "rust"))] user_public_key: &str,
 	#[cfg(feature = "rust")] user_public_key: &sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &str,
-	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto_utils::keys::SymKeyFormatInt],
+	#[cfg(feature = "rust")] group_keys: &[&sentc_crypto::entities::keys::SymKeyFormatInt],
 	group_as_member: Option<&str>,
 ) -> VoidRes
 {

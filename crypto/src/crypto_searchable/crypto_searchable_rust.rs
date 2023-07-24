@@ -1,7 +1,6 @@
 use alloc::string::String;
 
 use sentc_crypto_common::content_searchable::{SearchCreateData, SearchCreateDataLight};
-use sentc_crypto_utils::keys::HmacKeyFormatInt;
 
 use crate::crypto_searchable::{
 	create_searchable_internally,
@@ -9,6 +8,7 @@ use crate::crypto_searchable::{
 	prepare_create_searchable_light_internally,
 	search_internally,
 };
+use crate::entities::keys::HmacKeyFormatInt;
 use crate::SdkError;
 
 pub fn create_searchable(

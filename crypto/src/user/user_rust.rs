@@ -3,8 +3,8 @@ use alloc::string::String;
 use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
-use sentc_crypto_utils::keys::{PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 
+use crate::entities::keys::{PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::entities::user::{UserDataInt, UserKeyDataInt};
 use crate::user::{
 	change_password_internally,

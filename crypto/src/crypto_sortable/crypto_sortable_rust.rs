@@ -1,7 +1,7 @@
 use sentc_crypto_common::content_sortable::SortableEncryptOutput;
-use sentc_crypto_utils::keys::SortableKeyFormatInt;
 
 use crate::crypto_sortable::{encrypt_number_internally, encrypt_raw_number_internally, encrypt_raw_string_internally, encrypt_string_internally};
+use crate::entities::keys::SortableKeyFormatInt;
 use crate::SdkError;
 
 pub fn encrypt_raw_number(key: &SortableKeyFormatInt, data: u64) -> Result<u64, SdkError>

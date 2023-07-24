@@ -11,7 +11,6 @@ use sentc_crypto_common::file::{BelongsToType, FileHead, FileNameUpdate, FileReg
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::{FileId, FileSessionId};
 use sentc_crypto_core::SymKey;
-use sentc_crypto_utils::keys::{SignKeyFormatInt, SymKeyFormatInt};
 
 #[cfg(not(feature = "rust"))]
 pub use self::file::{
@@ -34,6 +33,7 @@ pub use self::file_rust::{
 	prepare_register_file,
 };
 use crate::crypto::{put_head_and_encrypted_data_internally, sign_internally, split_head_and_encrypted_data_internally, verify_internally};
+use crate::entities::keys::{SignKeyFormatInt, SymKeyFormatInt};
 use crate::util::public::handle_server_response;
 use crate::{crypto, SdkError};
 

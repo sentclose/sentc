@@ -4,9 +4,10 @@ use alloc::vec::Vec;
 use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput, GroupSortableData};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
-use sentc_crypto_utils::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
+pub use sentc_crypto_utils::group::*;
 use serde::{Deserialize, Serialize};
 
+use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
 use crate::SdkError;
 
 pub struct GroupOutData

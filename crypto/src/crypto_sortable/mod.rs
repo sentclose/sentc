@@ -3,8 +3,8 @@ use core::cmp::Ordering;
 
 use sentc_crypto_common::content_sortable::SortableEncryptOutput;
 use sentc_crypto_core::getting_alg_from_sortable_key;
-use sentc_crypto_utils::keys::SortableKeyFormatInt;
 
+use crate::entities::keys::SortableKeyFormatInt;
 use crate::SdkError;
 
 #[cfg(not(feature = "rust"))]

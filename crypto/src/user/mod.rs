@@ -36,7 +36,6 @@ use sentc_crypto_common::user::{
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, Pk};
 use sentc_crypto_utils::error::SdkUtilError;
-use sentc_crypto_utils::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use sentc_crypto_utils::{
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
@@ -48,6 +47,7 @@ use sentc_crypto_utils::{
 	import_verify_key_from_pem_with_alg,
 };
 
+use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use crate::entities::user::{DeviceKeyDataInt, UserDataInt, UserKeyDataInt};
 use crate::util::public::handle_server_response;
 use crate::{group, SdkError};
