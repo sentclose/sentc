@@ -3,11 +3,12 @@ mod non_rust;
 #[cfg(feature = "rust")]
 mod rust;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::future::Future;
 
 use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
+use sentc_crypto_utils::user::UserPreVerifyLogin;
 use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
 #[cfg(not(feature = "rust"))]
@@ -127,7 +128,7 @@ pub fn device_key_session<'a>(
 //__________________________________________________________________________________________________
 //Login
 
-pub async fn prepare_login_start(base_url: String, auth_token: &str, user_identifier: &str) -> Res
+async fn prepare_login_start(base_url: String, auth_token: &str, user_identifier: &str) -> Res
 {
 	let user_id_input = sentc_crypto::user::prepare_login_start(user_identifier)?;
 
@@ -138,15 +139,17 @@ pub async fn prepare_login_start(base_url: String, auth_token: &str, user_identi
 	Ok(res)
 }
 
-pub async fn done_login(base_url: String, auth_token: &str, user_identifier: &str, password: &str, prepare_login_server_output: &str) -> LoginRes
+async fn verify_login(base_url: String, auth_token: &str, pre_verify: UserPreVerifyLogin) -> LoginRes
 {
-	let (auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, password, prepare_login_server_output)?;
+	let url = base_url + "/api/v1/verify_login";
+	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(pre_verify.challenge)).await?;
 
-	let url = base_url + "/api/v1/done_login";
-
-	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
-
-	let keys = sentc_crypto::user::done_login(&master_key_encryption_key, server_out.as_str())?;
+	let keys = sentc_crypto::user::verify_login(
+		&server_out,
+		pre_verify.user_id,
+		pre_verify.device_id,
+		pre_verify.device_keys,
+	)?;
 
 	Ok(keys)
 }
@@ -156,17 +159,24 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 	let user_id_input = sentc_crypto::user::prepare_login_start(user_identifier)?;
 
 	let url = base_url.clone() + "/api/v1/prepare_login";
-
 	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(user_id_input)).await?;
 
-	//prepare the login, the auth key is already in the right json format for the server
-	let (auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, password, res.as_str())?;
+	let (input, auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, password, res.as_str())?;
 
-	let url = base_url + "/api/v1/done_login";
+	let url = base_url.clone() + "/api/v1/done_login";
+	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
 
-	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let keys = sentc_crypto::user::done_login(
+		&master_key_encryption_key,
+		auth_key,
+		user_identifier.to_string(),
+		server_out.as_str(),
+	)?;
 
-	let keys = sentc_crypto::user::done_login(&master_key_encryption_key, server_out.as_str())?;
+	let url = base_url + "/api/v1/verify_login";
+	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(keys.challenge)).await?;
+
+	let keys = sentc_crypto::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys)?;
 
 	Ok(keys)
 }
@@ -233,34 +243,29 @@ pub async fn change_password(base_url: String, auth_token: &str, user_identifier
 	//first make the prep login req to get the output
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
 
-	let (auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, old_password, prep_login_out.as_str())?;
+	let (input, auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, old_password, prep_login_out.as_str())?;
 
 	//make done login req again to get a fresh jwt
 	let url = base_url.clone() + "/api/v1/done_login";
 
-	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
 
-	let keys = sentc_crypto::user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
-
-	let change_pw_input = sentc_crypto::user::change_password(
-		old_password,
-		new_password,
-		prep_login_out.as_str(),
+	let keys = sentc_crypto::user::done_login(
+		&master_key_encryption_key,
+		auth_key,
+		user_identifier.to_string(),
 		done_login_out.as_str(),
 	)?;
 
+	let change_pw_input = sentc_crypto::user::change_password(old_password, new_password, &prep_login_out, &done_login_out)?;
+
+	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
+
 	let url = base_url + "/api/v1/user/update_pw";
 
-	let res = auth_req(
-		HttpMethod::PUT,
-		url.as_str(),
-		auth_token,
-		Some(change_pw_input),
-		keys.jwt.as_str(),
-	)
-	.await?;
+	let res = auth_req(HttpMethod::PUT, &url, auth_token, Some(change_pw_input), &keys.jwt).await?;
 
-	Ok(handle_general_server_response(res.as_str())?)
+	Ok(handle_general_server_response(&res)?)
 }
 
 pub async fn reset_password(
@@ -280,7 +285,7 @@ pub async fn reset_password(
 
 	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
 
-	Ok(handle_general_server_response(res.as_str())?)
+	Ok(handle_general_server_response(&res)?)
 }
 
 //__________________________________________________________________________________________________
@@ -289,20 +294,27 @@ pub async fn delete(base_url: String, auth_token: &str, user_identifier: &str, p
 {
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
 
-	let (auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, password, prep_login_out.as_str())?;
+	let (input, auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, password, prep_login_out.as_str())?;
 
 	//make done login req again to get a fresh jwt
 	let url = base_url.clone() + "/api/v1/done_login";
 
-	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
 
-	let keys = sentc_crypto::user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
+	let keys = sentc_crypto::user::done_login(
+		&master_key_encryption_key,
+		auth_key,
+		user_identifier.to_string(),
+		&done_login_out,
+	)?;
+
+	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
 	let url = base_url + "/api/v1/user";
 
-	let res = auth_req(HttpMethod::DELETE, url.as_str(), auth_token, None, keys.jwt.as_str()).await?;
+	let res = auth_req(HttpMethod::DELETE, &url, auth_token, None, &keys.jwt).await?;
 
-	Ok(handle_general_server_response(res.as_str())?)
+	Ok(handle_general_server_response(&res)?)
 }
 
 /**
@@ -315,20 +327,27 @@ pub async fn delete_device(base_url: String, auth_token: &str, device_identifier
 {
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, device_identifier).await?;
 
-	let (auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(device_identifier, password, prep_login_out.as_str())?;
+	let (input, auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(device_identifier, password, &prep_login_out)?;
 
 	//make done login req again to get a fresh jwt
 	let url = base_url.clone() + "/api/v1/done_login";
 
-	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(auth_key)).await?;
+	let done_login_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
 
-	let keys = sentc_crypto::user::done_login(&master_key_encryption_key, done_login_out.as_str())?;
+	let keys = sentc_crypto::user::done_login(
+		&master_key_encryption_key,
+		auth_key,
+		device_identifier.to_string(),
+		&done_login_out,
+	)?;
+
+	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
 	let url = base_url + "/api/v1/user/device/" + device_id;
 
-	let res = auth_req(HttpMethod::DELETE, url.as_str(), auth_token, None, keys.jwt.as_str()).await?;
+	let res = auth_req(HttpMethod::DELETE, url.as_str(), auth_token, None, &keys.jwt).await?;
 
-	Ok(handle_general_server_response(res.as_str())?)
+	Ok(handle_general_server_response(&res)?)
 }
 
 //__________________________________________________________________________________________________
@@ -341,7 +360,7 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 
 	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
 
-	Ok(handle_general_server_response(res.as_str())?)
+	Ok(handle_general_server_response(&res)?)
 }
 
 //__________________________________________________________________________________________________
