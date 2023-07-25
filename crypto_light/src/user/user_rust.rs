@@ -1,25 +1,24 @@
 use alloc::string::String;
 
 use sentc_crypto_common::user::UserDeviceRegisterInput;
-use sentc_crypto_common::UserId;
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_common::{DeviceId, UserId};
+use sentc_crypto_utils::user::DeviceKeyDataInt;
 
 use crate::error::SdkLightError;
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
-	done_login_internally,
 	done_register_device_start_internally,
 	done_register_internally,
 	generate_user_register_data_internally,
 	prepare_check_user_identifier_available_internally,
-	prepare_login_internally,
 	prepare_login_start_internally,
 	prepare_refresh_jwt_internally,
 	prepare_register_device_internally,
 	prepare_register_device_private_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
+	verify_login_internally,
 };
 use crate::UserDataInt;
 
@@ -68,14 +67,9 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, SdkLightError>
 	prepare_login_start_internally(user_id)
 }
 
-pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkLightError>
+pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataInt, SdkLightError>
 {
-	prepare_login_internally(user_identifier, password, server_output)
-}
-
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserDataInt, SdkLightError>
-{
-	done_login_internally(master_key_encryption, server_output)
+	verify_login_internally(server_output, user_id, device_id, device_keys)
 }
 
 pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, SdkLightError>
@@ -106,7 +100,8 @@ mod test
 	use serde_json::{from_str, to_string};
 
 	use super::*;
-	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
+	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
+	use crate::user::{done_login, prepare_login};
 
 	#[test]
 	fn test_register()
@@ -140,12 +135,27 @@ mod test
 		let server_output = simulate_server_prepare_login(&out.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let login_out = done_login(&master_key_encryption_key, &server_output).unwrap();
+		let login_out = done_login(
+			&master_key_encryption_key,
+			auth_key,
+			username.to_string(),
+			&server_output,
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(&login_out.challenge);
+		let login_out = verify_login(
+			&server_output,
+			login_out.user_id,
+			login_out.device_id,
+			login_out.device_keys,
+		)
+		.unwrap();
 
 		let Sk::Ecies(private_key) = login_out.device_keys.private_key.key;
 
@@ -202,14 +212,25 @@ mod test
 		let out: UserDeviceRegisterInput = from_str(&out_string).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.derived);
-		let (_auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let user = done_login(
+		let done_login_out = done_login(
 			&master_key_encryption_key, //the value comes from prepare login
-			server_output.as_str(),
+			auth_key,
+			"hello".to_string(),
+			&server_output,
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(&done_login_out.challenge);
+		let user = verify_login(
+			&server_output,
+			done_login_out.user_id,
+			done_login_out.device_id,
+			done_login_out.device_keys,
 		)
 		.unwrap();
 
@@ -250,11 +271,27 @@ mod test
 
 		//7. check login with new device
 		let server_output = simulate_server_prepare_login(&input.derived);
-		let (_auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(input);
 
-		let new_device_data = done_login(&master_key_encryption_key, server_output.as_str()).unwrap();
+		let new_device_data = done_login(
+			&master_key_encryption_key,
+			auth_key,
+			device_id.to_string(),
+			&server_output,
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(&new_device_data.challenge);
+
+		let new_device_data = verify_login(
+			&server_output,
+			new_device_data.user_id,
+			new_device_data.device_id,
+			new_device_data.device_keys,
+		)
+		.unwrap();
 
 		match (
 			&user.device_keys.private_key.key,

@@ -10,10 +10,9 @@ use alloc::string::String;
 
 #[cfg(feature = "server_test")]
 pub use sentc_crypto_common as sdk_common;
-pub use sentc_crypto_utils as sdk_utils;
-use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_utils::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, VerifyKeyFormatInt};
+pub use sentc_crypto_utils as sdk_utils;
+use sentc_crypto_utils::user::DeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkLightError;
@@ -26,16 +25,6 @@ pub struct UserDataInt
 	pub device_id: DeviceId,
 
 	pub device_keys: DeviceKeyDataInt,
-}
-
-pub struct DeviceKeyDataInt
-{
-	pub private_key: PrivateKeyFormatInt,
-	pub sign_key: SignKeyFormatInt,
-	pub public_key: PublicKeyFormatInt,
-	pub verify_key: VerifyKeyFormatInt,
-	pub exported_public_key: UserPublicKeyData,
-	pub exported_verify_key: UserVerifyKeyData,
 }
 
 #[derive(Serialize, Deserialize)]

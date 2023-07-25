@@ -1,49 +1,25 @@
 use alloc::string::String;
 
-use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::UserDeviceRegisterInput;
-use sentc_crypto_common::UserId;
-use sentc_crypto_core::DeriveMasterKeyForAuth;
-use serde::{Deserialize, Serialize};
-use serde_json::{from_str, to_string};
+use sentc_crypto_common::{DeviceId, UserId};
+use sentc_crypto_utils::user::DeviceKeyDataInt;
 
-use crate::error::SdkLightError;
 use crate::user::{
 	change_password_internally,
 	done_check_user_identifier_available_internally,
-	done_login_internally,
 	done_register_device_start_internally,
 	done_register_internally,
 	generate_user_register_data_internally,
 	prepare_check_user_identifier_available_internally,
-	prepare_login_internally,
 	prepare_login_start_internally,
 	prepare_refresh_jwt_internally,
 	prepare_register_device_internally,
 	prepare_register_device_private_internally,
 	prepare_user_identifier_update_internally,
 	register_internally,
+	verify_login_internally,
 };
 use crate::UserDataExport;
-
-#[derive(Serialize, Deserialize)]
-pub enum MasterKeyFormat
-{
-	Argon2(String), //Base64 encoded string from prepare login, is used in done_login
-}
-
-impl MasterKeyFormat
-{
-	pub fn from_string(v: &str) -> serde_json::Result<Self>
-	{
-		from_str::<Self>(v)
-	}
-
-	pub fn to_string(&self) -> serde_json::Result<String>
-	{
-		to_string(self)
-	}
-}
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, String>
 {
@@ -94,51 +70,11 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 	Ok(prepare_login_start_internally(user_id)?)
 }
 
-pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String), String>
+pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataExport, String>
 {
-	//the auth key is already in the right json format for the server
-	let (auth_key, master_key_encryption_key) = prepare_login_internally(user_identifier, password, server_output)?;
+	let out = verify_login_internally(server_output, user_id, device_id, device_keys)?;
 
-	//return the encryption key for the master key to the app and then use it for done login
-	let master_key_encryption_key = match master_key_encryption_key {
-		DeriveMasterKeyForAuth::Argon2(k) => {
-			let key = Base64::encode_string(&k);
-
-			MasterKeyFormat::Argon2(key)
-		},
-	};
-
-	Ok((
-		auth_key,
-		master_key_encryption_key
-			.to_string()
-			.map_err(|_e| SdkLightError::JsonToStringFailed)?,
-	))
-}
-
-pub fn done_login(
-	master_key_encryption: &str, //from the prepare login as base64 for exporting
-	server_output: &str,
-) -> Result<UserDataExport, String>
-{
-	let master_key_encryption = MasterKeyFormat::from_string(master_key_encryption).map_err(SdkLightError::JsonParseFailed)?;
-
-	let master_key_encryption = match master_key_encryption {
-		MasterKeyFormat::Argon2(mk) => {
-			let mk = Base64::decode_vec(mk.as_str()).map_err(|_e| SdkLightError::KeyDecryptFailed)?;
-
-			//if it was encrypted by a key which was derived by argon
-			let master_key_encryption_key: [u8; 32] = mk
-				.try_into()
-				.map_err(|_e| SdkLightError::KeyDecryptFailed)?;
-
-			DeriveMasterKeyForAuth::Argon2(master_key_encryption_key)
-		},
-	};
-
-	let result = done_login_internally(&master_key_encryption, server_output)?;
-
-	Ok(result.try_into()?)
+	Ok(out.try_into()?)
 }
 
 pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, String>
@@ -169,9 +105,11 @@ mod test
 	use sentc_crypto_common::user::{ChangePasswordData, UserDeviceDoneRegisterInputLight, UserDeviceRegisterOutput};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_utils::keys::PrivateKeyFormatExport;
+	use serde_json::{from_str, to_string};
 
 	use super::*;
-	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login};
+	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
+	use crate::user::{done_login, prepare_login};
 
 	extern crate std;
 
@@ -206,13 +144,24 @@ mod test
 
 		let server_output = simulate_server_prepare_login(&out.derived);
 
-		let (_auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		let login_out = done_login(
-			master_key_encryption_key.as_str(), //the value comes from prepare login
-			server_output.as_str(),
+			&master_key_encryption_key, //the value comes from prepare login
+			auth_key,
+			username.to_string(),
+			&server_output,
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(&login_out.challenge);
+		let login_out = verify_login(
+			&server_output,
+			login_out.user_id,
+			login_out.device_id,
+			login_out.device_keys,
 		)
 		.unwrap();
 
@@ -270,14 +219,25 @@ mod test
 
 		let server_output = simulate_server_prepare_login(&out.derived);
 
-		let (_auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let user = done_login(
-			master_key_encryption_key.as_str(), //the value comes from prepare login
+		let done_login_out = done_login(
+			&master_key_encryption_key, //the value comes from prepare login
+			auth_key,
+			"hello".to_string(),
 			server_output.as_str(),
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(&done_login_out.challenge);
+		let user = verify_login(
+			&server_output,
+			done_login_out.user_id,
+			done_login_out.device_id,
+			done_login_out.device_keys,
 		)
 		.unwrap();
 
@@ -318,11 +278,27 @@ mod test
 		//7. check login with new device
 		let server_output = simulate_server_prepare_login(&input.derived);
 
-		let (_auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(input);
 
-		let new_device_data = done_login(master_key_encryption_key.as_str(), server_output.as_str()).unwrap();
+		let new_device_data = done_login(
+			&master_key_encryption_key,
+			auth_key,
+			device_id.to_string(),
+			server_output.as_str(),
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(&new_device_data.challenge);
+
+		let new_device_data = verify_login(
+			&server_output,
+			new_device_data.user_id,
+			new_device_data.device_id,
+			new_device_data.device_keys,
+		)
+		.unwrap();
 
 		assert_ne!(user.device_keys.private_key, new_device_data.device_keys.private_key);
 	}
