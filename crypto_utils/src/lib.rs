@@ -30,6 +30,7 @@ pub mod group;
 pub mod http;
 pub mod jwt;
 pub mod keys;
+pub mod user;
 
 pub fn handle_server_response<'de, T: Deserialize<'de>>(res: &'de str) -> Result<T, SdkUtilError>
 {
