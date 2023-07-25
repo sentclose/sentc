@@ -282,64 +282,6 @@ fn wire_user_device_key_session_upload_impl(
 		},
 	)
 }
-fn wire_prepare_login_start_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	user_identifier: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-		WrapInfo {
-			debug_name: "prepare_login_start",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_user_identifier = user_identifier.wire2api();
-			move |task_callback| prepare_login_start(api_base_url, api_auth_token, api_user_identifier)
-		},
-	)
-}
-fn wire_prepare_login_impl(
-	port_: MessagePort,
-	user_identifier: impl Wire2Api<String> + UnwindSafe,
-	password: impl Wire2Api<String> + UnwindSafe,
-	server_output: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-		WrapInfo {
-			debug_name: "prepare_login",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_user_identifier = user_identifier.wire2api();
-			let api_password = password.wire2api();
-			let api_server_output = server_output.wire2api();
-			move |task_callback| prepare_login(api_user_identifier, api_password, api_server_output)
-		},
-	)
-}
-fn wire_done_login_impl(
-	port_: MessagePort,
-	master_key_encryption: impl Wire2Api<String> + UnwindSafe,
-	server_output: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-		WrapInfo {
-			debug_name: "done_login",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_master_key_encryption = master_key_encryption.wire2api();
-			let api_server_output = server_output.wire2api();
-			move |task_callback| done_login(api_master_key_encryption, api_server_output)
-		},
-	)
-}
 fn wire_login_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -3746,13 +3688,6 @@ impl support::IntoDart for PreRegisterDeviceData {
 	}
 }
 impl support::IntoDartExceptPrimitive for PreRegisterDeviceData {}
-
-impl support::IntoDart for PrepareLoginOutput {
-	fn into_dart(self) -> support::DartAbi {
-		vec![self.auth_key.into_dart(), self.master_key_encryption_key.into_dart()].into_dart()
-	}
-}
-impl support::IntoDartExceptPrimitive for PrepareLoginOutput {}
 
 impl support::IntoDart for RegisterDeviceData {
 	fn into_dart(self) -> support::DartAbi {

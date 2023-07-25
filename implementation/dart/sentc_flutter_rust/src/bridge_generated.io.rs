@@ -113,31 +113,6 @@ pub extern "C" fn wire_user_device_key_session_upload(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_prepare_login_start(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	user_identifier: *mut wire_uint_8_list,
-) {
-	wire_prepare_login_start_impl(port_, base_url, auth_token, user_identifier)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_prepare_login(
-	port_: i64,
-	user_identifier: *mut wire_uint_8_list,
-	password: *mut wire_uint_8_list,
-	server_output: *mut wire_uint_8_list,
-) {
-	wire_prepare_login_impl(port_, user_identifier, password, server_output)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_done_login(port_: i64, master_key_encryption: *mut wire_uint_8_list, server_output: *mut wire_uint_8_list) {
-	wire_done_login_impl(port_, master_key_encryption, server_output)
-}
-
-#[no_mangle]
 pub extern "C" fn wire_login(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
