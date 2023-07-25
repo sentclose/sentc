@@ -574,33 +574,6 @@ pub async fn user_device_key_session_upload(
 	Ok(())
 }
 
-#[wasm_bindgen]
-pub async fn prepare_login_start(base_url: String, auth_token: String, user_identifier: String) -> Result<String, JsValue>
-{
-	let out = sentc_crypto_full::user::prepare_login_start(base_url, auth_token.as_str(), user_identifier.as_str()).await?;
-
-	Ok(out)
-}
-
-#[wasm_bindgen]
-pub fn prepare_login(user_identifier: &str, password: &str, prepare_login_server_output: &str) -> Result<PrepareLoginOutput, JsValue>
-{
-	let (auth_key, master_key_encryption_key) = user::prepare_login(user_identifier, password, prepare_login_server_output)?;
-
-	Ok(PrepareLoginOutput {
-		auth_key,
-		master_key_encryption_key,
-	})
-}
-
-#[wasm_bindgen]
-pub fn done_login(master_key_encryption_key: &str, done_login_server_output: &str) -> Result<UserData, JsValue>
-{
-	let data = user::done_login(master_key_encryption_key, done_login_server_output)?;
-
-	Ok(data.into())
-}
-
 /**
 # Login the user to this app
 

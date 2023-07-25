@@ -67,13 +67,6 @@ pub struct GeneratedRegisterData
 }
 
 #[repr(C)]
-pub struct PrepareLoginOutput
-{
-	pub auth_key: String,
-	pub master_key_encryption_key: String,
-}
-
-#[repr(C)]
 pub struct DeviceKeyData
 {
 	pub private_key: String, //Base64 exported keys
@@ -361,43 +354,6 @@ pub fn user_device_key_session_upload(
 }
 
 //__________________________________________________________________________________________________
-
-pub fn prepare_login_start(base_url: String, auth_token: String, user_identifier: String) -> Result<String>
-{
-	let out = rt(sentc_crypto_full::user::prepare_login_start(
-		base_url,
-		auth_token.as_str(),
-		user_identifier.as_str(),
-	))?;
-
-	Ok(out)
-}
-
-pub fn prepare_login(user_identifier: String, password: String, server_output: String) -> Result<PrepareLoginOutput>
-{
-	let (auth_key, master_key_encryption_key) = user::prepare_login(
-		//
-		user_identifier.as_str(),
-		password.as_str(),
-		server_output.as_str(),
-	)
-	.map_err(|err| anyhow!(err))?;
-
-	Ok(PrepareLoginOutput {
-		auth_key,
-		master_key_encryption_key,
-	})
-}
-
-pub fn done_login(
-	master_key_encryption: String, //from the prepare login as base64 for exporting
-	server_output: String,
-) -> Result<UserData>
-{
-	let data = user::done_login(master_key_encryption.as_str(), server_output.as_str()).map_err(|err| anyhow!(err))?;
-
-	Ok(data.into())
-}
 
 /**
 # Login the user to this app
