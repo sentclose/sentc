@@ -333,7 +333,7 @@ pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<KeysToM
 //searchable crypto
 
 #[wasm_bindgen]
-pub struct SearchCreateDataLight
+pub struct SearchableCreateOutput
 {
 	hashes: Vec<String>,
 	alg: String,
@@ -341,7 +341,7 @@ pub struct SearchCreateDataLight
 }
 
 #[wasm_bindgen]
-impl SearchCreateDataLight
+impl SearchableCreateOutput
 {
 	pub fn get_hashes(&self) -> JsValue
 	{
@@ -359,9 +359,9 @@ impl SearchCreateDataLight
 	}
 }
 
-impl From<sentc_crypto_common::content_searchable::SearchCreateDataLight> for SearchCreateDataLight
+impl From<sentc_crypto_common::content_searchable::SearchableCreateOutput> for SearchableCreateOutput
 {
-	fn from(value: sentc_crypto_common::content_searchable::SearchCreateDataLight) -> Self
+	fn from(value: sentc_crypto_common::content_searchable::SearchableCreateOutput) -> Self
 	{
 		Self {
 			hashes: value.hashes,
@@ -371,25 +371,24 @@ impl From<sentc_crypto_common::content_searchable::SearchCreateDataLight> for Se
 	}
 }
 
-//only prepare here because it is server only but this string can be used to register an item
 #[wasm_bindgen]
-pub fn prepare_create_searchable(key: &str, item_ref: &str, category: &str, data: &str, full: bool, limit: Option<usize>) -> Result<String, JsValue>
+pub fn create_searchable_raw(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<JsValue, JsValue>
 {
-	Ok(sentc_crypto::crypto_searchable::create_searchable(
-		key, item_ref, category, data, full, limit,
-	)?)
+	let out = sentc_crypto::crypto_searchable::create_searchable_raw(key, data, full, limit)?;
+
+	Ok(JsValue::from_serde(&out).unwrap())
 }
 
 #[wasm_bindgen]
-pub fn prepare_create_searchable_light(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<SearchCreateDataLight, JsValue>
+pub fn create_searchable(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<SearchableCreateOutput, JsValue>
 {
-	let out = sentc_crypto::crypto_searchable::prepare_create_searchable_light(key, data, full, limit)?;
+	let out = sentc_crypto::crypto_searchable::create_searchable(key, data, full, limit)?;
 
 	Ok(out.into())
 }
 
 #[wasm_bindgen]
-pub fn prepare_search(key: &str, data: &str) -> Result<String, JsValue>
+pub fn search(key: &str, data: &str) -> Result<String, JsValue>
 {
 	Ok(sentc_crypto::crypto_searchable::search(key, data)?)
 }
