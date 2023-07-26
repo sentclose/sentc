@@ -1,8 +1,8 @@
 use alloc::string::String;
 
 use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_common::UserId;
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_common::{DeviceId, UserId};
+use sentc_crypto_utils::user::DeviceKeyDataInt;
 
 use crate::entities::keys::{PrivateKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt};
 use crate::entities::user::{UserDataInt, UserKeyDataInt};
@@ -11,12 +11,10 @@ use crate::user::{
 	create_safety_number_internally,
 	done_check_user_identifier_available_internally,
 	done_key_fetch_internally,
-	done_login_internally,
 	done_register_device_start_internally,
 	done_register_internally,
 	generate_user_register_data_internally,
 	prepare_check_user_identifier_available_internally,
-	prepare_login_internally,
 	prepare_login_start_internally,
 	prepare_refresh_jwt_internally,
 	prepare_register_device_internally,
@@ -25,6 +23,7 @@ use crate::user::{
 	register_internally,
 	register_typed_internally,
 	reset_password_internally,
+	verify_login_internally,
 	verify_user_public_key_internally,
 };
 use crate::SdkError;
@@ -83,14 +82,9 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, SdkError>
 	prepare_login_start_internally(user_id)
 }
 
-pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, DeriveMasterKeyForAuth), SdkError>
+pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataInt, SdkError>
 {
-	prepare_login_internally(user_identifier, password, server_output)
-}
-
-pub fn done_login(master_key_encryption: &DeriveMasterKeyForAuth, server_output: &str) -> Result<UserDataInt, SdkError>
-{
-	done_login_internally(master_key_encryption, server_output)
+	verify_login_internally(server_output, user_id, device_id, device_keys)
 }
 
 pub fn done_key_fetch(private_key: &PrivateKeyFormatInt, server_output: &str) -> Result<UserKeyDataInt, SdkError>
@@ -157,7 +151,8 @@ mod test
 	use serde_json::to_string;
 
 	use super::*;
-	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login};
+	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
+	use crate::user::{done_login, prepare_login};
 
 	#[test]
 	fn test_register()
@@ -184,21 +179,36 @@ mod test
 		let username = "admin";
 		let password = "abc*èéöäüê";
 
-		let out = register(username, password).unwrap();
+		let out_string = register(username, password).unwrap();
 
-		let out = RegisterData::from_string(out.as_str()).unwrap();
+		let out = RegisterData::from_string(&out_string).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.device.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let login_out = done_login(&master_key_encryption_key, &server_output).unwrap();
+		let login_out = done_login(
+			&master_key_encryption_key,
+			auth_key,
+			username.to_string(),
+			&server_output,
+		)
+		.unwrap();
 
-		let private_key = match login_out.user_keys[0].private_key.key {
+		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &login_out.challenge);
+		let out = verify_login(
+			&server_output,
+			login_out.user_id,
+			login_out.device_id,
+			login_out.device_keys,
+		)
+		.unwrap();
+
+		let private_key = match out.user_keys[0].private_key.key {
 			Sk::Ecies(k) => k,
 		};
 
@@ -255,14 +265,28 @@ mod test
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.device.derived);
-		let (_auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let user = done_login(
+		let done_login_out = done_login(
 			&master_key_encryption_key, //the value comes from prepare login
-			server_output.as_str(),
+			auth_key,
+			"hello".to_string(),
+			&server_output,
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(
+			RegisterData::from_string(&out_string).unwrap(),
+			&done_login_out.challenge,
+		);
+		let user = verify_login(
+			&server_output,
+			done_login_out.user_id,
+			done_login_out.device_id,
+			done_login_out.device_keys,
 		)
 		.unwrap();
 
@@ -307,9 +331,9 @@ mod test
 		let out_new_device = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&input.derived);
-		let (_auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
 
-		let server_output = simulate_server_done_login(RegisterData {
+		let new_device_register_data = to_string(&RegisterData {
 			device: input,
 			group: CreateData {
 				encrypted_group_key: user_keys.encrypted_group_key.to_string(),
@@ -330,9 +354,31 @@ mod test
 				keypair_sign_alg: out_new_device.group.keypair_sign_alg,
 				public_key_sig: out_new_device.group.public_key_sig,
 			},
-		});
+		})
+		.unwrap();
 
-		let new_device_data = done_login(&master_key_encryption_key, server_output.as_str()).unwrap();
+		let server_output = simulate_server_done_login(serde_json::from_str(&new_device_register_data).unwrap());
+
+		let new_device_data = done_login(
+			&master_key_encryption_key,
+			auth_key,
+			device_id.to_string(),
+			&server_output,
+		)
+		.unwrap();
+
+		let server_output = simulate_verify_login(
+			serde_json::from_str(&new_device_register_data).unwrap(),
+			&new_device_data.challenge,
+		);
+
+		let new_device_data = verify_login(
+			&server_output,
+			new_device_data.user_id,
+			new_device_data.device_id,
+			new_device_data.device_keys,
+		)
+		.unwrap();
 
 		match (
 			&user.user_keys[0].group_key.key,

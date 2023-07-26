@@ -55,6 +55,15 @@ pub fn encrypt_ephemeral_group_key_with_public_key(public_key_in_pem: &str, publ
 	Ok(Base64::encode_string(&encrypted_eph_key))
 }
 
+pub fn encrypt_login_verify_challenge(public_key_in_pem: &str, public_key_alg: &str, challenge: &str) -> Result<String, SdkError>
+{
+	let public_key = import_public_key_from_pem_with_alg(public_key_in_pem, public_key_alg)?;
+
+	let encrypted_eph_key = crypto_core::encrypt_asymmetric(&public_key, challenge.as_bytes())?;
+
+	Ok(Base64::encode_string(&encrypted_eph_key))
+}
+
 pub(crate) fn derive_auth_key_from_base64(auth_key: &str, alg: &str) -> Result<DeriveAuthKeyForAuth, SdkError>
 {
 	match alg {

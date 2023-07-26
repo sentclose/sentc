@@ -4,29 +4,13 @@ use alloc::vec::Vec;
 use sentc_crypto_common::group::GroupHmacData;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, SymKeyId, UserId};
+pub use sentc_crypto_utils::user::DeviceKeyDataExport;
+use sentc_crypto_utils::user::DeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
 
 use crate::entities::group::GroupOutDataHmacKeyExport;
 use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use crate::SdkError;
-
-/**
-# key storage structure for the rust feature
-
-It can be used with other rust programs.
-
-The different to the internally DoneLoginOutput ist that,
-the KeyFormat is sued for each where, were the key id is saved too
- */
-pub struct DeviceKeyDataInt
-{
-	pub private_key: PrivateKeyFormatInt,
-	pub sign_key: SignKeyFormatInt,
-	pub public_key: PublicKeyFormatInt,
-	pub verify_key: VerifyKeyFormatInt,
-	pub exported_public_key: UserPublicKeyData,
-	pub exported_verify_key: UserVerifyKeyData,
-}
 
 pub struct UserKeyDataInt
 {
@@ -54,42 +38,6 @@ pub struct UserDataInt
 
 //==================================================================================================
 //export
-
-#[derive(Serialize, Deserialize)]
-pub struct DeviceKeyDataExport
-{
-	pub private_key: String, //Base64 exported keys
-	pub public_key: String,
-	pub sign_key: String,
-	pub verify_key: String,
-	pub exported_public_key: String,
-	pub exported_verify_key: String,
-}
-
-impl TryFrom<DeviceKeyDataInt> for DeviceKeyDataExport
-{
-	type Error = SdkError;
-
-	fn try_from(value: DeviceKeyDataInt) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			private_key: value.private_key.to_string()?,
-			public_key: value.public_key.to_string()?,
-			sign_key: value.sign_key.to_string()?,
-			verify_key: value.verify_key.to_string()?,
-			exported_public_key: value
-				.exported_public_key
-				.to_string()
-				.map_err(|_e| SdkError::JsonToStringFailed)?,
-			exported_verify_key: value
-				.exported_verify_key
-				.to_string()
-				.map_err(|_e| SdkError::JsonToStringFailed)?,
-		})
-	}
-}
-
-//__________________________________________________________________________________________________
 
 #[derive(Serialize, Deserialize)]
 pub struct UserKeyDataExport

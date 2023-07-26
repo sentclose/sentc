@@ -29,6 +29,8 @@ pub enum SdkUtilError
 	InvalidJwt,
 	InvalidJwtFormat,
 
+	DecryptingLoginChallengeFailed,
+
 	#[cfg(any(feature = "rustls", feature = "wasm"))]
 	RequestErr(String),
 	#[cfg(any(feature = "rustls", feature = "wasm"))]
@@ -159,6 +161,8 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 
 		SdkUtilError::InvalidJwt => out_error("client_1100", "Jwt is invalid"),
 		SdkUtilError::InvalidJwtFormat => out_error("client_1101", "Jwt has a wrong format"),
+
+		SdkUtilError::DecryptingLoginChallengeFailed => out_error("client_1102", "Can't verify login."),
 
 		#[cfg(any(feature = "rustls", feature = "wasm"))]
 		SdkUtilError::RequestErr(e) => out_error("client_1000", format!("Can't send the request: {}", e).as_str()),
