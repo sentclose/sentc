@@ -21,6 +21,7 @@ fn encrypt_raw_number_internally(key: &SortableKeyFormatInt, data: u64) -> Resul
 {
 	Ok(sentc_crypto_core::crypto::encrypt_sortable(&key.key, data)?)
 }
+
 fn encrypt_number_internally(key: &SortableKeyFormatInt, data: u64) -> Result<SortableEncryptOutput, SdkError>
 {
 	let number = encrypt_raw_number_internally(key, data)?;

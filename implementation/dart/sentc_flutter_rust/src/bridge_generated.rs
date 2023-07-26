@@ -2702,33 +2702,7 @@ fn wire_delete_sym_key_impl(
 		},
 	)
 }
-fn wire_prepare_create_searchable_impl(
-	port_: MessagePort,
-	key: impl Wire2Api<String> + UnwindSafe,
-	item_ref: impl Wire2Api<String> + UnwindSafe,
-	category: impl Wire2Api<String> + UnwindSafe,
-	data: impl Wire2Api<String> + UnwindSafe,
-	full: impl Wire2Api<bool> + UnwindSafe,
-	limit: impl Wire2Api<Option<u32>> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-		WrapInfo {
-			debug_name: "prepare_create_searchable",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_key = key.wire2api();
-			let api_item_ref = item_ref.wire2api();
-			let api_category = category.wire2api();
-			let api_data = data.wire2api();
-			let api_full = full.wire2api();
-			let api_limit = limit.wire2api();
-			move |task_callback| prepare_create_searchable(api_key, api_item_ref, api_category, api_data, api_full, api_limit)
-		},
-	)
-}
-fn wire_prepare_create_searchable_light_impl(
+fn wire_create_searchable_raw_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
 	data: impl Wire2Api<String> + UnwindSafe,
@@ -2737,7 +2711,7 @@ fn wire_prepare_create_searchable_light_impl(
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
-			debug_name: "prepare_create_searchable_light",
+			debug_name: "create_searchable_raw",
 			port: Some(port_),
 			mode: FfiCallMode::Normal,
 		},
@@ -2746,37 +2720,33 @@ fn wire_prepare_create_searchable_light_impl(
 			let api_data = data.wire2api();
 			let api_full = full.wire2api();
 			let api_limit = limit.wire2api();
-			move |task_callback| prepare_create_searchable_light(api_key, api_data, api_full, api_limit)
+			move |task_callback| create_searchable_raw(api_key, api_data, api_full, api_limit)
 		},
 	)
 }
-fn wire_prepare_search_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
+fn wire_create_searchable_impl(
+	port_: MessagePort,
+	key: impl Wire2Api<String> + UnwindSafe,
+	data: impl Wire2Api<String> + UnwindSafe,
+	full: impl Wire2Api<bool> + UnwindSafe,
+	limit: impl Wire2Api<Option<u32>> + UnwindSafe,
+) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
-			debug_name: "prepare_search",
+			debug_name: "create_searchable",
 			port: Some(port_),
 			mode: FfiCallMode::Normal,
 		},
 		move || {
 			let api_key = key.wire2api();
 			let api_data = data.wire2api();
-			move |task_callback| prepare_search(api_key, api_data)
+			let api_full = full.wire2api();
+			let api_limit = limit.wire2api();
+			move |task_callback| create_searchable(api_key, api_data, api_full, api_limit)
 		},
 	)
 }
-fn wire_search_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	jwt: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
-	key: impl Wire2Api<String> + UnwindSafe,
-	data: impl Wire2Api<String> + UnwindSafe,
-	cat_id: impl Wire2Api<String> + UnwindSafe,
-	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
-	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
-) {
+fn wire_search_impl(port_: MessagePort, key: impl Wire2Api<String> + UnwindSafe, data: impl Wire2Api<String> + UnwindSafe) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
 			debug_name: "search",
@@ -2784,30 +2754,9 @@ fn wire_search_impl(
 			mode: FfiCallMode::Normal,
 		},
 		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_jwt = jwt.wire2api();
-			let api_group_id = group_id.wire2api();
-			let api_group_as_member = group_as_member.wire2api();
 			let api_key = key.wire2api();
 			let api_data = data.wire2api();
-			let api_cat_id = cat_id.wire2api();
-			let api_last_fetched_time = last_fetched_time.wire2api();
-			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
-			move |task_callback| {
-				search(
-					api_base_url,
-					api_auth_token,
-					api_jwt,
-					api_group_id,
-					api_group_as_member,
-					api_key,
-					api_data,
-					api_cat_id,
-					api_last_fetched_time,
-					api_last_fetched_group_id,
-				)
-			}
+			move |task_callback| search(api_key, api_data)
 		},
 	)
 }
@@ -3668,13 +3617,6 @@ impl support::IntoDart for ListGroups {
 }
 impl support::IntoDartExceptPrimitive for ListGroups {}
 
-impl support::IntoDart for ListSearchItem {
-	fn into_dart(self) -> support::DartAbi {
-		vec![self.id.into_dart(), self.item_ref.into_dart(), self.time.into_dart()].into_dart()
-	}
-}
-impl support::IntoDartExceptPrimitive for ListSearchItem {}
-
 impl support::IntoDart for NonRegisteredKeyOutput {
 	fn into_dart(self) -> support::DartAbi {
 		vec![self.key.into_dart(), self.encrypted_key.into_dart()].into_dart()
@@ -3696,12 +3638,12 @@ impl support::IntoDart for RegisterDeviceData {
 }
 impl support::IntoDartExceptPrimitive for RegisterDeviceData {}
 
-impl support::IntoDart for SearchCreateDataLight {
+impl support::IntoDart for SearchableCreateOutput {
 	fn into_dart(self) -> support::DartAbi {
 		vec![self.hashes.into_dart(), self.alg.into_dart(), self.key_id.into_dart()].into_dart()
 	}
 }
-impl support::IntoDartExceptPrimitive for SearchCreateDataLight {}
+impl support::IntoDartExceptPrimitive for SearchableCreateOutput {}
 
 impl support::IntoDart for SignHead {
 	fn into_dart(self) -> support::DartAbi {

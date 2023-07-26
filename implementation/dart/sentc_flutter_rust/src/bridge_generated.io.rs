@@ -1320,61 +1320,18 @@ pub extern "C" fn wire_delete_sym_key(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_prepare_create_searchable(
-	port_: i64,
-	key: *mut wire_uint_8_list,
-	item_ref: *mut wire_uint_8_list,
-	category: *mut wire_uint_8_list,
-	data: *mut wire_uint_8_list,
-	full: bool,
-	limit: *mut u32,
-) {
-	wire_prepare_create_searchable_impl(port_, key, item_ref, category, data, full, limit)
+pub extern "C" fn wire_create_searchable_raw(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list, full: bool, limit: *mut u32) {
+	wire_create_searchable_raw_impl(port_, key, data, full, limit)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_prepare_create_searchable_light(
-	port_: i64,
-	key: *mut wire_uint_8_list,
-	data: *mut wire_uint_8_list,
-	full: bool,
-	limit: *mut u32,
-) {
-	wire_prepare_create_searchable_light_impl(port_, key, data, full, limit)
+pub extern "C" fn wire_create_searchable(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list, full: bool, limit: *mut u32) {
+	wire_create_searchable_impl(port_, key, data, full, limit)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_prepare_search(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
-	wire_prepare_search_impl(port_, key, data)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_search(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	jwt: *mut wire_uint_8_list,
-	group_id: *mut wire_uint_8_list,
-	group_as_member: *mut wire_uint_8_list,
-	key: *mut wire_uint_8_list,
-	data: *mut wire_uint_8_list,
-	cat_id: *mut wire_uint_8_list,
-	last_fetched_time: *mut wire_uint_8_list,
-	last_fetched_group_id: *mut wire_uint_8_list,
-) {
-	wire_search_impl(
-		port_,
-		base_url,
-		auth_token,
-		jwt,
-		group_id,
-		group_as_member,
-		key,
-		data,
-		cat_id,
-		last_fetched_time,
-		last_fetched_group_id,
-	)
+pub extern "C" fn wire_search(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
+	wire_search_impl(port_, key, data)
 }
 
 #[no_mangle]

@@ -1,49 +1,18 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
-use sentc_crypto_common::content_searchable::{SearchCreateData, SearchCreateDataLight};
+use sentc_crypto_common::content_searchable::SearchableCreateOutput;
 
-use crate::crypto_searchable::{
-	create_searchable_internally,
-	prepare_create_searchable_internally,
-	prepare_create_searchable_light_internally,
-	search_internally,
-};
+use crate::crypto_searchable::{create_searchable_internally, create_searchable_raw_internally, search_internally};
 
-pub fn create_searchable(key: &str, item_ref: &str, category: &str, data: &str, full: bool, limit: Option<usize>) -> Result<String, String>
+pub fn create_searchable_raw(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, String>
 {
-	let category = if category.is_empty() { None } else { Some(category) };
-
-	Ok(create_searchable_internally(
-		&key.parse()?,
-		item_ref,
-		category,
-		data,
-		full,
-		limit,
-	)?)
+	Ok(create_searchable_raw_internally(&key.parse()?, data, full, limit)?)
 }
 
-pub fn prepare_create_searchable(
-	key: &str,
-	item_ref: &str,
-	category: &str,
-	data: &str,
-	full: bool,
-	limit: Option<usize>,
-) -> Result<SearchCreateData, String>
+pub fn create_searchable(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<SearchableCreateOutput, String>
 {
-	let category = if category.is_empty() { None } else { Some(category) };
-
-	let out = prepare_create_searchable_internally(&key.parse()?, item_ref, category, data, full, limit)?;
-
-	Ok(out)
-}
-
-pub fn prepare_create_searchable_light(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<SearchCreateDataLight, String>
-{
-	let out = prepare_create_searchable_light_internally(&key.parse()?, data, full, limit)?;
-
-	Ok(out)
+	Ok(create_searchable_internally(&key.parse()?, data, full, limit)?)
 }
 
 pub fn search(key: &str, data: &str) -> Result<String, String>
@@ -54,8 +23,6 @@ pub fn search(key: &str, data: &str) -> Result<String, String>
 #[cfg(test)]
 mod test
 {
-	use sentc_crypto_common::content_searchable::SearchCreateData;
-
 	use super::*;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
@@ -71,12 +38,10 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-		let string = create_searchable(hmac_key, "bla", "", text, true, None).unwrap();
-
-		let out: SearchCreateData = serde_json::from_str(&string).unwrap();
+		let string = create_searchable(hmac_key, text, true, None).unwrap();
 
 		//should be only one -> the full hash
-		assert_eq!(out.hashes.len(), 1);
+		assert_eq!(string.hashes.len(), 1);
 	}
 
 	#[test]
@@ -90,11 +55,9 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-		let string = create_searchable(hmac_key, "bla", "", text, false, None).unwrap();
+		let string = create_searchable(hmac_key, text, false, None).unwrap();
 
-		let out: SearchCreateData = serde_json::from_str(&string).unwrap();
-
-		assert_eq!(out.hashes.len(), 39);
+		assert_eq!(string.hashes.len(), 39);
 	}
 
 	#[test]
@@ -108,9 +71,7 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-		let string = create_searchable(hmac_key, "bla", "", text, true, None).unwrap();
-
-		let out: SearchCreateData = serde_json::from_str(&string).unwrap();
+		let out = create_searchable(hmac_key, text, true, None).unwrap();
 
 		assert_eq!(out.hashes.len(), 1);
 
@@ -137,9 +98,7 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-		let string = create_searchable(hmac_key, "bla", "", text, false, None).unwrap();
-
-		let out: SearchCreateData = serde_json::from_str(&string).unwrap();
+		let out = create_searchable(hmac_key, text, false, None).unwrap();
 
 		assert_eq!(out.hashes.len(), 39);
 
@@ -161,9 +120,7 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-		let string = create_searchable(hmac_key, "bla", "", text, false, None).unwrap();
-
-		let out: SearchCreateData = serde_json::from_str(&string).unwrap();
+		let out = create_searchable(hmac_key, text, false, None).unwrap();
 
 		let search_str = search(hmac_key, "123").unwrap();
 
