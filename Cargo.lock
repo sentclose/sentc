@@ -1109,9 +1109,9 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.9.1"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d2cf1b931db480f76ebd39a76ef663015751f6e5ae0476f9bc0eacd82697542"
+checksum = "af5bc99791b24e1cbe94acd4171b376ca882dd3953097b2576aba1d091da7f22"
 dependencies = [
  "serde",
  "serde_json",
