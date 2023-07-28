@@ -1,13 +1,12 @@
 [package]
 name = "sentc-crypto-core"
-version = "0.9.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 description = "The core of sentc encryption sdk with all alg."
-license-file = "../LICENSE"
-authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
-homepage = "https://sentc.com/"
-documentation = "https://sentc.com/"
-repository = "https://github.com/sentclose/sentc"
+license-file.workspace = true
+authors.workspace = true
+documentation.workspace = true
+repository.workspace = true
 
 include = [
     "Cargo.toml",
