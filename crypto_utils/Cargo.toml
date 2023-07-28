@@ -1,7 +1,12 @@
 [package]
 name = "sentc-crypto-utils"
-version = "0.10.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+homepage.workspace = true
+authors.workspace = true
+documentation.workspace = true
+repository.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

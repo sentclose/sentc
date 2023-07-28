@@ -12,16 +12,25 @@ members = [
     "implementation/dart/sentc_flutter_rust_light"
 ]
 
+[workspace.package]
+version = "0.9.0"
+edition = "2021"
+license-file = "LICENSE"
+authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
+homepage = "https://sentc.com/"
+documentation = "https://sentc.com/"
+repository = "https://github.com/sentclose/sentc"
+
 [workspace.dependencies]
 sentc-crypto-common = "0.9.3"
 #sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" }    # for local dev
 
 sentc-crypto-core = {version = "0.9.0", path = "crypto_core"}
-sentc-crypto-utils = {version = "0.10.0", path = "crypto_utils"}
+sentc-crypto-utils = {version = "0.9.0", path = "crypto_utils"}
 sentc-crypto = {version = "0.9.0", path = "crypto", default-features = false}
 sentc-crypto-full = {version = "0.9.0", path = "crypto_full", default-features = false}
-sentc-crypto-light = {version = "0.10.0", path = "crypto_light", default-features = false}
-sentc-crypto-light-full = {version = "0.10.0", path = "crypto_light_full", default-features = false}
+sentc-crypto-light = {version = "0.9.0", path = "crypto_light", default-features = false}
+sentc-crypto-light-full = {version = "0.9.0", path = "crypto_light_full", default-features = false}
 
 [profile.dev]
 # Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.

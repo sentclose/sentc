@@ -1146,7 +1146,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.10.0"
+version = "0.9.0"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1159,7 +1159,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light-full"
-version = "0.10.0"
+version = "0.9.0"
 dependencies = [
  "sentc-crypto-common",
  "sentc-crypto-light",
@@ -1170,7 +1170,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.10.0"
+version = "0.9.0"
 dependencies = [
  "base64ct",
  "js-sys",
@@ -1187,7 +1187,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "flutter_rust_bridge",
@@ -1200,7 +1200,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter_rust_light"
-version = "0.10.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "flutter_rust_bridge",

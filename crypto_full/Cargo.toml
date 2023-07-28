@@ -1,13 +1,14 @@
 [package]
 name = "sentc-crypto-full"
-version = "0.9.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+homepage.workspace = true
+authors.workspace = true
+documentation.workspace = true
+repository.workspace = true
+
 description = "The network implementation for the sentc sdk."
-license-file = "../LICENSE"
-authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
-homepage = "https://sentc.com/"
-documentation = "https://sentc.com/"
-repository = "https://github.com/sentclose/sentc"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
