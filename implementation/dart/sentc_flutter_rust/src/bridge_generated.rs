@@ -304,6 +304,44 @@ fn wire_login_impl(
 		},
 	)
 }
+fn wire_mfa_login_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	master_key_encryption: impl Wire2Api<String> + UnwindSafe,
+	auth_key: impl Wire2Api<String> + UnwindSafe,
+	user_identifier: impl Wire2Api<String> + UnwindSafe,
+	token: impl Wire2Api<String> + UnwindSafe,
+	recovery: impl Wire2Api<bool> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "mfa_login",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_master_key_encryption = master_key_encryption.wire2api();
+			let api_auth_key = auth_key.wire2api();
+			let api_user_identifier = user_identifier.wire2api();
+			let api_token = token.wire2api();
+			let api_recovery = recovery.wire2api();
+			move |task_callback| {
+				mfa_login(
+					api_base_url,
+					api_auth_token,
+					api_master_key_encryption,
+					api_auth_key,
+					api_user_identifier,
+					api_token,
+					api_recovery,
+				)
+			}
+		},
+	)
+}
 fn wire_done_fetch_user_key_impl(
 	port_: MessagePort,
 	private_key: impl Wire2Api<String> + UnwindSafe,
@@ -504,6 +542,8 @@ fn wire_change_password_impl(
 	user_identifier: impl Wire2Api<String> + UnwindSafe,
 	old_password: impl Wire2Api<String> + UnwindSafe,
 	new_password: impl Wire2Api<String> + UnwindSafe,
+	mfa_token: impl Wire2Api<Option<String>> + UnwindSafe,
+	mfa_recovery: impl Wire2Api<Option<bool>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -517,6 +557,8 @@ fn wire_change_password_impl(
 			let api_user_identifier = user_identifier.wire2api();
 			let api_old_password = old_password.wire2api();
 			let api_new_password = new_password.wire2api();
+			let api_mfa_token = mfa_token.wire2api();
+			let api_mfa_recovery = mfa_recovery.wire2api();
 			move |task_callback| {
 				change_password(
 					api_base_url,
@@ -524,6 +566,8 @@ fn wire_change_password_impl(
 					api_user_identifier,
 					api_old_password,
 					api_new_password,
+					api_mfa_token,
+					api_mfa_recovery,
 				)
 			}
 		},
@@ -535,6 +579,8 @@ fn wire_delete_user_impl(
 	auth_token: impl Wire2Api<String> + UnwindSafe,
 	user_identifier: impl Wire2Api<String> + UnwindSafe,
 	password: impl Wire2Api<String> + UnwindSafe,
+	mfa_token: impl Wire2Api<Option<String>> + UnwindSafe,
+	mfa_recovery: impl Wire2Api<Option<bool>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -547,7 +593,18 @@ fn wire_delete_user_impl(
 			let api_auth_token = auth_token.wire2api();
 			let api_user_identifier = user_identifier.wire2api();
 			let api_password = password.wire2api();
-			move |task_callback| delete_user(api_base_url, api_auth_token, api_user_identifier, api_password)
+			let api_mfa_token = mfa_token.wire2api();
+			let api_mfa_recovery = mfa_recovery.wire2api();
+			move |task_callback| {
+				delete_user(
+					api_base_url,
+					api_auth_token,
+					api_user_identifier,
+					api_password,
+					api_mfa_token,
+					api_mfa_recovery,
+				)
+			}
 		},
 	)
 }
@@ -558,6 +615,8 @@ fn wire_delete_device_impl(
 	device_identifier: impl Wire2Api<String> + UnwindSafe,
 	password: impl Wire2Api<String> + UnwindSafe,
 	device_id: impl Wire2Api<String> + UnwindSafe,
+	mfa_token: impl Wire2Api<Option<String>> + UnwindSafe,
+	mfa_recovery: impl Wire2Api<Option<bool>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -571,6 +630,8 @@ fn wire_delete_device_impl(
 			let api_device_identifier = device_identifier.wire2api();
 			let api_password = password.wire2api();
 			let api_device_id = device_id.wire2api();
+			let api_mfa_token = mfa_token.wire2api();
+			let api_mfa_recovery = mfa_recovery.wire2api();
 			move |task_callback| {
 				delete_device(
 					api_base_url,
@@ -578,6 +639,8 @@ fn wire_delete_device_impl(
 					api_device_identifier,
 					api_password,
 					api_device_id,
+					api_mfa_token,
+					api_mfa_recovery,
 				)
 			}
 		},
@@ -3631,6 +3694,13 @@ impl support::IntoDart for PreRegisterDeviceData {
 }
 impl support::IntoDartExceptPrimitive for PreRegisterDeviceData {}
 
+impl support::IntoDart for PrepareLoginOtpOutput {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.master_key.into_dart(), self.auth_key.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for PrepareLoginOtpOutput {}
+
 impl support::IntoDart for RegisterDeviceData {
 	fn into_dart(self) -> support::DartAbi {
 		vec![self.session_id.into_dart(), self.exported_public_key.into_dart()].into_dart()
@@ -3707,6 +3777,13 @@ impl support::IntoDart for UserKeyData {
 	}
 }
 impl support::IntoDartExceptPrimitive for UserKeyData {}
+
+impl support::IntoDart for UserLoginOut {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.user_data.into_dart(), self.mfa.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for UserLoginOut {}
 
 impl support::IntoDart for UserPublicKeyData {
 	fn into_dart(self) -> support::DartAbi {
