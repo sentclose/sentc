@@ -1,6 +1,8 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
+use sentc_crypto_common::user::{DoneLoginServerOutput, DoneLoginServerReturn};
+use sentc_crypto_light::error::SdkLightError;
 use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
 use sentc_crypto_utils::user::UserPreVerifyLogin;
 use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
@@ -11,9 +13,13 @@ mod non_rust;
 mod rust;
 
 #[cfg(not(feature = "rust"))]
-pub(crate) use self::non_rust::{BoolRes, DeviceListRes, InitRes, LoginRes, Res, VoidRes};
+pub(crate) use self::non_rust::{BoolRes, DeviceListRes, InitRes, LoginRes, PreLoginRes, Res, VoidRes};
+#[cfg(not(feature = "rust"))]
+pub use self::non_rust::{PreLoginOut, PrepareLoginOtpOutput};
 #[cfg(feature = "rust")]
-pub(crate) use self::rust::{BoolRes, DeviceListRes, InitRes, LoginRes, Res, VoidRes};
+pub(crate) use self::rust::{BoolRes, DeviceListRes, InitRes, LoginRes, PreLoginRes, Res, VoidRes};
+#[cfg(feature = "rust")]
+pub use self::rust::{PreLoginOut, PrepareLoginOtpOutput};
 
 //Register
 pub async fn check_user_identifier_available(base_url: String, auth_token: &str, user_identifier: &str) -> BoolRes
@@ -97,7 +103,55 @@ async fn verify_login(base_url: String, auth_token: &str, pre_verify: UserPreVer
 	Ok(keys)
 }
 
-pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> LoginRes
+async fn done_login_internally(
+	base_url: String,
+	auth_token: &str,
+	user_identifier: &str,
+	password: &str,
+	prepare_login_res: &str,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<(UserPreVerifyLogin, DoneLoginServerOutput), SdkLightError>
+{
+	let (input, auth_key, master_key) = sentc_crypto_light::user::prepare_login(user_identifier, password, prepare_login_res)?;
+
+	let url = base_url.clone() + "/api/v1/done_login";
+	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
+
+	match sentc_crypto_light::user::check_done_login(&server_out)? {
+		DoneLoginServerReturn::Direct(d) => {
+			let out = sentc_crypto_light::user::done_login(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
+
+			Ok((out, d))
+		},
+		DoneLoginServerReturn::Otp => {
+			//if user enables mfa it must be saved in the user data, so the token is needed before doing the req
+			let mfa_token = mfa_token.ok_or(SdkLightError::JsonToStringFailed)?;
+			let mfa_recovery = mfa_recovery.ok_or(SdkLightError::JsonToStringFailed)?;
+
+			//use this with the token of the auth app but without the verify
+
+			let url = base_url.clone() +
+				if mfa_recovery {
+					"/api/v1/validate_recovery_otp"
+				} else {
+					"/api/v1/validate_mfa"
+				};
+
+			let input = sentc_crypto_light::user::prepare_validate_mfa(auth_key.clone(), user_identifier.to_string(), mfa_token)?;
+
+			let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
+
+			let d: DoneLoginServerOutput = handle_server_response(&res)?;
+
+			let out = sentc_crypto_light::user::done_login(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
+
+			Ok((out, d))
+		},
+	}
+}
+
+pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> PreLoginRes
 {
 	let user_id_input = sentc_crypto_light::user::prepare_login_start(user_identifier)?;
 
@@ -109,22 +163,67 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 	let (input, auth_key, master_key_encryption_key) = sentc_crypto_light::user::prepare_login(user_identifier, password, &res)?;
 
 	let url = base_url.clone() + "/api/v1/done_login";
-
 	let server_out = non_auth_req(HttpMethod::POST, &url, auth_token, Some(input)).await?;
 
-	let keys = sentc_crypto_light::user::done_login(
-		&master_key_encryption_key,
-		auth_key,
-		user_identifier.to_string(),
-		server_out.as_str(),
-	)?;
+	match sentc_crypto_light::user::check_done_login(&server_out)? {
+		DoneLoginServerReturn::Direct(d) => {
+			let verify = sentc_crypto_light::user::done_login(&master_key_encryption_key, auth_key, user_identifier.to_string(), d)?;
 
-	let url = base_url + "/api/v1/verify_login_light";
-	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(keys.challenge)).await?;
+			let out = verify_login(base_url, auth_token, verify).await?;
 
-	let keys = sentc_crypto_light::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys)?;
+			Ok(PreLoginOut::Direct(out))
+		},
+		DoneLoginServerReturn::Otp => {
+			//export the data needed for this fn
 
-	Ok(keys)
+			#[cfg(not(feature = "rust"))]
+			{
+				let master_key: sentc_crypto_utils::keys::MasterKeyFormat = master_key_encryption_key.into();
+
+				Ok(PreLoginOut::Otp(PrepareLoginOtpOutput {
+					master_key: master_key.to_string()?,
+					auth_key,
+				}))
+			}
+
+			#[cfg(feature = "rust")]
+			{
+				Ok(PreLoginOut::Otp(PrepareLoginOtpOutput {
+					master_key: master_key_encryption_key,
+					auth_key,
+				}))
+			}
+		},
+	}
+}
+
+pub async fn mfa_login(
+	base_url: String,
+	auth_token: &str,
+	#[cfg(not(feature = "rust"))] master_key_encryption: &str,
+	#[cfg(feature = "rust")] master_key_encryption: &sentc_crypto::sdk_core::DeriveMasterKeyForAuth,
+	auth_key: String,
+	user_identifier: String,
+	token: String,
+	recovery: bool,
+) -> LoginRes
+{
+	//use this with the token of the auth app
+
+	let url = base_url.clone() +
+		if recovery {
+			"/api/v1/validate_recovery_otp"
+		} else {
+			"/api/v1/validate_mfa"
+		};
+
+	let input = sentc_crypto_light::user::prepare_validate_mfa(auth_key.clone(), user_identifier.clone(), token)?;
+
+	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
+
+	let keys = sentc_crypto_light::user::done_validate_mfa(master_key_encryption, auth_key, user_identifier, &res)?;
+
+	verify_login(base_url, auth_token, keys).await
 }
 
 pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> Res
@@ -166,28 +265,33 @@ pub async fn get_user_devices(base_url: String, auth_token: &str, jwt: &str, las
 
 //__________________________________________________________________________________________________
 
-pub async fn change_password(base_url: String, auth_token: &str, user_identifier: &str, old_password: &str, new_password: &str) -> VoidRes
+pub async fn change_password(
+	base_url: String,
+	auth_token: &str,
+	user_identifier: &str,
+	old_password: &str,
+	new_password: &str,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> VoidRes
 {
 	//first make the prep login req to get the output
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
 
-	let (input, auth_key, master_key_encryption_key) = sentc_crypto_light::user::prepare_login(user_identifier, old_password, &prep_login_out)?;
-
-	//make done login req again to get a fresh jwt
-	let url = base_url.clone() + "/api/v1/done_login";
-
-	let done_login_out = non_auth_req(HttpMethod::POST, &url, auth_token, Some(input)).await?;
-
-	let keys = sentc_crypto_light::user::done_login(
-		&master_key_encryption_key,
-		auth_key,
-		user_identifier.to_string(),
-		done_login_out.as_str(),
-	)?;
-
-	let change_pw_input = sentc_crypto_light::user::change_password(old_password, new_password, &prep_login_out, &done_login_out)?;
+	let (keys, done_login_out) = done_login_internally(
+		base_url.clone(),
+		auth_token,
+		user_identifier,
+		old_password,
+		&prep_login_out,
+		mfa_token,
+		mfa_recovery,
+	)
+	.await?;
 
 	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
+
+	let change_pw_input = sentc_crypto_light::user::change_password(old_password, new_password, &prep_login_out, done_login_out)?;
 
 	let url = base_url + "/api/v1/user/update_pw";
 
@@ -212,23 +316,27 @@ pub async fn reset_password(base_url: String, auth_token: &str, user_identifier:
 	Ok(handle_general_server_response(res.as_str())?)
 }
 
-pub async fn delete(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> VoidRes
+pub async fn delete(
+	base_url: String,
+	auth_token: &str,
+	user_identifier: &str,
+	password: &str,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> VoidRes
 {
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
 
-	let (input, auth_key, master_key_encryption_key) = sentc_crypto_light::user::prepare_login(user_identifier, password, &prep_login_out)?;
-
-	//make done login req again to get a fresh jwt
-	let url = base_url.clone() + "/api/v1/done_login";
-
-	let done_login_out = non_auth_req(HttpMethod::POST, &url, auth_token, Some(input)).await?;
-
-	let keys = sentc_crypto_light::user::done_login(
-		&master_key_encryption_key,
-		auth_key,
-		user_identifier.to_string(),
-		&done_login_out,
-	)?;
+	let (keys, _done_login_out) = done_login_internally(
+		base_url.clone(),
+		auth_token,
+		user_identifier,
+		password,
+		&prep_login_out,
+		mfa_token,
+		mfa_recovery,
+	)
+	.await?;
 
 	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
@@ -245,23 +353,28 @@ pub async fn delete(base_url: String, auth_token: &str, user_identifier: &str, p
 This can only be done when the actual device got a fresh jwt,
 to make sure that no hacker can remove devices.
  */
-pub async fn delete_device(base_url: String, auth_token: &str, device_identifier: &str, password: &str, device_id: &str) -> VoidRes
+pub async fn delete_device(
+	base_url: String,
+	auth_token: &str,
+	device_identifier: &str,
+	password: &str,
+	device_id: &str,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> VoidRes
 {
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, device_identifier).await?;
 
-	let (input, auth_key, master_key_encryption_key) = sentc_crypto_light::user::prepare_login(device_identifier, password, &prep_login_out)?;
-
-	//make done login req again to get a fresh jwt
-	let url = base_url.clone() + "/api/v1/done_login";
-
-	let done_login_out = non_auth_req(HttpMethod::POST, &url, auth_token, Some(input)).await?;
-
-	let keys = sentc_crypto_light::user::done_login(
-		&master_key_encryption_key,
-		auth_key,
-		device_identifier.to_string(),
-		&done_login_out,
-	)?;
+	let (keys, _done_login_out) = done_login_internally(
+		base_url.clone(),
+		auth_token,
+		device_identifier,
+		password,
+		&prep_login_out,
+		mfa_token,
+		mfa_recovery,
+	)
+	.await?;
 
 	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
