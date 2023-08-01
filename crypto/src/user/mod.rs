@@ -11,6 +11,8 @@ use alloc::string::{String, ToString};
 use base64ct::{Base64, Base64UrlUnpadded, Encoding};
 use sentc_crypto_common::group::GroupKeyServerOutput;
 use sentc_crypto_common::user::{
+	DoneLoginServerOutput,
+	DoneLoginServerReturn,
 	JwtRefreshInput,
 	KeyDerivedData,
 	MasterKey,
@@ -55,12 +57,12 @@ mod user;
 //export when rust feature is not enabled
 #[cfg(not(feature = "rust"))]
 pub use self::user::{
-	change_password,
 	create_safety_number,
 	done_check_user_identifier_available,
 	done_key_fetch,
 	done_register,
 	done_register_device_start,
+	done_validate_mfa,
 	generate_user_register_data,
 	prepare_check_user_identifier_available,
 	prepare_login_start,
@@ -77,12 +79,12 @@ pub use self::user::{
 //export when rust feature is enabled
 #[cfg(feature = "rust")]
 pub use self::user_rust::{
-	change_password,
 	create_safety_number,
 	done_check_user_identifier_available,
 	done_key_fetch,
 	done_register,
 	done_register_device_start,
+	done_validate_mfa,
 	generate_user_register_data,
 	prepare_check_user_identifier_available,
 	prepare_login_start,
@@ -304,6 +306,35 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 	)?)
 }
 
+pub fn check_done_login(server_output: &str) -> Result<DoneLoginServerReturn, SdkError>
+{
+	Ok(sentc_crypto_utils::user::check_done_login(server_output)?)
+}
+
+pub fn prepare_validate_mfa(auth_key: String, device_identifier: String, token: String) -> Result<String, SdkError>
+{
+	Ok(sentc_crypto_utils::user::prepare_validate_mfa(
+		auth_key,
+		device_identifier,
+		token,
+	)?)
+}
+
+fn done_validate_mfa_internally(
+	master_key_encryption: &DeriveMasterKeyForAuth,
+	auth_key: String,
+	device_identifier: String,
+	server_output: &str,
+) -> Result<UserPreVerifyLogin, SdkError>
+{
+	Ok(sentc_crypto_utils::user::done_validate_mfa(
+		master_key_encryption,
+		auth_key,
+		device_identifier,
+		server_output,
+	)?)
+}
+
 /**
 # finalize the login process
 
@@ -315,7 +346,7 @@ pub fn done_login(
 	master_key_encryption: &DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
-	server_output: &str,
+	server_output: DoneLoginServerOutput,
 ) -> Result<UserPreVerifyLogin, SdkError>
 {
 	Ok(sentc_crypto_utils::user::done_login(
@@ -444,8 +475,12 @@ Make the prepare and done login req.
 - prep login to get the salt
 - done login to get the encrypted master key, because this key is never stored on the device
 */
-fn change_password_internally(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str)
-	-> Result<String, SdkError>
+pub fn change_password(
+	old_pw: &str,
+	new_pw: &str,
+	server_output_prep_login: &str,
+	server_output_done_login: DoneLoginServerOutput,
+) -> Result<String, SdkError>
 {
 	Ok(sentc_crypto_utils::user::change_password(
 		old_pw,
@@ -607,7 +642,7 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	pub(crate) fn simulate_server_done_login(data: RegisterData) -> String
+	pub(crate) fn simulate_server_done_login(data: RegisterData) -> DoneLoginServerOutput
 	{
 		let RegisterData {
 			device, ..
@@ -636,19 +671,10 @@ pub(crate) mod test_fn
 			user_group_id: "abc".to_string(),
 		};
 
-		let out = DoneLoginServerOutput {
+		DoneLoginServerOutput {
 			device_keys,
 			challenge,
-		};
-
-		ServerOutput {
-			status: true,
-			err_msg: None,
-			err_code: None,
-			result: Some(out),
 		}
-		.to_string()
-		.unwrap()
 	}
 
 	pub(crate) fn simulate_verify_login(data: RegisterData, challenge: &str) -> String
@@ -722,7 +748,7 @@ pub(crate) mod test_fn
 			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
-			&server_output,
+			server_output,
 		)
 		.unwrap();
 
@@ -758,7 +784,7 @@ pub(crate) mod test_fn
 			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
-			&server_output,
+			server_output,
 		)
 		.unwrap();
 
