@@ -6,6 +6,8 @@ use sentc_crypto_common::user::{
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
 	DoneLoginServerOutput,
+	DoneLoginServerReturn,
+	OtpInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	UserPublicKeyData,
@@ -137,6 +139,41 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 	Ok((input, auth_key, result.master_key_encryption_key))
 }
 
+pub fn check_done_login(server_output: &str) -> Result<DoneLoginServerReturn, SdkUtilError>
+{
+	let server_output: DoneLoginServerReturn = handle_server_response(server_output)?;
+
+	Ok(server_output)
+}
+
+/**
+If user enabled mfa then prepare the input here. the token is from the mfa auth like totp, or from the recover keys
+*/
+pub fn prepare_validate_mfa(auth_key: String, device_identifier: String, token: String) -> Result<String, SdkUtilError>
+{
+	serde_json::to_string(&OtpInput {
+		token,
+		auth_key,
+		device_identifier,
+	})
+	.map_err(|_| SdkUtilError::JsonToStringFailed)
+}
+
+/**
+If the user enables mfa, do the done login here
+*/
+pub fn done_validate_mfa(
+	master_key_encryption: &DeriveMasterKeyForAuth,
+	auth_key: String,
+	device_identifier: String,
+	server_output: &str,
+) -> Result<UserPreVerifyLogin, SdkUtilError>
+{
+	let server_output: DoneLoginServerOutput = handle_server_response(server_output)?;
+
+	done_login(master_key_encryption, auth_key, device_identifier, server_output)
+}
+
 /**
 # finalize the login process
 
@@ -148,11 +185,9 @@ pub fn done_login(
 	master_key_encryption: &DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
-	server_output: &str,
+	server_output: DoneLoginServerOutput,
 ) -> Result<UserPreVerifyLogin, SdkUtilError>
 {
-	let server_output: DoneLoginServerOutput = handle_server_response(server_output)?;
-
 	let device_data = server_output.device_keys;
 
 	let device_keys = done_login_internally_with_device_out(master_key_encryption, &device_data)?;
@@ -244,10 +279,14 @@ Make the prepare and done login req.
 - prep login to get the salt
 - done login to get the encrypted master key, because this key is never stored on the device
  */
-pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, SdkUtilError>
+pub fn change_password(
+	old_pw: &str,
+	new_pw: &str,
+	server_output_prep_login: &str,
+	server_output_done_login: DoneLoginServerOutput,
+) -> Result<String, SdkUtilError>
 {
 	let server_output_prep_login: PrepareLoginSaltServerOutput = handle_server_response(server_output_prep_login)?;
-	let server_output_done_login: DoneLoginServerOutput = handle_server_response(server_output_done_login)?;
 
 	let encrypted_master_key = Base64::decode_vec(
 		server_output_done_login
