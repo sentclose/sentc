@@ -2,13 +2,15 @@ use alloc::string::String;
 
 use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_utils::user::DeviceKeyDataInt;
+use sentc_crypto_utils::keys::MasterKeyFormat;
+use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
 
+use crate::error::SdkLightError;
 use crate::user::{
-	change_password_internally,
 	done_check_user_identifier_available_internally,
 	done_register_device_start_internally,
 	done_register_internally,
+	done_validate_mfa_internally,
 	generate_user_register_data_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_start_internally,
@@ -70,6 +72,23 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 	Ok(prepare_login_start_internally(user_id)?)
 }
 
+pub fn done_validate_mfa(
+	master_key_encryption: &str,
+	auth_key: String,
+	device_identifier: String,
+	server_output: &str,
+) -> Result<UserPreVerifyLogin, SdkLightError>
+{
+	let master_key_encryption: MasterKeyFormat = master_key_encryption.parse()?;
+
+	done_validate_mfa_internally(
+		&master_key_encryption.try_into()?,
+		auth_key,
+		device_identifier,
+		server_output,
+	)
+}
+
 pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataExport, String>
 {
 	let out = verify_login_internally(server_output, user_id, device_id, device_keys)?;
@@ -87,16 +106,6 @@ pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, String>
 	Ok(prepare_refresh_jwt_internally(refresh_token)?)
 }
 
-pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, String>
-{
-	Ok(change_password_internally(
-		old_pw,
-		new_pw,
-		server_output_prep_login,
-		server_output_done_login,
-	)?)
-}
-
 #[cfg(test)]
 mod test
 {
@@ -109,7 +118,7 @@ mod test
 
 	use super::*;
 	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
-	use crate::user::{done_login, prepare_login};
+	use crate::user::{change_password, done_login, prepare_login};
 
 	extern crate std;
 
@@ -152,7 +161,7 @@ mod test
 			&master_key_encryption_key, //the value comes from prepare login
 			auth_key,
 			username.to_string(),
-			&server_output,
+			server_output,
 		)
 		.unwrap();
 
@@ -189,13 +198,7 @@ mod test
 		let prep_server_output = simulate_server_prepare_login(&out_new.derived);
 		let done_server_output = simulate_server_done_login(out_new);
 
-		let pw_change_out = change_password(
-			password,
-			new_password,
-			prep_server_output.as_str(),
-			done_server_output.as_str(),
-		)
-		.unwrap();
+		let pw_change_out = change_password(password, new_password, &prep_server_output, done_server_output).unwrap();
 
 		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_str()).unwrap();
 
@@ -228,7 +231,7 @@ mod test
 			&master_key_encryption_key, //the value comes from prepare login
 			auth_key,
 			"hello".to_string(),
-			server_output.as_str(),
+			server_output,
 		)
 		.unwrap();
 
@@ -286,7 +289,7 @@ mod test
 			&master_key_encryption_key,
 			auth_key,
 			device_id.to_string(),
-			server_output.as_str(),
+			server_output,
 		)
 		.unwrap();
 

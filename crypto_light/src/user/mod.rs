@@ -9,6 +9,8 @@ use alloc::string::{String, ToString};
 use base64ct::{Base64, Base64UrlUnpadded, Encoding};
 use sentc_crypto_common::group::GroupNewMemberLightInput;
 use sentc_crypto_common::user::{
+	DoneLoginServerOutput,
+	DoneLoginServerReturn,
 	JwtRefreshInput,
 	KeyDerivedData,
 	MasterKey,
@@ -34,10 +36,10 @@ use sentc_crypto_utils::{
 
 #[cfg(not(feature = "rust"))]
 pub use self::user::{
-	change_password,
 	done_check_user_identifier_available,
 	done_register,
 	done_register_device_start,
+	done_validate_mfa,
 	generate_user_register_data,
 	prepare_check_user_identifier_available,
 	prepare_login_start,
@@ -50,10 +52,10 @@ pub use self::user::{
 };
 #[cfg(feature = "rust")]
 pub use self::user_rust::{
-	change_password,
 	done_check_user_identifier_available,
 	done_register,
 	done_register_device_start,
+	done_validate_mfa,
 	generate_user_register_data,
 	prepare_check_user_identifier_available,
 	prepare_login_start,
@@ -205,6 +207,35 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 	)?)
 }
 
+pub fn check_done_login(server_output: &str) -> Result<DoneLoginServerReturn, SdkLightError>
+{
+	Ok(sentc_crypto_utils::user::check_done_login(server_output)?)
+}
+
+pub fn prepare_validate_mfa(auth_key: String, device_identifier: String, token: String) -> Result<String, SdkLightError>
+{
+	Ok(sentc_crypto_utils::user::prepare_validate_mfa(
+		auth_key,
+		device_identifier,
+		token,
+	)?)
+}
+
+fn done_validate_mfa_internally(
+	master_key_encryption: &DeriveMasterKeyForAuth,
+	auth_key: String,
+	device_identifier: String,
+	server_output: &str,
+) -> Result<UserPreVerifyLogin, SdkLightError>
+{
+	Ok(sentc_crypto_utils::user::done_validate_mfa(
+		master_key_encryption,
+		auth_key,
+		device_identifier,
+		server_output,
+	)?)
+}
+
 /**
 # finalize the login process
 
@@ -216,7 +247,7 @@ pub fn done_login(
 	master_key_encryption: &DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
-	server_output: &str,
+	server_output: DoneLoginServerOutput,
 ) -> Result<UserPreVerifyLogin, SdkLightError>
 {
 	Ok(sentc_crypto_utils::user::done_login(
@@ -269,11 +300,11 @@ fn prepare_refresh_jwt_internally(refresh_token: String) -> Result<String, SdkLi
 
 //__________________________________________________________________________________________________
 
-fn change_password_internally(
+pub fn change_password(
 	old_pw: &str,
 	new_pw: &str,
 	server_output_prep_login: &str,
-	server_output_done_login: &str,
+	server_output_done_login: DoneLoginServerOutput,
 ) -> Result<String, SdkLightError>
 {
 	Ok(sentc_crypto_utils::user::change_password(
@@ -336,7 +367,7 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	pub(crate) fn simulate_server_done_login(device: UserDeviceRegisterInput) -> String
+	pub(crate) fn simulate_server_done_login(device: UserDeviceRegisterInput) -> DoneLoginServerOutput
 	{
 		let challenge = encrypt_login_verify_challenge(
 			&device.derived.public_key,
@@ -361,19 +392,10 @@ pub(crate) mod test_fn
 			user_group_id: "abc".to_string(),
 		};
 
-		let out = DoneLoginServerOutput {
+		DoneLoginServerOutput {
 			device_keys,
 			challenge,
-		};
-
-		ServerOutput {
-			status: true,
-			err_msg: None,
-			err_code: None,
-			result: Some(out),
 		}
-		.to_string()
-		.unwrap()
 	}
 
 	pub(crate) fn simulate_verify_login(challenge: &str) -> String

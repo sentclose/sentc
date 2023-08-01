@@ -2,7 +2,8 @@ use alloc::string::String;
 
 use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_utils::user::DeviceKeyDataInt;
+use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
 
 use crate::error::SdkLightError;
 use crate::user::{
@@ -10,6 +11,7 @@ use crate::user::{
 	done_check_user_identifier_available_internally,
 	done_register_device_start_internally,
 	done_register_internally,
+	done_validate_mfa_internally,
 	generate_user_register_data_internally,
 	prepare_check_user_identifier_available_internally,
 	prepare_login_start_internally,
@@ -67,14 +69,19 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, SdkLightError>
 	prepare_login_start_internally(user_id)
 }
 
+pub fn done_validate_mfa(
+	master_key_encryption: &DeriveMasterKeyForAuth,
+	auth_key: String,
+	device_identifier: String,
+	server_output: &str,
+) -> Result<UserPreVerifyLogin, SdkLightError>
+{
+	done_validate_mfa_internally(master_key_encryption, auth_key, device_identifier, server_output)
+}
+
 pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataInt, SdkLightError>
 {
 	verify_login_internally(server_output, user_id, device_id, device_keys)
-}
-
-pub fn change_password(old_pw: &str, new_pw: &str, server_output_prep_login: &str, server_output_done_login: &str) -> Result<String, SdkLightError>
-{
-	change_password_internally(old_pw, new_pw, server_output_prep_login, server_output_done_login)
 }
 
 pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, SdkLightError>
@@ -144,7 +151,7 @@ mod test
 			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
-			&server_output,
+			server_output,
 		)
 		.unwrap();
 
@@ -183,13 +190,7 @@ mod test
 		let prep_server_output = simulate_server_prepare_login(&out_new.derived);
 		let done_server_output = simulate_server_done_login(out_new);
 
-		let pw_change_out = change_password(
-			password,
-			new_password,
-			prep_server_output.as_str(),
-			done_server_output.as_str(),
-		)
-		.unwrap();
+		let pw_change_out = change_password(password, new_password, &prep_server_output, done_server_output).unwrap();
 
 		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_str()).unwrap();
 
@@ -221,7 +222,7 @@ mod test
 			&master_key_encryption_key, //the value comes from prepare login
 			auth_key,
 			"hello".to_string(),
-			&server_output,
+			server_output,
 		)
 		.unwrap();
 
@@ -279,7 +280,7 @@ mod test
 			&master_key_encryption_key,
 			auth_key,
 			device_id.to_string(),
-			&server_output,
+			server_output,
 		)
 		.unwrap();
 

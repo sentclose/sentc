@@ -11,9 +11,9 @@ use alloc::string::String;
 #[cfg(feature = "server_test")]
 pub use sentc_crypto_common as sdk_common;
 use sentc_crypto_common::{DeviceId, UserId};
-pub use sentc_crypto_utils as sdk_utils;
 use sentc_crypto_utils::user::DeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
+pub use {sentc_crypto_core as sdk_core, sentc_crypto_utils as sdk_utils};
 
 use crate::error::SdkLightError;
 
