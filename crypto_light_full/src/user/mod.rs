@@ -201,7 +201,7 @@ pub async fn mfa_login(
 	base_url: String,
 	auth_token: &str,
 	#[cfg(not(feature = "rust"))] master_key_encryption: &str,
-	#[cfg(feature = "rust")] master_key_encryption: &sentc_crypto::sdk_core::DeriveMasterKeyForAuth,
+	#[cfg(feature = "rust")] master_key_encryption: &sentc_crypto_light::sdk_core::DeriveMasterKeyForAuth,
 	auth_key: String,
 	user_identifier: String,
 	token: String,

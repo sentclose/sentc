@@ -7,7 +7,6 @@ use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
 
 use crate::error::SdkLightError;
 use crate::user::{
-	change_password_internally,
 	done_check_user_identifier_available_internally,
 	done_register_device_start_internally,
 	done_register_internally,
