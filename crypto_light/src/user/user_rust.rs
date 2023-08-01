@@ -107,7 +107,7 @@ mod test
 
 	use super::*;
 	use crate::user::test_fn::{simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
-	use crate::user::{done_login, prepare_login};
+	use crate::user::{change_password, done_login, prepare_login};
 
 	#[test]
 	fn test_register()
