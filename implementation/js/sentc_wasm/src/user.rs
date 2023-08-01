@@ -141,6 +141,139 @@ impl UserKeyData
 }
 
 #[wasm_bindgen]
+pub struct PrepareLoginOtpOutput
+{
+	master_key: String,
+	auth_key: String,
+}
+
+impl From<sentc_crypto_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
+{
+	fn from(value: sentc_crypto_full::user::PrepareLoginOtpOutput) -> Self
+	{
+		Self {
+			master_key: value.master_key,
+			auth_key: value.auth_key,
+		}
+	}
+}
+
+#[wasm_bindgen]
+pub struct UserLoginOut
+{
+	user_data: Option<UserData>,
+
+	mfa: Option<PrepareLoginOtpOutput>,
+}
+
+impl From<sentc_crypto_full::user::PreLoginOut> for UserLoginOut
+{
+	fn from(value: sentc_crypto_full::user::PreLoginOut) -> Self
+	{
+		match value {
+			sentc_crypto_full::user::PreLoginOut::Direct(d) => {
+				Self {
+					mfa: None,
+					user_data: Some(d.into()),
+				}
+			},
+			sentc_crypto_full::user::PreLoginOut::Otp(d) => {
+				Self {
+					user_data: None,
+					mfa: Some(d.into()),
+				}
+			},
+		}
+	}
+}
+
+#[wasm_bindgen]
+impl UserLoginOut
+{
+	pub fn get_user_keys(&self) -> JsValue
+	{
+		self.user_data.as_ref().map(|o| o.user_keys.clone()).into()
+	}
+
+	pub fn get_device_private_key(&self) -> Option<String>
+	{
+		self.user_data
+			.as_ref()
+			.map(|o| o.device_keys.private_key.clone())
+	}
+
+	pub fn get_device_public_key(&self) -> Option<String>
+	{
+		self.user_data
+			.as_ref()
+			.map(|o| o.device_keys.public_key.clone())
+	}
+
+	pub fn get_device_sign_key(&self) -> Option<String>
+	{
+		self.user_data
+			.as_ref()
+			.map(|o| o.device_keys.sign_key.clone())
+	}
+
+	pub fn get_device_verify_key(&self) -> Option<String>
+	{
+		self.user_data
+			.as_ref()
+			.map(|o| o.device_keys.verify_key.clone())
+	}
+
+	pub fn get_device_exported_public_key(&self) -> Option<String>
+	{
+		self.user_data
+			.as_ref()
+			.map(|o| o.device_keys.exported_public_key.clone())
+	}
+
+	pub fn get_device_exported_verify_key(&self) -> Option<String>
+	{
+		self.user_data
+			.as_ref()
+			.map(|o| o.device_keys.exported_verify_key.clone())
+	}
+
+	pub fn get_jwt(&self) -> Option<String>
+	{
+		self.user_data.as_ref().map(|o| o.jwt.clone())
+	}
+
+	pub fn get_refresh_token(&self) -> Option<String>
+	{
+		self.user_data.as_ref().map(|o| o.refresh_token.clone())
+	}
+
+	pub fn get_id(&self) -> Option<String>
+	{
+		self.user_data.as_ref().map(|o| o.user_id.clone())
+	}
+
+	pub fn get_device_id(&self) -> Option<String>
+	{
+		self.user_data.as_ref().map(|o| o.jwt.clone())
+	}
+
+	pub fn get_hmac_keys(&self) -> JsValue
+	{
+		self.user_data.as_ref().map(|o| o.hmac_keys.clone()).into()
+	}
+
+	pub fn get_mfa_master_key(&self) -> Option<String>
+	{
+		self.mfa.as_ref().map(|o| o.master_key.clone())
+	}
+
+	pub fn get_mfa_auth_key(&self) -> Option<String>
+	{
+		self.mfa.as_ref().map(|o| o.auth_key.clone())
+	}
+}
+
+#[wasm_bindgen]
 pub struct UserData
 {
 	device_keys: DeviceKeyData,
@@ -584,13 +717,38 @@ If there are more data in the backend, then it is possible to call it via the jw
 The other backend can validate the jwt
 */
 #[wasm_bindgen]
-pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserData, JsValue>
+pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserLoginOut, JsValue>
 {
 	let data = sentc_crypto_full::user::login(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
 		password.as_str(),
+	)
+	.await?;
+
+	Ok(data.into())
+}
+
+#[wasm_bindgen]
+pub async fn mfa_login(
+	base_url: String,
+	auth_token: String,
+	master_key_encryption: String,
+	auth_key: String,
+	user_identifier: String,
+	token: String,
+	recovery: bool,
+) -> Result<UserData, JsValue>
+{
+	let data = sentc_crypto_full::user::mfa_login(
+		base_url,
+		&auth_token,
+		&master_key_encryption,
+		auth_key,
+		user_identifier,
+		token,
+		recovery,
 	)
 	.await?;
 
@@ -652,6 +810,8 @@ pub async fn change_password(
 	user_identifier: String,
 	old_password: String,
 	new_password: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
 ) -> Result<(), JsValue>
 {
 	sentc_crypto_full::user::change_password(
@@ -660,6 +820,8 @@ pub async fn change_password(
 		user_identifier.as_str(),
 		old_password.as_str(),
 		new_password.as_str(),
+		mfa_token,
+		mfa_recovery,
 	)
 	.await?;
 
@@ -667,13 +829,22 @@ pub async fn change_password(
 }
 
 #[wasm_bindgen]
-pub async fn delete_user(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<(), JsValue>
+pub async fn delete_user(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	password: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<(), JsValue>
 {
 	Ok(sentc_crypto_full::user::delete(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
 		password.as_str(),
+		mfa_token,
+		mfa_recovery,
 	)
 	.await?)
 }
@@ -685,6 +856,8 @@ pub async fn delete_device(
 	device_identifier: String,
 	password: String,
 	device_id: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
 ) -> Result<(), JsValue>
 {
 	Ok(sentc_crypto_full::user::delete_device(
@@ -693,6 +866,8 @@ pub async fn delete_device(
 		device_identifier.as_str(),
 		password.as_str(),
 		device_id.as_str(),
+		mfa_token,
+		mfa_recovery,
 	)
 	.await?)
 }
