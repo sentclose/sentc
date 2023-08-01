@@ -114,6 +114,53 @@ impl From<sentc_crypto_light::UserDataExport> for UserDataExport
 	}
 }
 
+#[repr(C)]
+pub struct PrepareLoginOtpOutput
+{
+	pub master_key: String,
+	pub auth_key: String,
+}
+
+impl From<sentc_crypto_light_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
+{
+	fn from(value: sentc_crypto_light_full::user::PrepareLoginOtpOutput) -> Self
+	{
+		Self {
+			master_key: value.master_key,
+			auth_key: value.auth_key,
+		}
+	}
+}
+
+#[repr(C)]
+pub struct UserLoginOut
+{
+	pub user_data: Option<UserDataExport>,
+
+	pub mfa: Option<PrepareLoginOtpOutput>,
+}
+
+impl From<sentc_crypto_light_full::user::PreLoginOut> for UserLoginOut
+{
+	fn from(value: sentc_crypto_light_full::user::PreLoginOut) -> Self
+	{
+		match value {
+			sentc_crypto_light_full::user::PreLoginOut::Direct(d) => {
+				Self {
+					mfa: None,
+					user_data: Some(d.into()),
+				}
+			},
+			sentc_crypto_light_full::user::PreLoginOut::Otp(d) => {
+				Self {
+					user_data: None,
+					mfa: Some(d.into()),
+				}
+			},
+		}
+	}
+}
+
 //__________________________________________________________________________________________________
 
 /**
@@ -219,13 +266,36 @@ If there are more data in the backend, then it is possible to call it via the jw
 
 The other backend can validate the jwt
  */
-pub fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserDataExport>
+pub fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserLoginOut>
 {
 	let data = rt(sentc_crypto_light_full::user::login(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
 		password.as_str(),
+	))?;
+
+	Ok(data.into())
+}
+
+pub fn mfa_login(
+	base_url: String,
+	auth_token: String,
+	master_key_encryption: String,
+	auth_key: String,
+	user_identifier: String,
+	token: String,
+	recovery: bool,
+) -> Result<UserDataExport>
+{
+	let data = rt(sentc_crypto_light_full::user::mfa_login(
+		base_url,
+		&auth_token,
+		&master_key_encryption,
+		auth_key,
+		user_identifier,
+		token,
+		recovery,
 	))?;
 
 	Ok(data.into())
@@ -312,7 +382,15 @@ pub fn get_user_devices(
 
 //no pw reset because this is server side only
 
-pub fn change_password(base_url: String, auth_token: String, user_identifier: String, old_password: String, new_password: String) -> Result<()>
+pub fn change_password(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	old_password: String,
+	new_password: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<()>
 {
 	rt(sentc_crypto_light_full::user::change_password(
 		base_url,
@@ -320,20 +398,39 @@ pub fn change_password(base_url: String, auth_token: String, user_identifier: St
 		user_identifier.as_str(),
 		old_password.as_str(),
 		new_password.as_str(),
+		mfa_token,
+		mfa_recovery,
 	))
 }
 
-pub fn delete_user(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<()>
+pub fn delete_user(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	password: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<()>
 {
 	rt(sentc_crypto_light_full::user::delete(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
 		password.as_str(),
+		mfa_token,
+		mfa_recovery,
 	))
 }
 
-pub fn delete_device(base_url: String, auth_token: String, device_identifier: String, password: String, device_id: String) -> Result<()>
+pub fn delete_device(
+	base_url: String,
+	auth_token: String,
+	device_identifier: String,
+	password: String,
+	device_id: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<()>
 {
 	rt(sentc_crypto_light_full::user::delete_device(
 		base_url,
@@ -341,6 +438,8 @@ pub fn delete_device(base_url: String, auth_token: String, device_identifier: St
 		device_identifier.as_str(),
 		password.as_str(),
 		device_id.as_str(),
+		mfa_token,
+		mfa_recovery,
 	))
 }
 

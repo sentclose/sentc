@@ -81,6 +81,29 @@ pub extern "C" fn wire_login(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_mfa_login(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	master_key_encryption: *mut wire_uint_8_list,
+	auth_key: *mut wire_uint_8_list,
+	user_identifier: *mut wire_uint_8_list,
+	token: *mut wire_uint_8_list,
+	recovery: bool,
+) {
+	wire_mfa_login_impl(
+		port_,
+		base_url,
+		auth_token,
+		master_key_encryption,
+		auth_key,
+		user_identifier,
+		token,
+		recovery,
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_refresh_jwt(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -122,6 +145,8 @@ pub extern "C" fn wire_change_password(
 	user_identifier: *mut wire_uint_8_list,
 	old_password: *mut wire_uint_8_list,
 	new_password: *mut wire_uint_8_list,
+	mfa_token: *mut wire_uint_8_list,
+	mfa_recovery: *mut bool,
 ) {
 	wire_change_password_impl(
 		port_,
@@ -130,6 +155,8 @@ pub extern "C" fn wire_change_password(
 		user_identifier,
 		old_password,
 		new_password,
+		mfa_token,
+		mfa_recovery,
 	)
 }
 
@@ -140,8 +167,18 @@ pub extern "C" fn wire_delete_user(
 	auth_token: *mut wire_uint_8_list,
 	user_identifier: *mut wire_uint_8_list,
 	password: *mut wire_uint_8_list,
+	mfa_token: *mut wire_uint_8_list,
+	mfa_recovery: *mut bool,
 ) {
-	wire_delete_user_impl(port_, base_url, auth_token, user_identifier, password)
+	wire_delete_user_impl(
+		port_,
+		base_url,
+		auth_token,
+		user_identifier,
+		password,
+		mfa_token,
+		mfa_recovery,
+	)
 }
 
 #[no_mangle]
@@ -152,8 +189,19 @@ pub extern "C" fn wire_delete_device(
 	device_identifier: *mut wire_uint_8_list,
 	password: *mut wire_uint_8_list,
 	device_id: *mut wire_uint_8_list,
+	mfa_token: *mut wire_uint_8_list,
+	mfa_recovery: *mut bool,
 ) {
-	wire_delete_device_impl(port_, base_url, auth_token, device_identifier, password, device_id)
+	wire_delete_device_impl(
+		port_,
+		base_url,
+		auth_token,
+		device_identifier,
+		password,
+		device_id,
+		mfa_token,
+		mfa_recovery,
+	)
 }
 
 #[no_mangle]
@@ -655,6 +703,11 @@ pub extern "C" fn wire_group_delete_group(
 // Section: allocate functions
 
 #[no_mangle]
+pub extern "C" fn new_box_autoadd_bool_0(value: bool) -> *mut bool {
+	support::new_leak_box_ptr(value)
+}
+
+#[no_mangle]
 pub extern "C" fn new_box_autoadd_i32_0(value: i32) -> *mut i32 {
 	support::new_leak_box_ptr(value)
 }
@@ -679,6 +732,11 @@ impl Wire2Api<String> for *mut wire_uint_8_list {
 	}
 }
 
+impl Wire2Api<bool> for *mut bool {
+	fn wire2api(self) -> bool {
+		unsafe { *support::box_from_leak_ptr(self) }
+	}
+}
 impl Wire2Api<i32> for *mut i32 {
 	fn wire2api(self) -> i32 {
 		unsafe { *support::box_from_leak_ptr(self) }
