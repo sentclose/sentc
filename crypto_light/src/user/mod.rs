@@ -11,7 +11,6 @@ use sentc_crypto_common::group::GroupNewMemberLightInput;
 use sentc_crypto_common::user::{
 	DoneLoginServerOutput,
 	DoneLoginServerReturn,
-	JwtRefreshInput,
 	KeyDerivedData,
 	MasterKey,
 	RegisterServerOutput,
@@ -20,7 +19,6 @@ use sentc_crypto_common::user::{
 	UserDeviceRegisterOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
-	UserUpdateServerInput,
 	VerifyLoginLightOutput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
@@ -280,22 +278,14 @@ fn verify_login_internally(
 
 fn prepare_user_identifier_update_internally(user_identifier: String) -> Result<String, SdkLightError>
 {
-	let input = UserUpdateServerInput {
+	Ok(sentc_crypto_utils::user::prepare_user_identifier_update(
 		user_identifier,
-	};
-
-	input
-		.to_string()
-		.map_err(|_| SdkLightError::JsonToStringFailed)
+	)?)
 }
 
 fn prepare_refresh_jwt_internally(refresh_token: String) -> Result<String, SdkLightError>
 {
-	JwtRefreshInput {
-		refresh_token,
-	}
-	.to_string()
-	.map_err(|_| SdkLightError::JsonToStringFailed)
+	Ok(sentc_crypto_utils::user::prepare_refresh_jwt(refresh_token)?)
 }
 
 //__________________________________________________________________________________________________

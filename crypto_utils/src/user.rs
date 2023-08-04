@@ -7,10 +7,12 @@ use sentc_crypto_common::user::{
 	DoneLoginServerKeysOutput,
 	DoneLoginServerOutput,
 	DoneLoginServerReturn,
+	JwtRefreshInput,
 	OtpInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	UserPublicKeyData,
+	UserUpdateServerInput,
 	UserVerifyKeyData,
 	VerifyLoginInput,
 };
@@ -325,6 +327,26 @@ pub fn change_password(
 	};
 
 	pw_change_out
+		.to_string()
+		.map_err(|_| SdkUtilError::JsonToStringFailed)
+}
+
+pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, SdkUtilError>
+{
+	JwtRefreshInput {
+		refresh_token,
+	}
+	.to_string()
+	.map_err(|_| SdkUtilError::JsonToStringFailed)
+}
+
+pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, SdkUtilError>
+{
+	let input = UserUpdateServerInput {
+		user_identifier,
+	};
+
+	input
 		.to_string()
 		.map_err(|_| SdkUtilError::JsonToStringFailed)
 }

@@ -13,7 +13,6 @@ use sentc_crypto_common::group::GroupKeyServerOutput;
 use sentc_crypto_common::user::{
 	DoneLoginServerOutput,
 	DoneLoginServerReturn,
-	JwtRefreshInput,
 	KeyDerivedData,
 	MasterKey,
 	RegisterData,
@@ -25,7 +24,6 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserPublicKeyData,
-	UserUpdateServerInput,
 	UserVerifyKeyData,
 	VerifyLoginOutput,
 };
@@ -453,20 +451,14 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 
 fn prepare_user_identifier_update_internally(user_identifier: String) -> Result<String, SdkError>
 {
-	let input = UserUpdateServerInput {
+	Ok(sentc_crypto_utils::user::prepare_user_identifier_update(
 		user_identifier,
-	};
-
-	input.to_string().map_err(|_| SdkError::JsonToStringFailed)
+	)?)
 }
 
 fn prepare_refresh_jwt_internally(refresh_token: String) -> Result<String, SdkError>
 {
-	JwtRefreshInput {
-		refresh_token,
-	}
-	.to_string()
-	.map_err(|_| SdkError::JsonToStringFailed)
+	Ok(sentc_crypto_utils::user::prepare_refresh_jwt(refresh_token)?)
 }
 
 /**
