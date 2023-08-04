@@ -24,7 +24,7 @@ sentc-crypto = {workspace=true}
 
 sentc-crypto-common = {workspace=true}
 
-sentc-crypto-utils = {workspace=true}
+sentc-crypto-utils = {workspace=true, features = ["crypto_full"]}
 
 #_______________________________________________________________________________________________________________________
 

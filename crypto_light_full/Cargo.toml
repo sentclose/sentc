@@ -21,7 +21,7 @@ include = [
 [dependencies]
 sentc-crypto-common = {workspace=true}
 sentc-crypto-light = {workspace=true}
-sentc-crypto-utils = {workspace=true}
+sentc-crypto-utils = {workspace=true, features = ["crypto_full"]}
 
 # json handling
 serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}

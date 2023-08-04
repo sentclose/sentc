@@ -3,12 +3,9 @@ mod non_rust;
 #[cfg(feature = "rust")]
 mod rust;
 
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
+use alloc::string::String;
 use core::future::Future;
 
-use sentc_crypto::SdkError;
-use sentc_crypto_common::user::{DoneLoginServerOutput, DoneLoginServerReturn};
 use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
 use sentc_crypto_utils::user::UserPreVerifyLogin;
 use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
@@ -19,7 +16,10 @@ pub(crate) use self::non_rust::{
 	DeviceListRes,
 	InitRes,
 	LoginRes,
+	OtpRecoveryKeyRes,
 	PreLoginRes,
+	RegisterOtpRes,
+	RegisterRawOtpRes,
 	Res,
 	SessionRes,
 	UserKeyFetchRes,
@@ -35,7 +35,10 @@ pub(crate) use self::rust::{
 	DeviceListRes,
 	InitRes,
 	LoginRes,
+	OtpRecoveryKeyRes,
 	PreLoginRes,
+	RegisterOtpRes,
+	RegisterRawOtpRes,
 	Res,
 	SessionRes,
 	UserKeyFetchRes,
@@ -136,65 +139,6 @@ pub fn device_key_session<'a>(
 //__________________________________________________________________________________________________
 //Login
 
-async fn prepare_login_start(base_url: String, auth_token: &str, user_identifier: &str) -> Res
-{
-	let user_id_input = sentc_crypto::user::prepare_login_start(user_identifier)?;
-
-	let url = base_url + "/api/v1/prepare_login";
-
-	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(user_id_input)).await?;
-
-	Ok(res)
-}
-
-async fn done_login_internally(
-	base_url: String,
-	auth_token: &str,
-	user_identifier: &str,
-	password: &str,
-	prepare_login_res: &str,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> Result<(UserPreVerifyLogin, DoneLoginServerOutput), SdkError>
-{
-	let (input, auth_key, master_key) = sentc_crypto::user::prepare_login(user_identifier, password, prepare_login_res)?;
-
-	let url = base_url.clone() + "/api/v1/done_login";
-	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
-
-	match sentc_crypto::user::check_done_login(&server_out)? {
-		DoneLoginServerReturn::Direct(d) => {
-			let out = sentc_crypto::user::done_login(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
-
-			Ok((out, d))
-		},
-		DoneLoginServerReturn::Otp => {
-			//if user enables mfa it must be saved in the user data, so the token is needed before doing the req
-			let mfa_token = mfa_token.ok_or(SdkError::JsonToStringFailed)?;
-			let mfa_recovery = mfa_recovery.ok_or(SdkError::JsonToStringFailed)?;
-
-			//use this with the token of the auth app but without the verify
-
-			let url = base_url.clone() +
-				if mfa_recovery {
-					"/api/v1/validate_recovery_otp"
-				} else {
-					"/api/v1/validate_mfa"
-				};
-
-			let input = sentc_crypto::user::prepare_validate_mfa(auth_key.clone(), user_identifier.to_string(), mfa_token)?;
-
-			let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
-
-			let d: DoneLoginServerOutput = handle_server_response(&res)?;
-
-			let out = sentc_crypto::user::done_login(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
-
-			Ok((out, d))
-		},
-	}
-}
-
 async fn verify_login(base_url: String, auth_token: &str, pre_verify: UserPreVerifyLogin) -> LoginRes
 {
 	let url = base_url + "/api/v1/verify_login";
@@ -212,26 +156,15 @@ async fn verify_login(base_url: String, auth_token: &str, pre_verify: UserPreVer
 
 pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> PreLoginRes
 {
-	let user_id_input = sentc_crypto::user::prepare_login_start(user_identifier)?;
+	let pre_login = sentc_crypto_utils::full::user::login(base_url.clone(), auth_token, user_identifier, password).await?;
 
-	let url = base_url.clone() + "/api/v1/prepare_login";
-	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(user_id_input)).await?;
-
-	let (input, auth_key, master_key_encryption_key) = sentc_crypto::user::prepare_login(user_identifier, password, res.as_str())?;
-
-	let url = base_url.clone() + "/api/v1/done_login";
-	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
-
-	match sentc_crypto::user::check_done_login(&server_out)? {
-		DoneLoginServerReturn::Direct(d) => {
-			//direct means user has not enabled mfa, so do verify
-			let verify = sentc_crypto::user::done_login(&master_key_encryption_key, auth_key, user_identifier.to_string(), d)?;
-
-			let out = verify_login(base_url, auth_token, verify).await?;
+	match pre_login {
+		sentc_crypto_utils::full::user::PreLoginOut::Direct(d) => {
+			let out = verify_login(base_url, auth_token, d).await?;
 
 			Ok(PreLoginOut::Direct(out))
 		},
-		DoneLoginServerReturn::Otp => {
+		sentc_crypto_utils::full::user::PreLoginOut::Otp(d) => {
 			//Otp means the user enables otp, so use done_otp_login fn with the user token before verify,
 			// DoneLoginServerOutput is not returned at this point
 
@@ -239,19 +172,19 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 
 			#[cfg(not(feature = "rust"))]
 			{
-				let master_key: sentc_crypto_utils::keys::MasterKeyFormat = master_key_encryption_key.into();
+				let master_key: sentc_crypto_utils::keys::MasterKeyFormat = d.master_key.into();
 
 				Ok(PreLoginOut::Otp(PrepareLoginOtpOutput {
 					master_key: master_key.to_string()?,
-					auth_key,
+					auth_key: d.auth_key,
 				}))
 			}
 
 			#[cfg(feature = "rust")]
 			{
 				Ok(PreLoginOut::Otp(PrepareLoginOtpOutput {
-					master_key: master_key_encryption_key,
-					auth_key,
+					master_key: d.master_key,
+					auth_key: d.auth_key,
 				}))
 			}
 		},
@@ -269,20 +202,33 @@ pub async fn mfa_login(
 	recovery: bool,
 ) -> LoginRes
 {
-	//use this with the token of the auth app
+	#[cfg(not(feature = "rust"))]
+	let keys = {
+		let master_key_encryption: sentc_crypto_utils::keys::MasterKeyFormat = master_key_encryption.parse()?;
 
-	let url = base_url.clone() +
-		if recovery {
-			"/api/v1/validate_recovery_otp"
-		} else {
-			"/api/v1/validate_mfa"
-		};
+		sentc_crypto_utils::full::user::mfa_login(
+			base_url.clone(),
+			auth_token,
+			&master_key_encryption.try_into()?,
+			auth_key,
+			user_identifier,
+			token,
+			recovery,
+		)
+		.await?
+	};
 
-	let input = sentc_crypto::user::prepare_validate_mfa(auth_key.clone(), user_identifier.clone(), token)?;
-
-	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
-
-	let keys = sentc_crypto::user::done_validate_mfa(master_key_encryption, auth_key, user_identifier, &res)?;
+	#[cfg(feature = "rust")]
+	let keys = sentc_crypto_utils::full::user::mfa_login(
+		base_url.clone(),
+		auth_token,
+		master_key_encryption,
+		auth_key,
+		user_identifier,
+		token,
+		recovery,
+	)
+	.await?;
 
 	verify_login(base_url, auth_token, keys).await
 }
@@ -307,39 +253,17 @@ pub async fn fetch_user_key(
 
 pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> Res
 {
-	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token)?;
-
-	let url = base_url + "/api/v1/refresh";
-
-	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
-
-	let server_output: sentc_crypto_common::user::DoneLoginLightServerOutput = handle_server_response(res.as_str())?;
-
-	Ok(server_output.jwt)
+	Ok(sentc_crypto_utils::full::user::refresh_jwt(base_url, auth_token, jwt, refresh_token).await?)
 }
 
 pub async fn init_user(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> InitRes
 {
-	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token)?;
-
-	let url = base_url + "/api/v1/init";
-
-	let res = auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input), jwt).await?;
-
-	let server_output: sentc_crypto_common::user::UserInitServerOutput = handle_server_response(res.as_str())?;
-
-	Ok(server_output)
+	Ok(sentc_crypto_utils::full::user::init_user(base_url, auth_token, jwt, refresh_token).await?)
 }
 
 pub async fn get_user_devices(base_url: String, auth_token: &str, jwt: &str, last_fetched_time: &str, last_fetched_id: &str) -> DeviceListRes
 {
-	let url = base_url + "/api/v1/user/device/" + last_fetched_time + "/" + last_fetched_id;
-
-	let res = auth_req(HttpMethod::GET, url.as_str(), auth_token, None, jwt).await?;
-
-	let out: Vec<sentc_crypto_common::user::UserDeviceList> = handle_server_response(res.as_str())?;
-
-	Ok(out)
+	Ok(sentc_crypto_utils::full::user::get_user_devices(base_url, auth_token, jwt, last_fetched_time, last_fetched_id).await?)
 }
 
 //__________________________________________________________________________________________________
@@ -354,15 +278,11 @@ pub async fn change_password(
 	mfa_recovery: Option<bool>,
 ) -> VoidRes
 {
-	//first make the prep login req to get the output
-	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
-
-	let (keys, done_login_out) = done_login_internally(
+	let (prep_login_out, keys, done_login_out) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
 		base_url.clone(),
 		auth_token,
 		user_identifier,
 		old_password,
-		&prep_login_out,
 		mfa_token,
 		mfa_recovery,
 	)
@@ -370,13 +290,16 @@ pub async fn change_password(
 
 	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
-	let change_pw_input = sentc_crypto::user::change_password(old_password, new_password, &prep_login_out, done_login_out)?;
-
-	let url = base_url + "/api/v1/user/update_pw";
-
-	let res = auth_req(HttpMethod::PUT, &url, auth_token, Some(change_pw_input), &keys.jwt).await?;
-
-	Ok(handle_general_server_response(&res)?)
+	Ok(sentc_crypto_utils::full::user::done_change_password(
+		base_url,
+		auth_token,
+		old_password,
+		new_password,
+		&keys.jwt,
+		&prep_login_out,
+		done_login_out,
+	)
+	.await?)
 }
 
 pub async fn reset_password(
@@ -410,14 +333,11 @@ pub async fn delete(
 	mfa_recovery: Option<bool>,
 ) -> VoidRes
 {
-	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
-
-	let (keys, _done_login_out) = done_login_internally(
+	let (_prep_login_out, keys, _done_login_out) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
 		base_url.clone(),
 		auth_token,
 		user_identifier,
 		password,
-		&prep_login_out,
 		mfa_token,
 		mfa_recovery,
 	)
@@ -425,11 +345,7 @@ pub async fn delete(
 
 	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
-	let url = base_url + "/api/v1/user";
-
-	let res = auth_req(HttpMethod::DELETE, &url, auth_token, None, &keys.jwt).await?;
-
-	Ok(handle_general_server_response(&res)?)
+	Ok(sentc_crypto_utils::full::user::done_delete(base_url, auth_token, &keys.jwt).await?)
 }
 
 /**
@@ -448,14 +364,11 @@ pub async fn delete_device(
 	mfa_recovery: Option<bool>,
 ) -> VoidRes
 {
-	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, device_identifier).await?;
-
-	let (keys, _done_login_out) = done_login_internally(
+	let (_prep_login_out, keys, _done_login_out) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
 		base_url.clone(),
 		auth_token,
 		device_identifier,
 		password,
-		&prep_login_out,
 		mfa_token,
 		mfa_recovery,
 	)
@@ -463,24 +376,47 @@ pub async fn delete_device(
 
 	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
-	let url = base_url + "/api/v1/user/device/" + device_id;
-
-	let res = auth_req(HttpMethod::DELETE, url.as_str(), auth_token, None, &keys.jwt).await?;
-
-	Ok(handle_general_server_response(&res)?)
+	Ok(sentc_crypto_utils::full::user::done_delete_device(base_url, auth_token, &keys.jwt, device_id).await?)
 }
 
 //__________________________________________________________________________________________________
 
 pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifier: String) -> VoidRes
 {
-	let url = base_url + "/api/v1/user";
+	Ok(sentc_crypto_utils::full::user::update(base_url, auth_token, jwt, user_identifier).await?)
+}
 
-	let input = sentc_crypto::user::prepare_user_identifier_update(user_identifier)?;
+//__________________________________________________________________________________________________
+//Otp
 
-	let res = auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input), jwt).await?;
+pub async fn register_raw_otp(base_url: String, auth_token: &str, jwt: &str) -> RegisterRawOtpRes
+{
+	Ok(sentc_crypto_utils::full::user::register_raw_otp(base_url, auth_token, jwt).await?)
+}
 
-	Ok(handle_general_server_response(&res)?)
+pub async fn register_otp(base_url: String, auth_token: &str, jwt: &str, issuer: &str, audience: &str) -> RegisterOtpRes
+{
+	Ok(sentc_crypto_utils::full::user::register_otp(base_url, auth_token, jwt, issuer, audience).await?)
+}
+
+pub async fn get_otp_recover_keys(base_url: String, auth_token: &str, jwt: &str) -> OtpRecoveryKeyRes
+{
+	Ok(sentc_crypto_utils::full::user::get_otp_recover_keys(base_url, auth_token, jwt).await?)
+}
+
+pub async fn reset_raw_otp(base_url: String, auth_token: &str, jwt: &str) -> RegisterRawOtpRes
+{
+	Ok(sentc_crypto_utils::full::user::reset_raw_otp(base_url, auth_token, jwt).await?)
+}
+
+pub async fn reset_otp(base_url: String, auth_token: &str, jwt: &str, issuer: &str, audience: &str) -> RegisterOtpRes
+{
+	Ok(sentc_crypto_utils::full::user::reset_otp(base_url, auth_token, jwt, issuer, audience).await?)
+}
+
+pub async fn disable_otp(base_url: String, auth_token: &str, jwt: &str) -> VoidRes
+{
+	Ok(sentc_crypto_utils::full::user::disable_otp(base_url, auth_token, jwt).await?)
 }
 
 //__________________________________________________________________________________________________

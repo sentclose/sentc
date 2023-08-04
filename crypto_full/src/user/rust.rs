@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto::entities::user::{UserDataInt, UserKeyDataInt};
 use sentc_crypto::SdkError;
-use sentc_crypto_common::user::{UserDeviceList, UserInitServerOutput, UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::user::{OtpRecoveryKeysOutput, OtpRegister, UserDeviceList, UserInitServerOutput, UserPublicKeyData, UserVerifyKeyData};
 
 pub struct PrepareLoginOtpOutput
 {
@@ -29,3 +29,7 @@ pub type UserVerifyKeyRes = Result<UserVerifyKeyData, SdkError>;
 pub type InitRes = Result<UserInitServerOutput, SdkError>;
 pub type SessionRes = Result<(Option<String>, UserPublicKeyData), SdkError>;
 pub type DeviceListRes = Result<Vec<UserDeviceList>, SdkError>;
+
+pub type RegisterRawOtpRes = Result<OtpRegister, SdkError>;
+pub type RegisterOtpRes = Result<(String, Vec<String>), SdkError>;
+pub type OtpRecoveryKeyRes = Result<OtpRecoveryKeysOutput, String>;
