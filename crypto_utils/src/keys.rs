@@ -647,3 +647,68 @@ impl<'a> TryFrom<&'a UserVerifyKeyData> for VerifyKeyFormatInt
 		}
 	}
 }
+
+//__________________________________________________________________________________________________
+
+/**
+This key is used if the user enabled mfa and we need more data of the user for login.
+it is used to temporary store the key for the next process
+*/
+#[derive(Serialize, Deserialize)]
+pub enum MasterKeyFormat
+{
+	Argon2(String), //Base64 encoded string from prepare login, is used in done_login
+}
+
+impl MasterKeyFormat
+{
+	pub fn to_string(self) -> Result<String, SdkUtilError>
+	{
+		serde_json::to_string(&self).map_err(|_e| SdkUtilError::JsonToStringFailed)
+	}
+}
+
+impl FromStr for MasterKeyFormat
+{
+	type Err = SdkUtilError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err>
+	{
+		serde_json::from_str(s).map_err(|_| SdkUtilError::ImportAuthMasterKeyFailed)
+	}
+}
+
+impl TryInto<sentc_crypto_core::DeriveMasterKeyForAuth> for MasterKeyFormat
+{
+	type Error = SdkUtilError;
+
+	fn try_into(self) -> Result<sentc_crypto_core::DeriveMasterKeyForAuth, Self::Error>
+	{
+		match self {
+			MasterKeyFormat::Argon2(mk) => {
+				let mk = Base64::decode_vec(mk.as_str()).map_err(|_e| SdkUtilError::ImportAuthMasterKeyFailed)?;
+				let master_key_encryption_key: [u8; 32] = mk
+					.try_into()
+					.map_err(|_e| SdkUtilError::ImportAuthMasterKeyFailed)?;
+
+				Ok(sentc_crypto_core::DeriveMasterKeyForAuth::Argon2(
+					master_key_encryption_key,
+				))
+			},
+		}
+	}
+}
+
+impl From<sentc_crypto_core::DeriveMasterKeyForAuth> for MasterKeyFormat
+{
+	fn from(value: sentc_crypto_core::DeriveMasterKeyForAuth) -> Self
+	{
+		match value {
+			sentc_crypto_core::DeriveMasterKeyForAuth::Argon2(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Argon2(key)
+			},
+		}
+	}
+}

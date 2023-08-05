@@ -25,6 +25,8 @@ use serde::Deserialize;
 use crate::error::SdkUtilError;
 
 pub mod error;
+#[cfg(all(feature = "crypto_full", any(feature = "rustls", feature = "wasm")))]
+pub mod full;
 pub mod group;
 #[cfg(any(feature = "rustls", feature = "wasm"))]
 pub mod http;

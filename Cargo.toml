@@ -22,7 +22,7 @@ documentation = "https://sentc.com/"
 repository = "https://github.com/sentclose/sentc"
 
 [workspace.dependencies]
-sentc-crypto-common = "0.9.3"
+sentc-crypto-common = {version = "0.9.4", git = "https://github.com/sentclose/sentc-common.git", rev = "46f582557017a2510d454d3781a2087659a6a776"}
 #sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" }    # for local dev
 
 sentc-crypto-core = {version = "0.9.0", path = "crypto_core"}
