@@ -160,22 +160,12 @@ pub async fn mfa_login(
 ) -> LoginRes
 {
 	#[cfg(not(feature = "rust"))]
-	let keys = {
+	let master_key_encryption = {
 		let master_key_encryption: sentc_crypto_utils::keys::MasterKeyFormat = master_key_encryption.parse()?;
 
-		sentc_crypto_utils::full::user::mfa_login(
-			base_url.clone(),
-			auth_token,
-			&master_key_encryption.try_into()?,
-			auth_key,
-			user_identifier,
-			token,
-			recovery,
-		)
-		.await?
+		&master_key_encryption.try_into()?
 	};
 
-	#[cfg(feature = "rust")]
 	let keys = sentc_crypto_utils::full::user::mfa_login(
 		base_url.clone(),
 		auth_token,
