@@ -420,6 +420,27 @@ pub async fn mfa_login(
 }
 
 #[wasm_bindgen]
+pub async fn get_fresh_jwt(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	password: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto_light_full::user::get_fresh_jwt(
+		base_url,
+		&auth_token,
+		&user_identifier,
+		&password,
+		mfa_token,
+		mfa_recovery,
+	)
+	.await?)
+}
+
+#[wasm_bindgen]
 pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_light_full::user::refresh_jwt(base_url, &auth_token, &jwt, refresh_token).await?;
@@ -466,47 +487,15 @@ pub async fn change_password(
 }
 
 #[wasm_bindgen]
-pub async fn delete_user(
-	base_url: String,
-	auth_token: String,
-	user_identifier: String,
-	password: String,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> Result<(), JsValue>
+pub async fn delete_user(base_url: String, auth_token: String, fresh_jwt: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_light_full::user::delete(
-		base_url,
-		&auth_token,
-		&user_identifier,
-		&password,
-		mfa_token,
-		mfa_recovery,
-	)
-	.await?)
+	Ok(sentc_crypto_light_full::user::delete(base_url, &auth_token, &fresh_jwt).await?)
 }
 
 #[wasm_bindgen]
-pub async fn delete_device(
-	base_url: String,
-	auth_token: String,
-	device_identifier: String,
-	password: String,
-	device_id: String,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> Result<(), JsValue>
+pub async fn delete_device(base_url: String, auth_token: String, fresh_jwt: String, device_id: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_light_full::user::delete_device(
-		base_url,
-		&auth_token,
-		&device_identifier,
-		&password,
-		&device_id,
-		mfa_token,
-		mfa_recovery,
-	)
-	.await?)
+	Ok(sentc_crypto_light_full::user::delete_device(base_url, &auth_token, &fresh_jwt, &device_id).await?)
 }
 
 #[wasm_bindgen]

@@ -301,6 +301,25 @@ pub fn mfa_login(
 	Ok(data.into())
 }
 
+pub fn get_fresh_jwt(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	password: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<String>
+{
+	rt(sentc_crypto_light_full::user::get_fresh_jwt(
+		base_url,
+		&auth_token,
+		&user_identifier,
+		&password,
+		mfa_token,
+		mfa_recovery,
+	))
+}
+
 //__________________________________________________________________________________________________
 
 #[repr(C)]
@@ -403,43 +422,22 @@ pub fn change_password(
 	))
 }
 
-pub fn delete_user(
-	base_url: String,
-	auth_token: String,
-	user_identifier: String,
-	password: String,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> Result<()>
+pub fn delete_user(base_url: String, auth_token: String, fresh_jwt: String) -> Result<()>
 {
 	rt(sentc_crypto_light_full::user::delete(
 		base_url,
 		auth_token.as_str(),
-		user_identifier.as_str(),
-		password.as_str(),
-		mfa_token,
-		mfa_recovery,
+		&fresh_jwt,
 	))
 }
 
-pub fn delete_device(
-	base_url: String,
-	auth_token: String,
-	device_identifier: String,
-	password: String,
-	device_id: String,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> Result<()>
+pub fn delete_device(base_url: String, auth_token: String, fresh_jwt: String, device_id: String) -> Result<()>
 {
 	rt(sentc_crypto_light_full::user::delete_device(
 		base_url,
 		auth_token.as_str(),
-		device_identifier.as_str(),
-		password.as_str(),
-		device_id.as_str(),
-		mfa_token,
-		mfa_recovery,
+		&fresh_jwt,
+		&device_id,
 	))
 }
 
@@ -450,6 +448,126 @@ pub fn update_user(base_url: String, auth_token: String, jwt: String, user_ident
 		auth_token.as_str(),
 		jwt.as_str(),
 		user_identifier,
+	))
+}
+
+//__________________________________________________________________________________________________
+//Otp
+
+#[repr(C)]
+pub struct OtpRegister
+{
+	pub secret: String, //base32 endowed secret
+	pub alg: String,
+	pub recover: Vec<String>,
+}
+
+impl From<sentc_crypto_common::user::OtpRegister> for OtpRegister
+{
+	fn from(value: sentc_crypto_common::user::OtpRegister) -> Self
+	{
+		Self {
+			secret: value.secret,
+			alg: value.alg,
+			recover: value.recover,
+		}
+	}
+}
+
+#[repr(C)]
+pub struct OtpRegisterUrl
+{
+	pub url: String,
+	pub recover: Vec<String>,
+}
+
+#[repr(C)]
+pub struct OtpRecoveryKeysOutput
+{
+	pub keys: Vec<String>,
+}
+
+impl From<sentc_crypto_common::user::OtpRecoveryKeysOutput> for OtpRecoveryKeysOutput
+{
+	fn from(value: sentc_crypto_common::user::OtpRecoveryKeysOutput) -> Self
+	{
+		Self {
+			keys: value.keys,
+		}
+	}
+}
+
+pub fn register_raw_otp(base_url: String, auth_token: String, jwt: String) -> Result<OtpRegister>
+{
+	let out = rt(sentc_crypto_light_full::user::register_raw_otp(
+		base_url,
+		&auth_token,
+		&jwt,
+	))?;
+
+	Ok(out.into())
+}
+
+pub fn register_otp(base_url: String, auth_token: String, jwt: String, issuer: String, audience: String) -> Result<OtpRegisterUrl>
+{
+	let (url, recover) = rt(sentc_crypto_light_full::user::register_otp(
+		base_url,
+		&auth_token,
+		&issuer,
+		&audience,
+		&jwt,
+	))?;
+
+	Ok(OtpRegisterUrl {
+		url,
+		recover,
+	})
+}
+
+pub fn get_otp_recover_keys(base_url: String, auth_token: String, jwt: String) -> Result<OtpRecoveryKeysOutput>
+{
+	let out = rt(sentc_crypto_light_full::user::get_otp_recover_keys(
+		base_url,
+		&auth_token,
+		&jwt,
+	))?;
+
+	Ok(out.into())
+}
+
+pub fn reset_raw_otp(base_url: String, auth_token: String, jwt: String) -> Result<OtpRegister>
+{
+	let out = rt(sentc_crypto_light_full::user::reset_raw_otp(
+		base_url,
+		&auth_token,
+		&jwt,
+	))?;
+
+	Ok(out.into())
+}
+
+pub fn reset_otp(base_url: String, auth_token: String, jwt: String, issuer: String, audience: String) -> Result<OtpRegisterUrl>
+{
+	let (url, recover) = rt(sentc_crypto_light_full::user::reset_otp(
+		base_url,
+		&auth_token,
+		&jwt,
+		&issuer,
+		&audience,
+	))?;
+
+	Ok(OtpRegisterUrl {
+		url,
+		recover,
+	})
+}
+
+pub fn disable_otp(base_url: String, auth_token: String, jwt: String) -> Result<()>
+{
+	rt(sentc_crypto_light_full::user::disable_otp(
+		base_url,
+		&auth_token,
+		&jwt,
 	))
 }
 

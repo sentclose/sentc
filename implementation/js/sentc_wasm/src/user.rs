@@ -764,6 +764,27 @@ pub fn done_fetch_user_key(private_key: &str, server_output: &str) -> Result<Use
 }
 
 #[wasm_bindgen]
+pub async fn get_fresh_jwt(
+	base_url: String,
+	auth_token: String,
+	user_identifier: String,
+	password: String,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Result<String, JsValue>
+{
+	Ok(sentc_crypto_full::user::get_fresh_jwt(
+		base_url,
+		&auth_token,
+		&user_identifier,
+		&password,
+		mfa_token,
+		mfa_recovery,
+	)
+	.await?)
+}
+
+#[wasm_bindgen]
 pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String, JsValue>
 {
 	let out = sentc_crypto_full::user::refresh_jwt(base_url, auth_token.as_str(), jwt.as_str(), refresh_token).await?;
@@ -829,47 +850,15 @@ pub async fn change_password(
 }
 
 #[wasm_bindgen]
-pub async fn delete_user(
-	base_url: String,
-	auth_token: String,
-	user_identifier: String,
-	password: String,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> Result<(), JsValue>
+pub async fn delete_user(base_url: String, auth_token: String, fresh_jwt: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_full::user::delete(
-		base_url,
-		auth_token.as_str(),
-		user_identifier.as_str(),
-		password.as_str(),
-		mfa_token,
-		mfa_recovery,
-	)
-	.await?)
+	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), &fresh_jwt).await?)
 }
 
 #[wasm_bindgen]
-pub async fn delete_device(
-	base_url: String,
-	auth_token: String,
-	device_identifier: String,
-	password: String,
-	device_id: String,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> Result<(), JsValue>
+pub async fn delete_device(base_url: String, auth_token: String, fresh_jwt: String, device_id: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_full::user::delete_device(
-		base_url,
-		auth_token.as_str(),
-		device_identifier.as_str(),
-		password.as_str(),
-		device_id.as_str(),
-		mfa_token,
-		mfa_recovery,
-	)
-	.await?)
+	Ok(sentc_crypto_full::user::delete_device(base_url, auth_token.as_str(), &fresh_jwt, device_id.as_str()).await?)
 }
 
 #[wasm_bindgen]

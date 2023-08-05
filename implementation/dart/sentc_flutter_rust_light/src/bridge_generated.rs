@@ -230,6 +230,41 @@ fn wire_mfa_login_impl(
 		},
 	)
 }
+fn wire_get_fresh_jwt_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	user_identifier: impl Wire2Api<String> + UnwindSafe,
+	password: impl Wire2Api<String> + UnwindSafe,
+	mfa_token: impl Wire2Api<Option<String>> + UnwindSafe,
+	mfa_recovery: impl Wire2Api<Option<bool>> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "get_fresh_jwt",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_user_identifier = user_identifier.wire2api();
+			let api_password = password.wire2api();
+			let api_mfa_token = mfa_token.wire2api();
+			let api_mfa_recovery = mfa_recovery.wire2api();
+			move |task_callback| {
+				get_fresh_jwt(
+					api_base_url,
+					api_auth_token,
+					api_user_identifier,
+					api_password,
+					api_mfa_token,
+					api_mfa_recovery,
+				)
+			}
+		},
+	)
+}
 fn wire_refresh_jwt_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
@@ -348,10 +383,7 @@ fn wire_delete_user_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
 	auth_token: impl Wire2Api<String> + UnwindSafe,
-	user_identifier: impl Wire2Api<String> + UnwindSafe,
-	password: impl Wire2Api<String> + UnwindSafe,
-	mfa_token: impl Wire2Api<Option<String>> + UnwindSafe,
-	mfa_recovery: impl Wire2Api<Option<bool>> + UnwindSafe,
+	fresh_jwt: impl Wire2Api<String> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -362,20 +394,8 @@ fn wire_delete_user_impl(
 		move || {
 			let api_base_url = base_url.wire2api();
 			let api_auth_token = auth_token.wire2api();
-			let api_user_identifier = user_identifier.wire2api();
-			let api_password = password.wire2api();
-			let api_mfa_token = mfa_token.wire2api();
-			let api_mfa_recovery = mfa_recovery.wire2api();
-			move |task_callback| {
-				delete_user(
-					api_base_url,
-					api_auth_token,
-					api_user_identifier,
-					api_password,
-					api_mfa_token,
-					api_mfa_recovery,
-				)
-			}
+			let api_fresh_jwt = fresh_jwt.wire2api();
+			move |task_callback| delete_user(api_base_url, api_auth_token, api_fresh_jwt)
 		},
 	)
 }
@@ -383,11 +403,8 @@ fn wire_delete_device_impl(
 	port_: MessagePort,
 	base_url: impl Wire2Api<String> + UnwindSafe,
 	auth_token: impl Wire2Api<String> + UnwindSafe,
-	device_identifier: impl Wire2Api<String> + UnwindSafe,
-	password: impl Wire2Api<String> + UnwindSafe,
+	fresh_jwt: impl Wire2Api<String> + UnwindSafe,
 	device_id: impl Wire2Api<String> + UnwindSafe,
-	mfa_token: impl Wire2Api<Option<String>> + UnwindSafe,
-	mfa_recovery: impl Wire2Api<Option<bool>> + UnwindSafe,
 ) {
 	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
 		WrapInfo {
@@ -398,22 +415,9 @@ fn wire_delete_device_impl(
 		move || {
 			let api_base_url = base_url.wire2api();
 			let api_auth_token = auth_token.wire2api();
-			let api_device_identifier = device_identifier.wire2api();
-			let api_password = password.wire2api();
+			let api_fresh_jwt = fresh_jwt.wire2api();
 			let api_device_id = device_id.wire2api();
-			let api_mfa_token = mfa_token.wire2api();
-			let api_mfa_recovery = mfa_recovery.wire2api();
-			move |task_callback| {
-				delete_device(
-					api_base_url,
-					api_auth_token,
-					api_device_identifier,
-					api_password,
-					api_device_id,
-					api_mfa_token,
-					api_mfa_recovery,
-				)
-			}
+			move |task_callback| delete_device(api_base_url, api_auth_token, api_fresh_jwt, api_device_id)
 		},
 	)
 }
@@ -436,6 +440,134 @@ fn wire_update_user_impl(
 			let api_jwt = jwt.wire2api();
 			let api_user_identifier = user_identifier.wire2api();
 			move |task_callback| update_user(api_base_url, api_auth_token, api_jwt, api_user_identifier)
+		},
+	)
+}
+fn wire_register_raw_otp_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "register_raw_otp",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			move |task_callback| register_raw_otp(api_base_url, api_auth_token, api_jwt)
+		},
+	)
+}
+fn wire_register_otp_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+	issuer: impl Wire2Api<String> + UnwindSafe,
+	audience: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "register_otp",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_issuer = issuer.wire2api();
+			let api_audience = audience.wire2api();
+			move |task_callback| register_otp(api_base_url, api_auth_token, api_jwt, api_issuer, api_audience)
+		},
+	)
+}
+fn wire_get_otp_recover_keys_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "get_otp_recover_keys",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			move |task_callback| get_otp_recover_keys(api_base_url, api_auth_token, api_jwt)
+		},
+	)
+}
+fn wire_reset_raw_otp_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "reset_raw_otp",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			move |task_callback| reset_raw_otp(api_base_url, api_auth_token, api_jwt)
+		},
+	)
+}
+fn wire_reset_otp_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+	issuer: impl Wire2Api<String> + UnwindSafe,
+	audience: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "reset_otp",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			let api_issuer = issuer.wire2api();
+			let api_audience = audience.wire2api();
+			move |task_callback| reset_otp(api_base_url, api_auth_token, api_jwt, api_issuer, api_audience)
+		},
+	)
+}
+fn wire_disable_otp_impl(
+	port_: MessagePort,
+	base_url: impl Wire2Api<String> + UnwindSafe,
+	auth_token: impl Wire2Api<String> + UnwindSafe,
+	jwt: impl Wire2Api<String> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+		WrapInfo {
+			debug_name: "disable_otp",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_base_url = base_url.wire2api();
+			let api_auth_token = auth_token.wire2api();
+			let api_jwt = jwt.wire2api();
+			move |task_callback| disable_otp(api_base_url, api_auth_token, api_jwt)
 		},
 	)
 }
@@ -1495,6 +1627,27 @@ impl support::IntoDart for ListGroups {
 	}
 }
 impl support::IntoDartExceptPrimitive for ListGroups {}
+
+impl support::IntoDart for OtpRecoveryKeysOutput {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.keys.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for OtpRecoveryKeysOutput {}
+
+impl support::IntoDart for OtpRegister {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.secret.into_dart(), self.alg.into_dart(), self.recover.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for OtpRegister {}
+
+impl support::IntoDart for OtpRegisterUrl {
+	fn into_dart(self) -> support::DartAbi {
+		vec![self.url.into_dart(), self.recover.into_dart()].into_dart()
+	}
+}
+impl support::IntoDartExceptPrimitive for OtpRegisterUrl {}
 
 impl support::IntoDart for PrepareLoginOtpOutput {
 	fn into_dart(self) -> support::DartAbi {

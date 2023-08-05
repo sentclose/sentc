@@ -104,6 +104,27 @@ pub extern "C" fn wire_mfa_login(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_get_fresh_jwt(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	user_identifier: *mut wire_uint_8_list,
+	password: *mut wire_uint_8_list,
+	mfa_token: *mut wire_uint_8_list,
+	mfa_recovery: *mut bool,
+) {
+	wire_get_fresh_jwt_impl(
+		port_,
+		base_url,
+		auth_token,
+		user_identifier,
+		password,
+		mfa_token,
+		mfa_recovery,
+	)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_refresh_jwt(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
@@ -161,24 +182,8 @@ pub extern "C" fn wire_change_password(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_delete_user(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	user_identifier: *mut wire_uint_8_list,
-	password: *mut wire_uint_8_list,
-	mfa_token: *mut wire_uint_8_list,
-	mfa_recovery: *mut bool,
-) {
-	wire_delete_user_impl(
-		port_,
-		base_url,
-		auth_token,
-		user_identifier,
-		password,
-		mfa_token,
-		mfa_recovery,
-	)
+pub extern "C" fn wire_delete_user(port_: i64, base_url: *mut wire_uint_8_list, auth_token: *mut wire_uint_8_list, fresh_jwt: *mut wire_uint_8_list) {
+	wire_delete_user_impl(port_, base_url, auth_token, fresh_jwt)
 }
 
 #[no_mangle]
@@ -186,22 +191,10 @@ pub extern "C" fn wire_delete_device(
 	port_: i64,
 	base_url: *mut wire_uint_8_list,
 	auth_token: *mut wire_uint_8_list,
-	device_identifier: *mut wire_uint_8_list,
-	password: *mut wire_uint_8_list,
+	fresh_jwt: *mut wire_uint_8_list,
 	device_id: *mut wire_uint_8_list,
-	mfa_token: *mut wire_uint_8_list,
-	mfa_recovery: *mut bool,
 ) {
-	wire_delete_device_impl(
-		port_,
-		base_url,
-		auth_token,
-		device_identifier,
-		password,
-		device_id,
-		mfa_token,
-		mfa_recovery,
-	)
+	wire_delete_device_impl(port_, base_url, auth_token, fresh_jwt, device_id)
 }
 
 #[no_mangle]
@@ -213,6 +206,55 @@ pub extern "C" fn wire_update_user(
 	user_identifier: *mut wire_uint_8_list,
 ) {
 	wire_update_user_impl(port_, base_url, auth_token, jwt, user_identifier)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_register_raw_otp(port_: i64, base_url: *mut wire_uint_8_list, auth_token: *mut wire_uint_8_list, jwt: *mut wire_uint_8_list) {
+	wire_register_raw_otp_impl(port_, base_url, auth_token, jwt)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_register_otp(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	issuer: *mut wire_uint_8_list,
+	audience: *mut wire_uint_8_list,
+) {
+	wire_register_otp_impl(port_, base_url, auth_token, jwt, issuer, audience)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_get_otp_recover_keys(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+) {
+	wire_get_otp_recover_keys_impl(port_, base_url, auth_token, jwt)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_reset_raw_otp(port_: i64, base_url: *mut wire_uint_8_list, auth_token: *mut wire_uint_8_list, jwt: *mut wire_uint_8_list) {
+	wire_reset_raw_otp_impl(port_, base_url, auth_token, jwt)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_reset_otp(
+	port_: i64,
+	base_url: *mut wire_uint_8_list,
+	auth_token: *mut wire_uint_8_list,
+	jwt: *mut wire_uint_8_list,
+	issuer: *mut wire_uint_8_list,
+	audience: *mut wire_uint_8_list,
+) {
+	wire_reset_otp_impl(port_, base_url, auth_token, jwt, issuer, audience)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_disable_otp(port_: i64, base_url: *mut wire_uint_8_list, auth_token: *mut wire_uint_8_list, jwt: *mut wire_uint_8_list) {
+	wire_disable_otp_impl(port_, base_url, auth_token, jwt)
 }
 
 #[no_mangle]

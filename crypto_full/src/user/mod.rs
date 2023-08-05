@@ -266,6 +266,30 @@ pub async fn get_user_devices(base_url: String, auth_token: &str, jwt: &str, las
 	Ok(sentc_crypto_utils::full::user::get_user_devices(base_url, auth_token, jwt, last_fetched_time, last_fetched_id).await?)
 }
 
+pub async fn get_fresh_jwt(
+	base_url: String,
+	auth_token: &str,
+	user_identifier: &str,
+	password: &str,
+	mfa_token: Option<String>,
+	mfa_recovery: Option<bool>,
+) -> Res
+{
+	let (_, keys, _) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
+		base_url.clone(),
+		auth_token,
+		user_identifier,
+		password,
+		mfa_token,
+		mfa_recovery,
+	)
+	.await?;
+
+	let keys = verify_login(base_url, auth_token, keys).await?;
+
+	Ok(keys.jwt)
+}
+
 //__________________________________________________________________________________________________
 
 pub async fn change_password(
@@ -324,28 +348,9 @@ pub async fn reset_password(
 
 //__________________________________________________________________________________________________
 
-pub async fn delete(
-	base_url: String,
-	auth_token: &str,
-	user_identifier: &str,
-	password: &str,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> VoidRes
+pub async fn delete(base_url: String, auth_token: &str, fresh_jwt: &str) -> VoidRes
 {
-	let (_prep_login_out, keys, _done_login_out) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
-		base_url.clone(),
-		auth_token,
-		user_identifier,
-		password,
-		mfa_token,
-		mfa_recovery,
-	)
-	.await?;
-
-	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
-
-	Ok(sentc_crypto_utils::full::user::done_delete(base_url, auth_token, &keys.jwt).await?)
+	Ok(sentc_crypto_utils::full::user::done_delete(base_url, auth_token, fresh_jwt).await?)
 }
 
 /**
@@ -354,29 +359,9 @@ pub async fn delete(
 This can only be done when the actual device got a fresh jwt,
 to make sure that no hacker can remove devices.
 */
-pub async fn delete_device(
-	base_url: String,
-	auth_token: &str,
-	device_identifier: &str,
-	password: &str,
-	device_id: &str,
-	mfa_token: Option<String>,
-	mfa_recovery: Option<bool>,
-) -> VoidRes
+pub async fn delete_device(base_url: String, auth_token: &str, fresh_jwt: &str, device_id: &str) -> VoidRes
 {
-	let (_prep_login_out, keys, _done_login_out) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
-		base_url.clone(),
-		auth_token,
-		device_identifier,
-		password,
-		mfa_token,
-		mfa_recovery,
-	)
-	.await?;
-
-	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
-
-	Ok(sentc_crypto_utils::full::user::done_delete_device(base_url, auth_token, &keys.jwt, device_id).await?)
+	Ok(sentc_crypto_utils::full::user::done_delete_device(base_url, auth_token, fresh_jwt, device_id).await?)
 }
 
 //__________________________________________________________________________________________________
@@ -389,34 +374,34 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 //__________________________________________________________________________________________________
 //Otp
 
-pub async fn register_raw_otp(base_url: String, auth_token: &str, jwt: &str) -> RegisterRawOtpRes
+pub async fn register_raw_otp(base_url: String, auth_token: &str, fresh_jwt: &str) -> RegisterRawOtpRes
 {
-	Ok(sentc_crypto_utils::full::user::register_raw_otp(base_url, auth_token, jwt).await?)
+	Ok(sentc_crypto_utils::full::user::register_raw_otp(base_url, auth_token, fresh_jwt).await?)
 }
 
-pub async fn register_otp(base_url: String, auth_token: &str, jwt: &str, issuer: &str, audience: &str) -> RegisterOtpRes
+pub async fn register_otp(base_url: String, auth_token: &str, issuer: &str, audience: &str, fresh_jwt: &str) -> RegisterOtpRes
 {
-	Ok(sentc_crypto_utils::full::user::register_otp(base_url, auth_token, jwt, issuer, audience).await?)
+	Ok(sentc_crypto_utils::full::user::register_otp(base_url, auth_token, fresh_jwt, issuer, audience).await?)
 }
 
-pub async fn get_otp_recover_keys(base_url: String, auth_token: &str, jwt: &str) -> OtpRecoveryKeyRes
+pub async fn get_otp_recover_keys(base_url: String, auth_token: &str, fresh_jwt: &str) -> OtpRecoveryKeyRes
 {
-	Ok(sentc_crypto_utils::full::user::get_otp_recover_keys(base_url, auth_token, jwt).await?)
+	Ok(sentc_crypto_utils::full::user::get_otp_recover_keys(base_url, auth_token, fresh_jwt).await?)
 }
 
-pub async fn reset_raw_otp(base_url: String, auth_token: &str, jwt: &str) -> RegisterRawOtpRes
+pub async fn reset_raw_otp(base_url: String, auth_token: &str, fresh_jwt: &str) -> RegisterRawOtpRes
 {
-	Ok(sentc_crypto_utils::full::user::reset_raw_otp(base_url, auth_token, jwt).await?)
+	Ok(sentc_crypto_utils::full::user::reset_raw_otp(base_url, auth_token, fresh_jwt).await?)
 }
 
-pub async fn reset_otp(base_url: String, auth_token: &str, jwt: &str, issuer: &str, audience: &str) -> RegisterOtpRes
+pub async fn reset_otp(base_url: String, auth_token: &str, issuer: &str, audience: &str, fresh_jwt: &str) -> RegisterOtpRes
 {
-	Ok(sentc_crypto_utils::full::user::reset_otp(base_url, auth_token, jwt, issuer, audience).await?)
+	Ok(sentc_crypto_utils::full::user::reset_otp(base_url, auth_token, fresh_jwt, issuer, audience).await?)
 }
 
-pub async fn disable_otp(base_url: String, auth_token: &str, jwt: &str) -> VoidRes
+pub async fn disable_otp(base_url: String, auth_token: &str, fresh_jwt: &str) -> VoidRes
 {
-	Ok(sentc_crypto_utils::full::user::disable_otp(base_url, auth_token, jwt).await?)
+	Ok(sentc_crypto_utils::full::user::disable_otp(base_url, auth_token, fresh_jwt).await?)
 }
 
 //__________________________________________________________________________________________________
