@@ -4,9 +4,6 @@
 [submodule "implementation/dart/sentc_flutter"]
 	path = implementation/dart/sentc_flutter
 	url = https://github.com/sentclose/sentc-flutter.git
-[submodule "implementation/js/sentc_js_light"]
-	path = implementation/js/sentc_js_light
-	url = https://github.com/sentclose/sentc-javascript-light.git
 [submodule "implementation/dart/sentc_flutter_light"]
 	path = implementation/dart/sentc_flutter_light
 	url = https://github.com/sentclose/sentc-flutter-light.git
