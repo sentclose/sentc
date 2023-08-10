@@ -14,7 +14,7 @@ description = "The main implementation of the sentc light sdk."
 
 include = [
     "Cargo.toml",
-    "LICENSE",
+    "../LICENSE",
     "src/**/*",
 ]
 
