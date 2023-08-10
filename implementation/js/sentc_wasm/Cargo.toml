@@ -1,6 +1,6 @@
 [package]
 name = "sentc_wasm"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 
 description = "Wasm for sentc. End-to-end encryption sdk"

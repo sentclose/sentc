@@ -1096,7 +1096,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1109,8 +1109,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.9.4"
-source = "git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776#46f582557017a2510d454d3781a2087659a6a776"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354#de513a82b0200b476d9592ba1de38c73c6a32354"
 dependencies = [
  "serde",
  "serde_json",
@@ -1118,7 +1118,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1134,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-full"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "sentc-crypto",
  "sentc-crypto-common",
@@ -1145,7 +1145,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1158,7 +1158,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light-full"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "sentc-crypto-common",
  "sentc-crypto-light",
@@ -1169,7 +1169,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "base64ct",
  "js-sys",
@@ -1186,7 +1186,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "flutter_rust_bridge",
@@ -1199,7 +1199,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter_rust_light"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "flutter_rust_bridge",
@@ -1212,7 +1212,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_wasm"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "getrandom",
  "js-sys",
