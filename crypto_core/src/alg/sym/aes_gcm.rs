@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use aes_gcm::aead::generic_array::GenericArray;
-use aes_gcm::aead::{Aead, NewAead};
+use aes_gcm::aead::{Aead, NewAead, Payload};
 use aes_gcm::{Aes256Gcm, Key};
 use rand_core::{CryptoRng, RngCore};
 
@@ -33,19 +33,32 @@ pub(crate) fn encrypt(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
 
 pub(crate) fn encrypt_with_generated_key(key: &AesKey, data: &[u8]) -> Result<Vec<u8>, Error>
 {
-	encrypt_internally(key, data, &mut get_rand())
+	encrypt_internally(key, data, None, &mut get_rand())
 }
 
 pub(crate) fn decrypt(key: &SymKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
 	let key = get_key_from_enum(key);
 
-	decrypt_internally(key, ciphertext)
+	decrypt_internally(key, ciphertext, None)
 }
 
 pub(crate) fn decrypt_with_generated_key(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
-	decrypt_internally(key, ciphertext)
+	decrypt_internally(key, ciphertext, None)
+}
+
+//___________________________________
+//with aad
+
+pub(crate) fn encrypt_with_generated_key_with_aad(key: &AesKey, data: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
+{
+	encrypt_internally(key, data, Some(aad), &mut get_rand())
+}
+
+pub(crate) fn decrypt_with_generated_key_with_aad(key: &AesKey, ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
+{
+	decrypt_internally(key, ciphertext, Some(aad))
 }
 
 //__________________________________________________________________________________________________
@@ -68,7 +81,7 @@ fn generate_key_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<[u8; 3
 	Ok(key)
 }
 
-fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], rng: &mut R) -> Result<Vec<u8>, Error>
+fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], aad: Option<&[u8]>, rng: &mut R) -> Result<Vec<u8>, Error>
 {
 	let key = Key::from_slice(key);
 	let aead = Aes256Gcm::new(key);
@@ -79,8 +92,17 @@ fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], rng: &m
 		.map_err(|_| Error::EncryptionFailedRng)?;
 	let nonce = GenericArray::from_slice(&nonce);
 
+	let plaintext = if let Some(a) = aad {
+		Payload {
+			aad: a,
+			msg: data,
+		}
+	} else {
+		Payload::from(data)
+	};
+
 	let ciphertext = aead
-		.encrypt(nonce, data)
+		.encrypt(nonce, plaintext)
 		.map_err(|_| Error::EncryptionFailed)?;
 
 	//put the IV in front of the ciphertext
@@ -91,13 +113,22 @@ fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], rng: &m
 	Ok(output)
 }
 
-fn decrypt_internally(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+fn decrypt_internally(key: &AesKey, ciphertext: &[u8], aad: Option<&[u8]>) -> Result<Vec<u8>, Error>
 {
 	let key = Key::from_slice(key);
 	let aead = Aes256Gcm::new(key);
 
 	let nonce = GenericArray::from_slice(&ciphertext[..AES_IV_LENGTH]);
 	let encrypted = &ciphertext[AES_IV_LENGTH..];
+
+	let encrypted = if let Some(a) = aad {
+		Payload {
+			aad: a,
+			msg: encrypted,
+		}
+	} else {
+		Payload::from(encrypted)
+	};
 
 	let decrypted = aead
 		.decrypt(nonce, encrypted)
@@ -187,5 +218,53 @@ mod test
 		let decrypt_result = decrypt(&output2.key, &encrypted);
 
 		assert!(matches!(decrypt_result, Err(DecryptionFailed)));
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_with_payload()
+	{
+		let text = "Hello world üöäéèßê°";
+		let payload = b"payload1234567891011121314151617";
+
+		let output = generate_key().unwrap();
+
+		let key = match output.key {
+			SymKey::Aes(k) => k,
+		};
+
+		let encrypted = encrypt_with_generated_key_with_aad(&key, text.as_bytes(), payload).unwrap();
+
+		let decrypted = decrypt_with_generated_key_with_aad(&key, &encrypted, payload).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+
+		let decrypted_text = from_utf8(&decrypted).unwrap();
+
+		assert_eq!(text, decrypted_text);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_with_wrong_payload()
+	{
+		let text = "Hello world üöäéèßê°";
+		let payload = b"payload1234567891011121314151617";
+		let payload2 = b"payload1234567891011121314151618";
+
+		let output = generate_key().unwrap();
+
+		let key = match output.key {
+			SymKey::Aes(k) => k,
+		};
+
+		let encrypted = encrypt_with_generated_key_with_aad(&key, text.as_bytes(), payload).unwrap();
+
+		let decrypted = decrypt_with_generated_key_with_aad(&key, &encrypted, payload2);
+
+		match decrypted {
+			Err(DecryptionFailed) => {
+				//
+			},
+			_ => panic!("Should be an error"),
+		}
 	}
 }
