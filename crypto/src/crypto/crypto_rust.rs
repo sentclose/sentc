@@ -9,6 +9,7 @@ use crate::crypto::{
 	decrypt_asymmetric_internally,
 	decrypt_raw_asymmetric_internally,
 	decrypt_raw_symmetric_internally,
+	decrypt_raw_symmetric_with_aad_internally,
 	decrypt_string_asymmetric_internally,
 	decrypt_string_symmetric_internally,
 	decrypt_sym_key_by_private_key_internally,
@@ -22,6 +23,7 @@ use crate::crypto::{
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
+	encrypt_raw_symmetric_with_aad_internally,
 	encrypt_string_asymmetric_internally,
 	encrypt_string_symmetric_internally,
 	encrypt_symmetric_internally,
@@ -56,6 +58,16 @@ pub fn encrypt_raw_symmetric(key: &SymKeyFormatInt, data: &[u8], sign_key: Optio
 	encrypt_raw_symmetric_internally(key, data, sign_key)
 }
 
+pub fn encrypt_raw_symmetric_with_aad(
+	key: &SymKeyFormatInt,
+	data: &[u8],
+	aad: &[u8],
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<(EncryptedHead, Vec<u8>), SdkError>
+{
+	encrypt_raw_symmetric_with_aad_internally(key, data, aad, sign_key)
+}
+
 pub fn decrypt_raw_symmetric(
 	key: &SymKeyFormatInt,
 	encrypted_data: &[u8],
@@ -64,6 +76,17 @@ pub fn decrypt_raw_symmetric(
 ) -> Result<Vec<u8>, SdkError>
 {
 	decrypt_raw_symmetric_internally(key, encrypted_data, head, verify_key)
+}
+
+pub fn decrypt_raw_symmetric_with_aad(
+	key: &SymKeyFormatInt,
+	encrypted_data: &[u8],
+	head: &EncryptedHead,
+	aad: &[u8],
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<Vec<u8>, SdkError>
+{
+	decrypt_raw_symmetric_with_aad_internally(key, encrypted_data, head, aad, verify_key)
 }
 
 pub fn encrypt_raw_asymmetric(
@@ -258,6 +281,52 @@ mod test
 	}
 
 	#[test]
+	fn test_encrypt_decrypt_sym_raw_with_aad()
+	{
+		let user = create_user();
+
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
+		let payload = b"payload1234567891011121314151617";
+
+		let (head, encrypted) = encrypt_raw_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+
+		let decrypted = decrypt_raw_symmetric_with_aad(group_key, &encrypted, &head, payload, None).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_sym_raw_with_sig_with_aad()
+	{
+		//create a rust dummy user
+		let user = create_user();
+
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
+		let payload = b"payload1234567891011121314151617";
+
+		let (head, encrypted) = encrypt_raw_symmetric_with_aad(group_key, text.as_bytes(), payload, Some(&user.user_keys[0].sign_key)).unwrap();
+
+		let decrypted = decrypt_raw_symmetric_with_aad(
+			group_key,
+			&encrypted,
+			&head,
+			payload,
+			Some(&user.user_keys[0].exported_verify_key),
+		)
+		.unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
 	fn test_encrypt_decrypt_asym_raw()
 	{
 		let text = "123*+^êéèüöß@€&$";
@@ -346,7 +415,7 @@ mod test
 	}
 
 	#[test]
-	fn test_encrypt_decrypt_asym_with_asign()
+	fn test_encrypt_decrypt_asym_with_sign()
 	{
 		let user = create_user();
 
@@ -422,7 +491,7 @@ mod test
 	}
 
 	#[test]
-	fn test_encrypt_decrypt_string_asym_with_asign()
+	fn test_encrypt_decrypt_string_asym_with_sign()
 	{
 		let user = create_user();
 

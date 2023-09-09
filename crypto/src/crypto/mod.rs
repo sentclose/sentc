@@ -19,6 +19,7 @@ pub use self::crypto::{
 	decrypt_asymmetric,
 	decrypt_raw_asymmetric,
 	decrypt_raw_symmetric,
+	decrypt_raw_symmetric_with_aad,
 	decrypt_string_asymmetric,
 	decrypt_string_symmetric,
 	decrypt_sym_key,
@@ -32,6 +33,7 @@ pub use self::crypto::{
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
+	encrypt_raw_symmetric_with_aad,
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric,
@@ -49,6 +51,7 @@ pub use self::crypto_rust::{
 	decrypt_asymmetric,
 	decrypt_raw_asymmetric,
 	decrypt_raw_symmetric,
+	decrypt_raw_symmetric_with_aad,
 	decrypt_string_asymmetric,
 	decrypt_string_symmetric,
 	decrypt_sym_key,
@@ -62,6 +65,7 @@ pub use self::crypto_rust::{
 	encrypt_asymmetric,
 	encrypt_raw_asymmetric,
 	encrypt_raw_symmetric,
+	encrypt_raw_symmetric_with_aad,
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
 	encrypt_symmetric,
@@ -197,6 +201,30 @@ fn encrypt_raw_symmetric_internally(
 	Ok((encrypt_head, encrypted))
 }
 
+fn encrypt_raw_symmetric_with_aad_internally(
+	key: &SymKeyFormatInt,
+	data: &[u8],
+	aad: &[u8],
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<(EncryptedHead, Vec<u8>), SdkError>
+{
+	let mut encrypt_head = EncryptedHead {
+		id: key.key_id.to_string(),
+		sign: None,
+	};
+
+	let mut encrypted = crypto_core::encrypt_symmetric_with_aad(&key.key, data, aad)?;
+
+	//sign the data
+	if let Some(sk) = sign_key {
+		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
+		encrypted = data_with_sign;
+		encrypt_head.sign = Some(sign_head);
+	}
+
+	Ok((encrypt_head, encrypted))
+}
+
 fn decrypt_raw_symmetric_internally(
 	key: &SymKeyFormatInt,
 	encrypted_data: &[u8],
@@ -219,6 +247,49 @@ fn decrypt_raw_symmetric_internally(
 				Some(vk) => {
 					let encrypted_data_without_sig = verify_internally(vk, encrypted_data, h)?;
 					Ok(crypto_core::decrypt_symmetric(&key.key, encrypted_data_without_sig)?)
+				},
+			}
+		},
+	}
+}
+
+fn decrypt_raw_symmetric_with_aad_internally(
+	key: &SymKeyFormatInt,
+	encrypted_data: &[u8],
+	head: &EncryptedHead,
+	aad: &[u8],
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<Vec<u8>, SdkError>
+{
+	//the head needs to be checked before to know which key should be used here and if there is a sig and what verify key should be used
+
+	//check if sig was set
+	match &head.sign {
+		None => {
+			Ok(crypto_core::decrypt_symmetric_with_aad(
+				&key.key,
+				encrypted_data,
+				aad,
+			)?)
+		}, //no sig used, go ahead
+		Some(h) => {
+			match verify_key {
+				None => {
+					//just split the data, use the alg here
+					let (_, encrypted_data_without_sig) = crypto_core::split_sig_and_data(h.alg.as_str(), encrypted_data)?;
+					Ok(crypto_core::decrypt_symmetric_with_aad(
+						&key.key,
+						encrypted_data_without_sig,
+						aad,
+					)?)
+				},
+				Some(vk) => {
+					let encrypted_data_without_sig = verify_internally(vk, encrypted_data, h)?;
+					Ok(crypto_core::decrypt_symmetric_with_aad(
+						&key.key,
+						encrypted_data_without_sig,
+						aad,
+					)?)
 				},
 			}
 		},

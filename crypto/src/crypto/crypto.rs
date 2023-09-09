@@ -10,6 +10,7 @@ use crate::crypto::{
 	decrypt_asymmetric_internally,
 	decrypt_raw_asymmetric_internally,
 	decrypt_raw_symmetric_internally,
+	decrypt_raw_symmetric_with_aad_internally,
 	decrypt_string_asymmetric_internally,
 	decrypt_string_symmetric_internally,
 	decrypt_sym_key_by_private_key_internally,
@@ -23,6 +24,7 @@ use crate::crypto::{
 	encrypt_asymmetric_internally,
 	encrypt_raw_asymmetric_internally,
 	encrypt_raw_symmetric_internally,
+	encrypt_raw_symmetric_with_aad_internally,
 	encrypt_string_asymmetric_internally,
 	encrypt_string_symmetric_internally,
 	encrypt_symmetric_internally,
@@ -93,6 +95,25 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> 
 	Ok((head, encrypted))
 }
 
+pub fn encrypt_raw_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
+{
+	let key = key.parse()?;
+
+	let sign_key = prepare_sign_key(sign_key)?;
+
+	let (head, encrypted) = match sign_key {
+		//in match because we need a valid ref to the sign key format
+		None => encrypt_raw_symmetric_with_aad_internally(&key, data, aad, None)?,
+		Some(k) => encrypt_raw_symmetric_with_aad_internally(&key, data, aad, Some(&k))?,
+	};
+
+	let head = head
+		.to_string()
+		.map_err(|_e| SdkError::JsonToStringFailed)?;
+
+	Ok((head, encrypted))
+}
+
 pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
 {
 	let key = key.parse()?;
@@ -104,6 +125,28 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 	let decrypted = match verify_key {
 		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None)?,
 		Some(k) => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, Some(&k))?,
+	};
+
+	Ok(decrypted)
+}
+
+pub fn decrypt_raw_symmetric_with_aad(
+	key: &str,
+	encrypted_data: &[u8],
+	head: &str,
+	aad: &[u8],
+	verify_key_data: Option<&str>,
+) -> Result<Vec<u8>, String>
+{
+	let key = key.parse()?;
+
+	let verify_key = prepare_verify_key(verify_key_data)?;
+
+	let head = EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)?;
+
+	let decrypted = match verify_key {
+		None => decrypt_raw_symmetric_with_aad_internally(&key, encrypted_data, &head, aad, None)?,
+		Some(k) => decrypt_raw_symmetric_with_aad_internally(&key, encrypted_data, &head, aad, Some(&k))?,
 	};
 
 	Ok(decrypted)
@@ -421,6 +464,49 @@ mod test
 			group_key,
 			&encrypted,
 			&head,
+			Some(user_keys.exported_verify_key.as_str()),
+		)
+		.unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_sym_raw_with_aad()
+	{
+		let user = create_user();
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = b"payload1234567891011121314151617";
+
+		let (head, encrypted) = encrypt_raw_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+
+		let decrypted = decrypt_raw_symmetric_with_aad(group_key, &encrypted, &head, payload, None).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_sym_raw_with_sig_with_aad()
+	{
+		let user = create_user();
+		let user_keys = &user.user_keys[0];
+
+		let (_, key_data, _, _, _) = create_group(user_keys);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = b"payload1234567891011121314151617";
+
+		let (head, encrypted) = encrypt_raw_symmetric_with_aad(group_key, text.as_bytes(), payload, Some(user_keys.sign_key.as_str())).unwrap();
+
+		let decrypted = decrypt_raw_symmetric_with_aad(
+			group_key,
+			&encrypted,
+			&head,
+			payload,
 			Some(user_keys.exported_verify_key.as_str()),
 		)
 		.unwrap();
