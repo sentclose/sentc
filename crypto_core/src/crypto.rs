@@ -31,18 +31,7 @@ pub fn get_symmetric_key_from_master_key(master_key: &SymKey, encrypted_symmetri
 {
 	let decrypted_symmetric_key = decrypt_symmetric(master_key, encrypted_symmetric_key)?;
 
-	let key = match alg {
-		alg::sym::aes_gcm::AES_GCM_OUTPUT => {
-			SymKey::Aes(
-				decrypted_symmetric_key
-					.try_into()
-					.map_err(|_| Error::KeyDecryptFailed)?,
-			)
-		},
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	Ok(key)
+	decapsulate_sym_key(decrypted_symmetric_key, alg)
 }
 
 /**
@@ -67,18 +56,21 @@ pub fn get_symmetric_key_from_private_key(private_key: &Sk, encrypted_symmetric_
 {
 	let decrypted_symmetric_key = decrypt_asymmetric(private_key, encrypted_symmetric_key)?;
 
-	let key = match alg {
+	decapsulate_sym_key(decrypted_symmetric_key, alg)
+}
+
+fn decapsulate_sym_key(decrypted_symmetric_key: Vec<u8>, alg: &str) -> Result<SymKey, Error>
+{
+	match alg {
 		alg::sym::aes_gcm::AES_GCM_OUTPUT => {
-			SymKey::Aes(
+			Ok(SymKey::Aes(
 				decrypted_symmetric_key
 					.try_into()
 					.map_err(|_| Error::KeyDecryptFailed)?,
-			)
+			))
 		},
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	Ok(key)
+		_ => Err(Error::AlgNotFound),
+	}
 }
 
 //__________________________________________________________________________________________________
@@ -94,6 +86,20 @@ pub fn decrypt_symmetric(key: &SymKey, encrypted_data: &[u8]) -> Result<Vec<u8>,
 {
 	match key {
 		SymKey::Aes(k) => alg::sym::aes_gcm::decrypt_with_generated_key(k, encrypted_data),
+	}
+}
+
+pub fn encrypt_symmetric_with_aad(key: &SymKey, data: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
+{
+	match key {
+		SymKey::Aes(k) => alg::sym::aes_gcm::encrypt_with_generated_key_with_aad(k, data, aad),
+	}
+}
+
+pub fn decrypt_symmetric_with_aad(key: &SymKey, encrypted_data: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
+{
+	match key {
+		SymKey::Aes(k) => alg::sym::aes_gcm::decrypt_with_generated_key_with_aad(k, encrypted_data, aad),
 	}
 }
 
