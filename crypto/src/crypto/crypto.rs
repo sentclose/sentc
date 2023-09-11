@@ -13,9 +13,11 @@ use crate::crypto::{
 	decrypt_raw_symmetric_with_aad_internally,
 	decrypt_string_asymmetric_internally,
 	decrypt_string_symmetric_internally,
+	decrypt_string_symmetric_with_aad_internally,
 	decrypt_sym_key_by_private_key_internally,
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
+	decrypt_symmetric_with_aad_internally,
 	deserialize_head_from_string_internally,
 	done_fetch_sym_key_by_private_key_internally,
 	done_fetch_sym_key_internally,
@@ -27,7 +29,9 @@ use crate::crypto::{
 	encrypt_raw_symmetric_with_aad_internally,
 	encrypt_string_asymmetric_internally,
 	encrypt_string_symmetric_internally,
+	encrypt_string_symmetric_with_aad_internally,
 	encrypt_symmetric_internally,
+	encrypt_symmetric_with_aad_internally,
 	generate_non_register_sym_key_by_public_key_internally,
 	generate_non_register_sym_key_internally,
 	prepare_register_sym_key_by_public_key_internally,
@@ -82,11 +86,7 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> 
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let (head, encrypted) = match sign_key {
-		//in match because we need a valid ref to the sign key format
-		None => encrypt_raw_symmetric_internally(&key, data, None)?,
-		Some(k) => encrypt_raw_symmetric_internally(&key, data, Some(&k))?,
-	};
+	let (head, encrypted) = encrypt_raw_symmetric_internally(&key, data, sign_key.as_ref())?;
 
 	let head = head
 		.to_string()
@@ -101,11 +101,7 @@ pub fn encrypt_raw_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_k
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let (head, encrypted) = match sign_key {
-		//in match because we need a valid ref to the sign key format
-		None => encrypt_raw_symmetric_with_aad_internally(&key, data, aad, None)?,
-		Some(k) => encrypt_raw_symmetric_with_aad_internally(&key, data, aad, Some(&k))?,
-	};
+	let (head, encrypted) = encrypt_raw_symmetric_with_aad_internally(&key, data, aad, sign_key.as_ref())?;
 
 	let head = head
 		.to_string()
@@ -122,12 +118,12 @@ pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verif
 
 	let head = EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)?;
 
-	let decrypted = match verify_key {
-		None => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, None)?,
-		Some(k) => decrypt_raw_symmetric_internally(&key, encrypted_data, &head, Some(&k))?,
-	};
-
-	Ok(decrypted)
+	Ok(decrypt_raw_symmetric_internally(
+		&key,
+		encrypted_data,
+		&head,
+		verify_key.as_ref(),
+	)?)
 }
 
 pub fn decrypt_raw_symmetric_with_aad(
@@ -144,12 +140,13 @@ pub fn decrypt_raw_symmetric_with_aad(
 
 	let head = EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)?;
 
-	let decrypted = match verify_key {
-		None => decrypt_raw_symmetric_with_aad_internally(&key, encrypted_data, &head, aad, None)?,
-		Some(k) => decrypt_raw_symmetric_with_aad_internally(&key, encrypted_data, &head, aad, Some(&k))?,
-	};
-
-	Ok(decrypted)
+	Ok(decrypt_raw_symmetric_with_aad_internally(
+		&key,
+		encrypted_data,
+		&head,
+		aad,
+		verify_key.as_ref(),
+	)?)
 }
 
 pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
@@ -158,11 +155,7 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let (head, encrypted) = match sign_key {
-		//in match because we need a valid ref to the sign key format
-		None => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, None)?,
-		Some(k) => encrypt_raw_asymmetric_internally(&reply_public_key_data, data, Some(&k))?,
-	};
+	let (head, encrypted) = encrypt_raw_asymmetric_internally(&reply_public_key_data, data, sign_key.as_ref())?;
 
 	let head = head
 		.to_string()
@@ -179,12 +172,12 @@ pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &s
 
 	let head = EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)?;
 
-	let decrypted = match verify_key {
-		None => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, None)?,
-		Some(k) => decrypt_raw_asymmetric_internally(&private_key, encrypted_data, &head, Some(&k))?,
-	};
-
-	Ok(decrypted)
+	Ok(decrypt_raw_asymmetric_internally(
+		&private_key,
+		encrypted_data,
+		&head,
+		verify_key.as_ref(),
+	)?)
 }
 
 pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
@@ -193,13 +186,21 @@ pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Resu
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let encrypted = match sign_key {
-		//in match because we need a valid ref to the sign key format
-		None => encrypt_symmetric_internally(&key, data, None)?,
-		Some(k) => encrypt_symmetric_internally(&key, data, Some(&k))?,
-	};
+	Ok(encrypt_symmetric_internally(&key, data, sign_key.as_ref())?)
+}
 
-	Ok(encrypted)
+pub fn encrypt_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
+{
+	let key = key.parse()?;
+
+	let sign_key = prepare_sign_key(sign_key)?;
+
+	Ok(encrypt_symmetric_with_aad_internally(
+		&key,
+		data,
+		aad,
+		sign_key.as_ref(),
+	)?)
 }
 
 pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
@@ -208,12 +209,25 @@ pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: Opti
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
-	let decrypted = match verify_key {
-		None => decrypt_symmetric_internally(&key, encrypted_data, None)?,
-		Some(k) => decrypt_symmetric_internally(&key, encrypted_data, Some(&k))?,
-	};
+	Ok(decrypt_symmetric_internally(
+		&key,
+		encrypted_data,
+		verify_key.as_ref(),
+	)?)
+}
 
-	Ok(decrypted)
+pub fn decrypt_symmetric_with_aad(key: &str, encrypted_data: &[u8], aad: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
+{
+	let key = key.parse()?;
+
+	let verify_key = prepare_verify_key(verify_key_data)?;
+
+	Ok(decrypt_symmetric_with_aad_internally(
+		&key,
+		encrypted_data,
+		aad,
+		verify_key.as_ref(),
+	)?)
 }
 
 pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
@@ -222,13 +236,11 @@ pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Op
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let encrypted = match sign_key {
-		//in match because we need a valid ref to the sign key format
-		None => encrypt_asymmetric_internally(&reply_public_key_data, data, None)?,
-		Some(k) => encrypt_asymmetric_internally(&reply_public_key_data, data, Some(&k))?,
-	};
-
-	Ok(encrypted)
+	Ok(encrypt_asymmetric_internally(
+		&reply_public_key_data,
+		data,
+		sign_key.as_ref(),
+	)?)
 }
 
 pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
@@ -237,12 +249,11 @@ pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_d
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
-	let decrypted = match verify_key {
-		None => decrypt_asymmetric_internally(&private_key, encrypted_data, None)?,
-		Some(k) => decrypt_asymmetric_internally(&private_key, encrypted_data, Some(&k))?,
-	};
-
-	Ok(decrypted)
+	Ok(decrypt_asymmetric_internally(
+		&private_key,
+		encrypted_data,
+		verify_key.as_ref(),
+	)?)
 }
 
 pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<&str>) -> Result<String, String>
@@ -251,13 +262,21 @@ pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<&str>) -
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let encrypted = match sign_key {
-		//in match because we need a valid ref to the sign key format
-		None => encrypt_string_symmetric_internally(&key, data, None)?,
-		Some(k) => encrypt_string_symmetric_internally(&key, data, Some(&k))?,
-	};
+	Ok(encrypt_string_symmetric_internally(&key, data, sign_key.as_ref())?)
+}
 
-	Ok(encrypted)
+pub fn encrypt_string_symmetric_with_aad(key: &str, data: &str, aad: &str, sign_key: Option<&str>) -> Result<String, String>
+{
+	let key = key.parse()?;
+
+	let sign_key = prepare_sign_key(sign_key)?;
+
+	Ok(encrypt_string_symmetric_with_aad_internally(
+		&key,
+		data,
+		aad,
+		sign_key.as_ref(),
+	)?)
 }
 
 pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
@@ -266,12 +285,25 @@ pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
-	let decrypted = match verify_key {
-		None => decrypt_string_symmetric_internally(&key, encrypted_data, None)?,
-		Some(k) => decrypt_string_symmetric_internally(&key, encrypted_data, Some(&k))?,
-	};
+	Ok(decrypt_string_symmetric_internally(
+		&key,
+		encrypted_data,
+		verify_key.as_ref(),
+	)?)
+}
 
-	Ok(decrypted)
+pub fn decrypt_string_symmetric_with_aad(key: &str, encrypted_data: &str, aad: &str, verify_key_data: Option<&str>) -> Result<String, String>
+{
+	let key = key.parse()?;
+
+	let verify_key = prepare_verify_key(verify_key_data)?;
+
+	Ok(decrypt_string_symmetric_with_aad_internally(
+		&key,
+		encrypted_data,
+		aad,
+		verify_key.as_ref(),
+	)?)
 }
 
 pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_key: Option<&str>) -> Result<String, String>
@@ -280,13 +312,11 @@ pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_k
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let encrypted = match sign_key {
-		//in match because we need a valid ref to the sign key format
-		None => encrypt_string_asymmetric_internally(&reply_public_key_data, data, None)?,
-		Some(k) => encrypt_string_asymmetric_internally(&reply_public_key_data, data, Some(&k))?,
-	};
-
-	Ok(encrypted)
+	Ok(encrypt_string_asymmetric_internally(
+		&reply_public_key_data,
+		data,
+		sign_key.as_ref(),
+	)?)
 }
 
 pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
@@ -295,12 +325,11 @@ pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify
 
 	let verify_key = prepare_verify_key(verify_key_data)?;
 
-	let decrypted = match verify_key {
-		None => decrypt_string_asymmetric_internally(&private_key, encrypted_data, None)?,
-		Some(k) => decrypt_string_asymmetric_internally(&private_key, encrypted_data, Some(&k))?,
-	};
-
-	Ok(decrypted)
+	Ok(decrypt_string_asymmetric_internally(
+		&private_key,
+		encrypted_data,
+		verify_key.as_ref(),
+	)?)
 }
 
 pub fn prepare_register_sym_key(master_key: &str) -> Result<(String, String), String>
@@ -571,6 +600,46 @@ mod test
 	}
 
 	#[test]
+	fn test_encrypt_decrypt_sym_with_aad()
+	{
+		let user = create_user();
+
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = b"payload1234567891011121314151617";
+
+		let encrypted = encrypt_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+
+		let decrypted = decrypt_symmetric_with_aad(group_key, &encrypted, payload, None).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_sym_with_wrong_aad()
+	{
+		let user = create_user();
+
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = b"payload1234567891011121314151617";
+		let payload2 = b"payload1234567891011121314151618";
+
+		let encrypted = encrypt_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+
+		let decrypted = decrypt_symmetric_with_aad(group_key, &encrypted, payload2, None);
+
+		match decrypted {
+			Err(_e) => {},
+			_ => panic!("should be error"),
+		}
+	}
+
+	#[test]
 	fn test_encrypt_decrypt_sym_with_sig()
 	{
 		let user = create_user();
@@ -638,6 +707,23 @@ mod test
 		let encrypted = encrypt_string_symmetric(group_key, text, None).unwrap();
 
 		let decrypted = decrypt_string_symmetric(group_key, &encrypted, None).unwrap();
+
+		assert_eq!(text, decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_string_sym_wit_aad()
+	{
+		let user = create_user();
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = "payload1234567891011121314151617";
+
+		let encrypted = encrypt_string_symmetric_with_aad(group_key, text, payload, None).unwrap();
+
+		let decrypted = decrypt_string_symmetric_with_aad(group_key, &encrypted, payload, None).unwrap();
 
 		assert_eq!(text, decrypted);
 	}

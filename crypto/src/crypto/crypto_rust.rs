@@ -12,9 +12,11 @@ use crate::crypto::{
 	decrypt_raw_symmetric_with_aad_internally,
 	decrypt_string_asymmetric_internally,
 	decrypt_string_symmetric_internally,
+	decrypt_string_symmetric_with_aad_internally,
 	decrypt_sym_key_by_private_key_internally,
 	decrypt_sym_key_internally,
 	decrypt_symmetric_internally,
+	decrypt_symmetric_with_aad_internally,
 	deserialize_head_from_string_internally,
 	done_fetch_sym_key_by_private_key_internally,
 	done_fetch_sym_key_internally,
@@ -26,7 +28,9 @@ use crate::crypto::{
 	encrypt_raw_symmetric_with_aad_internally,
 	encrypt_string_asymmetric_internally,
 	encrypt_string_symmetric_internally,
+	encrypt_string_symmetric_with_aad_internally,
 	encrypt_symmetric_internally,
+	encrypt_symmetric_with_aad_internally,
 	generate_non_register_sym_key_by_public_key_internally,
 	generate_non_register_sym_key_internally,
 	prepare_register_sym_key_by_public_key_internally,
@@ -113,10 +117,25 @@ pub fn encrypt_symmetric(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&S
 	encrypt_symmetric_internally(key, data, sign_key)
 }
 
+pub fn encrypt_symmetric_with_aad(key: &SymKeyFormatInt, data: &[u8], aad: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, SdkError>
+{
+	encrypt_symmetric_with_aad_internally(key, data, aad, sign_key)
+}
+
 pub fn decrypt_symmetric(key: &SymKeyFormatInt, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>)
 	-> Result<Vec<u8>, SdkError>
 {
 	decrypt_symmetric_internally(key, encrypted_data_with_head, verify_key)
+}
+
+pub fn decrypt_symmetric_with_aad(
+	key: &SymKeyFormatInt,
+	encrypted_data_with_head: &[u8],
+	aad: &[u8],
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<Vec<u8>, SdkError>
+{
+	decrypt_symmetric_with_aad_internally(key, encrypted_data_with_head, aad, verify_key)
 }
 
 pub fn encrypt_asymmetric(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, SdkError>
@@ -138,6 +157,16 @@ pub fn encrypt_string_symmetric(key: &SymKeyFormatInt, data: &str, sign_key: Opt
 	encrypt_string_symmetric_internally(key, data, sign_key)
 }
 
+pub fn encrypt_string_symmetric_with_aad(
+	key: &SymKeyFormatInt,
+	data: &str,
+	aad: &str,
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<String, SdkError>
+{
+	encrypt_string_symmetric_with_aad_internally(key, data, aad, sign_key)
+}
+
 pub fn decrypt_string_symmetric(
 	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &str,
@@ -145,6 +174,16 @@ pub fn decrypt_string_symmetric(
 ) -> Result<String, SdkError>
 {
 	decrypt_string_symmetric_internally(key, encrypted_data_with_head, verify_key)
+}
+
+pub fn decrypt_string_symmetric_with_aad(
+	key: &SymKeyFormatInt,
+	encrypted_data_with_head: &str,
+	aad: &str,
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<String, SdkError>
+{
+	decrypt_string_symmetric_with_aad_internally(key, encrypted_data_with_head, aad, verify_key)
 }
 
 pub fn encrypt_string_asymmetric(reply_public_key: &UserPublicKeyData, data: &str, sign_key: Option<&SignKeyFormatInt>) -> Result<String, SdkError>
@@ -382,6 +421,46 @@ mod test
 	}
 
 	#[test]
+	fn test_encrypt_decrypt_sym_with_aad()
+	{
+		let user = create_user();
+
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = b"payload1234567891011121314151617";
+
+		let encrypted = encrypt_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+
+		let decrypted = decrypt_symmetric_with_aad(group_key, &encrypted, payload, None).unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted);
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_sym_with_wrong_aad()
+	{
+		let user = create_user();
+
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = b"payload1234567891011121314151617";
+		let payload2 = b"payload1234567891011121314151618";
+
+		let encrypted = encrypt_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+
+		let decrypted = decrypt_symmetric_with_aad(group_key, &encrypted, payload2, None);
+
+		match decrypted {
+			Err(_e) => {},
+			_ => panic!("should be error"),
+		}
+	}
+
+	#[test]
 	fn test_encrypt_decrypt_sym_with_sign()
 	{
 		let user = create_user();
@@ -455,6 +534,23 @@ mod test
 		let decrypted = decrypt_string_symmetric(group_key, &encrypted, None).unwrap();
 
 		assert_eq!(text, decrypted)
+	}
+
+	#[test]
+	fn test_encrypt_decrypt_string_sym_wit_aad()
+	{
+		let user = create_user();
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
+		let group_key = &key_data[0].group_key;
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let payload = "payload1234567891011121314151617";
+
+		let encrypted = encrypt_string_symmetric_with_aad(group_key, text, payload, None).unwrap();
+
+		let decrypted = decrypt_string_symmetric_with_aad(group_key, &encrypted, payload, None).unwrap();
+
+		assert_eq!(text, decrypted);
 	}
 
 	#[test]

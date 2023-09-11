@@ -22,9 +22,11 @@ pub use self::crypto::{
 	decrypt_raw_symmetric_with_aad,
 	decrypt_string_asymmetric,
 	decrypt_string_symmetric,
+	decrypt_string_symmetric_with_aad,
 	decrypt_sym_key,
 	decrypt_sym_key_by_private_key,
 	decrypt_symmetric,
+	decrypt_symmetric_with_aad,
 	deserialize_head_from_string,
 	done_fetch_sym_key,
 	done_fetch_sym_key_by_private_key,
@@ -36,7 +38,9 @@ pub use self::crypto::{
 	encrypt_raw_symmetric_with_aad,
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
+	encrypt_string_symmetric_with_aad,
 	encrypt_symmetric,
+	encrypt_symmetric_with_aad,
 	generate_non_register_sym_key,
 	generate_non_register_sym_key_by_public_key,
 	prepare_register_sym_key,
@@ -54,9 +58,11 @@ pub use self::crypto_rust::{
 	decrypt_raw_symmetric_with_aad,
 	decrypt_string_asymmetric,
 	decrypt_string_symmetric,
+	decrypt_string_symmetric_with_aad,
 	decrypt_sym_key,
 	decrypt_sym_key_by_private_key,
 	decrypt_symmetric,
+	decrypt_symmetric_with_aad,
 	deserialize_head_from_string,
 	done_fetch_sym_key,
 	done_fetch_sym_key_by_private_key,
@@ -68,7 +74,9 @@ pub use self::crypto_rust::{
 	encrypt_raw_symmetric_with_aad,
 	encrypt_string_asymmetric,
 	encrypt_string_symmetric,
+	encrypt_string_symmetric_with_aad,
 	encrypt_symmetric,
+	encrypt_symmetric_with_aad,
 	generate_non_register_sym_key,
 	generate_non_register_sym_key_by_public_key,
 	prepare_register_sym_key,
@@ -358,6 +366,18 @@ fn encrypt_symmetric_internally(key: &SymKeyFormatInt, data: &[u8], sign_key: Op
 	put_head_and_encrypted_data_internally(&head, &encrypted)
 }
 
+fn encrypt_symmetric_with_aad_internally(
+	key: &SymKeyFormatInt,
+	data: &[u8],
+	aad: &[u8],
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<Vec<u8>, SdkError>
+{
+	let (head, encrypted) = encrypt_raw_symmetric_with_aad_internally(key, data, aad, sign_key)?;
+
+	put_head_and_encrypted_data_internally(&head, &encrypted)
+}
+
 fn decrypt_symmetric_internally(
 	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &[u8],
@@ -367,6 +387,18 @@ fn decrypt_symmetric_internally(
 	let (head, encrypted_data) = split_head_and_encrypted_data_internally(encrypted_data_with_head)?;
 
 	decrypt_raw_symmetric_internally(key, encrypted_data, &head, verify_key)
+}
+
+fn decrypt_symmetric_with_aad_internally(
+	key: &SymKeyFormatInt,
+	encrypted_data_with_head: &[u8],
+	aad: &[u8],
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<Vec<u8>, SdkError>
+{
+	let (head, encrypted_data) = split_head_and_encrypted_data_internally(encrypted_data_with_head)?;
+
+	decrypt_raw_symmetric_with_aad_internally(key, encrypted_data, &head, aad, verify_key)
 }
 
 fn encrypt_asymmetric_internally(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKeyFormatInt>)
@@ -396,6 +428,18 @@ pub(crate) fn encrypt_string_symmetric_internally(key: &SymKeyFormatInt, data: &
 	Ok(Base64::encode_string(&encrypted))
 }
 
+pub(crate) fn encrypt_string_symmetric_with_aad_internally(
+	key: &SymKeyFormatInt,
+	data: &str,
+	aad: &str,
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<String, SdkError>
+{
+	let encrypted = encrypt_symmetric_with_aad_internally(key, data.as_bytes(), aad.as_bytes(), sign_key)?;
+
+	Ok(Base64::encode_string(&encrypted))
+}
+
 fn decrypt_string_symmetric_internally(
 	key: &SymKeyFormatInt,
 	encrypted_data_with_head: &str,
@@ -405,6 +449,20 @@ fn decrypt_string_symmetric_internally(
 	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
 	let decrypted = decrypt_symmetric_internally(key, &encrypted, verify_key)?;
+
+	String::from_utf8(decrypted).map_err(|_| SdkError::DecodeEncryptedDataFailed)
+}
+
+fn decrypt_string_symmetric_with_aad_internally(
+	key: &SymKeyFormatInt,
+	encrypted_data_with_head: &str,
+	aad: &str,
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<String, SdkError>
+{
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
+
+	let decrypted = decrypt_symmetric_with_aad_internally(key, &encrypted, aad.as_bytes(), verify_key)?;
 
 	String::from_utf8(decrypted).map_err(|_| SdkError::DecodeEncryptedDataFailed)
 }
