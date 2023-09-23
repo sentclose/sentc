@@ -85,6 +85,21 @@ impl PublicKeyFormatInt
 	}
 }
 
+impl Clone for PublicKeyFormatInt
+{
+	fn clone(&self) -> Self
+	{
+		match &self.key {
+			Pk::Ecies(k) => {
+				Self {
+					key_id: self.key_id.clone(),
+					key: Pk::Ecies(*k),
+				}
+			},
+		}
+	}
+}
+
 pub struct SignKeyFormatInt
 {
 	pub key: SignK,
