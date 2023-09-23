@@ -186,27 +186,45 @@ fn deserialize_head_from_string_internally(head: &str) -> Result<EncryptedHead, 
 	Ok(EncryptedHead::from_string(head)?)
 }
 
+//__________________________________________________________________________________________________
+
+fn finish_raw_symmetric_encrypt(
+	key: &SymKeyFormatInt,
+	encrypted: Vec<u8>,
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<(EncryptedHead, Vec<u8>), SdkError>
+{
+	//sign the data
+	if let Some(sk) = sign_key {
+		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
+
+		Ok((
+			EncryptedHead {
+				id: key.key_id.to_string(),
+				sign: Some(sign_head),
+			},
+			data_with_sign,
+		))
+	} else {
+		Ok((
+			EncryptedHead {
+				id: key.key_id.to_string(),
+				sign: None,
+			},
+			encrypted,
+		))
+	}
+}
+
 fn encrypt_raw_symmetric_internally(
 	key: &SymKeyFormatInt,
 	data: &[u8],
 	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
-	let mut encrypt_head = EncryptedHead {
-		id: key.key_id.to_string(),
-		sign: None,
-	};
+	let encrypted = crypto_core::encrypt_symmetric(&key.key, data)?;
 
-	let mut encrypted = crypto_core::encrypt_symmetric(&key.key, data)?;
-
-	//sign the data
-	if let Some(sk) = sign_key {
-		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
-		encrypted = data_with_sign;
-		encrypt_head.sign = Some(sign_head);
-	}
-
-	Ok((encrypt_head, encrypted))
+	finish_raw_symmetric_encrypt(key, encrypted, sign_key)
 }
 
 fn encrypt_raw_symmetric_with_aad_internally(
@@ -216,21 +234,9 @@ fn encrypt_raw_symmetric_with_aad_internally(
 	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
-	let mut encrypt_head = EncryptedHead {
-		id: key.key_id.to_string(),
-		sign: None,
-	};
+	let encrypted = crypto_core::encrypt_symmetric_with_aad(&key.key, data, aad)?;
 
-	let mut encrypted = crypto_core::encrypt_symmetric_with_aad(&key.key, data, aad)?;
-
-	//sign the data
-	if let Some(sk) = sign_key {
-		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
-		encrypted = data_with_sign;
-		encrypt_head.sign = Some(sign_head);
-	}
-
-	Ok((encrypt_head, encrypted))
+	finish_raw_symmetric_encrypt(key, encrypted, sign_key)
 }
 
 fn decrypt_raw_symmetric_internally(
