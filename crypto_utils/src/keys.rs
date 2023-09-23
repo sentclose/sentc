@@ -78,6 +78,11 @@ impl PublicKeyFormatInt
 	{
 		serde_json::to_string(&Into::<PublicKeyFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 	}
+
+	pub fn to_string_ref(&self) -> Result<String, SdkUtilError>
+	{
+		serde_json::to_string(&Into::<PublicKeyFormatExport>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
+	}
 }
 
 pub struct SignKeyFormatInt
@@ -449,6 +454,23 @@ impl From<PublicKeyFormatInt> for PublicKeyFormatExport
 
 				Self::Ecies {
 					key_id: value.key_id,
+					key,
+				}
+			},
+		}
+	}
+}
+
+impl<'a> From<&'a PublicKeyFormatInt> for PublicKeyFormatExport
+{
+	fn from(value: &'a PublicKeyFormatInt) -> Self
+	{
+		match &value.key {
+			Pk::Ecies(k) => {
+				let key = Base64::encode_string(k);
+
+				Self::Ecies {
+					key_id: value.key_id.clone(),
 					key,
 				}
 			},
