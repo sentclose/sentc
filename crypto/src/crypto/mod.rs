@@ -88,6 +88,57 @@ use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyForm
 use crate::util::public::handle_server_response;
 use crate::SdkError;
 
+pub fn encrypt_raw_symmetric_data_only(key: &SymKeyFormatInt, data: &[u8], sign_key: Option<&SignKeyFormatInt>) -> Result<Vec<u8>, SdkError>
+{
+	let encrypted = crypto_core::encrypt_symmetric(&key.key, data)?;
+
+	if let Some(sk) = sign_key {
+		Ok(crypto_core::sign(&sk.key, &encrypted)?)
+	} else {
+		Ok(encrypted)
+	}
+}
+
+pub fn encrypt_raw_symmetric_aad_data_only(
+	key: &SymKeyFormatInt,
+	data: &[u8],
+	aad: &[u8],
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<Vec<u8>, SdkError>
+{
+	let encrypted = crypto_core::encrypt_symmetric_with_aad(&key.key, data, aad)?;
+
+	if let Some(sk) = sign_key {
+		Ok(crypto_core::sign(&sk.key, &encrypted)?)
+	} else {
+		Ok(encrypted)
+	}
+}
+
+pub fn get_head_from_keys(key: &SymKeyFormatInt, sign_key: Option<&SignKeyFormatInt>) -> EncryptedHead
+{
+	if let Some(sk) = sign_key {
+		let alg = match &sk.key {
+			SignK::Ed25519(_) => ED25519_OUTPUT.to_string(),
+		};
+
+		let sign = SignHead {
+			id: key.key_id.to_string(),
+			alg,
+		};
+
+		EncryptedHead {
+			id: key.key_id.to_string(),
+			sign: Some(sign),
+		}
+	} else {
+		EncryptedHead {
+			id: key.key_id.to_string(),
+			sign: None,
+		}
+	}
+}
+
 pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(SignHead, Vec<u8>), SdkError>
 {
 	let signed_data = crypto_core::sign(&key.key, data)?;
@@ -186,27 +237,45 @@ fn deserialize_head_from_string_internally(head: &str) -> Result<EncryptedHead, 
 	Ok(EncryptedHead::from_string(head)?)
 }
 
+//__________________________________________________________________________________________________
+
+fn finish_raw_symmetric_encrypt(
+	key: &SymKeyFormatInt,
+	encrypted: Vec<u8>,
+	sign_key: Option<&SignKeyFormatInt>,
+) -> Result<(EncryptedHead, Vec<u8>), SdkError>
+{
+	//sign the data
+	if let Some(sk) = sign_key {
+		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
+
+		Ok((
+			EncryptedHead {
+				id: key.key_id.to_string(),
+				sign: Some(sign_head),
+			},
+			data_with_sign,
+		))
+	} else {
+		Ok((
+			EncryptedHead {
+				id: key.key_id.to_string(),
+				sign: None,
+			},
+			encrypted,
+		))
+	}
+}
+
 fn encrypt_raw_symmetric_internally(
 	key: &SymKeyFormatInt,
 	data: &[u8],
 	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
-	let mut encrypt_head = EncryptedHead {
-		id: key.key_id.to_string(),
-		sign: None,
-	};
+	let encrypted = crypto_core::encrypt_symmetric(&key.key, data)?;
 
-	let mut encrypted = crypto_core::encrypt_symmetric(&key.key, data)?;
-
-	//sign the data
-	if let Some(sk) = sign_key {
-		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
-		encrypted = data_with_sign;
-		encrypt_head.sign = Some(sign_head);
-	}
-
-	Ok((encrypt_head, encrypted))
+	finish_raw_symmetric_encrypt(key, encrypted, sign_key)
 }
 
 fn encrypt_raw_symmetric_with_aad_internally(
@@ -216,21 +285,9 @@ fn encrypt_raw_symmetric_with_aad_internally(
 	sign_key: Option<&SignKeyFormatInt>,
 ) -> Result<(EncryptedHead, Vec<u8>), SdkError>
 {
-	let mut encrypt_head = EncryptedHead {
-		id: key.key_id.to_string(),
-		sign: None,
-	};
+	let encrypted = crypto_core::encrypt_symmetric_with_aad(&key.key, data, aad)?;
 
-	let mut encrypted = crypto_core::encrypt_symmetric_with_aad(&key.key, data, aad)?;
-
-	//sign the data
-	if let Some(sk) = sign_key {
-		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
-		encrypted = data_with_sign;
-		encrypt_head.sign = Some(sign_head);
-	}
-
-	Ok((encrypt_head, encrypted))
+	finish_raw_symmetric_encrypt(key, encrypted, sign_key)
 }
 
 fn decrypt_raw_symmetric_internally(
