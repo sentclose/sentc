@@ -369,21 +369,28 @@ fn encrypt_raw_asymmetric_internally(
 {
 	let public_key = PublicKeyFormatInt::try_from(reply_public_key)?;
 
-	let mut encrypt_head = EncryptedHead {
-		id: public_key.key_id,
-		sign: None,
-	};
-
-	let mut encrypted = crypto_core::encrypt_asymmetric(&public_key.key, data)?;
+	let encrypted = crypto_core::encrypt_asymmetric(&public_key.key, data)?;
 
 	//sign the data
 	if let Some(sk) = sign_key {
 		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted)?;
-		encrypted = data_with_sign;
-		encrypt_head.sign = Some(sign_head);
-	}
 
-	Ok((encrypt_head, encrypted))
+		Ok((
+			EncryptedHead {
+				id: public_key.key_id,
+				sign: Some(sign_head),
+			},
+			data_with_sign,
+		))
+	} else {
+		Ok((
+			EncryptedHead {
+				id: public_key.key_id,
+				sign: None,
+			},
+			encrypted,
+		))
+	}
 }
 
 fn decrypt_raw_asymmetric_internally(
