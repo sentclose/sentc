@@ -32,4 +32,4 @@ pub type DeviceListRes = Result<Vec<UserDeviceList>, SdkError>;
 
 pub type RegisterRawOtpRes = Result<OtpRegister, SdkError>;
 pub type RegisterOtpRes = Result<(String, Vec<String>), SdkError>;
-pub type OtpRecoveryKeyRes = Result<OtpRecoveryKeysOutput, String>;
+pub type OtpRecoveryKeyRes = Result<OtpRecoveryKeysOutput, SdkError>;
