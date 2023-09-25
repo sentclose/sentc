@@ -1,12 +1,13 @@
 use std::future::Future;
 
-use anyhow::{anyhow, Result};
 use flutter_rust_bridge::ZeroCopyBuffer;
 use once_cell::sync::OnceCell;
 use sentc_crypto::user;
 use tokio::runtime::Runtime;
 
 static RUNTIME: OnceCell<Runtime> = OnceCell::new();
+
+pub type Result<T> = std::result::Result<T, String>;
 
 fn rt<T, Fut>(fun: Fut) -> Result<T>
 where
@@ -17,7 +18,7 @@ where
 		Runtime::new().unwrap()
 	});
 
-	let data = rt.block_on(fun).map_err(|err| anyhow!(err))?;
+	let data = rt.block_on(fun)?;
 
 	Ok(data)
 }
@@ -51,7 +52,7 @@ impl From<sentc_crypto_common::user::Claims> for Claims
 
 pub fn decode_jwt(jwt: String) -> Result<Claims>
 {
-	let claims = sentc_crypto_full::decode_jwt(&jwt).map_err(|err| anyhow!(err))?;
+	let claims = sentc_crypto_full::decode_jwt(&jwt)?;
 
 	Ok(claims.into())
 }
@@ -232,7 +233,7 @@ but without making a request
  */
 pub fn prepare_check_user_identifier_available(user_identifier: String) -> Result<String>
 {
-	user::prepare_check_user_identifier_available(user_identifier.as_str()).map_err(|err| anyhow!(err))
+	user::prepare_check_user_identifier_available(user_identifier.as_str())
 }
 
 /**
@@ -242,7 +243,7 @@ but without making a request
  */
 pub fn done_check_user_identifier_available(server_output: String) -> Result<bool>
 {
-	user::done_check_user_identifier_available(server_output.as_str()).map_err(|err| anyhow!(err))
+	user::done_check_user_identifier_available(server_output.as_str())
 }
 
 /**
@@ -250,7 +251,7 @@ Generates identifier and password for a user or device
 */
 pub fn generate_user_register_data() -> Result<GeneratedRegisterData>
 {
-	let (identifier, password) = user::generate_user_register_data().map_err(|err| anyhow!(err))?;
+	let (identifier, password) = user::generate_user_register_data()?;
 
 	Ok(GeneratedRegisterData {
 		identifier,
@@ -267,7 +268,7 @@ For full register see register()
  */
 pub fn prepare_register(user_identifier: String, password: String) -> Result<String>
 {
-	user::register(user_identifier.as_str(), password.as_str()).map_err(|err| anyhow!(err))
+	user::register(user_identifier.as_str(), password.as_str())
 }
 
 /**
@@ -277,7 +278,7 @@ Returns the new user id
  */
 pub fn done_register(server_output: String) -> Result<String>
 {
-	user::done_register(server_output.as_str()).map_err(|err| anyhow!(err))
+	user::done_register(server_output.as_str())
 }
 
 /**
@@ -300,12 +301,12 @@ pub fn register(base_url: String, auth_token: String, user_identifier: String, p
 
 pub fn prepare_register_device_start(device_identifier: String, password: String) -> Result<String>
 {
-	user::prepare_register_device_start(device_identifier.as_str(), password.as_str()).map_err(|err| anyhow!(err))
+	user::prepare_register_device_start(device_identifier.as_str(), password.as_str())
 }
 
 pub fn done_register_device_start(server_output: String) -> Result<()>
 {
-	user::done_register_device_start(server_output.as_str()).map_err(|err| anyhow!(err))
+	user::done_register_device_start(server_output.as_str())
 }
 
 pub fn register_device_start(base_url: String, auth_token: String, device_identifier: String, password: String) -> Result<String>
@@ -343,8 +344,7 @@ pub fn prepare_register_device(server_output: String, user_keys: String, key_cou
 		server_output.as_str(),
 		user_keys.as_str(),
 		key_session,
-	)
-	.map_err(|err| anyhow!(err))?;
+	)?;
 
 	Ok(PreRegisterDeviceData {
 		input,
@@ -448,7 +448,7 @@ pub fn mfa_login(
 
 pub fn done_fetch_user_key(private_key: String, server_output: String) -> Result<UserKeyData>
 {
-	let data = user::done_key_fetch(private_key.as_str(), server_output.as_str()).map_err(|err| anyhow!(err))?;
+	let data = user::done_key_fetch(private_key.as_str(), server_output.as_str())?;
 
 	Ok(data.into())
 }
@@ -531,12 +531,11 @@ pub fn user_create_safety_number(verify_key_1: String, user_id_1: String, verify
 		verify_key_2.as_deref(),
 		user_id_2.as_deref(),
 	)
-	.map_err(|err| anyhow!(err))
 }
 
 pub fn user_verify_user_public_key(verify_key: String, public_key: String) -> Result<bool>
 {
-	user::verify_user_public_key(&verify_key, &public_key).map_err(|err| anyhow!(err))
+	user::verify_user_public_key(&verify_key, &public_key)
 }
 
 //__________________________________________________________________________________________________
@@ -740,7 +739,7 @@ pub fn user_pre_done_key_rotation(base_url: String, auth_token: String, jwt: Str
 
 pub fn user_get_done_key_rotation_server_input(server_output: String) -> Result<KeyRotationInput>
 {
-	let out = sentc_crypto::group::get_done_key_rotation_server_input(server_output.as_str()).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto::group::get_done_key_rotation_server_input(server_output.as_str())?;
 
 	Ok(out.into())
 }
@@ -1060,7 +1059,7 @@ Use this for group and child group. For child group use the public key of the pa
  */
 pub fn group_prepare_create_group(creators_public_key: String) -> Result<String>
 {
-	sentc_crypto::group::prepare_create(creators_public_key.as_str()).map_err(|err| anyhow!(err))
+	sentc_crypto::group::prepare_create(creators_public_key.as_str())
 }
 
 /**
@@ -1136,7 +1135,7 @@ Use the parent group private key when fetching child group data.
  */
 pub fn group_extract_group_data(server_output: String) -> Result<GroupOutData>
 {
-	let out = sentc_crypto::group::get_group_data(server_output.as_str()).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto::group::get_group_data(server_output.as_str())?;
 
 	Ok(out.into())
 }
@@ -1148,7 +1147,7 @@ Call the group route with the last fetched key time and the last fetched key id.
  */
 pub fn group_extract_group_keys(server_output: String) -> Result<Vec<GroupOutDataKeys>>
 {
-	let out = sentc_crypto::group::get_group_keys_from_server_output(server_output.as_str()).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto::group::get_group_keys_from_server_output(server_output.as_str())?;
 
 	Ok(out.into_iter().map(|key| key.into()).collect())
 }
@@ -1212,19 +1211,19 @@ pub fn group_get_group_key(
 
 pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result<GroupKeyData>
 {
-	let out = sentc_crypto_full::group::decrypt_key(server_key_data.as_str(), private_key.as_str()).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto_full::group::decrypt_key(server_key_data.as_str(), private_key.as_str())?;
 
 	Ok(out.into())
 }
 
 pub fn group_decrypt_hmac_key(group_key: String, server_key_data: String) -> Result<String>
 {
-	sentc_crypto::group::decrypt_group_hmac_key(&group_key, &server_key_data).map_err(|err| anyhow!(err))
+	sentc_crypto::group::decrypt_group_hmac_key(&group_key, &server_key_data)
 }
 
 pub fn group_decrypt_sortable_key(group_key: String, server_key_data: String) -> Result<String>
 {
-	sentc_crypto::group::decrypt_group_sortable_key(&group_key, &server_key_data).map_err(|err| anyhow!(err))
+	sentc_crypto::group::decrypt_group_sortable_key(&group_key, &server_key_data)
 }
 
 //__________________________________________________________________________________________________
@@ -1407,12 +1406,11 @@ pub fn group_prepare_keys_for_new_member(
 	admin_rank: i32,
 ) -> Result<String>
 {
-	sentc_crypto::group::check_make_invite_req(admin_rank).map_err(|err| anyhow!(err))?;
+	sentc_crypto::group::check_make_invite_req(admin_rank)?;
 
 	let key_session = key_count > 50;
 
 	sentc_crypto::group::prepare_group_keys_for_new_member(user_public_key.as_str(), group_keys.as_str(), key_session, rank)
-		.map_err(|err| anyhow!(err))
 }
 
 pub fn group_invite_user(
@@ -1817,7 +1815,6 @@ pub fn group_prepare_key_rotation(pre_group_key: String, public_key: String, sig
 		sign_key.as_deref(),
 		starter,
 	)
-	.map_err(|err| anyhow!(err))
 }
 
 pub fn group_done_key_rotation(
@@ -1835,7 +1832,6 @@ pub fn group_done_key_rotation(
 		server_output.as_str(),
 		verify_key.as_deref(),
 	)
-	.map_err(|err| anyhow!(err))
 }
 
 pub fn group_key_rotation(
@@ -1901,7 +1897,7 @@ pub fn group_pre_done_key_rotation(
 
 pub fn group_get_done_key_rotation_server_input(server_output: String) -> Result<KeyRotationInput>
 {
-	let out = sentc_crypto::group::get_done_key_rotation_server_input(server_output.as_str()).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto::group::get_done_key_rotation_server_input(server_output.as_str())?;
 
 	Ok(out.into())
 }
@@ -1939,7 +1935,7 @@ pub fn group_finish_key_rotation(
 
 pub fn group_prepare_update_rank(user_id: String, rank: i32, admin_rank: i32) -> Result<String>
 {
-	sentc_crypto::group::prepare_change_rank(user_id.as_str(), rank, admin_rank).map_err(|err| anyhow!(err))
+	sentc_crypto::group::prepare_change_rank(user_id.as_str(), rank, admin_rank)
 }
 
 pub fn group_update_rank(
@@ -2079,28 +2075,28 @@ impl From<sentc_crypto_common::crypto::EncryptedHead> for EncryptedHead
 
 pub fn split_head_and_encrypted_data(data: Vec<u8>) -> Result<EncryptedHead>
 {
-	let (head, _data) = sentc_crypto::crypto::split_head_and_encrypted_data(&data).map_err(|err| anyhow!(err))?;
+	let (head, _data) = sentc_crypto::crypto::split_head_and_encrypted_data(&data)?;
 
 	Ok(head.into())
 }
 
 pub fn split_head_and_encrypted_string(data: String) -> Result<EncryptedHead>
 {
-	let head = sentc_crypto::crypto::split_head_and_encrypted_string(&data).map_err(|err| anyhow!(err))?;
+	let head = sentc_crypto::crypto::split_head_and_encrypted_string(&data)?;
 
 	Ok(head.into())
 }
 
 pub fn deserialize_head_from_string(head: String) -> Result<EncryptedHead>
 {
-	let head = sentc_crypto::crypto::deserialize_head_from_string(&head).map_err(|err| anyhow!(err))?;
+	let head = sentc_crypto::crypto::deserialize_head_from_string(&head)?;
 
 	Ok(head.into())
 }
 
 pub fn encrypt_raw_symmetric(key: String, data: Vec<u8>, sign_key: Option<String>) -> Result<CryptoRawOutput>
 {
-	let (head, data) = sentc_crypto::crypto::encrypt_raw_symmetric(key.as_str(), &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
+	let (head, data) = sentc_crypto::crypto::encrypt_raw_symmetric(key.as_str(), &data, sign_key.as_deref())?;
 
 	Ok(CryptoRawOutput {
 		head,
@@ -2110,40 +2106,38 @@ pub fn encrypt_raw_symmetric(key: String, data: Vec<u8>, sign_key: Option<String
 
 pub fn decrypt_raw_symmetric(key: String, encrypted_data: Vec<u8>, head: String, verify_key_data: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec =
-		sentc_crypto::crypto::decrypt_raw_symmetric(key.as_str(), &encrypted_data, &head, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::decrypt_raw_symmetric(key.as_str(), &encrypted_data, &head, verify_key_data.as_deref())?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn encrypt_symmetric(key: String, data: Vec<u8>, sign_key: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::encrypt_symmetric(&key, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::encrypt_symmetric(&key, &data, sign_key.as_deref())?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn decrypt_symmetric(key: String, encrypted_data: Vec<u8>, verify_key_data: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::decrypt_symmetric(&key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::decrypt_symmetric(&key, &encrypted_data, verify_key_data.as_deref())?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn encrypt_string_symmetric(key: String, data: String, sign_key: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::encrypt_string_symmetric(&key, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::encrypt_string_symmetric(&key, &data, sign_key.as_deref())
 }
 
 pub fn decrypt_string_symmetric(key: String, encrypted_data: String, verify_key_data: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::decrypt_string_symmetric(&key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::decrypt_string_symmetric(&key, &encrypted_data, verify_key_data.as_deref())
 }
 
 pub fn encrypt_raw_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: Option<String>) -> Result<CryptoRawOutput>
 {
-	let (head, data) =
-		sentc_crypto::crypto::encrypt_raw_asymmetric(&reply_public_key_data, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
+	let (head, data) = sentc_crypto::crypto::encrypt_raw_asymmetric(&reply_public_key_data, &data, sign_key.as_deref())?;
 
 	Ok(CryptoRawOutput {
 		head,
@@ -2158,34 +2152,33 @@ pub fn decrypt_raw_asymmetric(
 	verify_key_data: Option<String>,
 ) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec =
-		sentc_crypto::crypto::decrypt_raw_asymmetric(&private_key, &encrypted_data, &head, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::decrypt_raw_asymmetric(&private_key, &encrypted_data, &head, verify_key_data.as_deref())?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn encrypt_asymmetric(reply_public_key_data: String, data: Vec<u8>, sign_key: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::encrypt_asymmetric(&reply_public_key_data, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::encrypt_asymmetric(&reply_public_key_data, &data, sign_key.as_deref())?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn decrypt_asymmetric(private_key: String, encrypted_data: Vec<u8>, verify_key_data: Option<String>) -> Result<ZeroCopyBuffer<Vec<u8>>>
 {
-	let vec = sentc_crypto::crypto::decrypt_asymmetric(&private_key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))?;
+	let vec = sentc_crypto::crypto::decrypt_asymmetric(&private_key, &encrypted_data, verify_key_data.as_deref())?;
 
 	Ok(ZeroCopyBuffer(vec))
 }
 
 pub fn encrypt_string_asymmetric(reply_public_key_data: String, data: String, sign_key: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::encrypt_string_asymmetric(&reply_public_key_data, &data, sign_key.as_deref()).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::encrypt_string_asymmetric(&reply_public_key_data, &data, sign_key.as_deref())
 }
 
 pub fn decrypt_string_asymmetric(private_key: String, encrypted_data: String, verify_key_data: Option<String>) -> Result<String>
 {
-	sentc_crypto::crypto::decrypt_string_asymmetric(&private_key, &encrypted_data, verify_key_data.as_deref()).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::decrypt_string_asymmetric(&private_key, &encrypted_data, verify_key_data.as_deref())
 }
 
 //__________________________________________________________________________________________________
@@ -2199,7 +2192,7 @@ pub struct NonRegisteredKeyOutput
 
 pub fn generate_non_register_sym_key(master_key: String) -> Result<NonRegisteredKeyOutput>
 {
-	let (key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&master_key).map_err(|err| anyhow!(err))?;
+	let (key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&master_key)?;
 
 	Ok(NonRegisteredKeyOutput {
 		key,
@@ -2209,7 +2202,7 @@ pub fn generate_non_register_sym_key(master_key: String) -> Result<NonRegistered
 
 pub fn generate_non_register_sym_key_by_public_key(reply_public_key: String) -> Result<NonRegisteredKeyOutput>
 {
-	let (key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key_by_public_key(&reply_public_key).map_err(|err| anyhow!(err))?;
+	let (key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key_by_public_key(&reply_public_key)?;
 
 	Ok(NonRegisteredKeyOutput {
 		key,
@@ -2219,12 +2212,12 @@ pub fn generate_non_register_sym_key_by_public_key(reply_public_key: String) -> 
 
 pub fn decrypt_sym_key(master_key: String, encrypted_symmetric_key_info: String) -> Result<String>
 {
-	sentc_crypto::crypto::decrypt_sym_key(&master_key, &encrypted_symmetric_key_info).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::decrypt_sym_key(&master_key, &encrypted_symmetric_key_info)
 }
 
 pub fn decrypt_sym_key_by_private_key(private_key: String, encrypted_symmetric_key_info: String) -> Result<String>
 {
-	sentc_crypto::crypto::decrypt_sym_key_by_private_key(&private_key, &encrypted_symmetric_key_info).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::decrypt_sym_key_by_private_key(&private_key, &encrypted_symmetric_key_info)
 }
 
 //__________________________________________________________________________________________________
@@ -2288,12 +2281,12 @@ pub fn get_sym_key_by_id_by_private_key(base_url: String, auth_token: String, ke
 
 pub fn done_fetch_sym_key(master_key: String, server_out: String, non_registered: bool) -> Result<String>
 {
-	sentc_crypto::crypto::done_fetch_sym_key(&master_key, &server_out, non_registered).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::done_fetch_sym_key(&master_key, &server_out, non_registered)
 }
 
 pub fn done_fetch_sym_key_by_private_key(private_key: String, server_out: String, non_registered: bool) -> Result<String>
 {
-	sentc_crypto::crypto::done_fetch_sym_key_by_private_key(&private_key, &server_out, non_registered).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto::done_fetch_sym_key_by_private_key(&private_key, &server_out, non_registered)
 }
 
 //__________________________________________________________________________________________________
@@ -2368,21 +2361,21 @@ pub fn create_searchable_raw(key: String, data: String, full: bool, limit: Optio
 {
 	let limit = limit.map(|l| l as usize);
 
-	sentc_crypto::crypto_searchable::create_searchable_raw(&key, &data, full, limit).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto_searchable::create_searchable_raw(&key, &data, full, limit)
 }
 
 pub fn create_searchable(key: String, data: String, full: bool, limit: Option<u32>) -> Result<SearchableCreateOutput>
 {
 	let limit = limit.map(|l| l as usize);
 
-	let out = sentc_crypto::crypto_searchable::create_searchable(&key, &data, full, limit).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto::crypto_searchable::create_searchable(&key, &data, full, limit)?;
 
 	Ok(out.into())
 }
 
 pub fn search(key: String, data: String) -> Result<String>
 {
-	sentc_crypto::crypto_searchable::search(&key, &data).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto_searchable::search(&key, &data)
 }
 
 //__________________________________________________________________________________________________
@@ -2410,24 +2403,24 @@ impl From<sentc_crypto_common::content_sortable::SortableEncryptOutput> for Sort
 
 pub fn sortable_encrypt_raw_number(key: String, data: u64) -> Result<u64>
 {
-	sentc_crypto::crypto_sortable::encrypt_raw_number(&key, data).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto_sortable::encrypt_raw_number(&key, data)
 }
 
 pub fn sortable_encrypt_number(key: String, data: u64) -> Result<SortableEncryptOutput>
 {
-	let out = sentc_crypto::crypto_sortable::encrypt_number(&key, data).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto::crypto_sortable::encrypt_number(&key, data)?;
 
 	Ok(out.into())
 }
 
 pub fn sortable_encrypt_raw_string(key: String, data: String) -> Result<u64>
 {
-	sentc_crypto::crypto_sortable::encrypt_raw_string(&key, &data).map_err(|err| anyhow!(err))
+	sentc_crypto::crypto_sortable::encrypt_raw_string(&key, &data)
 }
 
 pub fn sortable_encrypt_string(key: String, data: String) -> Result<SortableEncryptOutput>
 {
-	let out = sentc_crypto::crypto_sortable::encrypt_string(&key, &data).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto::crypto_sortable::encrypt_string(&key, &data)?;
 
 	Ok(out.into())
 }
@@ -2755,8 +2748,7 @@ pub fn file_prepare_register_file(
 		belongs_to_id,
 		&belongs_to_type,
 		file_name,
-	)
-	.map_err(|err| anyhow!(err))?;
+	)?;
 
 	Ok(FilePrepareRegister {
 		encrypted_file_name,
@@ -2766,7 +2758,7 @@ pub fn file_prepare_register_file(
 
 pub fn file_done_register_file(server_output: String) -> Result<FileDoneRegister>
 {
-	let (file_id, session_id) = sentc_crypto::file::done_register_file(&server_output).map_err(|err| anyhow!(err))?;
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(&server_output)?;
 
 	Ok(FileDoneRegister {
 		file_id,

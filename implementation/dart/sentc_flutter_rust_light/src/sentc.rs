@@ -1,10 +1,11 @@
 use std::future::Future;
 
-use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
 use tokio::runtime::Runtime;
 
 static RUNTIME: OnceCell<Runtime> = OnceCell::new();
+
+pub type Result<T> = std::result::Result<T, String>;
 
 fn rt<T, Fut>(fun: Fut) -> Result<T>
 where
@@ -15,7 +16,7 @@ where
 		Runtime::new().unwrap()
 	});
 
-	let data = rt.block_on(fun).map_err(|err| anyhow!(err))?;
+	let data = rt.block_on(fun)?;
 
 	Ok(data)
 }
@@ -49,7 +50,7 @@ impl From<sentc_crypto_common::user::Claims> for Claims
 
 pub fn decode_jwt(jwt: String) -> Result<Claims>
 {
-	let claims = sentc_crypto_light_full::decode_jwt(&jwt).map_err(|err| anyhow!(err))?;
+	let claims = sentc_crypto_light_full::decode_jwt(&jwt)?;
 
 	Ok(claims.into())
 }
@@ -182,7 +183,7 @@ Generates identifier and password for a user or device
  */
 pub fn generate_user_register_data() -> Result<GeneratedRegisterData>
 {
-	let (identifier, password) = sentc_crypto_light::user::generate_user_register_data().map_err(|err| anyhow!(err))?;
+	let (identifier, password) = sentc_crypto_light::user::generate_user_register_data()?;
 
 	Ok(GeneratedRegisterData {
 		identifier,
@@ -199,7 +200,7 @@ For full register see register()
  */
 pub fn prepare_register(user_identifier: String, password: String) -> Result<String>
 {
-	sentc_crypto_light::user::register(user_identifier.as_str(), password.as_str()).map_err(|err| anyhow!(err))
+	sentc_crypto_light::user::register(user_identifier.as_str(), password.as_str())
 }
 
 /**
@@ -209,7 +210,7 @@ Returns the new user id
  */
 pub fn done_register(server_output: String) -> Result<String>
 {
-	sentc_crypto_light::user::done_register(server_output.as_str()).map_err(|err| anyhow!(err))
+	sentc_crypto_light::user::done_register(server_output.as_str())
 }
 
 /**
@@ -244,7 +245,7 @@ pub fn register_device_start(base_url: String, auth_token: String, device_identi
 
 pub fn done_register_device_start(server_output: String) -> Result<()>
 {
-	sentc_crypto_light::user::done_register_device_start(server_output.as_str()).map_err(|err| anyhow!(err))
+	sentc_crypto_light::user::done_register_device_start(server_output.as_str())
 }
 
 pub fn register_device(base_url: String, auth_token: String, jwt: String, server_output: String) -> Result<()>
@@ -684,7 +685,7 @@ Use the parent group private key when fetching child group data.
  */
 pub fn group_extract_group_data(server_output: String) -> Result<GroupOutDataLightExport>
 {
-	let out = sentc_crypto_light::group::get_group_light_data(server_output.as_str()).map_err(|err| anyhow!(err))?;
+	let out = sentc_crypto_light::group::get_group_light_data(server_output.as_str())?;
 
 	Ok(out.into())
 }
@@ -1181,7 +1182,7 @@ pub fn leave_group(base_url: String, auth_token: String, jwt: String, id: String
 
 pub fn group_prepare_update_rank(user_id: String, rank: i32, admin_rank: i32) -> Result<String>
 {
-	sentc_crypto_light::group::prepare_change_rank(&user_id, rank, admin_rank).map_err(|err| anyhow!(err))
+	sentc_crypto_light::group::prepare_change_rank(&user_id, rank, admin_rank)
 }
 
 #[allow(clippy::too_many_arguments)]
