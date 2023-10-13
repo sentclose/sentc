@@ -96,6 +96,12 @@ impl Clone for PublicKeyFormatInt
 					key: Pk::Ecies(*k),
 				}
 			},
+			Pk::Kyber(k) => {
+				Self {
+					key_id: self.key_id.clone(),
+					key: Pk::Kyber(*k),
+				}
+			},
 		}
 	}
 }
@@ -364,6 +370,11 @@ pub enum PrivateKeyFormatExport
 	{
 		key: String, key_id: EncryptionKeyPairId
 	},
+
+	Kyber
+	{
+		key: String, key_id: EncryptionKeyPairId
+	},
 }
 
 impl TryInto<PrivateKeyFormatInt> for PrivateKeyFormatExport
@@ -389,6 +400,23 @@ impl TryInto<PrivateKeyFormatInt> for PrivateKeyFormatExport
 					key: Sk::Ecies(private_key),
 				})
 			},
+
+			PrivateKeyFormatExport::Kyber {
+				key_id,
+				key,
+			} => {
+				//to bytes via base64
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				let private_key = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				Ok(PrivateKeyFormatInt {
+					key_id,
+					key: Sk::Kyber(private_key),
+				})
+			},
 		}
 	}
 }
@@ -402,6 +430,14 @@ impl From<PrivateKeyFormatInt> for PrivateKeyFormatExport
 				let key = Base64::encode_string(&k);
 
 				Self::Ecies {
+					key_id: value.key_id,
+					key,
+				}
+			},
+			Sk::Kyber(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Kyber {
 					key_id: value.key_id,
 					key,
 				}
@@ -431,6 +467,11 @@ pub enum PublicKeyFormatExport
 	{
 		key: String, key_id: EncryptionKeyPairId
 	},
+
+	Kyber
+	{
+		key: String, key_id: EncryptionKeyPairId
+	},
 }
 
 impl TryInto<PublicKeyFormatInt> for PublicKeyFormatExport
@@ -455,6 +496,22 @@ impl TryInto<PublicKeyFormatInt> for PublicKeyFormatExport
 					key: Pk::Ecies(key),
 				})
 			},
+
+			PublicKeyFormatExport::Kyber {
+				key,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				let key = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				Ok(PublicKeyFormatInt {
+					key_id,
+					key: Pk::Kyber(key),
+				})
+			},
 		}
 	}
 }
@@ -472,6 +529,15 @@ impl From<PublicKeyFormatInt> for PublicKeyFormatExport
 					key,
 				}
 			},
+
+			Pk::Kyber(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Kyber {
+					key_id: value.key_id,
+					key,
+				}
+			},
 		}
 	}
 }
@@ -485,6 +551,14 @@ impl<'a> From<&'a PublicKeyFormatInt> for PublicKeyFormatExport
 				let key = Base64::encode_string(k);
 
 				Self::Ecies {
+					key_id: value.key_id.clone(),
+					key,
+				}
+			},
+			Pk::Kyber(k) => {
+				let key = Base64::encode_string(k);
+
+				Self::Kyber {
 					key_id: value.key_id.clone(),
 					key,
 				}

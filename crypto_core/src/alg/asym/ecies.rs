@@ -30,6 +30,7 @@ pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
 {
 	let receiver_pub = match receiver_pub {
 		Pk::Ecies(pk) => PublicKey::from(*pk),
+		_ => return Err(Error::AlgNotFound),
 	};
 
 	encrypt_internally(&receiver_pub, data, &mut get_rand())
@@ -39,6 +40,7 @@ pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, E
 {
 	let receiver_sec = match receiver_sec {
 		Sk::Ecies(sk) => StaticSecret::from(*sk),
+		_ => return Err(Error::AlgNotFound),
 	};
 
 	decrypt_internally(&receiver_sec, ciphertext)
@@ -143,10 +145,12 @@ mod test
 
 		let pk = match out.pk {
 			Pk::Ecies(p) => p,
+			_ => panic!("alg not found"),
 		};
 
 		let sk = match out.sk {
 			Sk::Ecies(s) => s,
+			_ => panic!("alg not found"),
 		};
 
 		assert_eq!(pk.len(), 32);

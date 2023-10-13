@@ -31,6 +31,7 @@ use alloc::vec::Vec;
 use rand_core::{CryptoRng, OsRng, RngCore};
 
 pub use self::alg::asym::ecies::ECIES_OUTPUT;
+pub use self::alg::asym::pqc_kyber::KYBER_OUTPUT;
 pub(crate) use self::alg::asym::AsymKeyOutput;
 pub use self::alg::asym::{getting_alg_from_private_key, getting_alg_from_public_key, Pk, Sk};
 pub use self::alg::hmac::hmac_sha256::HMAC_SHA256_OUTPUT;
