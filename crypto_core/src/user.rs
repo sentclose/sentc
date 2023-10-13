@@ -85,6 +85,7 @@ fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, E
 
 	let private_key = match &keypair.sk {
 		Sk::Ecies(k) => k,
+		_ => return Err(Error::AlgNotFound),
 	};
 
 	let sign_key = match &sign.sign_key {
@@ -244,6 +245,7 @@ fn password_reset_argon2_aes_ecies_ed25519(new_pw: &str, decrypted_private_key: 
 	//2. encrypt the private and the sign key with the new master key
 	let encrypted_private_key = match decrypted_private_key {
 		Sk::Ecies(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+		_ => return Err(Error::AlgNotFound),
 	};
 
 	let encrypted_sign_key = match decrypted_sign_key {
@@ -310,6 +312,7 @@ pub fn verify_user_public_key(verify_key: &VerifyK, sig: &Sig, public_key: &Pk) 
 {
 	match public_key {
 		Pk::Ecies(pk) => crate::crypto::verify_only(verify_key, sig, pk),
+		Pk::Kyber(pk) => crate::crypto::verify_only(verify_key, sig, pk),
 	}
 }
 
@@ -497,6 +500,10 @@ mod test
 			(Sk::Ecies(pk), Sk::Ecies(pk2)) => {
 				assert_eq!(pk, pk2);
 			},
+			(Sk::Kyber(pk), Sk::Kyber(pk2)) => {
+				assert_eq!(pk, pk2);
+			},
+			_ => panic!("Keys not the same format"),
 		}
 	}
 

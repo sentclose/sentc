@@ -197,6 +197,7 @@ fn prepare_keys_aes_ecies_ed25519(
 	//encrypt the private group key
 	let private_key = match &key_pair.sk {
 		Sk::Ecies(k) => k,
+		_ => return Err(Error::AlgNotFound),
 	};
 
 	let encrypted_private_group_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, private_key)?;
@@ -207,6 +208,7 @@ fn prepare_keys_aes_ecies_ed25519(
 
 			(en, asym::ecies::ECIES_OUTPUT)
 		},
+		_ => return Err(Error::AlgNotFound),
 	};
 
 	//create the sign keys if user group and after encrypt the sign key with group key
@@ -224,6 +226,7 @@ fn prepare_keys_aes_ecies_ed25519(
 		//sign the public key
 		let raw_public_key = match &key_pair.pk {
 			Pk::Ecies(k) => k,
+			_ => return Err(Error::AlgNotFound),
 		};
 
 		let public_key_sig = sign::ed25519::sign_only(&sign.sign_key, raw_public_key)?;
@@ -385,6 +388,7 @@ pub fn prepare_group_keys_for_new_member(requester_public_key: &Pk, group_keys: 
 
 	let encrypted_group_key_alg = match requester_public_key {
 		Pk::Ecies(_) => asym::ecies::ECIES_OUTPUT,
+		Pk::Kyber(_) => asym::pqc_kyber::KYBER_OUTPUT,
 	};
 
 	for group_key in group_keys {
