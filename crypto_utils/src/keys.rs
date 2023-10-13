@@ -4,7 +4,7 @@ use core::str::FromStr;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
-use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SortableKey, SymKey, VerifyK, ECIES_OUTPUT};
+use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SortableKey, SymKey, VerifyK, ECIES_OUTPUT, KYBER_OUTPUT};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkUtilError;
@@ -596,6 +596,16 @@ impl<'a> TryFrom<&'a UserPublicKeyData> for PublicKeyFormatInt
 				Ok(Self {
 					key_id: value.public_key_id.clone(),
 					key: Pk::Ecies(public_key),
+				})
+			},
+			KYBER_OUTPUT => {
+				let public_key = public_key
+					.try_into()
+					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
+
+				Ok(Self {
+					key_id: value.public_key_id.clone(),
+					key: Pk::Kyber(public_key),
 				})
 			},
 			_ => Err(SdkUtilError::AlgNotFound),

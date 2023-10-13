@@ -95,6 +95,7 @@ pub fn export_raw_public_key_to_pem(key: &Pk) -> Result<String, SdkUtilError>
 	match key {
 		//match against the public key variants
 		Pk::Ecies(k) => export_key_to_pem(k),
+		Pk::Kyber(k) => export_key_to_pem(k),
 	}
 }
 
