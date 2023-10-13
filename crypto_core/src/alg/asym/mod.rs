@@ -1,18 +1,22 @@
+use ::pqc_kyber::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
+
 use crate::{ECIES_OUTPUT, KYBER_OUTPUT};
 
 pub(crate) mod ecies;
 pub(crate) mod pqc_kyber;
 
+#[allow(clippy::large_enum_variant)]
 pub enum Pk
 {
 	Ecies([u8; 32]),
-	Kyber([u8; 1568]),
+	Kyber([u8; KYBER_PUBLICKEYBYTES]),
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum Sk
 {
 	Ecies([u8; 32]),
-	Kyber([u8; 3168]),
+	Kyber([u8; KYBER_SECRETKEYBYTES]),
 }
 
 pub(crate) struct AsymKeyOutput
