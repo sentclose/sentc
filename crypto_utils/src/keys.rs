@@ -728,6 +728,16 @@ pub enum SignKeyFormatExport
 	{
 		key: String, key_id: SignKeyPairId
 	},
+
+	Dilithium
+	{
+		key: String, key_id: SignKeyPairId
+	},
+
+	Ed25519DilithiumHybrid
+	{
+		x: String, k: String, key_id: SignKeyPairId
+	},
 }
 
 impl TryInto<SignKeyFormatInt> for SignKeyFormatExport
@@ -752,6 +762,48 @@ impl TryInto<SignKeyFormatInt> for SignKeyFormatExport
 					key: SignK::Ed25519(sign_key),
 				})
 			},
+
+			SignKeyFormatExport::Dilithium {
+				key,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
+
+				let sign_key = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
+
+				Ok(SignKeyFormatInt {
+					key_id,
+					key: SignK::Dilithium(sign_key),
+				})
+			},
+
+			SignKeyFormatExport::Ed25519DilithiumHybrid {
+				x,
+				k,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&x).map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
+
+				let x = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
+
+				let bytes = Base64::decode_vec(&k).map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
+
+				let k = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportingSignKeyFailed)?;
+
+				Ok(SignKeyFormatInt {
+					key_id,
+					key: SignK::Ed25519DilithiumHybrid {
+						x,
+						k,
+					},
+				})
+			},
 		}
 	}
 }
@@ -767,6 +819,28 @@ impl From<SignKeyFormatInt> for SignKeyFormatExport
 				Self::Ed25519 {
 					key_id: value.key_id,
 					key,
+				}
+			},
+			SignK::Dilithium(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Dilithium {
+					key_id: value.key_id,
+					key,
+				}
+			},
+
+			SignK::Ed25519DilithiumHybrid {
+				x,
+				k,
+			} => {
+				let x = Base64::encode_string(&x);
+				let k = Base64::encode_string(&k);
+
+				Self::Ed25519DilithiumHybrid {
+					x,
+					k,
+					key_id: value.key_id,
 				}
 			},
 		}
@@ -794,6 +868,16 @@ pub enum VerifyKeyFormatExport
 	{
 		key: String, key_id: SignKeyPairId
 	},
+
+	Dilithium
+	{
+		key: String, key_id: SignKeyPairId
+	},
+
+	Ed25519DilithiumHybrid
+	{
+		x: String, k: String, key_id: SignKeyPairId
+	},
 }
 
 impl TryInto<VerifyKeyFormatInt> for VerifyKeyFormatExport
@@ -818,6 +902,48 @@ impl TryInto<VerifyKeyFormatInt> for VerifyKeyFormatExport
 					key_id,
 				})
 			},
+
+			VerifyKeyFormatExport::Dilithium {
+				key,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
+
+				let verify_key = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
+
+				Ok(VerifyKeyFormatInt {
+					key: VerifyK::Dilithium(verify_key),
+					key_id,
+				})
+			},
+
+			VerifyKeyFormatExport::Ed25519DilithiumHybrid {
+				x,
+				k,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&x).map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
+
+				let x = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
+
+				let bytes = Base64::decode_vec(&k).map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
+
+				let k = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportVerifyKeyFailed)?;
+
+				Ok(VerifyKeyFormatInt {
+					key_id,
+					key: VerifyK::Ed25519DilithiumHybrid {
+						x,
+						k,
+					},
+				})
+			},
 		}
 	}
 }
@@ -833,6 +959,29 @@ impl From<VerifyKeyFormatInt> for VerifyKeyFormatExport
 				Self::Ed25519 {
 					key_id: value.key_id,
 					key,
+				}
+			},
+
+			VerifyK::Dilithium(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Dilithium {
+					key_id: value.key_id,
+					key,
+				}
+			},
+
+			VerifyK::Ed25519DilithiumHybrid {
+				x,
+				k,
+			} => {
+				let x = Base64::encode_string(&x);
+				let k = Base64::encode_string(&k);
+
+				Self::Ed25519DilithiumHybrid {
+					x,
+					k,
+					key_id: value.key_id,
 				}
 			},
 		}

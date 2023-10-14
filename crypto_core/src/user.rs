@@ -80,7 +80,11 @@ fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, E
 	let keypair = asym::ecies_kyber_hybrid::generate_static_keypair()?;
 
 	//3. create sign key pair for sign and verify
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	let sign = sign::ed25519::generate_key_pair()?;
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+	let sign = sign::ed25519_dilithium_hybrid::generate_key_pair()?;
 
 	//4. encrypt the private keys with the master key
 	let raw_master_key = match &master_key.key {
@@ -100,11 +104,18 @@ fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, E
 		},
 	};
 
-	let sign_key = match &sign.sign_key {
-		SignK::Ed25519(k) => k,
-	};
+	let encrypted_sign_key = match &sign.sign_key {
+		SignK::Ed25519(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
+		SignK::Dilithium(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
+		SignK::Ed25519DilithiumHybrid {
+			x,
+			k,
+		} => {
+			let private_key = [&x[..], k].concat();
 
-	let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_master_key, sign_key)?;
+			sym::aes_gcm::encrypt_with_generated_key(raw_master_key, &private_key)?
+		},
+	};
 
 	//5. derived keys from password
 	let derived = pw_hash::argon2::derived_keys_from_password(password.as_bytes(), raw_master_key)?;
@@ -269,6 +280,15 @@ fn password_reset_argon2_aes_ecies_ed25519(new_pw: &str, decrypted_private_key: 
 
 	let encrypted_sign_key = match decrypted_sign_key {
 		SignK::Ed25519(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+		SignK::Dilithium(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+		SignK::Ed25519DilithiumHybrid {
+			x,
+			k,
+		} => {
+			let private_key = [&x[..], k].concat();
+
+			sym::aes_gcm::encrypt(&master_key.key, &private_key)?
+		},
 	};
 
 	//3. encrypt the new master key with the new password
@@ -318,8 +338,7 @@ Make sure to keep the order of user_1 and user_2 on the other user too, otherwis
 */
 pub fn safety_number(user_1: SafetyNumber, user_2: Option<SafetyNumber>) -> Vec<u8>
 {
-	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
-	sign::ed25519::safety_number(user_1, user_2)
+	sign::safety_number(user_1, user_2)
 }
 
 /**
@@ -361,12 +380,18 @@ mod test
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		assert_eq!(out.keypair_encrypt_alg, asym::ecies::ECIES_OUTPUT);
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		assert_eq!(out.keypair_sign_alg, crate::alg::sign::ed25519::ED25519_OUTPUT);
+		assert_eq!(out.keypair_sign_alg, sign::ed25519::ED25519_OUTPUT);
 
 		#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
 		assert_eq!(
 			out.keypair_encrypt_alg,
 			asym::ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT
+		);
+
+		#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+		assert_eq!(
+			out.keypair_sign_alg,
+			sign::ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT
 		);
 	}
 
