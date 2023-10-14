@@ -11,6 +11,7 @@ pub const SIG_LENGTH: usize = 64;
 
 pub const ED25519_OUTPUT: &str = "ED25519";
 
+#[allow(unused)]
 pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
 {
 	let keypair = generate_key_pair_internally(&mut get_rand())?;
@@ -43,7 +44,7 @@ pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
 pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; 64], Error>
 {
 	match sign_key {
-		SignK::Ed25519(sk) => sign_internally(&sk, data),
+		SignK::Ed25519(sk) => sign_internally(sk, data),
 		_ => Err(Error::AlgNotFound),
 	}
 }
@@ -73,7 +74,7 @@ pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Resul
 pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
 	match verify_key {
-		VerifyK::Ed25519(k) => verify_internally(&k, sig, data),
+		VerifyK::Ed25519(k) => verify_internally(k, sig, data),
 		_ => Err(Error::AlgNotFound),
 	}
 }

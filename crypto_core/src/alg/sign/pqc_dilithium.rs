@@ -41,7 +41,7 @@ pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
 pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; SIGNBYTES], Error>
 {
 	match sign_key {
-		SignK::Dilithium(sk) => sign_internally(&sk, data),
+		SignK::Dilithium(sk) => sign_internally(sk, data),
 		_ => Err(Error::AlgNotFound),
 	}
 }
@@ -71,7 +71,7 @@ pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Resul
 pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
 	match verify_key {
-		VerifyK::Dilithium(k) => verify_internally(&k, sig, data),
+		VerifyK::Dilithium(k) => verify_internally(k, sig, data),
 		_ => Err(Error::AlgNotFound),
 	}
 }
