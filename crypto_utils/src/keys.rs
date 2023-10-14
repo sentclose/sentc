@@ -4,11 +4,11 @@ use core::str::FromStr;
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
-use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SortableKey, SymKey, VerifyK, ECIES_OUTPUT};
+use sentc_crypto_core::{HmacKey, Pk, SignK, Sk, SortableKey, SymKey, VerifyK};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkUtilError;
-use crate::import_key_from_pem;
+use crate::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg};
 
 pub struct SymKeyFormatInt
 {
@@ -94,6 +94,24 @@ impl Clone for PublicKeyFormatInt
 				Self {
 					key_id: self.key_id.clone(),
 					key: Pk::Ecies(*k),
+				}
+			},
+			Pk::Kyber(k) => {
+				Self {
+					key_id: self.key_id.clone(),
+					key: Pk::Kyber(*k),
+				}
+			},
+			Pk::EciesKyberHybrid {
+				x,
+				k,
+			} => {
+				Self {
+					key_id: self.key_id.clone(),
+					key: Pk::EciesKyberHybrid {
+						x: *x,
+						k: *k,
+					},
 				}
 			},
 		}
@@ -364,6 +382,16 @@ pub enum PrivateKeyFormatExport
 	{
 		key: String, key_id: EncryptionKeyPairId
 	},
+
+	Kyber
+	{
+		key: String, key_id: EncryptionKeyPairId
+	},
+
+	EciesKyberHybrid
+	{
+		x: String, k: String, key_id: EncryptionKeyPairId
+	},
 }
 
 impl TryInto<PrivateKeyFormatInt> for PrivateKeyFormatExport
@@ -389,6 +417,49 @@ impl TryInto<PrivateKeyFormatInt> for PrivateKeyFormatExport
 					key: Sk::Ecies(private_key),
 				})
 			},
+
+			PrivateKeyFormatExport::Kyber {
+				key_id,
+				key,
+			} => {
+				//to bytes via base64
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				let private_key = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				Ok(PrivateKeyFormatInt {
+					key_id,
+					key: Sk::Kyber(private_key),
+				})
+			},
+
+			PrivateKeyFormatExport::EciesKyberHybrid {
+				key_id,
+				x,
+				k,
+			} => {
+				let bytes = Base64::decode_vec(&x).map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				let x = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				let bytes = Base64::decode_vec(&k).map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				let k = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportingPrivateKeyFailed)?;
+
+				Ok(PrivateKeyFormatInt {
+					key_id,
+					key: Sk::EciesKyberHybrid {
+						x,
+						k,
+					},
+				})
+			},
 		}
 	}
 }
@@ -404,6 +475,28 @@ impl From<PrivateKeyFormatInt> for PrivateKeyFormatExport
 				Self::Ecies {
 					key_id: value.key_id,
 					key,
+				}
+			},
+			Sk::Kyber(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Kyber {
+					key_id: value.key_id,
+					key,
+				}
+			},
+
+			Sk::EciesKyberHybrid {
+				x,
+				k,
+			} => {
+				let x = Base64::encode_string(&x);
+				let k = Base64::encode_string(&k);
+
+				Self::EciesKyberHybrid {
+					k,
+					x,
+					key_id: value.key_id,
 				}
 			},
 		}
@@ -424,12 +517,32 @@ impl FromStr for PrivateKeyFormatInt
 
 //__________________________________________________________________________________________________
 
+/**
+This is used for the hybrid keys when exporting it to pem
+*/
+#[derive(Serialize, Deserialize)]
+pub struct HybridPublicKeyExportFormat
+{
+	pub x: String,
+	pub k: String,
+}
+
 #[derive(Serialize, Deserialize)]
 pub enum PublicKeyFormatExport
 {
 	Ecies
 	{
 		key: String, key_id: EncryptionKeyPairId
+	},
+
+	Kyber
+	{
+		key: String, key_id: EncryptionKeyPairId
+	},
+
+	EciesKyberHybrid
+	{
+		x: String, k: String, key_id: EncryptionKeyPairId
 	},
 }
 
@@ -455,6 +568,48 @@ impl TryInto<PublicKeyFormatInt> for PublicKeyFormatExport
 					key: Pk::Ecies(key),
 				})
 			},
+
+			PublicKeyFormatExport::Kyber {
+				key,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&key).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				let key = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				Ok(PublicKeyFormatInt {
+					key_id,
+					key: Pk::Kyber(key),
+				})
+			},
+
+			PublicKeyFormatExport::EciesKyberHybrid {
+				x,
+				k,
+				key_id,
+			} => {
+				let bytes = Base64::decode_vec(&x).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				let x = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				let bytes = Base64::decode_vec(&k).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				let k = bytes
+					.try_into()
+					.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+				Ok(PublicKeyFormatInt {
+					key_id,
+					key: Pk::EciesKyberHybrid {
+						x,
+						k,
+					},
+				})
+			},
 		}
 	}
 }
@@ -472,6 +627,29 @@ impl From<PublicKeyFormatInt> for PublicKeyFormatExport
 					key,
 				}
 			},
+
+			Pk::Kyber(k) => {
+				let key = Base64::encode_string(&k);
+
+				Self::Kyber {
+					key_id: value.key_id,
+					key,
+				}
+			},
+
+			Pk::EciesKyberHybrid {
+				x,
+				k,
+			} => {
+				let x = Base64::encode_string(&x);
+				let k = Base64::encode_string(&k);
+
+				Self::EciesKyberHybrid {
+					k,
+					x,
+					key_id: value.key_id,
+				}
+			},
 		}
 	}
 }
@@ -487,6 +665,29 @@ impl<'a> From<&'a PublicKeyFormatInt> for PublicKeyFormatExport
 				Self::Ecies {
 					key_id: value.key_id.clone(),
 					key,
+				}
+			},
+
+			Pk::Kyber(k) => {
+				let key = Base64::encode_string(k);
+
+				Self::Kyber {
+					key_id: value.key_id.clone(),
+					key,
+				}
+			},
+
+			Pk::EciesKyberHybrid {
+				x,
+				k,
+			} => {
+				let x = Base64::encode_string(x);
+				let k = Base64::encode_string(k);
+
+				Self::EciesKyberHybrid {
+					k,
+					x,
+					key_id: value.key_id.clone(),
 				}
 			},
 		}
@@ -511,21 +712,10 @@ impl<'a> TryFrom<&'a UserPublicKeyData> for PublicKeyFormatInt
 
 	fn try_from(value: &'a UserPublicKeyData) -> Result<Self, Self::Error>
 	{
-		let public_key = import_key_from_pem(&value.public_key_pem)?;
-
-		match value.public_key_alg.as_str() {
-			ECIES_OUTPUT => {
-				let public_key = public_key
-					.try_into()
-					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
-
-				Ok(Self {
-					key_id: value.public_key_id.clone(),
-					key: Pk::Ecies(public_key),
-				})
-			},
-			_ => Err(SdkUtilError::AlgNotFound),
-		}
+		Ok(Self {
+			key_id: value.public_key_id.clone(),
+			key: import_public_key_from_pem_with_alg(&value.public_key_pem, &value.public_key_alg)?,
+		})
 	}
 }
 
@@ -667,21 +857,10 @@ impl<'a> TryFrom<&'a UserVerifyKeyData> for VerifyKeyFormatInt
 
 	fn try_from(value: &'a UserVerifyKeyData) -> Result<Self, Self::Error>
 	{
-		let verify_key = import_key_from_pem(&value.verify_key_pem)?;
-
-		match value.verify_key_alg.as_str() {
-			ECIES_OUTPUT => {
-				let verify_key = verify_key
-					.try_into()
-					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
-
-				Ok(Self {
-					key_id: value.verify_key_id.clone(),
-					key: VerifyK::Ed25519(verify_key),
-				})
-			},
-			_ => Err(SdkUtilError::AlgNotFound),
-		}
+		Ok(Self {
+			key_id: value.verify_key_id.clone(),
+			key: import_verify_key_from_pem_with_alg(&value.verify_key_pem, &value.verify_key_alg)?,
+		})
 	}
 }
 

@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use crate::alg::sym::aes_gcm::AesKey;
 use crate::alg::{asym, hmac, sign, sortable, sym};
 use crate::crypto::{decrypt_asymmetric, decrypt_symmetric, encrypt_asymmetric};
-use crate::{AsymKeyOutput, Error, HmacKey, Pk, Sig, SignK, Sk, SortableKey, SymKey, VerifyK};
+use crate::{getting_alg_from_public_key, AsymKeyOutput, Error, HmacKey, Pk, Sig, SignK, Sk, SortableKey, SymKey, VerifyK};
 
 pub struct CreateGroupOutput
 {
@@ -51,7 +51,7 @@ pub struct PrepareGroupKeysForNewMemberOutput
 	pub encrypted_group_key_alg: &'static str,
 }
 
-#[cfg(feature = "argon2_aes_ecies_ed25519")]
+#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) -> Result<(CreateGroupOutput, SymKey), Error>
 {
 	//1. create the keys:
@@ -59,15 +59,25 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 	//	2. pub / pri keys
 
 	let group_key = sym::aes_gcm::generate_key()?;
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	let keypair = asym::ecies::generate_static_keypair();
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+	let keypair = asym::ecies_kyber_hybrid::generate_static_keypair()?;
 
 	//2. encrypt the private key with the group key
 	let raw_group_key = match &group_key.key {
 		SymKey::Aes(k) => k,
 	};
 
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	let (encrypted_private_group_key, encrypted_group_key, encrypted_group_key_alg, verify_key, encrypted_sign_key, keypair_sign_alg, public_key_sig) =
 		prepare_keys_aes_ecies_ed25519(creators_public_key, user_group, raw_group_key, &keypair)?;
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+	let (encrypted_private_group_key, encrypted_group_key, encrypted_group_key_alg, verify_key, encrypted_sign_key, keypair_sign_alg, public_key_sig) =
+		prepare_keys_aes_ecies_ed25519_kyber_hybrid(creators_public_key, user_group, raw_group_key, &keypair)?;
 
 	//3. get the hmac key
 
@@ -113,22 +123,27 @@ fn prepare_create_aes_ecies_ed25519(creators_public_key: &Pk, user_group: bool) 
 
 pub fn prepare_create(creators_public_key: &Pk, user_group: bool) -> Result<(CreateGroupOutput, SymKey), Error>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	prepare_create_aes_ecies_ed25519(creators_public_key, user_group)
 }
 
-#[cfg(feature = "argon2_aes_ecies_ed25519")]
+#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 fn key_rotation_aes_ecies_ed25519(previous_group_key: &SymKey, invoker_public_key: &Pk, user_group: bool) -> Result<KeyRotationOutput, Error>
 {
 	//1. create new group keys
 	let group_key = sym::aes_gcm::generate_key()?;
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	let keypair = asym::ecies::generate_static_keypair();
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+	let keypair = asym::ecies_kyber_hybrid::generate_static_keypair()?;
 
 	//2. encrypt the private key with the group key
 	let raw_group_key = match &group_key.key {
 		SymKey::Aes(k) => k,
 	};
 
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	let (
 		encrypted_private_group_key,
 		encrypted_group_key_by_user,
@@ -138,6 +153,17 @@ fn key_rotation_aes_ecies_ed25519(previous_group_key: &SymKey, invoker_public_ke
 		keypair_sign_alg,
 		public_key_sig,
 	) = prepare_keys_aes_ecies_ed25519(invoker_public_key, user_group, raw_group_key, &keypair)?;
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+	let (
+		encrypted_private_group_key,
+		encrypted_group_key_by_user,
+		encrypted_group_key_alg,
+		verify_key,
+		encrypted_sign_key,
+		keypair_sign_alg,
+		public_key_sig,
+	) = prepare_keys_aes_ecies_ed25519_kyber_hybrid(invoker_public_key, user_group, raw_group_key, &keypair)?;
 
 	//3. create an ephemeral key to encrypt the new group key
 	let ephemeral_key = sym::aes_gcm::generate_key()?;
@@ -172,7 +198,7 @@ fn key_rotation_aes_ecies_ed25519(previous_group_key: &SymKey, invoker_public_ke
 
 pub fn key_rotation(previous_group_key: &SymKey, invoker_public_key: &Pk, user_group: bool) -> Result<KeyRotationOutput, Error>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	key_rotation_aes_ecies_ed25519(previous_group_key, invoker_public_key, user_group)
 }
 
@@ -186,6 +212,96 @@ type PrepareKeysAesEciesEd25519Tuple = (
 	Option<Sig>,
 );
 
+fn encrypt_group_key_with_user_key_aes(public_key: &Pk, raw_group_key: &AesKey) -> Result<(Vec<u8>, &'static str), Error>
+{
+	let (encrypted_group_key, encrypted_group_key_alg) = match public_key {
+		Pk::Ecies(_) => {
+			let en = asym::ecies::encrypt(public_key, raw_group_key)?;
+
+			(en, asym::ecies::ECIES_OUTPUT)
+		},
+		Pk::Kyber(_) => {
+			let en = asym::pqc_kyber::encrypt(public_key, raw_group_key)?;
+
+			(en, asym::pqc_kyber::KYBER_OUTPUT)
+		},
+		Pk::EciesKyberHybrid {
+			..
+		} => {
+			let en = asym::ecies_kyber_hybrid::encrypt(public_key, raw_group_key)?;
+
+			(en, asym::ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT)
+		},
+	};
+
+	Ok((encrypted_group_key, encrypted_group_key_alg))
+}
+
+#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+fn prepare_keys_aes_ecies_ed25519_kyber_hybrid(
+	public_key: &Pk,
+	user_group: bool,
+	raw_group_key: &AesKey,
+	key_pair: &AsymKeyOutput,
+) -> Result<PrepareKeysAesEciesEd25519Tuple, Error>
+{
+	let (x_sk, k_sk) = match &key_pair.sk {
+		Sk::EciesKyberHybrid {
+			x,
+			k,
+		} => (x, k),
+		_ => return Err(Error::AlgNotFound),
+	};
+
+	let private_key = [&x_sk[..], k_sk].concat();
+
+	let encrypted_private_group_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, &private_key)?;
+
+	let (encrypted_group_key, encrypted_group_key_alg) = encrypt_group_key_with_user_key_aes(public_key, raw_group_key)?;
+
+	//TODO change this to hybrid
+	//create the sign keys if user group and after encrypt the sign key with group key
+	let (verify_key, encrypted_sign_key, keypair_sign_alg, public_key_sig) = if !user_group {
+		(None, None, None, None)
+	} else {
+		let sign = sign::ed25519::generate_key_pair()?;
+
+		let raw_sign_key = match &sign.sign_key {
+			SignK::Ed25519(k) => k,
+		};
+
+		let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, raw_sign_key)?;
+
+		//sign the public key
+		let raw_public_key = match &key_pair.pk {
+			Pk::EciesKyberHybrid {
+				k,
+				x,
+			} => [&x[..], &k[..]].concat(),
+			_ => return Err(Error::AlgNotFound),
+		};
+
+		let public_key_sig = sign::ed25519::sign_only(&sign.sign_key, &raw_public_key)?;
+
+		(
+			Some(sign.verify_key),
+			Some(encrypted_sign_key),
+			Some(sign.alg),
+			Some(public_key_sig),
+		)
+	};
+
+	Ok((
+		encrypted_private_group_key,
+		encrypted_group_key,
+		encrypted_group_key_alg,
+		verify_key,
+		encrypted_sign_key,
+		keypair_sign_alg,
+		public_key_sig,
+	))
+}
+
 #[cfg(feature = "argon2_aes_ecies_ed25519")]
 fn prepare_keys_aes_ecies_ed25519(
 	public_key: &Pk,
@@ -197,17 +313,12 @@ fn prepare_keys_aes_ecies_ed25519(
 	//encrypt the private group key
 	let private_key = match &key_pair.sk {
 		Sk::Ecies(k) => k,
+		_ => return Err(Error::AlgNotFound),
 	};
 
 	let encrypted_private_group_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, private_key)?;
 
-	let (encrypted_group_key, encrypted_group_key_alg) = match public_key {
-		Pk::Ecies(_) => {
-			let en = asym::ecies::encrypt(public_key, raw_group_key)?;
-
-			(en, asym::ecies::ECIES_OUTPUT)
-		},
-	};
+	let (encrypted_group_key, encrypted_group_key_alg) = encrypt_group_key_with_user_key_aes(public_key, raw_group_key)?;
 
 	//create the sign keys if user group and after encrypt the sign key with group key
 	let (verify_key, encrypted_sign_key, keypair_sign_alg, public_key_sig) = if !user_group {
@@ -224,6 +335,7 @@ fn prepare_keys_aes_ecies_ed25519(
 		//sign the public key
 		let raw_public_key = match &key_pair.pk {
 			Pk::Ecies(k) => k,
+			_ => return Err(Error::AlgNotFound),
 		};
 
 		let public_key_sig = sign::ed25519::sign_only(&sign.sign_key, raw_public_key)?;
@@ -345,6 +457,22 @@ pub fn get_group(
 					.map_err(|_| Error::KeyDecryptFailed)?,
 			)
 		},
+		asym::pqc_kyber::KYBER_OUTPUT => {
+			let private = decrypted_private_group_key
+				.try_into()
+				.map_err(|_| Error::DecodePrivateKeyFailed)?;
+
+			Sk::Kyber(private)
+		},
+		asym::ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT => {
+			let x = &decrypted_private_group_key[..32];
+			let k = &decrypted_private_group_key[32..];
+
+			Sk::EciesKyberHybrid {
+				x: x.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?,
+				k: k.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?,
+			}
+		},
 		_ => return Err(Error::AlgNotFound),
 	};
 
@@ -383,9 +511,7 @@ pub fn prepare_group_keys_for_new_member(requester_public_key: &Pk, group_keys: 
 
 	let mut encrypted_group_keys: Vec<PrepareGroupKeysForNewMemberOutput> = Vec::with_capacity(group_keys.len());
 
-	let encrypted_group_key_alg = match requester_public_key {
-		Pk::Ecies(_) => asym::ecies::ECIES_OUTPUT,
-	};
+	let encrypted_group_key_alg = getting_alg_from_public_key(requester_public_key);
 
 	for group_key in group_keys {
 		let (encrypted_group_key, group_key_alg) = match group_key {
@@ -456,7 +582,7 @@ mod test
 		let created_key = group_out.1;
 		let group_out = group_out.0;
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 		assert_eq!(group_out.group_key_alg, AES_GCM_OUTPUT);
 
 		//decrypt the group key
@@ -502,7 +628,7 @@ mod test
 
 		let group_out = prepare_create(&pk, false).unwrap().0;
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 		assert_eq!(group_out.group_key_alg, AES_GCM_OUTPUT);
 
 		//decrypt the group key

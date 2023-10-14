@@ -4,7 +4,7 @@ use crate::{alg, Error, HmacKey, PasswordEncryptOutput, Pk, Sig, SignK, Sk, Sort
 
 pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	alg::sym::aes_gcm::generate_key()
 }
 
@@ -107,6 +107,10 @@ pub fn encrypt_asymmetric(public_key: &Pk, data: &[u8]) -> Result<Vec<u8>, Error
 {
 	match public_key {
 		Pk::Ecies(_) => alg::asym::ecies::encrypt(public_key, data),
+		Pk::Kyber(_) => alg::asym::pqc_kyber::encrypt(public_key, data),
+		Pk::EciesKyberHybrid {
+			..
+		} => alg::asym::ecies_kyber_hybrid::encrypt(public_key, data),
 	}
 }
 
@@ -114,6 +118,10 @@ pub fn decrypt_asymmetric(private_key: &Sk, encrypted_data: &[u8]) -> Result<Vec
 {
 	match private_key {
 		Sk::Ecies(_) => alg::asym::ecies::decrypt(private_key, encrypted_data),
+		Sk::Kyber(_) => alg::asym::pqc_kyber::decrypt(private_key, encrypted_data),
+		Sk::EciesKyberHybrid {
+			..
+		} => alg::asym::ecies_kyber_hybrid::decrypt(private_key, encrypted_data),
 	}
 }
 
@@ -155,7 +163,7 @@ pub fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'
 
 pub fn prepare_password_encrypt(password: &str) -> Result<(PasswordEncryptOutput, SymKey), Error>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	alg::pw_hash::argon2::password_to_encrypt(password.as_bytes())
 }
 
