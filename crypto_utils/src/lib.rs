@@ -17,6 +17,7 @@ use sentc_crypto_core::{
 	Sig,
 	VerifyK,
 	ARGON_2_OUTPUT,
+	DILITHIUM_OUTPUT,
 	ECIES_KYBER_HYBRID_OUTPUT,
 	ECIES_OUTPUT,
 	ED25519_OUTPUT,
@@ -133,6 +134,7 @@ pub fn export_raw_verify_key_to_pem(key: &VerifyK) -> Result<String, SdkUtilErro
 {
 	match key {
 		VerifyK::Ed25519(k) => export_key_to_pem(k),
+		VerifyK::Dilithium(k) => export_key_to_pem(k),
 	}
 }
 
@@ -140,6 +142,7 @@ pub fn sig_to_string(sig: &Sig) -> String
 {
 	match sig {
 		Sig::Ed25519(s) => Base64::encode_string(s),
+		Sig::Dilithium(s) => Base64::encode_string(s),
 	}
 }
 
@@ -203,14 +206,21 @@ pub fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Resul
 
 pub fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -> Result<VerifyK, SdkUtilError>
 {
-	let verify_key = import_key_from_pem(verify_key)?;
-
 	match alg {
 		ED25519_OUTPUT => {
+			let verify_key = import_key_from_pem(verify_key)?;
 			let verify_key = verify_key
 				.try_into()
 				.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 			Ok(VerifyK::Ed25519(verify_key))
+		},
+
+		DILITHIUM_OUTPUT => {
+			let verify_key = import_key_from_pem(verify_key)?;
+			let verify_key = verify_key
+				.try_into()
+				.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
+			Ok(VerifyK::Dilithium(verify_key))
 		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}
@@ -222,6 +232,17 @@ pub fn import_sig_from_string(sig: &str, alg: &str) -> Result<Sig, SdkUtilError>
 		ED25519_OUTPUT => {
 			let sig = Base64::decode_vec(sig).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 			let sig = Sig::Ed25519(
+				sig.try_into()
+					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?,
+			);
+
+			Ok(sig)
+		},
+
+		DILITHIUM_OUTPUT => {
+			let sig = Base64::decode_vec(sig).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
+
+			let sig = Sig::Dilithium(
 				sig.try_into()
 					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?,
 			);

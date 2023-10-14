@@ -129,6 +129,7 @@ pub fn sign(sign_key: &SignK, data_to_sign: &[u8]) -> Result<Vec<u8>, Error>
 {
 	match sign_key {
 		SignK::Ed25519(_) => alg::sign::ed25519::sign(sign_key, data_to_sign),
+		SignK::Dilithium(_) => alg::sign::pqc_dilithium::sign(sign_key, data_to_sign),
 	}
 }
 
@@ -136,6 +137,7 @@ pub fn sign_only(sign_key: &SignK, data_to_sign: &[u8]) -> Result<Sig, Error>
 {
 	match sign_key {
 		SignK::Ed25519(_) => alg::sign::ed25519::sign_only(sign_key, data_to_sign),
+		SignK::Dilithium(_) => alg::sign::pqc_dilithium::sign_only(sign_key, data_to_sign),
 	}
 }
 
@@ -143,6 +145,7 @@ pub fn verify<'a>(verify_key: &VerifyK, data_with_sign: &'a [u8]) -> Result<(&'a
 {
 	match verify_key {
 		VerifyK::Ed25519(_) => alg::sign::ed25519::verify(verify_key, data_with_sign),
+		VerifyK::Dilithium(_) => alg::sign::pqc_dilithium::verify(verify_key, data_with_sign),
 	}
 }
 
@@ -150,6 +153,7 @@ pub fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool,
 {
 	match verify_key {
 		VerifyK::Ed25519(_) => alg::sign::ed25519::verify_only(verify_key, sig, data),
+		VerifyK::Dilithium(_) => alg::sign::pqc_dilithium::verify_only(verify_key, sig, data),
 	}
 }
 
@@ -157,6 +161,7 @@ pub fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'
 {
 	match alg {
 		alg::sign::ed25519::ED25519_OUTPUT => alg::sign::ed25519::split_sig_and_data(data_with_sign),
+		alg::sign::pqc_dilithium::DILITHIUM_OUTPUT => alg::sign::pqc_dilithium::split_sig_and_data(data_with_sign),
 		_ => Err(Error::AlgNotFound),
 	}
 }

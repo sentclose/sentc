@@ -100,11 +100,10 @@ fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, E
 		},
 	};
 
-	let sign_key = match &sign.sign_key {
-		SignK::Ed25519(k) => k,
+	let encrypted_sign_key = match &sign.sign_key {
+		SignK::Ed25519(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
+		SignK::Dilithium(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
 	};
-
-	let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_master_key, sign_key)?;
 
 	//5. derived keys from password
 	let derived = pw_hash::argon2::derived_keys_from_password(password.as_bytes(), raw_master_key)?;
@@ -269,6 +268,7 @@ fn password_reset_argon2_aes_ecies_ed25519(new_pw: &str, decrypted_private_key: 
 
 	let encrypted_sign_key = match decrypted_sign_key {
 		SignK::Ed25519(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+		SignK::Dilithium(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
 	};
 
 	//3. encrypt the new master key with the new password
@@ -318,8 +318,7 @@ Make sure to keep the order of user_1 and user_2 on the other user too, otherwis
 */
 pub fn safety_number(user_1: SafetyNumber, user_2: Option<SafetyNumber>) -> Vec<u8>
 {
-	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
-	sign::ed25519::safety_number(user_1, user_2)
+	sign::safety_number(user_1, user_2)
 }
 
 /**
