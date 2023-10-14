@@ -108,6 +108,9 @@ pub fn encrypt_asymmetric(public_key: &Pk, data: &[u8]) -> Result<Vec<u8>, Error
 	match public_key {
 		Pk::Ecies(_) => alg::asym::ecies::encrypt(public_key, data),
 		Pk::Kyber(_) => alg::asym::pqc_kyber::encrypt(public_key, data),
+		Pk::EciesKyberHybrid {
+			..
+		} => alg::asym::ecies_kyber_hybrid::encrypt(public_key, data),
 	}
 }
 
@@ -116,6 +119,9 @@ pub fn decrypt_asymmetric(private_key: &Sk, encrypted_data: &[u8]) -> Result<Vec
 	match private_key {
 		Sk::Ecies(_) => alg::asym::ecies::decrypt(private_key, encrypted_data),
 		Sk::Kyber(_) => alg::asym::pqc_kyber::decrypt(private_key, encrypted_data),
+		Sk::EciesKyberHybrid {
+			..
+		} => alg::asym::ecies_kyber_hybrid::decrypt(private_key, encrypted_data),
 	}
 }
 
