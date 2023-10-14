@@ -42,24 +42,10 @@ pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
 
 pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; 64], Error>
 {
-	//create the key pair like the from bytes functions but only from the select key not both to avoid select key leak
-	//see here: https://github.com/MystenLabs/ed25519-unsafe-libs
-	let keypair = match sign_key {
-		SignK::Ed25519(sk) => {
-			let sk = SecretKey::from_bytes(sk).map_err(|_| Error::InitSignFailed)?;
-			let vk: PublicKey = (&sk).into();
-
-			Keypair {
-				public: vk,
-				secret: sk,
-			}
-		},
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	let sig = keypair.sign(data);
-
-	Ok(sig.to_bytes())
+	match sign_key {
+		SignK::Ed25519(sk) => sign_internally(&sk, data),
+		_ => Err(Error::AlgNotFound),
+	}
 }
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
@@ -86,18 +72,9 @@ pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Resul
 
 pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
-	let vk = match verify_key {
-		VerifyK::Ed25519(k) => PublicKey::from_bytes(k).map_err(|_| Error::InitVerifyFailed)?,
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	let sig = Signature::from_bytes(sig).map_err(|_| Error::InitVerifyFailed)?;
-
-	let result = vk.verify(data, &sig);
-
-	match result {
-		Ok(()) => Ok(true),
-		Err(_e) => Ok(false),
+	match verify_key {
+		VerifyK::Ed25519(k) => verify_internally(&k, sig, data),
+		_ => Err(Error::AlgNotFound),
 	}
 }
 
@@ -119,6 +96,37 @@ pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) 
 		public: pk,
 		secret: sk,
 	})
+}
+
+pub(super) fn sign_internally(sign_key: &[u8; 32], data: &[u8]) -> Result<[u8; 64], Error>
+{
+	//create the key pair like the from bytes functions but only from the select key not both to avoid select key leak
+	//see here: https://github.com/MystenLabs/ed25519-unsafe-libs
+
+	let sk = SecretKey::from_bytes(sign_key).map_err(|_| Error::InitSignFailed)?;
+	let vk: PublicKey = (&sk).into();
+
+	let keypair = Keypair {
+		public: vk,
+		secret: sk,
+	};
+
+	let sig = keypair.sign(data);
+
+	Ok(sig.to_bytes())
+}
+
+pub(super) fn verify_internally(verify_key: &[u8; 32], sig: &[u8], data: &[u8]) -> Result<bool, Error>
+{
+	let vk = PublicKey::from_bytes(verify_key).map_err(|_| Error::InitVerifyFailed)?;
+	let sig = Signature::from_bytes(sig).map_err(|_| Error::InitVerifyFailed)?;
+
+	let result = vk.verify(data, &sig);
+
+	match result {
+		Ok(()) => Ok(true),
+		Err(_e) => Ok(false),
+	}
 }
 
 #[cfg(test)]

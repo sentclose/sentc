@@ -40,14 +40,10 @@ pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
 
 pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; SIGNBYTES], Error>
 {
-	let sign_key = match sign_key {
-		SignK::Dilithium(sk) => sk,
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	let sig = pqc_dilithium_edit::sign(data, &mut get_rand(), sign_key).map_err(|_| Error::InitSignFailed)?;
-
-	Ok(sig)
+	match sign_key {
+		SignK::Dilithium(sk) => sign_internally(&sk, data),
+		_ => Err(Error::AlgNotFound),
+	}
 }
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
@@ -74,16 +70,9 @@ pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Resul
 
 pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
-	let vk = match verify_key {
-		VerifyK::Dilithium(k) => k,
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	let result = pqc_dilithium_edit::verify(sig, data, vk);
-
-	match result {
-		Ok(()) => Ok(true),
-		Err(_e) => Ok(false),
+	match verify_key {
+		VerifyK::Dilithium(k) => verify_internally(&k, sig, data),
+		_ => Err(Error::AlgNotFound),
 	}
 }
 
@@ -95,6 +84,23 @@ pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) 
 	let keys = Keypair::generate(rng).map_err(|_| Error::KeyCreationFailed)?;
 
 	Ok((keys.secret, keys.public))
+}
+
+pub(super) fn sign_internally(sign_key: &[u8; SECRETKEYBYTES], data: &[u8]) -> Result<[u8; SIGNBYTES], Error>
+{
+	let sig = pqc_dilithium_edit::sign(data, &mut get_rand(), sign_key).map_err(|_| Error::InitSignFailed)?;
+
+	Ok(sig)
+}
+
+pub(super) fn verify_internally(verify_key: &[u8; PUBLICKEYBYTES], sig: &[u8], data: &[u8]) -> Result<bool, Error>
+{
+	let result = pqc_dilithium_edit::verify(sig, data, verify_key);
+
+	match result {
+		Ok(()) => Ok(true),
+		Err(_e) => Ok(false),
+	}
 }
 
 #[cfg(test)]
