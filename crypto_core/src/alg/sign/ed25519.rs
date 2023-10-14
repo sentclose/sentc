@@ -104,7 +104,7 @@ pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> 
 //__________________________________________________________________________________________________
 //internally function
 
-fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<Keypair, Error>
+pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<Keypair, Error>
 {
 	//generate the keys like the Keypair::generate() functions but with rand_core instead of rand
 	let mut sk_bytes = [0u8; SIGN_KEY_LENGTH];
