@@ -66,14 +66,18 @@ pub struct ResetPasswordOutput
 	pub encrypted_sign_key: Vec<u8>,
 }
 
-#[cfg(feature = "argon2_aes_ecies_ed25519")]
+#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, Error>
 {
 	//1. create aes master key
 	let master_key = sym::aes_gcm::generate_key()?;
 
 	//2. create static pub/pri key pair for encrypt and decrypt
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	let keypair = asym::ecies::generate_static_keypair();
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+	let keypair = asym::ecies_kyber_hybrid::generate_static_keypair()?;
 
 	//3. create sign key pair for sign and verify
 	let sign = sign::ed25519::generate_key_pair()?;
@@ -83,16 +87,23 @@ fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, E
 		SymKey::Aes(k) => k,
 	};
 
-	let private_key = match &keypair.sk {
-		Sk::Ecies(k) => k,
-		_ => return Err(Error::AlgNotFound),
+	let encrypted_private_key = match &keypair.sk {
+		Sk::Ecies(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
+		Sk::Kyber(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
+		Sk::EciesKyberHybrid {
+			x,
+			k,
+		} => {
+			let private_key = [&x[..], k].concat();
+
+			sym::aes_gcm::encrypt_with_generated_key(raw_master_key, &private_key)?
+		},
 	};
 
 	let sign_key = match &sign.sign_key {
 		SignK::Ed25519(k) => k,
 	};
 
-	let encrypted_private_key = sym::aes_gcm::encrypt_with_generated_key(raw_master_key, private_key)?;
 	let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_master_key, sign_key)?;
 
 	//5. derived keys from password
@@ -137,7 +148,7 @@ pub fn register(password: &str) -> Result<RegisterOutPut, Error>
 {
 	//define at register which alg should be used, but support all other alg in the other functions
 
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	register_argon2_aes_ecies_ed25519(password)
 }
 
@@ -235,7 +246,7 @@ pub fn change_password(
 	})
 }
 
-#[cfg(feature = "argon2_aes_ecies_ed25519")]
+#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 fn password_reset_argon2_aes_ecies_ed25519(new_pw: &str, decrypted_private_key: &Sk, decrypted_sign_key: &SignK)
 	-> Result<ResetPasswordOutput, Error>
 {
@@ -245,7 +256,15 @@ fn password_reset_argon2_aes_ecies_ed25519(new_pw: &str, decrypted_private_key: 
 	//2. encrypt the private and the sign key with the new master key
 	let encrypted_private_key = match decrypted_private_key {
 		Sk::Ecies(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
-		_ => return Err(Error::AlgNotFound),
+		Sk::Kyber(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+		Sk::EciesKyberHybrid {
+			x,
+			k,
+		} => {
+			let private_key = [&x[..], k].concat();
+
+			sym::aes_gcm::encrypt(&master_key.key, &private_key)?
+		},
 	};
 
 	let encrypted_sign_key = match decrypted_sign_key {
@@ -285,7 +304,7 @@ Only works if the user has still access to the decrypted private key and the dec
 */
 pub fn password_reset(new_pw: &str, decrypted_private_key: &Sk, decrypted_sign_key: &SignK) -> Result<ResetPasswordOutput, Error>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	password_reset_argon2_aes_ecies_ed25519(new_pw, decrypted_private_key, decrypted_sign_key)
 }
 
@@ -299,7 +318,7 @@ Make sure to keep the order of user_1 and user_2 on the other user too, otherwis
 */
 pub fn safety_number(user_1: SafetyNumber, user_2: Option<SafetyNumber>) -> Vec<u8>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	sign::ed25519::safety_number(user_1, user_2)
 }
 
@@ -313,6 +332,10 @@ pub fn verify_user_public_key(verify_key: &VerifyK, sig: &Sig, public_key: &Pk) 
 	match public_key {
 		Pk::Ecies(pk) => crate::crypto::verify_only(verify_key, sig, pk),
 		Pk::Kyber(pk) => crate::crypto::verify_only(verify_key, sig, pk),
+		Pk::EciesKyberHybrid {
+			x,
+			k,
+		} => crate::crypto::verify_only(verify_key, sig, &[&x[..], &k[..]].concat()),
 	}
 }
 
@@ -322,8 +345,6 @@ mod test
 	use core::str::from_utf8;
 
 	use super::*;
-	use crate::alg::asym::ecies;
-	use crate::alg::sign::ed25519;
 	use crate::crypto::{decrypt_asymmetric, encrypt_asymmetric, sign, verify};
 	use crate::{generate_salt, ClientRandomValue};
 
@@ -335,12 +356,18 @@ mod test
 		//register should not panic because we only use internally values!
 		let out = register(password).unwrap();
 
-		#[cfg(feature = "argon2_aes_ecies_ed25519")]
+		#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 		assert_eq!(out.master_key_alg, sym::aes_gcm::AES_GCM_OUTPUT);
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		assert_eq!(out.keypair_encrypt_alg, ecies::ECIES_OUTPUT);
+		assert_eq!(out.keypair_encrypt_alg, asym::ecies::ECIES_OUTPUT);
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		assert_eq!(out.keypair_sign_alg, ed25519::ED25519_OUTPUT);
+		assert_eq!(out.keypair_sign_alg, crate::alg::sign::ed25519::ED25519_OUTPUT);
+
+		#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+		assert_eq!(
+			out.keypair_encrypt_alg,
+			asym::ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT
+		);
 	}
 
 	#[test]
@@ -502,6 +529,19 @@ mod test
 			},
 			(Sk::Kyber(pk), Sk::Kyber(pk2)) => {
 				assert_eq!(pk, pk2);
+			},
+			(
+				Sk::EciesKyberHybrid {
+					x,
+					k,
+				},
+				Sk::EciesKyberHybrid {
+					x: x1,
+					k: k1,
+				},
+			) => {
+				assert_eq!(x, x1);
+				assert_eq!(k, k1);
 			},
 			_ => panic!("Keys not the same format"),
 		}
