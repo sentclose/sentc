@@ -15,6 +15,7 @@ const HKDF_INFO: &[u8; 13] = b"ecies-ed25519";
 
 const PUBLIC_KEY_LENGTH: usize = 32;
 
+#[allow(unused)]
 pub(crate) fn generate_static_keypair() -> AsymKeyOutput
 {
 	let (sk, pk) = generate_static_keypair_internally(&mut get_rand());
@@ -49,7 +50,7 @@ pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, E
 //__________________________________________________________________________________________________
 //internally function
 
-fn generate_static_keypair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> (StaticSecret, PublicKey)
+pub(super) fn generate_static_keypair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> (StaticSecret, PublicKey)
 {
 	let sk = StaticSecret::new(rng);
 	let pk = PublicKey::from(&sk);
@@ -65,7 +66,7 @@ fn generate_keypair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> (Ephemera
 	(sk, pk)
 }
 
-fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKey, data: &[u8], rng: &mut R) -> Result<Vec<u8>, Error>
+pub(super) fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKey, data: &[u8], rng: &mut R) -> Result<Vec<u8>, Error>
 {
 	let (ep_sk, ep_pk) = generate_keypair_internally(rng);
 
@@ -81,7 +82,7 @@ fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKey, data: &[
 	Ok(cipher_text)
 }
 
-fn decrypt_internally(receiver_sec: &StaticSecret, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+pub(super) fn decrypt_internally(receiver_sec: &StaticSecret, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
 	if ciphertext.len() <= PUBLIC_KEY_LENGTH {
 		return Err(Error::DecryptionFailedCiphertextShort);

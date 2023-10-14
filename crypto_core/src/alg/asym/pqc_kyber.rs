@@ -7,8 +7,9 @@ use crate::alg::asym::AsymKeyOutput;
 use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt};
 use crate::{get_rand, Error, Pk, Sk};
 
-pub const KYBER_OUTPUT: &str = "KYBER_1024";
+pub const KYBER_OUTPUT: &str = "KYBER_768";
 
+#[allow(unused)]
 pub(crate) fn generate_static_keypair() -> Result<AsymKeyOutput, Error>
 {
 	let (sk, pk) = generate_keypair_internally(&mut get_rand())?;
@@ -42,14 +43,14 @@ pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, E
 
 //__________________________________________________________________________________________________
 
-fn generate_keypair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<(SecretKey, PublicKey), Error>
+pub(super) fn generate_keypair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<(SecretKey, PublicKey), Error>
 {
 	let keys = keypair(rng).map_err(|_| Error::KeyCreationFailed)?;
 
 	Ok((keys.secret, keys.public))
 }
 
-fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKey, data: &[u8], rng: &mut R) -> Result<Vec<u8>, Error>
+pub(super) fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKey, data: &[u8], rng: &mut R) -> Result<Vec<u8>, Error>
 {
 	let (ciphertext, shared_secret_alice) = encapsulate(receiver_pub, rng).map_err(|_| Error::EncryptionFailed)?;
 
@@ -62,7 +63,7 @@ fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKey, data: &[
 	Ok(cipher_text)
 }
 
-fn decrypt_internally(receiver_sec: &SecretKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+pub(super) fn decrypt_internally(receiver_sec: &SecretKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
 	if ciphertext.len() <= KYBER_CIPHERTEXTBYTES {
 		return Err(Error::DecryptionFailedCiphertextShort);
