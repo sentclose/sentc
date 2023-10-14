@@ -155,23 +155,13 @@ mod test
 		.unwrap();
 
 		let server_output = simulate_verify_login(&login_out.challenge);
-		let login_out = verify_login(
+		let _login_out = verify_login(
 			&server_output,
 			login_out.user_id,
 			login_out.device_id,
 			login_out.device_keys,
 		)
 		.unwrap();
-
-		let Sk::Ecies(private_key) = login_out.device_keys.private_key.key;
-
-		let mut arr = [0u8; 32];
-		arr[0] = 123;
-		arr[1] = 255;
-		arr[2] = 254;
-		arr[3] = 0;
-
-		assert_ne!(private_key, arr);
 	}
 
 	#[test]
@@ -300,6 +290,23 @@ mod test
 			(Sk::Ecies(k1), Sk::Ecies(k2)) => {
 				assert_ne!(*k1, *k2);
 			},
+			(Sk::Kyber(k1), Sk::Kyber(k2)) => {
+				assert_ne!(*k1, *k2);
+			},
+			(
+				Sk::EciesKyberHybrid {
+					x,
+					k,
+				},
+				Sk::EciesKyberHybrid {
+					x: x1,
+					k: k1,
+				},
+			) => {
+				assert_ne!(*x, *x1);
+				assert_ne!(*k, *k1);
+			},
+			_ => panic!("Alg not found"),
 		}
 	}
 }
