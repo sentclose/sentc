@@ -20,6 +20,7 @@ use sentc_crypto_core::{
 	DILITHIUM_OUTPUT,
 	ECIES_KYBER_HYBRID_OUTPUT,
 	ECIES_OUTPUT,
+	ED25519_DILITHIUM_HYBRID_OUTPUT,
 	ED25519_OUTPUT,
 	KYBER_OUTPUT,
 };
@@ -135,6 +136,19 @@ pub fn export_raw_verify_key_to_pem(key: &VerifyK) -> Result<String, SdkUtilErro
 	match key {
 		VerifyK::Ed25519(k) => export_key_to_pem(k),
 		VerifyK::Dilithium(k) => export_key_to_pem(k),
+		VerifyK::Ed25519DilithiumHybrid {
+			x,
+			k,
+		} => {
+			let x_key = export_key_to_pem(x)?;
+			let k_key = export_key_to_pem(k)?;
+
+			serde_json::to_string(&HybridPublicKeyExportFormat {
+				x: x_key,
+				k: k_key,
+			})
+			.map_err(|_| SdkUtilError::JsonToStringFailed)
+		},
 	}
 }
 
@@ -143,6 +157,19 @@ pub fn sig_to_string(sig: &Sig) -> String
 	match sig {
 		Sig::Ed25519(s) => Base64::encode_string(s),
 		Sig::Dilithium(s) => Base64::encode_string(s),
+		Sig::Ed25519DilithiumHybrid {
+			x,
+			k,
+		} => {
+			let x = Base64::encode_string(x);
+			let k = Base64::encode_string(k);
+
+			serde_json::to_string(&HybridPublicKeyExportFormat {
+				x,
+				k,
+			})
+			.unwrap()
+		},
 	}
 }
 
@@ -222,6 +249,26 @@ pub fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -> Resul
 				.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 			Ok(VerifyK::Dilithium(verify_key))
 		},
+
+		ED25519_DILITHIUM_HYBRID_OUTPUT => {
+			let key: HybridPublicKeyExportFormat = serde_json::from_str(verify_key).map_err(SdkUtilError::JsonParseFailed)?;
+
+			let x = import_key_from_pem(&key.x)?;
+			let key = import_key_from_pem(&key.k)?;
+
+			let x = x
+				.try_into()
+				.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+			let k = key
+				.try_into()
+				.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+			Ok(VerifyK::Ed25519DilithiumHybrid {
+				x,
+				k,
+			})
+		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}
 }
@@ -248,6 +295,20 @@ pub fn import_sig_from_string(sig: &str, alg: &str) -> Result<Sig, SdkUtilError>
 			);
 
 			Ok(sig)
+		},
+
+		ED25519_DILITHIUM_HYBRID_OUTPUT => {
+			let key: HybridPublicKeyExportFormat = serde_json::from_str(sig).map_err(SdkUtilError::JsonParseFailed)?;
+
+			let x = Base64::decode_vec(&key.x).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
+			let k = Base64::decode_vec(&key.k).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
+
+			Ok(Sig::Ed25519DilithiumHybrid {
+				x: x.try_into()
+					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?,
+				k: k.try_into()
+					.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?,
+			})
 		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}
