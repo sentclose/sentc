@@ -80,7 +80,11 @@ fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, E
 	let keypair = asym::ecies_kyber_hybrid::generate_static_keypair()?;
 
 	//3. create sign key pair for sign and verify
+	#[cfg(feature = "argon2_aes_ecies_ed25519")]
 	let sign = sign::ed25519::generate_key_pair()?;
+
+	#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+	let sign = sign::ed25519_dilithium_hybrid::generate_key_pair()?;
 
 	//4. encrypt the private keys with the master key
 	let raw_master_key = match &master_key.key {
@@ -103,6 +107,14 @@ fn register_argon2_aes_ecies_ed25519(password: &str) -> Result<RegisterOutPut, E
 	let encrypted_sign_key = match &sign.sign_key {
 		SignK::Ed25519(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
 		SignK::Dilithium(k) => sym::aes_gcm::encrypt_with_generated_key(raw_master_key, k)?,
+		SignK::Ed25519DilithiumHybrid {
+			x,
+			k,
+		} => {
+			let private_key = [&x[..], k].concat();
+
+			sym::aes_gcm::encrypt_with_generated_key(raw_master_key, &private_key)?
+		},
 	};
 
 	//5. derived keys from password
@@ -269,6 +281,14 @@ fn password_reset_argon2_aes_ecies_ed25519(new_pw: &str, decrypted_private_key: 
 	let encrypted_sign_key = match decrypted_sign_key {
 		SignK::Ed25519(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
 		SignK::Dilithium(k) => sym::aes_gcm::encrypt(&master_key.key, k)?,
+		SignK::Ed25519DilithiumHybrid {
+			x,
+			k,
+		} => {
+			let private_key = [&x[..], k].concat();
+
+			sym::aes_gcm::encrypt(&master_key.key, &private_key)?
+		},
 	};
 
 	//3. encrypt the new master key with the new password
@@ -360,12 +380,18 @@ mod test
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
 		assert_eq!(out.keypair_encrypt_alg, asym::ecies::ECIES_OUTPUT);
 		#[cfg(feature = "argon2_aes_ecies_ed25519")]
-		assert_eq!(out.keypair_sign_alg, crate::alg::sign::ed25519::ED25519_OUTPUT);
+		assert_eq!(out.keypair_sign_alg, sign::ed25519::ED25519_OUTPUT);
 
 		#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
 		assert_eq!(
 			out.keypair_encrypt_alg,
 			asym::ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT
+		);
+
+		#[cfg(feature = "argon2_aes_ecies_ed25519_kyber_hybrid")]
+		assert_eq!(
+			out.keypair_sign_alg,
+			sign::ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT
 		);
 	}
 

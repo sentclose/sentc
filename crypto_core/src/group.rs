@@ -259,18 +259,21 @@ fn prepare_keys_aes_ecies_ed25519_kyber_hybrid(
 
 	let (encrypted_group_key, encrypted_group_key_alg) = encrypt_group_key_with_user_key_aes(public_key, raw_group_key)?;
 
-	//TODO change this to hybrid
 	//create the sign keys if user group and after encrypt the sign key with group key
 	let (verify_key, encrypted_sign_key, keypair_sign_alg, public_key_sig) = if !user_group {
 		(None, None, None, None)
 	} else {
-		let sign = sign::ed25519::generate_key_pair()?;
+		let sign = sign::ed25519_dilithium_hybrid::generate_key_pair()?;
 
-		let raw_sign_key = match &sign.sign_key {
-			SignK::Ed25519(k) => k,
+		let (x_sign, k_sign) = match &sign.sign_key {
+			SignK::Ed25519DilithiumHybrid {
+				x,
+				k,
+			} => (x, k),
+			_ => return Err(Error::AlgNotFound),
 		};
 
-		let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, raw_sign_key)?;
+		let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, &[&x_sign[..], k_sign].concat())?;
 
 		//sign the public key
 		let raw_public_key = match &key_pair.pk {
@@ -281,7 +284,7 @@ fn prepare_keys_aes_ecies_ed25519_kyber_hybrid(
 			_ => return Err(Error::AlgNotFound),
 		};
 
-		let public_key_sig = sign::ed25519::sign_only(&sign.sign_key, &raw_public_key)?;
+		let public_key_sig = sign::ed25519_dilithium_hybrid::sign_only(&sign.sign_key, &raw_public_key)?;
 
 		(
 			Some(sign.verify_key),
@@ -328,6 +331,7 @@ fn prepare_keys_aes_ecies_ed25519(
 
 		let raw_sign_key = match &sign.sign_key {
 			SignK::Ed25519(k) => k,
+			_ => return Err(Error::AlgNotFound),
 		};
 
 		let encrypted_sign_key = sym::aes_gcm::encrypt_with_generated_key(raw_group_key, raw_sign_key)?;
