@@ -29,7 +29,7 @@ ope = "0.1.1"
 pqc_kyber = {version = "0.7.1", features = ["90s-fixslice", "std"]}
 
 [features]
-default = ["argon2_aes_ecies_ed25519", "default_env"]
+default = ["argon2_aes_ecies_ed25519_kyber_hybrid", "default_env"]
 
 # Descibe the used alg for encryption and signing
 argon2_aes_ecies_ed25519 = []
