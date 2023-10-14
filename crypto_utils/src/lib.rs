@@ -17,12 +17,15 @@ use sentc_crypto_core::{
 	Sig,
 	VerifyK,
 	ARGON_2_OUTPUT,
+	ECIES_KYBER_HYBRID_OUTPUT,
 	ECIES_OUTPUT,
 	ED25519_OUTPUT,
+	KYBER_OUTPUT,
 };
 use serde::Deserialize;
 
 use crate::error::SdkUtilError;
+use crate::keys::HybridPublicKeyExportFormat;
 
 pub mod error;
 #[cfg(all(feature = "crypto_full", any(feature = "rustls", feature = "wasm")))]
@@ -96,6 +99,19 @@ pub fn export_raw_public_key_to_pem(key: &Pk) -> Result<String, SdkUtilError>
 		//match against the public key variants
 		Pk::Ecies(k) => export_key_to_pem(k),
 		Pk::Kyber(k) => export_key_to_pem(k),
+		Pk::EciesKyberHybrid {
+			x,
+			k,
+		} => {
+			let x_key = export_key_to_pem(x)?;
+			let k_key = export_key_to_pem(k)?;
+
+			serde_json::to_string(&HybridPublicKeyExportFormat {
+				x: x_key,
+				k: k_key,
+			})
+			.map_err(|_| SdkUtilError::JsonToStringFailed)
+		},
 	}
 }
 
@@ -145,14 +161,41 @@ pub fn client_random_value_from_string(client_random_value: &str, alg: &str) -> 
 
 pub fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<Pk, SdkUtilError>
 {
-	let public_key = import_key_from_pem(public_key)?;
-
 	match alg {
 		ECIES_OUTPUT => {
+			let public_key = import_key_from_pem(public_key)?;
 			let public_key = public_key
 				.try_into()
 				.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 			Ok(Pk::Ecies(public_key))
+		},
+		KYBER_OUTPUT => {
+			let public_key = import_key_from_pem(public_key)?;
+
+			let public_key = public_key
+				.try_into()
+				.map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
+
+			Ok(Pk::Kyber(public_key))
+		},
+		ECIES_KYBER_HYBRID_OUTPUT => {
+			let key: HybridPublicKeyExportFormat = serde_json::from_str(public_key).map_err(SdkUtilError::JsonParseFailed)?;
+
+			let x = import_key_from_pem(&key.x)?;
+			let key = import_key_from_pem(&key.k)?;
+
+			let x = x
+				.try_into()
+				.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+			let k = key
+				.try_into()
+				.map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
+
+			Ok(Pk::EciesKyberHybrid {
+				x,
+				k,
+			})
 		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}
