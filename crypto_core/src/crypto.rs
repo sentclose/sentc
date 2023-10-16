@@ -4,7 +4,7 @@ use crate::{alg, Error, HmacKey, PasswordEncryptOutput, Pk, Sig, SignK, Sk, Sort
 
 pub fn generate_symmetric() -> Result<SymKeyOutput, Error>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	alg::sym::aes_gcm::generate_key()
 }
 
@@ -107,6 +107,10 @@ pub fn encrypt_asymmetric(public_key: &Pk, data: &[u8]) -> Result<Vec<u8>, Error
 {
 	match public_key {
 		Pk::Ecies(_) => alg::asym::ecies::encrypt(public_key, data),
+		Pk::Kyber(_) => alg::asym::pqc_kyber::encrypt(public_key, data),
+		Pk::EciesKyberHybrid {
+			..
+		} => alg::asym::ecies_kyber_hybrid::encrypt(public_key, data),
 	}
 }
 
@@ -114,6 +118,10 @@ pub fn decrypt_asymmetric(private_key: &Sk, encrypted_data: &[u8]) -> Result<Vec
 {
 	match private_key {
 		Sk::Ecies(_) => alg::asym::ecies::decrypt(private_key, encrypted_data),
+		Sk::Kyber(_) => alg::asym::pqc_kyber::decrypt(private_key, encrypted_data),
+		Sk::EciesKyberHybrid {
+			..
+		} => alg::asym::ecies_kyber_hybrid::decrypt(private_key, encrypted_data),
 	}
 }
 
@@ -121,6 +129,10 @@ pub fn sign(sign_key: &SignK, data_to_sign: &[u8]) -> Result<Vec<u8>, Error>
 {
 	match sign_key {
 		SignK::Ed25519(_) => alg::sign::ed25519::sign(sign_key, data_to_sign),
+		SignK::Dilithium(_) => alg::sign::pqc_dilithium::sign(sign_key, data_to_sign),
+		SignK::Ed25519DilithiumHybrid {
+			..
+		} => alg::sign::ed25519_dilithium_hybrid::sign(sign_key, data_to_sign),
 	}
 }
 
@@ -128,6 +140,10 @@ pub fn sign_only(sign_key: &SignK, data_to_sign: &[u8]) -> Result<Sig, Error>
 {
 	match sign_key {
 		SignK::Ed25519(_) => alg::sign::ed25519::sign_only(sign_key, data_to_sign),
+		SignK::Dilithium(_) => alg::sign::pqc_dilithium::sign_only(sign_key, data_to_sign),
+		SignK::Ed25519DilithiumHybrid {
+			..
+		} => alg::sign::ed25519_dilithium_hybrid::sign_only(sign_key, data_to_sign),
 	}
 }
 
@@ -135,6 +151,10 @@ pub fn verify<'a>(verify_key: &VerifyK, data_with_sign: &'a [u8]) -> Result<(&'a
 {
 	match verify_key {
 		VerifyK::Ed25519(_) => alg::sign::ed25519::verify(verify_key, data_with_sign),
+		VerifyK::Dilithium(_) => alg::sign::pqc_dilithium::verify(verify_key, data_with_sign),
+		VerifyK::Ed25519DilithiumHybrid {
+			..
+		} => alg::sign::ed25519_dilithium_hybrid::verify(verify_key, data_with_sign),
 	}
 }
 
@@ -142,6 +162,10 @@ pub fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool,
 {
 	match verify_key {
 		VerifyK::Ed25519(_) => alg::sign::ed25519::verify_only(verify_key, sig, data),
+		VerifyK::Dilithium(_) => alg::sign::pqc_dilithium::verify_only(verify_key, sig, data),
+		VerifyK::Ed25519DilithiumHybrid {
+			..
+		} => alg::sign::ed25519_dilithium_hybrid::verify_only(verify_key, sig, data),
 	}
 }
 
@@ -149,13 +173,17 @@ pub fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'
 {
 	match alg {
 		alg::sign::ed25519::ED25519_OUTPUT => alg::sign::ed25519::split_sig_and_data(data_with_sign),
+		alg::sign::pqc_dilithium::DILITHIUM_OUTPUT => alg::sign::pqc_dilithium::split_sig_and_data(data_with_sign),
+		alg::sign::ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT => {
+			alg::sign::ed25519_dilithium_hybrid::split_sig_and_data(data_with_sign)
+		},
 		_ => Err(Error::AlgNotFound),
 	}
 }
 
 pub fn prepare_password_encrypt(password: &str) -> Result<(PasswordEncryptOutput, SymKey), Error>
 {
-	#[cfg(feature = "argon2_aes_ecies_ed25519")]
+	#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
 	alg::pw_hash::argon2::password_to_encrypt(password.as_bytes())
 }
 

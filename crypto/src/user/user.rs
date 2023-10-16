@@ -249,11 +249,27 @@ mod test
 		)
 		.unwrap();
 
-		let private_key = match from_str(&out.user_keys[0].private_key).unwrap() {
+		let private_key: PrivateKeyFormatExport = from_str(&out.user_keys[0].private_key).unwrap();
+
+		let private_key = match private_key {
 			PrivateKeyFormatExport::Ecies {
 				key_id: _,
 				key,
 			} => key,
+			PrivateKeyFormatExport::Kyber {
+				key_id: _,
+				key,
+			} => key,
+			PrivateKeyFormatExport::EciesKyberHybrid {
+				key_id: _,
+				k,
+				x,
+			} => {
+				assert_ne!(k, "");
+				assert_ne!(x, "");
+
+				return;
+			},
 		};
 
 		assert_ne!(private_key, "");

@@ -161,7 +161,7 @@ version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9cf849ee05b2ee5fba5e36f97ff8ec2533916700fc0758d40d92136a42f3388"
 dependencies = [
- "digest 0.10.3",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -398,9 +398,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.10.3"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2fb860ca6fafa5552fb6d0e816a69c8e49f0908bf524e30a90d97c85892d506"
+checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer 0.10.2",
  "crypto-common",
@@ -612,7 +612,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
- "digest 0.10.3",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -919,7 +919,7 @@ dependencies = [
  "hmac",
  "num-bigint",
  "num-traits",
- "sha2 0.10.2",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -952,7 +952,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d791538a6dcc1e7cb7fe6f6b58aca40e7f79403c45b2bc274008b5e647af1d8"
 dependencies = [
  "base64ct",
- "rand_core 0.6.3",
+ "rand_core 0.6.4",
  "subtle",
 ]
 
@@ -996,6 +996,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pqc_dilithium_edit"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d092e2cee95564d81775b45baa8177590be69a8e93b49af07cef82c853f975c1"
+dependencies = [
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "pqc_kyber"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b23e1823e8a78ad67990c5cb843d5eba75ab3b8a44d041f3814fde89463dc6f"
+dependencies = [
+ "aes 0.8.3",
+ "ctr 0.9.2",
+ "rand_core 0.6.4",
+ "sha2 0.10.8",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1021,9 +1042,9 @@ checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
 
 [[package]]
 name = "rand_core"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
+checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
 ]
@@ -1158,7 +1179,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1180,7 +1201,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1189,14 +1210,16 @@ dependencies = [
  "hkdf",
  "hmac",
  "ope",
- "rand_core 0.6.3",
- "sha2 0.10.2",
+ "pqc_dilithium_edit",
+ "pqc_kyber",
+ "rand_core 0.6.4",
+ "sha2 0.10.8",
  "x25519-dalek",
 ]
 
 [[package]]
 name = "sentc-crypto-full"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "sentc-crypto",
  "sentc-crypto-common",
@@ -1207,7 +1230,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1220,7 +1243,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light-full"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "sentc-crypto-common",
  "sentc-crypto-light",
@@ -1231,7 +1254,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "base64ct",
  "js-sys",
@@ -1248,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "flutter_rust_bridge",
  "once_cell",
@@ -1260,7 +1283,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter_rust_light"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "flutter_rust_bridge",
  "once_cell",
@@ -1272,7 +1295,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_wasm"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "getrandom",
  "js-sys",
@@ -1280,14 +1303,14 @@ dependencies = [
  "sentc-crypto-common",
  "sentc-crypto-full",
  "serde",
- "sha2 0.10.2",
+ "sha2 0.10.8",
  "wasm-bindgen",
  "wasm-bindgen-futures",
 ]
 
 [[package]]
 name = "sentc_wasm_light"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "getrandom",
  "js-sys",
@@ -1295,7 +1318,7 @@ dependencies = [
  "sentc-crypto-light",
  "sentc-crypto-light-full",
  "serde",
- "sha2 0.10.2",
+ "sha2 0.10.8",
  "wasm-bindgen",
  "wasm-bindgen-futures",
 ]
@@ -1358,13 +1381,13 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.2"
+version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55deaec60f81eefe3cce0dc50bda92d6d8e88f2a27df7c5033b42afeb1ed2676"
+checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
 dependencies = [
  "cfg-if",
  "cpufeatures",
- "digest 0.10.3",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -1889,7 +1912,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5da623d8af10a62342bcbbb230e33e58a63255a58012f8653c578e54bab48df"
 dependencies = [
  "curve25519-dalek",
- "rand_core 0.6.3",
+ "rand_core 0.6.4",
  "zeroize",
 ]
 

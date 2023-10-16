@@ -31,6 +31,8 @@ use alloc::vec::Vec;
 use rand_core::{CryptoRng, OsRng, RngCore};
 
 pub use self::alg::asym::ecies::ECIES_OUTPUT;
+pub use self::alg::asym::ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT;
+pub use self::alg::asym::pqc_kyber::KYBER_OUTPUT;
 pub(crate) use self::alg::asym::AsymKeyOutput;
 pub use self::alg::asym::{getting_alg_from_private_key, getting_alg_from_public_key, Pk, Sk};
 pub use self::alg::hmac::hmac_sha256::HMAC_SHA256_OUTPUT;
@@ -49,6 +51,8 @@ pub use self::alg::pw_hash::{
 	PasswordEncryptSalt,
 };
 pub use self::alg::sign::ed25519::ED25519_OUTPUT;
+pub use self::alg::sign::ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT;
+pub use self::alg::sign::pqc_dilithium::DILITHIUM_OUTPUT;
 pub(crate) use self::alg::sign::SignOutput;
 pub use self::alg::sign::{get_alg_from_sig, get_alg_from_sign_key, get_alg_from_verify_key, SafetyNumber, Sig, SignK, VerifyK};
 pub use self::alg::sortable::{getting_alg_from_sortable_key, SortableKey};
@@ -90,6 +94,22 @@ pub fn decrypt_private_key(encrypted_private_key: &[u8], master_key: &SymKey, ke
 
 			Ok(Sk::Ecies(private))
 		},
+		KYBER_OUTPUT => {
+			let private = private_key
+				.try_into()
+				.map_err(|_| Error::DecodePrivateKeyFailed)?;
+
+			Ok(Sk::Kyber(private))
+		},
+		ECIES_KYBER_HYBRID_OUTPUT => {
+			let x = &private_key[..32];
+			let k = &private_key[32..];
+
+			Ok(Sk::EciesKyberHybrid {
+				x: x.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?,
+				k: k.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?,
+			})
+		},
 		_ => Err(Error::AlgNotFound),
 	}
 }
@@ -107,6 +127,24 @@ pub fn decrypt_sign_key(encrypted_sign_key: &[u8], master_key: &SymKey, keypair_
 				.map_err(|_| Error::DecodePrivateKeyFailed)?;
 
 			Ok(SignK::Ed25519(sign))
+		},
+
+		DILITHIUM_OUTPUT => {
+			let sign = sign_key
+				.try_into()
+				.map_err(|_| Error::DecodePrivateKeyFailed)?;
+
+			Ok(SignK::Dilithium(sign))
+		},
+
+		ED25519_DILITHIUM_HYBRID_OUTPUT => {
+			let x = &sign_key[..32];
+			let k = &sign_key[32..];
+
+			Ok(SignK::Ed25519DilithiumHybrid {
+				x: x.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?,
+				k: k.try_into().map_err(|_| Error::DecodePrivateKeyFailed)?,
+			})
 		},
 		_ => Err(Error::AlgNotFound),
 	}

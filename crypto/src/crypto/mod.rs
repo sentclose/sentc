@@ -10,7 +10,7 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerOutput, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::SymKeyId;
-use sentc_crypto_core::{crypto as crypto_core, SignK, ED25519_OUTPUT};
+use sentc_crypto_core::{crypto as crypto_core, get_alg_from_sign_key};
 use sentc_crypto_utils::import_verify_key_from_pem_with_alg;
 use serde::{Deserialize, Serialize};
 
@@ -118,9 +118,7 @@ pub fn encrypt_raw_symmetric_aad_data_only(
 pub fn get_head_from_keys(key: &SymKeyFormatInt, sign_key: Option<&SignKeyFormatInt>) -> EncryptedHead
 {
 	if let Some(sk) = sign_key {
-		let alg = match &sk.key {
-			SignK::Ed25519(_) => ED25519_OUTPUT.to_string(),
-		};
+		let alg = get_alg_from_sign_key(&sk.key).to_string();
 
 		let sign = SignHead {
 			id: key.key_id.to_string(),
@@ -143,9 +141,7 @@ pub(crate) fn sign_internally(key: &SignKeyFormatInt, data: &[u8]) -> Result<(Si
 {
 	let signed_data = crypto_core::sign(&key.key, data)?;
 
-	let alg = match &key.key {
-		SignK::Ed25519(_) => ED25519_OUTPUT.to_string(),
-	};
+	let alg = get_alg_from_sign_key(&key.key).to_string();
 
 	Ok((
 		SignHead {

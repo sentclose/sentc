@@ -1,25 +1,22 @@
 use alloc::vec::Vec;
 
-use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
+use pqc_dilithium_edit::{Keypair, PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::error::Error;
-use crate::{get_rand, Sig, SignK, SignOutput, VerifyK};
+use crate::alg::sign::SignOutput;
+use crate::{get_rand, Error, Sig, SignK, VerifyK};
 
-pub const SIGN_KEY_LENGTH: usize = 32;
-pub const SIG_LENGTH: usize = 64;
-
-pub const ED25519_OUTPUT: &str = "ED25519";
+pub const DILITHIUM_OUTPUT: &str = "DILITHIUM_3";
 
 #[allow(unused)]
 pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
 {
-	let keypair = generate_key_pair_internally(&mut get_rand())?;
+	let (sk, pk) = generate_key_pair_internally(&mut get_rand())?;
 
 	Ok(SignOutput {
-		sign_key: SignK::Ed25519(keypair.secret.to_bytes()),
-		verify_key: VerifyK::Ed25519(keypair.public.to_bytes()),
-		alg: ED25519_OUTPUT,
+		sign_key: SignK::Dilithium(sk),
+		verify_key: VerifyK::Dilithium(pk),
+		alg: DILITHIUM_OUTPUT,
 	})
 }
 
@@ -38,20 +35,20 @@ pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
 {
 	let sig = sign_only_raw(sign_key, data)?;
 
-	Ok(Sig::Ed25519(sig))
+	Ok(Sig::Dilithium(sig))
 }
 
-pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; 64], Error>
+pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; SIGNBYTES], Error>
 {
 	match sign_key {
-		SignK::Ed25519(sk) => sign_internally(sk, data),
+		SignK::Dilithium(sk) => sign_internally(sk, data),
 		_ => Err(Error::AlgNotFound),
 	}
 }
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
-	super::split_sig_and_data(data_with_sig, SIG_LENGTH)
+	super::split_sig_and_data(data_with_sig, SIGNBYTES)
 }
 
 pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
@@ -64,7 +61,7 @@ pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Resul
 pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool, Error>
 {
 	let sig = match sig {
-		Sig::Ed25519(s) => s,
+		Sig::Dilithium(s) => s,
 		_ => return Err(Error::AlgNotFound),
 	};
 
@@ -74,7 +71,7 @@ pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Resul
 pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
 	match verify_key {
-		VerifyK::Ed25519(k) => verify_internally(k, sig, data),
+		VerifyK::Dilithium(k) => verify_internally(k, sig, data),
 		_ => Err(Error::AlgNotFound),
 	}
 }
@@ -82,47 +79,23 @@ pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> 
 //__________________________________________________________________________________________________
 //internally function
 
-pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<Keypair, Error>
+pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<([u8; SECRETKEYBYTES], [u8; PUBLICKEYBYTES]), Error>
 {
-	//generate the keys like the Keypair::generate() functions but with rand_core instead of rand
-	let mut sk_bytes = [0u8; SIGN_KEY_LENGTH];
+	let keys = Keypair::generate(rng).map_err(|_| Error::KeyCreationFailed)?;
 
-	rng.try_fill_bytes(&mut sk_bytes)
-		.map_err(|_| Error::SignKeyCreateFailed)?;
-
-	let sk = SecretKey::from_bytes(&sk_bytes).map_err(|_| Error::SignKeyCreateFailed)?;
-	let pk: PublicKey = (&sk).into();
-
-	Ok(Keypair {
-		public: pk,
-		secret: sk,
-	})
+	Ok((keys.secret, keys.public))
 }
 
-pub(super) fn sign_internally(sign_key: &[u8; 32], data: &[u8]) -> Result<[u8; 64], Error>
+pub(super) fn sign_internally(sign_key: &[u8; SECRETKEYBYTES], data: &[u8]) -> Result<[u8; SIGNBYTES], Error>
 {
-	//create the key pair like the from bytes functions but only from the select key not both to avoid select key leak
-	//see here: https://github.com/MystenLabs/ed25519-unsafe-libs
+	let sig = pqc_dilithium_edit::sign(data, &mut get_rand(), sign_key).map_err(|_| Error::InitSignFailed)?;
 
-	let sk = SecretKey::from_bytes(sign_key).map_err(|_| Error::InitSignFailed)?;
-	let vk: PublicKey = (&sk).into();
-
-	let keypair = Keypair {
-		public: vk,
-		secret: sk,
-	};
-
-	let sig = keypair.sign(data);
-
-	Ok(sig.to_bytes())
+	Ok(sig)
 }
 
-pub(super) fn verify_internally(verify_key: &[u8; 32], sig: &[u8], data: &[u8]) -> Result<bool, Error>
+pub(super) fn verify_internally(verify_key: &[u8; PUBLICKEYBYTES], sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
-	let vk = PublicKey::from_bytes(verify_key).map_err(|_| Error::InitVerifyFailed)?;
-	let sig = Signature::from_bytes(sig).map_err(|_| Error::InitVerifyFailed)?;
-
-	let result = vk.verify(data, &sig);
+	let result = pqc_dilithium_edit::verify(sig, data, verify_key);
 
 	match result {
 		Ok(()) => Ok(true),
@@ -143,20 +116,20 @@ mod test
 	{
 		let out = generate_key_pair().unwrap();
 
-		assert_eq!(out.alg, ED25519_OUTPUT);
+		assert_eq!(out.alg, DILITHIUM_OUTPUT);
 
 		let sk = match out.sign_key {
-			SignK::Ed25519(k) => k,
+			SignK::Dilithium(k) => k,
 			_ => panic!("Wrong alg"),
 		};
 
 		let vk = match out.verify_key {
-			VerifyK::Ed25519(k) => k,
+			VerifyK::Dilithium(k) => k,
 			_ => panic!("Wrong alg"),
 		};
 
-		assert_eq!(sk.len(), 32);
-		assert_eq!(vk.len(), 32);
+		assert_eq!(sk.len(), SECRETKEYBYTES);
+		assert_eq!(vk.len(), PUBLICKEYBYTES);
 	}
 
 	#[test]
@@ -213,7 +186,7 @@ mod test
 
 		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
 
-		let data_with_sig = &data_with_sig[..SIG_LENGTH + 2];
+		let data_with_sig = &data_with_sig[..SIGNBYTES + 2];
 
 		let (_data, check) = verify(&out.verify_key, data_with_sig).unwrap();
 

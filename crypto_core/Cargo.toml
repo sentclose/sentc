@@ -26,12 +26,16 @@ hkdf = { version = "0.12.3", default-features = false }
 hmac = "0.12.1"
 argon2 = "0.3"
 ope = "0.1.1"
+pqc_kyber = {version = "0.7.1", features = ["90s-fixslice", "std"]}
+pqc_dilithium_edit = {version = "0.2.0", features = ["mode3", "aes", "random_signing"]}
 
 [features]
-default = ["argon2_aes_ecies_ed25519", "default_env"]
+default = ["argon2_aes_ecies_ed25519_kyber_hybrid", "default_env"]
 
 # Descibe the used alg for encryption and signing
 argon2_aes_ecies_ed25519 = []
+
+argon2_aes_ecies_ed25519_kyber_hybrid = []
 
 # Descibe the used env for the crng
 default_env = []
