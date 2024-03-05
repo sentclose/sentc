@@ -254,7 +254,7 @@ impl UserLoginOut
 
 	pub fn get_device_id(&self) -> Option<String>
 	{
-		self.user_data.as_ref().map(|o| o.jwt.clone())
+		self.user_data.as_ref().map(|o| o.device_id.clone())
 	}
 
 	pub fn get_hmac_keys(&self) -> JsValue
