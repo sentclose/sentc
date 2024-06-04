@@ -1,44 +1,90 @@
 use alloc::vec::Vec;
 
-use pqc_kyber::{decapsulate, encapsulate, keypair, PublicKey, SecretKey, KYBER_CIPHERTEXTBYTES};
+use pqc_kyber::{decapsulate, encapsulate, keypair, PublicKey, SecretKey, KYBER_CIPHERTEXTBYTES, KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::alg::asym::AsymKeyOutput;
-use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt};
-use crate::{get_rand, Error, Pk, Sk};
+use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt};
+use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey};
+use crate::{get_rand, try_from_bytes_single_value, Error};
 
 pub const KYBER_OUTPUT: &str = "KYBER_768";
 
-#[allow(unused)]
-pub(crate) fn generate_static_keypair() -> Result<AsymKeyOutput, Error>
-{
-	let (sk, pk) = generate_keypair_internally(&mut get_rand())?;
+pub struct KyberPk([u8; KYBER_PUBLICKEYBYTES]);
 
-	Ok(AsymKeyOutput {
-		alg: KYBER_OUTPUT,
-		pk: Pk::Kyber(pk),
-		sk: Sk::Kyber(sk),
-	})
+try_from_bytes_single_value!(KyberPk);
+
+impl CryptoAlg for KyberPk
+{
+	fn get_alg_str(&self) -> &'static str
+	{
+		KYBER_OUTPUT
+	}
 }
 
-pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
+impl Into<crate::PublicKey> for KyberPk
 {
-	let receiver_pub = match receiver_pub {
-		Pk::Kyber(pk) => pk,
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	encrypt_internally(receiver_pub, data, &mut get_rand())
+	fn into(self) -> crate::PublicKey
+	{
+		crate::PublicKey::Kyber(self)
+	}
 }
 
-pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+impl Pk for KyberPk
 {
-	let receiver_sec = match receiver_sec {
-		Sk::Kyber(sk) => sk,
-		_ => return Err(Error::AlgNotFound),
-	};
+	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
+	{
+		sign_key.sign_only(&self.0)
+	}
 
-	decrypt_internally(receiver_sec, ciphertext)
+	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		encrypt_internally(&self.0, data, &mut get_rand())
+	}
+}
+
+pub struct KyberSk([u8; KYBER_SECRETKEYBYTES]);
+
+impl CryptoAlg for KyberSk
+{
+	fn get_alg_str(&self) -> &'static str
+	{
+		KYBER_OUTPUT
+	}
+}
+
+try_from_bytes_single_value!(KyberSk);
+
+impl Into<crate::SecretKey> for KyberSk
+{
+	fn into(self) -> crate::SecretKey
+	{
+		crate::SecretKey::Kyber(self)
+	}
+}
+
+impl Sk for KyberSk
+{
+	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
+
+	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		decrypt_internally(&self.0, ciphertext)
+	}
+}
+
+pub struct KyberKeyPair;
+
+impl StaticKeyPair for KyberKeyPair
+{
+	fn generate_static_keypair() -> Result<(impl Sk, impl Pk), Error>
+	{
+		let (sk, pk) = generate_keypair_internally(&mut get_rand())?;
+
+		Ok((KyberSk(sk), KyberPk(pk)))
+	}
 }
 
 //__________________________________________________________________________________________________
@@ -88,50 +134,25 @@ mod test
 {
 	use core::str::from_utf8;
 
-	use pqc_kyber::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
-
 	use super::*;
-	use crate::alg::asym::AsymKeyOutput;
 	use crate::error::Error::{DecryptionFailed, DecryptionFailedCiphertextShort};
-
-	fn test_key_gen_output(out: &AsymKeyOutput)
-	{
-		assert_eq!(out.alg, KYBER_OUTPUT);
-
-		let pk = match out.pk {
-			Pk::Kyber(p) => p,
-			_ => panic!("alg not found"),
-		};
-
-		let sk = match out.sk {
-			Sk::Kyber(s) => s,
-			_ => panic!("alg not found"),
-		};
-
-		assert_eq!(pk.len(), KYBER_PUBLICKEYBYTES);
-		assert_eq!(sk.len(), KYBER_SECRETKEYBYTES);
-	}
 
 	#[test]
 	fn test_key_gen()
 	{
-		let out = generate_static_keypair().unwrap();
-
-		test_key_gen_output(&out);
+		let _ = KyberKeyPair::generate_static_keypair().unwrap();
 	}
 
 	#[test]
 	fn test_encrypt_and_decrypt()
 	{
-		let out = generate_static_keypair().unwrap();
-		let sk = out.sk;
-		let pk = out.pk;
+		let (sk, pk) = KyberKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
-		let decrypted = decrypt(&sk, &encrypted).unwrap();
+		let decrypted = sk.decrypt(&encrypted).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 
@@ -143,17 +164,15 @@ mod test
 	#[test]
 	fn test_not_decrypt_with_wrong_key()
 	{
-		let out = generate_static_keypair().unwrap();
-		let pk = out.pk;
+		let (_sk, pk) = KyberKeyPair::generate_static_keypair().unwrap();
 
-		let out1 = generate_static_keypair().unwrap();
-		let sk1 = out1.sk;
+		let (sk, _pk) = KyberKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
-		let decrypted_result = decrypt(&sk1, &encrypted);
+		let decrypted_result = sk.decrypt(&encrypted);
 
 		assert!(matches!(decrypted_result, Err(DecryptionFailed)));
 	}
@@ -161,18 +180,16 @@ mod test
 	#[test]
 	fn test_not_decrypt_with_wrong_ciphertext()
 	{
-		let out = generate_static_keypair().unwrap();
-		let sk = out.sk;
-		let pk = out.pk;
+		let (sk, pk) = KyberKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
 		//too short ciphertext: text must be min 32 long, output was 88 long
 		let encrypted = &encrypted[..(encrypted.len() - 56)];
 
-		let decrypted_result = decrypt(&sk, encrypted);
+		let decrypted_result = sk.decrypt(encrypted);
 
 		assert!(matches!(decrypted_result, Err(DecryptionFailedCiphertextShort)));
 	}

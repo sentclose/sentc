@@ -3,53 +3,66 @@ use alloc::vec::Vec;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
+use crate::alg::hmac::HmacKey;
 use crate::alg::sym::aes_gcm::AesKey;
-use crate::{alg, Error, HmacKey, HmacKeyOutput, SymKey};
+use crate::cryptomat::{CryptoAlg, SearchableKey, SymKey};
+use crate::{alg, try_from_bytes_single_value, Error};
 
 pub const HMAC_SHA256_OUTPUT: &str = "HMAC-SHA256";
 
-pub(crate) type HmacSha256Key = AesKey;
-
 type HmacSha256 = Hmac<Sha256>;
 
-pub(crate) fn generate_key() -> Result<HmacKeyOutput, Error>
+pub struct HmacSha256Key(AesKey);
+
+try_from_bytes_single_value!(HmacSha256Key);
+
+impl Into<HmacKey> for HmacSha256Key
 {
-	//use the aes key gen for an hmac key because the recommended key size is also 32
-
-	let key = alg::sym::aes_gcm::generate_key()?;
-
-	let key = match key.key {
-		SymKey::Aes(k) => k,
-	};
-
-	Ok(HmacKeyOutput {
-		alg: HMAC_SHA256_OUTPUT,
-		key: HmacKey::HmacSha256(key),
-	})
+	fn into(self) -> HmacKey
+	{
+		HmacKey::HmacSha256(self)
+	}
 }
 
-pub(crate) fn auth_with_generated_key(key: &HmacSha256Key, data: &[u8]) -> Result<Vec<u8>, Error>
+impl CryptoAlg for HmacSha256Key
 {
-	let mut mac = HmacSha256::new_from_slice(key).map_err(|_| Error::HmacAuthFailedLength)?;
-
-	mac.update(data);
-
-	let result = mac.finalize();
-	let result = result.into_bytes();
-
-	Ok(result.to_vec())
+	fn get_alg_str(&self) -> &'static str
+	{
+		HMAC_SHA256_OUTPUT
+	}
 }
 
-pub(crate) fn verify_with_generated_key(key: &HmacSha256Key, data: &[u8], check_mac: &[u8]) -> Result<bool, Error>
+impl SearchableKey for HmacSha256Key
 {
-	let mut mac = HmacSha256::new_from_slice(key).map_err(|_| Error::HmacAuthFailedLength)?;
+	fn generate() -> Result<impl SearchableKey, Error>
+	{
+		Ok(Self(alg::sym::aes_gcm::raw_generate()?))
+	}
 
-	mac.update(data);
+	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
 
-	if mac.verify_slice(check_mac).is_ok() {
-		Ok(true)
-	} else {
-		Ok(false)
+	fn encrypt_searchable(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		let mut mac = HmacSha256::new_from_slice(&self.0).map_err(|_| Error::HmacAuthFailedLength)?;
+
+		mac.update(data);
+
+		let result = mac.finalize();
+		let result = result.into_bytes();
+
+		Ok(result.to_vec())
+	}
+
+	fn verify_encrypted_searchable(&self, data: &[u8], check: &[u8]) -> Result<bool, Error>
+	{
+		let mut mac = HmacSha256::new_from_slice(&self.0).map_err(|_| Error::HmacAuthFailedLength)?;
+
+		mac.update(data);
+
+		Ok(mac.verify_slice(check).is_ok())
 	}
 }
 
@@ -58,23 +71,10 @@ mod test
 {
 	use super::*;
 
-	fn test_key_gen_output(out: &HmacKeyOutput)
-	{
-		assert_eq!(out.alg, HMAC_SHA256_OUTPUT);
-
-		let key = match out.key {
-			HmacKey::HmacSha256(k) => k,
-		};
-
-		assert_eq!(key.len(), 32);
-	}
-
 	#[test]
 	fn test_create_hmac_key()
 	{
-		let out = generate_key().unwrap();
-
-		test_key_gen_output(&out);
+		let _ = HmacSha256Key::generate().unwrap();
 	}
 
 	#[test]
@@ -82,17 +82,13 @@ mod test
 	{
 		let msg = "Hello world üöäéèßê°";
 
-		let out = generate_key().unwrap();
+		let out = HmacSha256Key::generate().unwrap();
 
-		test_key_gen_output(&out);
+		let mac = out.encrypt_searchable(msg.as_bytes()).unwrap();
 
-		let key = match out.key {
-			HmacKey::HmacSha256(k) => k,
-		};
-
-		let mac = auth_with_generated_key(&key, msg.as_bytes()).unwrap();
-
-		let verify = verify_with_generated_key(&key, msg.as_bytes(), &mac).unwrap();
+		let verify = out
+			.verify_encrypted_searchable(msg.as_bytes(), &mac)
+			.unwrap();
 
 		assert!(verify);
 	}
@@ -102,16 +98,14 @@ mod test
 	{
 		let msg = "Hello world üöäéèßê°";
 
-		let out = generate_key().unwrap();
-		let out2 = generate_key().unwrap();
+		let out = HmacSha256Key::generate().unwrap();
+		let out2 = HmacSha256Key::generate().unwrap();
 
-		let (key, key2) = match (out.key, out2.key) {
-			(HmacKey::HmacSha256(k), HmacKey::HmacSha256(k2)) => (k, k2),
-		};
+		let mac = out.encrypt_searchable(msg.as_bytes()).unwrap();
 
-		let mac = auth_with_generated_key(&key, msg.as_bytes()).unwrap();
-
-		let verify = verify_with_generated_key(&key2, msg.as_bytes(), &mac).unwrap();
+		let verify = out2
+			.verify_encrypted_searchable(msg.as_bytes(), &mac)
+			.unwrap();
 
 		assert!(!verify);
 	}
@@ -121,16 +115,12 @@ mod test
 	{
 		let msg = "Hello world üöäéèßê°";
 
-		let out = generate_key().unwrap();
-		let out2 = generate_key().unwrap();
+		let out = HmacSha256Key::generate().unwrap();
+		let out2 = HmacSha256Key::generate().unwrap();
 
-		let (key, key2) = match (out.key, out2.key) {
-			(HmacKey::HmacSha256(k), HmacKey::HmacSha256(k2)) => (k, k2),
-		};
+		let mac1 = out.encrypt_searchable(msg.as_bytes()).unwrap();
 
-		let mac1 = auth_with_generated_key(&key, msg.as_bytes()).unwrap();
-
-		let mac2 = auth_with_generated_key(&key2, msg.as_bytes()).unwrap();
+		let mac2 = out2.encrypt_searchable(msg.as_bytes()).unwrap();
 
 		assert_ne!(mac1, mac2);
 	}
@@ -140,15 +130,11 @@ mod test
 	{
 		let msg = "Hello world üöäéèßê°";
 
-		let out = generate_key().unwrap();
+		let out = HmacSha256Key::generate().unwrap();
 
-		let key = match out.key {
-			HmacKey::HmacSha256(k) => k,
-		};
+		let mac1 = out.encrypt_searchable(msg.as_bytes()).unwrap();
 
-		let mac1 = auth_with_generated_key(&key, msg.as_bytes()).unwrap();
-
-		let mac2 = auth_with_generated_key(&key, msg.as_bytes()).unwrap();
+		let mac2 = out.encrypt_searchable(msg.as_bytes()).unwrap();
 
 		assert_eq!(mac1, mac2);
 	}

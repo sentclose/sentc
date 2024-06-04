@@ -5,9 +5,10 @@ use rand_core::{CryptoRng, RngCore};
 use sha2::Sha256;
 use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
-use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AesKey};
+use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt, AesKey};
+use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey};
 use crate::error::Error;
-use crate::{get_rand, AsymKeyOutput, Pk, Sk};
+use crate::{get_rand, try_from_bytes_single_value, SecretKey};
 
 pub const ECIES_OUTPUT: &str = "ECIES-ed25519";
 
@@ -15,36 +16,82 @@ const HKDF_INFO: &[u8; 13] = b"ecies-ed25519";
 
 const PUBLIC_KEY_LENGTH: usize = 32;
 
-#[allow(unused)]
-pub(crate) fn generate_static_keypair() -> AsymKeyOutput
-{
-	let (sk, pk) = generate_static_keypair_internally(&mut get_rand());
+pub struct EciesPk([u8; 32]);
 
-	AsymKeyOutput {
-		alg: ECIES_OUTPUT,
-		pk: Pk::Ecies(pk.to_bytes()),
-		sk: Sk::Ecies(sk.to_bytes()),
+try_from_bytes_single_value!(EciesPk);
+
+impl CryptoAlg for EciesPk
+{
+	fn get_alg_str(&self) -> &'static str
+	{
+		ECIES_OUTPUT
 	}
 }
 
-pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
+impl Into<crate::PublicKey> for EciesPk
 {
-	let receiver_pub = match receiver_pub {
-		Pk::Ecies(pk) => PublicKey::from(*pk),
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	encrypt_internally(&receiver_pub, data, &mut get_rand())
+	fn into(self) -> crate::PublicKey
+	{
+		crate::PublicKey::Ecies(self)
+	}
 }
 
-pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+impl Pk for EciesPk
 {
-	let receiver_sec = match receiver_sec {
-		Sk::Ecies(sk) => StaticSecret::from(*sk),
-		_ => return Err(Error::AlgNotFound),
-	};
+	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
+	{
+		sign_key.sign_only(&self.0)
+	}
 
-	decrypt_internally(&receiver_sec, ciphertext)
+	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		encrypt_internally(&self.0.into(), data, &mut get_rand())
+	}
+}
+
+pub struct EciesSk([u8; 32]);
+
+try_from_bytes_single_value!(EciesSk);
+
+impl CryptoAlg for EciesSk
+{
+	fn get_alg_str(&self) -> &'static str
+	{
+		ECIES_OUTPUT
+	}
+}
+
+impl Into<SecretKey> for EciesSk
+{
+	fn into(self) -> SecretKey
+	{
+		SecretKey::Ecies(self)
+	}
+}
+
+impl Sk for EciesSk
+{
+	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
+
+	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		decrypt_internally(&self.0.into(), ciphertext)
+	}
+}
+
+pub struct EciesKeyPair;
+
+impl StaticKeyPair for EciesKeyPair
+{
+	fn generate_static_keypair() -> Result<(impl Sk, impl Pk), Error>
+	{
+		let (sk, pk) = generate_static_keypair_internally(&mut get_rand());
+
+		Ok((EciesSk(sk.to_bytes()), EciesPk(pk.to_bytes())))
+	}
 }
 
 //__________________________________________________________________________________________________
@@ -140,44 +187,22 @@ mod test
 	use super::*;
 	use crate::error::Error::{DecryptionFailed, DecryptionFailedCiphertextShort};
 
-	fn test_key_gen_output(out: &AsymKeyOutput)
-	{
-		assert_eq!(out.alg, ECIES_OUTPUT);
-
-		let pk = match out.pk {
-			Pk::Ecies(p) => p,
-			_ => panic!("alg not found"),
-		};
-
-		let sk = match out.sk {
-			Sk::Ecies(s) => s,
-			_ => panic!("alg not found"),
-		};
-
-		assert_eq!(pk.len(), 32);
-		assert_eq!(sk.len(), 32);
-	}
-
 	#[test]
 	fn test_key_gen()
 	{
-		let out = generate_static_keypair();
-
-		test_key_gen_output(&out);
+		let _ = EciesKeyPair::generate_static_keypair().unwrap();
 	}
 
 	#[test]
 	fn test_encrypt_and_decrypt()
 	{
-		let out = generate_static_keypair();
-		let sk = out.sk;
-		let pk = out.pk;
+		let (sk, pk) = EciesKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
-		let decrypted = decrypt(&sk, &encrypted).unwrap();
+		let decrypted = sk.decrypt(&encrypted).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 
@@ -189,17 +214,15 @@ mod test
 	#[test]
 	fn test_not_decrypt_with_wrong_key()
 	{
-		let out = generate_static_keypair();
-		let pk = out.pk;
+		let (_sk, pk) = EciesKeyPair::generate_static_keypair().unwrap();
 
-		let out1 = generate_static_keypair();
-		let sk1 = out1.sk;
+		let (sk, _pk) = EciesKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
-		let decrypted_result = decrypt(&sk1, &encrypted);
+		let decrypted_result = sk.decrypt(&encrypted);
 
 		assert!(matches!(decrypted_result, Err(DecryptionFailed)));
 	}
@@ -207,18 +230,16 @@ mod test
 	#[test]
 	fn test_not_decrypt_with_wrong_ciphertext()
 	{
-		let out = generate_static_keypair();
-		let sk = out.sk;
-		let pk = out.pk;
+		let (sk, pk) = EciesKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
 		//too short ciphertext: text must be min 32 long, output was 88 long
 		let encrypted = &encrypted[..(encrypted.len() - 56)];
 
-		let decrypted_result = decrypt(&sk, encrypted);
+		let decrypted_result = sk.decrypt(encrypted);
 
 		assert!(matches!(decrypted_result, Err(DecryptionFailedCiphertextShort)));
 	}

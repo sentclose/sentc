@@ -1,29 +1,46 @@
+use alloc::vec::Vec;
+
 use ope::{get_ope, OpeKey};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::alg::sortable::{SortableKey, SortableOutput};
-use crate::{get_rand, Error};
+use crate::cryptomat::{CryptoAlg, SortableKey, SymKey};
+use crate::{get_rand, try_from_bytes_single_value, Error};
 
 pub const OPE_OUT: &str = "OPE-16";
 
-pub(crate) fn generate_key() -> Result<SortableOutput, Error>
-{
-	let key = generate_key_internally(&mut get_rand())?;
+pub struct OpeSortableKey(OpeKey);
 
-	Ok(SortableOutput {
-		key: SortableKey::Ope(key),
-		alg: OPE_OUT,
-	})
+try_from_bytes_single_value!(OpeSortableKey);
+
+impl CryptoAlg for OpeSortableKey
+{
+	fn get_alg_str(&self) -> &'static str
+	{
+		OPE_OUT
+	}
 }
 
-pub(crate) fn encrypt_with_generated_key(key: &OpeKey, data: u64) -> Result<u64, Error>
+impl SortableKey for OpeSortableKey
 {
-	if data > 65532 {
-		return Err(Error::OpeStringToLarge);
+	fn generate() -> Result<impl SortableKey, Error>
+	{
+		Ok(Self(generate_key_internally(&mut get_rand())?))
 	}
 
-	let ope = get_ope(key);
-	Ok(ope.encrypt(data)?)
+	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
+
+	fn encrypt_sortable(&self, data: u64) -> Result<u64, Error>
+	{
+		if data > 65532 {
+			return Err(Error::OpeStringToLarge);
+		}
+
+		let ope = get_ope(&self.0);
+		Ok(ope.encrypt(data)?)
+	}
 }
 
 //__________________________________________________________________________________________________
@@ -43,40 +60,23 @@ mod test
 {
 	use super::*;
 
-	fn test_key_gen_output(out: &SortableOutput) -> OpeKey
-	{
-		assert_eq!(out.alg, OPE_OUT);
-
-		let key = match out.key {
-			SortableKey::Ope(k) => k,
-		};
-
-		assert_eq!(key.len(), 16);
-
-		key
-	}
-
 	#[test]
 	fn test_gen_key()
 	{
-		let out = generate_key().unwrap();
-
-		test_key_gen_output(&out);
+		let _ = OpeSortableKey::generate().unwrap();
 	}
 
 	#[test]
 	fn test_encrypt()
 	{
-		let out = generate_key().unwrap();
-
-		let key = test_key_gen_output(&out);
+		let key = OpeSortableKey::generate().unwrap();
 
 		let numbers = [262u64, 300, 1000, 65531];
 
 		let mut out = [0u64; 4];
 
 		for (i, number) in numbers.iter().enumerate() {
-			out[i] = encrypt_with_generated_key(&key, *number).unwrap();
+			out[i] = key.encrypt_sortable(*number).unwrap();
 		}
 
 		//check
