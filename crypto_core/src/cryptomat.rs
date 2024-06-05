@@ -51,7 +51,7 @@ pub trait SignK: CryptoAlg + Into<SignKey>
 
 	fn sign(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
 
-	fn sign_only(&self, data: &[u8]) -> Result<impl Sig, Error>;
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>;
 }
 
 pub trait VerifyK: CryptoAlg + Into<VerifyKey>
@@ -68,11 +68,11 @@ pub trait SignKeyPair
 	fn generate_key_pair() -> Result<(impl SignK, impl VerifyK), Error>;
 }
 
-pub trait Sig: CryptoAlg + Into<Signature>
+pub trait Sig: CryptoAlg + Into<Signature> + Into<Vec<u8>>
 {
-	fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>;
-
-	fn get_raw(&self) -> &[u8];
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>;
+	//
+	// fn get_raw(&self) -> &[u8];
 }
 
 pub trait SearchableKey: CryptoAlg + Into<HmacKey>
