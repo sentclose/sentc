@@ -103,7 +103,7 @@ pub trait Sig: CryptoAlg + Into<Signature> + Into<Vec<u8>>
 //__________________________________________________________________________________________________
 //searchable
 
-pub trait SearchableKey: CryptoAlg + Into<HmacKey>
+pub trait SearchableKey: CryptoAlg + Into<HmacKey> + AsRef<[u8]>
 {
 	fn generate() -> Result<impl SearchableKey, Error>;
 
@@ -117,7 +117,7 @@ pub trait SearchableKey: CryptoAlg + Into<HmacKey>
 //__________________________________________________________________________________________________
 //sortable
 
-pub trait SortableKey: CryptoAlg
+pub trait SortableKey: CryptoAlg + AsRef<[u8]>
 {
 	fn generate() -> Result<impl SortableKey, Error>;
 

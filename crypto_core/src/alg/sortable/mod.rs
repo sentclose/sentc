@@ -56,6 +56,14 @@ impl CryptoAlg for SortKeys
 	}
 }
 
+impl AsRef<[u8]> for SortKeys
+{
+	fn as_ref(&self) -> &[u8]
+	{
+		deref_macro!(self, as_ref)
+	}
+}
+
 impl SortableKey for SortKeys
 {
 	fn generate() -> Result<impl SortableKey, Error>
