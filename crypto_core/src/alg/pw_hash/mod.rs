@@ -23,6 +23,11 @@ macro_rules! prepare_export_single_value {
 					Self::Argon2(_) => ARGON_2_OUTPUT,
 				}
 			}
+
+			pub fn argon2_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self::Argon2(bytes.try_into().map_err(|_| Error::KeyDecryptFailed)?))
+			}
 		}
 	};
 }

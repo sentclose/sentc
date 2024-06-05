@@ -46,7 +46,7 @@ pub trait SymKey: CryptoAlg + Into<SymmetricKey> + AsRef<[u8]>
 //__________________________________________________________________________________________________
 //asymmetric
 
-pub trait Pk: CryptoAlg + Into<PublicKey>
+pub trait Pk: CryptoAlg + Into<PublicKey> + Clone
 {
 	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>;
 

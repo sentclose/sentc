@@ -3,10 +3,11 @@ use alloc::vec::Vec;
 use pqc_kyber::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 
 use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
-use crate::{crypto_alg_str_impl, get_rand, Error, PublicKey, SecretKey};
+use crate::{crypto_alg_str_impl, get_rand, hybrid_key_import_export, Error, PublicKey, SecretKey};
 
 pub const ECIES_KYBER_HYBRID_OUTPUT: &str = "ECIES-ed25519_KYBER_768";
 
+#[derive(Clone)]
 pub struct EciesKyberHybridPk
 {
 	x: [u8; 32],
@@ -29,6 +30,7 @@ impl<'a> TryFrom<&'a [u8]> for EciesKyberHybridPk
 	}
 }
 
+hybrid_key_import_export!(EciesKyberHybridPk);
 crypto_alg_str_impl!(EciesKyberHybridPk, ECIES_KYBER_HYBRID_OUTPUT);
 
 impl Into<PublicKey> for EciesKyberHybridPk
@@ -89,6 +91,7 @@ impl<'a> TryFrom<&'a [u8]> for EciesKyberHybridSk
 	}
 }
 
+hybrid_key_import_export!(EciesKyberHybridSk);
 crypto_alg_str_impl!(EciesKyberHybridSk, ECIES_KYBER_HYBRID_OUTPUT);
 
 impl Into<SecretKey> for EciesKyberHybridSk

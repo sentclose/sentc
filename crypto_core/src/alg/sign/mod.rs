@@ -83,6 +83,28 @@ macro_rules! crypto_alg_impl {
 	};
 }
 
+macro_rules! get_inner_key {
+	($st:ty,$t:ident) => {
+		impl $st
+		{
+			pub fn ed25519_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self::Ed25519(bytes.try_into()?))
+			}
+
+			pub fn dilithium_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self::Dilithium(bytes.try_into()?))
+			}
+
+			pub fn ed25519_dilithium_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self::Ed25519DilithiumHybrid($t::from_bytes_owned(bytes_x, bytes_k)?))
+			}
+		}
+	};
+}
+
 pub enum SignKey
 {
 	Ed25519(Ed25519SignK),
@@ -112,6 +134,7 @@ impl SignKey
 	}
 }
 
+get_inner_key!(SignKey, Ed25519DilithiumHybridSignK);
 crypto_alg_impl!(SignKey);
 
 impl SignK for SignKey
@@ -145,6 +168,7 @@ pub enum VerifyKey
 	Ed25519DilithiumHybrid(Ed25519DilithiumHybridVerifyKey),
 }
 
+get_inner_key!(VerifyKey, Ed25519DilithiumHybridVerifyKey);
 crypto_alg_impl!(VerifyKey);
 
 impl VerifyK for VerifyKey

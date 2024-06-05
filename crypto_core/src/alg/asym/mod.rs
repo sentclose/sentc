@@ -43,6 +43,29 @@ macro_rules! crypto_alg_impl {
 	};
 }
 
+macro_rules! get_inner_key {
+	($st:ty,$t:ident) => {
+		impl $st
+		{
+			pub fn ecies_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self::Ecies(bytes.try_into()?))
+			}
+
+			pub fn kyber_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self::Kyber(bytes.try_into()?))
+			}
+
+			pub fn ecies_kyber_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self::EciesKyberHybrid($t::from_bytes_owned(bytes_x, bytes_k)?))
+			}
+		}
+	};
+}
+
+#[derive(Clone)]
 pub enum PublicKey
 {
 	Ecies(EciesPk),
@@ -50,6 +73,7 @@ pub enum PublicKey
 	EciesKyberHybrid(EciesKyberHybridPk),
 }
 
+get_inner_key!(PublicKey, EciesKyberHybridPk);
 crypto_alg_impl!(PublicKey);
 
 impl Pk for PublicKey
@@ -105,6 +129,7 @@ impl SecretKey
 	}
 }
 
+get_inner_key!(SecretKey, EciesKyberHybridSk);
 crypto_alg_impl!(SecretKey);
 
 impl Sk for SecretKey

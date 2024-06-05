@@ -5,14 +5,17 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt};
 use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
-use crate::{crypto_alg_str_impl, get_rand, try_from_bytes_single_value, Error};
+use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 pub const KYBER_OUTPUT: &str = "KYBER_768";
 
+#[derive(Clone)]
 pub struct KyberPk([u8; KYBER_PUBLICKEYBYTES]);
 
 try_from_bytes_single_value!(KyberPk);
+try_from_bytes_owned_single_value!(KyberPk);
 crypto_alg_str_impl!(KyberPk, KYBER_OUTPUT);
+as_ref_bytes_single_value!(KyberPk);
 
 impl Into<crate::PublicKey> for KyberPk
 {
@@ -43,7 +46,9 @@ impl Pk for KyberPk
 pub struct KyberSk([u8; KYBER_SECRETKEYBYTES]);
 
 try_from_bytes_single_value!(KyberSk);
+try_from_bytes_owned_single_value!(KyberSk);
 crypto_alg_str_impl!(KyberSk, KYBER_OUTPUT);
+as_ref_bytes_single_value!(KyberSk);
 
 impl Into<crate::SecretKey> for KyberSk
 {

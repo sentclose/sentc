@@ -81,3 +81,24 @@ macro_rules! crypto_alg_str_impl {
 		}
 	};
 }
+
+#[macro_export]
+macro_rules! hybrid_key_import_export {
+	($st:ty) => {
+		impl $st
+		{
+			pub fn get_raw_keys(&self) -> (&[u8], &[u8])
+			{
+				(&self.x, &self.k)
+			}
+
+			pub fn from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, Error>
+			{
+				Ok(Self {
+					x: bytes_x.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+					k: bytes_k.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+				})
+			}
+		}
+	};
+}
