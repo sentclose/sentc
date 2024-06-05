@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::ops::Deref;
 
 use crate::alg::sym::aes_gcm::Aes256GcmKey;
 use crate::cryptomat::{CryptoAlg, Pk, Sk, SymKey};
@@ -11,6 +10,14 @@ pub fn generate_key() -> Result<impl SymKey, Error>
 {
 	#[cfg(feature = "aes")]
 	Aes256GcmKey::generate()
+}
+
+macro_rules! deref_macro {
+    ($self:expr, $method:ident $(, $args:expr)*) => {
+        match $self {
+           	Self::Aes(inner) => inner.$method($($args),*),
+        }
+    };
 }
 
 pub enum SymmetricKey
@@ -41,20 +48,13 @@ impl SymmetricKey
 
 		Self::from_bytes(&decrypted_bytes, alg_str)
 	}
-
-	fn deref(&self) -> &impl SymKey
-	{
-		match self {
-			SymmetricKey::Aes(k) => k,
-		}
-	}
 }
 
 impl CryptoAlg for SymmetricKey
 {
 	fn get_alg_str(&self) -> &'static str
 	{
-		self.deref().get_alg_str()
+		deref_macro!(self, get_alg_str)
 	}
 }
 
@@ -67,31 +67,31 @@ impl SymKey for SymmetricKey
 
 	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
-		self.deref().encrypt_key_with_master_key(master_key)
+		deref_macro!(self, encrypt_key_with_master_key, master_key)
 	}
 
 	fn encrypt_with_sym_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
-		self.deref().encrypt_key_with_master_key(master_key)
+		deref_macro!(self, encrypt_with_sym_key, master_key)
 	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		self.deref().encrypt(data)
+		deref_macro!(self, encrypt, data)
 	}
 
 	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		self.deref().decrypt(ciphertext)
+		deref_macro!(self, decrypt, ciphertext)
 	}
 
 	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		self.deref().encrypt_with_aad(data, aad)
+		deref_macro!(self, encrypt_with_aad, data, aad)
 	}
 
 	fn decrypt_with_aad(&self, ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		self.deref().decrypt_with_aad(ciphertext, aad)
+		deref_macro!(self, decrypt_with_aad, ciphertext, aad)
 	}
 }

@@ -8,7 +8,11 @@ use crate::{get_rand, Error, SignKey, Signature, VerifyKey};
 
 pub const ED25519_DILITHIUM_HYBRID_OUTPUT: &str = "ED25519_DILITHIUM_3";
 
-pub struct Ed25519DilithiumHybridSig([u8; 64 + SIGNBYTES]);
+pub struct Ed25519DilithiumHybridSig
+{
+	x: [u8; 64],
+	k: [u8; SIGNBYTES],
+}
 
 impl CryptoAlg for Ed25519DilithiumHybridSig
 {
@@ -26,17 +30,29 @@ impl Into<Signature> for Ed25519DilithiumHybridSig
 	}
 }
 
+impl Into<Vec<u8>> for Ed25519DilithiumHybridSig
+{
+	fn into(self) -> Vec<u8>
+	{
+		let mut output = Vec::with_capacity(self.x.len() + self.k.len());
+		output.extend_from_slice(&self.x);
+		output.extend_from_slice(&self.k);
+
+		output
+	}
+}
+
 impl Sig for Ed25519DilithiumHybridSig
 {
-	fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
-	{
-		split_sig_and_data(&self.0)
-	}
-
-	fn get_raw(&self) -> &[u8]
-	{
-		&self.0
-	}
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
+	// {
+	// 	split_sig_and_data(&self.0)
+	// }
+	//
+	// fn get_raw(&self) -> &[u8]
+	// {
+	// 	&self.0
+	// }
 }
 
 pub struct Ed25519DilithiumHybridVerifyKey
@@ -139,18 +155,21 @@ impl SignK for Ed25519DilithiumHybridSignK
 		let (sig_x, sig_k) = sign_internal(&self.x, &self.k, data)?;
 
 		let mut output = Vec::with_capacity(sig_x.len() + sig_k.len() + data.len());
-		output.extend(sig_x);
-		output.extend(sig_k);
-		output.extend(data);
+		output.extend_from_slice(&sig_x);
+		output.extend_from_slice(&sig_k);
+		output.extend_from_slice(data);
 
 		Ok(output)
 	}
 
-	fn sign_only(&self, data: &[u8]) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
 	{
-		let (sig_x, sig_k) = sign_internal(&self.x, &self.k, data)?;
+		let (x, k) = sign_internal(&self.x, &self.k, data.as_ref())?;
 
-		Ok(Ed25519DilithiumHybridSig(sig_x + sig_k))
+		Ok(Ed25519DilithiumHybridSig {
+			x,
+			k,
+		})
 	}
 }
 

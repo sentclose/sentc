@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 pub(crate) mod asym;
 pub(crate) mod hmac;
 pub(crate) mod pw_hash;
@@ -19,6 +21,19 @@ macro_rules! try_from_bytes_single_value {
 						.try_into()
 						.map_err(|_| $crate::Error::KeyDecryptFailed)?,
 				))
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! into_bytes_single_value {
+	($st:ty) => {
+		impl Into<Vec<u8>> for $st
+		{
+			fn into(self) -> Vec<u8>
+			{
+				Vec::from(self.0)
 			}
 		}
 	};

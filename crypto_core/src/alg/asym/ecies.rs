@@ -123,8 +123,8 @@ pub(super) fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKe
 
 	//put the ephemeral public key in front of the aes encrypt, so we can use it later for decrypt
 	let mut cipher_text = Vec::with_capacity(PUBLIC_KEY_LENGTH + encrypted.len());
-	cipher_text.extend(ep_pk.to_bytes().iter());
-	cipher_text.extend(encrypted);
+	cipher_text.extend_from_slice(&ep_pk.to_bytes());
+	cipher_text.extend_from_slice(&encrypted);
 
 	Ok(cipher_text)
 }

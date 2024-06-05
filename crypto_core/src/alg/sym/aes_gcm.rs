@@ -129,8 +129,8 @@ fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], aad: Op
 
 	//put the IV in front of the ciphertext
 	let mut output = Vec::with_capacity(AES_IV_LENGTH + ciphertext.len());
-	output.extend(nonce);
-	output.extend(ciphertext);
+	output.extend_from_slice(nonce);
+	output.extend_from_slice(&ciphertext);
 
 	Ok(output)
 }

@@ -6,7 +6,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
 use crate::error::Error;
-use crate::{get_rand, try_from_bytes_single_value, SignKey, VerifyKey};
+use crate::{get_rand, into_bytes_single_value, try_from_bytes_single_value, SignKey, VerifyKey};
 
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
@@ -31,17 +31,19 @@ impl Into<crate::Signature> for Ed25519Sig
 	}
 }
 
+into_bytes_single_value!(Ed25519Sig);
+
 impl Sig for Ed25519Sig
 {
-	fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
-	{
-		split_sig_and_data(&self.0)
-	}
-
-	fn get_raw(&self) -> &[u8]
-	{
-		&self.0
-	}
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
+	// {
+	// 	split_sig_and_data(&self.0)
+	// }
+	//
+	// fn get_raw(&self) -> &[u8]
+	// {
+	// 	&self.0
+	// }
 }
 
 pub struct Ed25519VerifyK([u8; 32]);
@@ -116,15 +118,15 @@ impl SignK for Ed25519SignK
 		let sig = sign_internally(&self.0, data)?;
 
 		let mut output = Vec::with_capacity(sig.len() + data.len());
-		output.extend(sig);
-		output.extend(data);
+		output.extend_from_slice(&sig);
+		output.extend_from_slice(data);
 
 		Ok(output)
 	}
 
-	fn sign_only(&self, data: &[u8]) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
 	{
-		let sig = sign_internally(&self.0, data)?;
+		let sig = sign_internally(&self.0, data.as_ref())?;
 
 		Ok(Ed25519Sig(sig))
 	}

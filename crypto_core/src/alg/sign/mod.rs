@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::ops::Deref;
 
 use sha2::{Digest, Sha256};
 
@@ -62,6 +61,28 @@ pub(crate) fn safety_number<Vk: VerifyK>(user_1: SafetyNumber<Vk>, user_2: Optio
 	number_bytes.to_vec()
 }
 
+macro_rules! deref_macro {
+    ($self:expr, $method:ident $(, $args:expr)*) => {
+        match $self {
+            Self::Ed25519(inner) => inner.$method($($args),*),
+            Self::Dilithium(inner) => inner.$method($($args),*),
+			Self::Ed25519DilithiumHybrid(inner) => inner.$method($($args),*),
+        }
+    };
+}
+
+macro_rules! crypto_alg_impl {
+	($name:ty) => {
+		impl CryptoAlg for $name
+		{
+			fn get_alg_str(&self) -> &'static str
+			{
+				deref_macro!(self, get_alg_str)
+			}
+		}
+	};
+}
+
 pub enum SignKey
 {
 	Ed25519(Ed25519SignK),
@@ -89,40 +110,31 @@ impl SignKey
 
 		Self::from_bytes(&key, alg_str)
 	}
-
-	fn deref(&self) -> &impl SignK
-	{
-		match self {
-			Self::Ed25519(k) => k,
-			Self::Dilithium(k) => k,
-			Self::Ed25519DilithiumHybrid(k) => k,
-		}
-	}
 }
 
-impl CryptoAlg for SignKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		self.deref().get_alg_str()
-	}
-}
+crypto_alg_impl!(SignKey);
 
 impl SignK for SignKey
 {
 	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
-		self.deref().encrypt_by_master_key(master_key)
+		deref_macro!(self, encrypt_by_master_key, master_key)
 	}
 
 	fn sign(&self, data: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		self.deref().sign(data)
+		deref_macro!(self, sign, data)
 	}
 
-	fn sign_only(&self, data: &[u8]) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
 	{
-		self.deref().sign_only(data)
+		let out: Signature = match self {
+			Self::Ed25519(inner) => inner.sign_only(data)?.into(),
+			Self::Dilithium(inner) => inner.sign_only(data)?.into(),
+			Self::Ed25519DilithiumHybrid(inner) => inner.sign_only(data)?.into(),
+		};
+
+		Ok(out)
 	}
 }
 
@@ -133,41 +145,23 @@ pub enum VerifyKey
 	Ed25519DilithiumHybrid(Ed25519DilithiumHybridVerifyKey),
 }
 
-impl VerifyKey
-{
-	fn deref(&self) -> &impl VerifyK
-	{
-		match self {
-			Self::Ed25519(k) => k,
-			Self::Dilithium(k) => k,
-			Self::Ed25519DilithiumHybrid(k) => k,
-		}
-	}
-}
-
-impl CryptoAlg for VerifyKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		self.deref().get_alg_str()
-	}
-}
+crypto_alg_impl!(VerifyKey);
 
 impl VerifyK for VerifyKey
 {
 	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
 	{
-		self.deref().verify(data_with_sig)
+		deref_macro!(self, verify, data_with_sig)
 	}
 
 	fn verify_only(&self, sig: &[u8], data: &[u8]) -> Result<bool, Error>
 	{
-		self.deref().verify_only(sig, data)
+		deref_macro!(self, verify_only, sig, data)
 	}
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D)
 	{
-		self.deref().create_hash(hasher)
+		deref_macro!(self, create_hash, hasher)
 	}
 }
 
@@ -178,35 +172,25 @@ pub enum Signature
 	Ed25519DilithiumHybrid(Ed25519DilithiumHybridSig),
 }
 
-impl Signature
-{
-	fn deref(&self) -> &impl Sig
-	{
-		match self {
-			Self::Ed25519(k) => k,
-			Self::Dilithium(k) => k,
-			Self::Ed25519DilithiumHybrid(k) => k,
-		}
-	}
-}
+crypto_alg_impl!(Signature);
 
-impl CryptoAlg for Signature
+impl Into<Vec<u8>> for Signature
 {
-	fn get_alg_str(&self) -> &'static str
+	fn into(self) -> Vec<u8>
 	{
-		self.deref().get_alg_str()
+		deref_macro!(self, into)
 	}
 }
 
 impl Sig for Signature
 {
-	fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
-	{
-		self.deref().split_sig_and_data()
-	}
-
-	fn get_raw(&self) -> &[u8]
-	{
-		self.deref().get_raw()
-	}
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
+	// {
+	// 	deref_macro!(self, split_sig_and_data)
+	// }
+	//
+	// fn get_raw(&self) -> &[u8]
+	// {
+	// 	deref_macro!(self, get_raw)
+	// }
 }

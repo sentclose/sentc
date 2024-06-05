@@ -103,8 +103,8 @@ pub(super) fn encrypt_internally<R: CryptoRng + RngCore>(receiver_pub: &PublicKe
 	let encrypted = aes_encrypt(&shared_secret_alice, data)?;
 
 	let mut cipher_text = Vec::with_capacity(KYBER_CIPHERTEXTBYTES + encrypted.len());
-	cipher_text.extend(ciphertext.iter());
-	cipher_text.extend(encrypted);
+	cipher_text.extend_from_slice(&ciphertext);
+	cipher_text.extend_from_slice(&encrypted);
 
 	Ok(cipher_text)
 }

@@ -4,7 +4,7 @@ use crate::alg::asym::ecies::{EciesPk, EciesSk};
 use crate::alg::asym::ecies_kyber_hybrid::{EciesKyberHybridPk, EciesKyberHybridSk};
 use crate::alg::asym::pqc_kyber::{KyberPk, KyberSk};
 use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey};
-use crate::Error;
+use crate::{Error, Signature};
 
 pub(crate) mod ecies;
 pub(crate) mod ecies_kyber_hybrid;
@@ -21,6 +21,28 @@ pub fn generate_keys() -> Result<(impl Sk, impl Pk), Error>
 	Ok((sk, pk))
 }
 
+macro_rules! deref_macro {
+    ($self:expr, $method:ident $(, $args:expr)*) => {
+        match $self {
+            Self::Ecies(inner) => inner.$method($($args),*),
+            Self::Kyber(inner) => inner.$method($($args),*),
+			Self::EciesKyberHybrid(inner) => inner.$method($($args),*),
+        }
+    };
+}
+
+macro_rules! crypto_alg_impl {
+	($name:ty) => {
+		impl CryptoAlg for $name
+		{
+			fn get_alg_str(&self) -> &'static str
+			{
+				deref_macro!(self, get_alg_str)
+			}
+		}
+	};
+}
+
 pub enum PublicKey
 {
 	Ecies(EciesPk),
@@ -28,36 +50,24 @@ pub enum PublicKey
 	EciesKyberHybrid(EciesKyberHybridPk),
 }
 
-impl PublicKey
-{
-	fn deref(&self) -> &impl Pk
-	{
-		match self {
-			Self::Ecies(k) => k,
-			Self::Kyber(k) => k,
-			Self::EciesKyberHybrid(k) => k,
-		}
-	}
-}
-
-impl CryptoAlg for PublicKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		self.deref().get_alg_str()
-	}
-}
+crypto_alg_impl!(PublicKey);
 
 impl Pk for PublicKey
 {
 	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
 	{
-		self.deref().sign_public_key(sign_key)
+		let out: Signature = match self {
+			PublicKey::Ecies(k) => k.sign_public_key(sign_key)?.into(),
+			PublicKey::Kyber(k) => k.sign_public_key(sign_key)?.into(),
+			PublicKey::EciesKyberHybrid(k) => k.sign_public_key(sign_key)?.into(),
+		};
+
+		Ok(out)
 	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		self.deref().encrypt(data)
+		deref_macro!(self, encrypt, data)
 	}
 }
 
@@ -88,34 +98,19 @@ impl SecretKey
 
 		Self::from_bytes(&decrypted_bytes, alg_str)
 	}
-
-	fn deref(&self) -> &impl Sk
-	{
-		match self {
-			Self::Ecies(k) => k,
-			Self::Kyber(k) => k,
-			Self::EciesKyberHybrid(k) => k,
-		}
-	}
 }
 
-impl CryptoAlg for SecretKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		self.deref().get_alg_str()
-	}
-}
+crypto_alg_impl!(SecretKey);
 
 impl Sk for SecretKey
 {
 	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
-		self.deref().encrypt_by_master_key(master_key)
+		deref_macro!(self, encrypt_by_master_key, master_key)
 	}
 
 	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		self.deref().decrypt(ciphertext)
+		deref_macro!(self, decrypt, ciphertext)
 	}
 }

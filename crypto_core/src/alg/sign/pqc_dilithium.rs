@@ -5,7 +5,7 @@ use pqc_dilithium_edit::{Keypair, PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
-use crate::{get_rand, try_from_bytes_single_value, Error, SignKey, Signature, VerifyKey};
+use crate::{get_rand, into_bytes_single_value, try_from_bytes_single_value, Error, SignKey, Signature, VerifyKey};
 
 pub const DILITHIUM_OUTPUT: &str = "DILITHIUM_3";
 
@@ -27,17 +27,19 @@ impl Into<Signature> for DilithiumSig
 	}
 }
 
+into_bytes_single_value!(DilithiumSig);
+
 impl Sig for DilithiumSig
 {
-	fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
-	{
-		split_sig_and_data(&self.0)
-	}
-
-	fn get_raw(&self) -> &[u8]
-	{
-		&self.0
-	}
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
+	// {
+	// 	split_sig_and_data(&self.0)
+	// }
+	//
+	// fn get_raw(&self) -> &[u8]
+	// {
+	// 	&self.0
+	// }
 }
 
 pub struct DilithiumSignKey([u8; SECRETKEYBYTES]);
@@ -72,15 +74,15 @@ impl SignK for DilithiumSignKey
 		let sig = sign_internally(&self.0, data)?;
 
 		let mut output = Vec::with_capacity(sig.len() + data.len());
-		output.extend(sig);
-		output.extend(data);
+		output.extend_from_slice(&sig);
+		output.extend_from_slice(data);
 
 		Ok(output)
 	}
 
-	fn sign_only(&self, data: &[u8]) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
 	{
-		let sig = sign_internally(&self.0, data)?;
+		let sig = sign_internally(&self.0, data.as_ref())?;
 
 		Ok(DilithiumSig(sig))
 	}

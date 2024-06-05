@@ -51,7 +51,7 @@ impl Pk for EciesKyberHybridPk
 	{
 		let k = [&self.x[..], &self.k[..]].concat();
 
-		sign_key.sign_only(&k)
+		sign_key.sign_only(k)
 	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
