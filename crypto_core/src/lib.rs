@@ -21,7 +21,6 @@
 extern crate alloc;
 
 mod alg;
-pub mod crypto;
 pub mod cryptomat;
 mod error;
 pub mod group;
@@ -38,17 +37,7 @@ pub use self::alg::asym::{PublicKey, SecretKey};
 pub use self::alg::hmac::hmac_sha256::{HmacSha256Key, HMAC_SHA256_OUTPUT};
 pub use self::alg::hmac::HmacKey;
 pub use self::alg::pw_hash::argon2::ARGON_2_OUTPUT;
-pub use self::alg::pw_hash::{
-	ClientRandomValue,
-	DeriveAuthKeyForAuth,
-	DeriveKeyOutput,
-	DeriveKeysForAuthOutput,
-	DeriveMasterKeyForAuth,
-	HashedAuthenticationKey,
-	MasterKeyInfo,
-	PasswordEncryptOutput,
-	PasswordEncryptSalt,
-};
+pub use self::alg::pw_hash::{ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, HashedAuthenticationKey, PasswordEncryptSalt};
 pub use self::alg::sign::ed25519::{Ed25519KeyPair, Ed25519Sig, Ed25519SignK, Ed25519VerifyK, ED25519_OUTPUT};
 pub use self::alg::sign::ed25519_dilithium_hybrid::{
 	Ed25519DilithiumHybridKeyPair,
@@ -59,22 +48,14 @@ pub use self::alg::sign::ed25519_dilithium_hybrid::{
 };
 pub use self::alg::sign::pqc_dilithium::DILITHIUM_OUTPUT;
 pub use self::alg::sign::{SafetyNumber, SignKey, Signature, VerifyKey};
+pub use self::alg::sortable::SortKeys;
 pub use self::alg::sym::aes_gcm::{Aes256GcmKey, AES_GCM_OUTPUT};
 pub use self::alg::sym::SymmetricKey;
 pub use self::error::Error;
 
 pub fn generate_salt(client_random_value: ClientRandomValue, add_str: &str) -> Vec<u8>
 {
-	match client_random_value {
-		ClientRandomValue::Argon2(v) => alg::pw_hash::argon2::generate_salt(v, add_str),
-	}
-}
-
-pub fn hash_auth_key(auth_key: &DeriveAuthKeyForAuth) -> Result<HashedAuthenticationKey, Error>
-{
-	match auth_key {
-		DeriveAuthKeyForAuth::Argon2(k) => alg::pw_hash::argon2::get_hashed_auth_key(k),
-	}
+	client_random_value.generate_salt(add_str)
 }
 
 fn get_rand() -> impl CryptoRng + RngCore

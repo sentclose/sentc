@@ -50,6 +50,7 @@ pub struct PrepareGroupKeysForNewMemberOutput
 	pub encrypted_group_key_alg: &'static str,
 }
 
+#[allow(clippy::type_complexity)]
 fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
 	creators_public_key: &P,
 	user_group: bool,
@@ -80,7 +81,7 @@ fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
 
 		let encrypted_sign_key = sign_key.encrypt_by_master_key(group_key)?;
 
-		let public_key_sig = group_pk.sign_public_key(&sign_key)?;
+		let public_key_sig = group_pk.sign_public_key(&sign_key)?.into();
 
 		(
 			Some(verify_key),
@@ -96,7 +97,7 @@ fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
 		creators_public_key.get_alg_str(),
 		verify_key.map(|i| i.into()),
 		encrypted_sign_key,
-		public_key_sig.map(|i| i.into()),
+		public_key_sig,
 		keypair_sign_alg,
 	))
 }
@@ -231,7 +232,7 @@ pub fn get_group<Sek: Sk>(
 	//call this for every group key with the private key, because every group key can be created and encrypted by different alg.
 
 	//1. decrypt the group key
-	let decrypted_group_key = SymmetricKey::decrypt_key_by_master_key(private_key, &encrypted_group_key, group_key_alg)?;
+	let decrypted_group_key = SymmetricKey::decrypt_key_by_master_key(private_key, encrypted_group_key, group_key_alg)?;
 
 	let decrypted_private_group_key = SecretKey::decrypt_by_maser_key(&decrypted_group_key, encrypted_private_group_key, key_pair_alg)?;
 
@@ -314,7 +315,7 @@ mod test
 		//try to decrypt the master key
 		let login_out = done_login(
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
-			&register_out.master_key_info.encrypted_master_key,
+			&register_out.encrypted_master_key,
 			&register_out.encrypted_private_key,
 			register_out.keypair_encrypt_alg,
 			&register_out.encrypted_sign_key,
@@ -396,7 +397,7 @@ mod test
 		let rotation_out = key_rotation(&group_key, &pk, false).unwrap();
 
 		//it should get the values from own encrypted group key
-		let (new_group_key, _new_group_pri_key) = get_group(
+		let (_, _new_group_pri_key) = get_group(
 			&login_out.private_key,
 			&rotation_out.encrypted_group_key_by_user,
 			&rotation_out.encrypted_private_group_key,
@@ -425,7 +426,7 @@ mod test
 		.unwrap();
 
 		//get the new group by get_group
-		let (new_group_key2, _new_group_pri_key2) = get_group(
+		let (_, _new_group_pri_key2) = get_group(
 			&login_out.private_key,
 			&out,
 			&rotation_out.encrypted_private_group_key,
@@ -492,7 +493,7 @@ mod test
 		//can't use loop here because we need to know which group key we are actual processing
 		let group_key_2 = &new_user_out[1];
 
-		let (new_user_group_key_2, _new_user_group_pri_key_2) = get_group(
+		let (_, _new_user_group_pri_key_2) = get_group(
 			&user_2_out.private_key,
 			&group_key_2.encrypted_group_key,
 			&rotation_out.encrypted_private_group_key, //normally get from the server
@@ -503,7 +504,7 @@ mod test
 
 		let group_key_3 = &new_user_out[2];
 
-		let (new_user_group_key_3, _new_user_group_pri_key_3) = get_group(
+		let (_, _new_user_group_pri_key_3) = get_group(
 			&user_2_out.private_key,
 			&group_key_3.encrypted_group_key,
 			&rotation_out_1.encrypted_private_group_key, //normally get from the server
