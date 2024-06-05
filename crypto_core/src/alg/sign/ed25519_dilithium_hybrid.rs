@@ -4,7 +4,7 @@ use hmac::digest::Digest;
 use pqc_dilithium_edit::{PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 
 use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
-use crate::{get_rand, Error, SignKey, Signature, VerifyKey};
+use crate::{crypto_alg_str_impl, get_rand, Error, SignKey, Signature, VerifyKey};
 
 pub const ED25519_DILITHIUM_HYBRID_OUTPUT: &str = "ED25519_DILITHIUM_3";
 
@@ -14,13 +14,7 @@ pub struct Ed25519DilithiumHybridSig
 	k: [u8; SIGNBYTES],
 }
 
-impl CryptoAlg for Ed25519DilithiumHybridSig
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ED25519_DILITHIUM_HYBRID_OUTPUT
-	}
-}
+crypto_alg_str_impl!(Ed25519DilithiumHybridSig, ED25519_DILITHIUM_HYBRID_OUTPUT);
 
 impl Into<Signature> for Ed25519DilithiumHybridSig
 {
@@ -61,13 +55,7 @@ pub struct Ed25519DilithiumHybridVerifyKey
 	k: [u8; PUBLICKEYBYTES],
 }
 
-impl CryptoAlg for Ed25519DilithiumHybridVerifyKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ED25519_DILITHIUM_HYBRID_OUTPUT
-	}
-}
+crypto_alg_str_impl!(Ed25519DilithiumHybridVerifyKey, ED25519_DILITHIUM_HYBRID_OUTPUT);
 
 impl Into<VerifyKey> for Ed25519DilithiumHybridVerifyKey
 {
@@ -125,13 +113,7 @@ impl<'a> TryFrom<&'a [u8]> for Ed25519DilithiumHybridSignK
 	}
 }
 
-impl CryptoAlg for Ed25519DilithiumHybridSignK
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ED25519_DILITHIUM_HYBRID_OUTPUT
-	}
-}
+crypto_alg_str_impl!(Ed25519DilithiumHybridSignK, ED25519_DILITHIUM_HYBRID_OUTPUT);
 
 impl Into<SignKey> for Ed25519DilithiumHybridSignK
 {

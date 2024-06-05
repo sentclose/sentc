@@ -41,6 +41,11 @@ impl HmacKey
 
 		Self::from_bytes(&key, alg_str)
 	}
+
+	pub fn hmac_sha256_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+	{
+		Ok(HmacKey::HmacSha256(bytes.try_into()?))
+	}
 }
 
 impl CryptoAlg for HmacKey
@@ -48,6 +53,14 @@ impl CryptoAlg for HmacKey
 	fn get_alg_str(&self) -> &'static str
 	{
 		deref_macro!(self, get_alg_str)
+	}
+}
+
+impl AsRef<[u8]> for HmacKey
+{
+	fn as_ref(&self) -> &[u8]
+	{
+		deref_macro!(self, as_ref)
 	}
 }
 

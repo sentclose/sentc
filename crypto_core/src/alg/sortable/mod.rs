@@ -41,6 +41,11 @@ impl SortKeys
 
 		Self::from_bytes(&key, alg_str)
 	}
+
+	pub fn ope_key_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+	{
+		Ok(SortKeys::Ope(bytes.try_into()?))
+	}
 }
 
 impl CryptoAlg for SortKeys

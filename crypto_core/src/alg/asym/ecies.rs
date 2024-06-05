@@ -8,7 +8,7 @@ use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt, AesKey};
 use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::error::Error;
-use crate::{get_rand, try_from_bytes_single_value, SecretKey};
+use crate::{crypto_alg_str_impl, get_rand, try_from_bytes_single_value, SecretKey};
 
 pub const ECIES_OUTPUT: &str = "ECIES-ed25519";
 
@@ -19,14 +19,7 @@ const PUBLIC_KEY_LENGTH: usize = 32;
 pub struct EciesPk([u8; 32]);
 
 try_from_bytes_single_value!(EciesPk);
-
-impl CryptoAlg for EciesPk
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ECIES_OUTPUT
-	}
-}
+crypto_alg_str_impl!(EciesPk, ECIES_OUTPUT);
 
 impl Into<crate::PublicKey> for EciesPk
 {
@@ -57,14 +50,7 @@ impl Pk for EciesPk
 pub struct EciesSk([u8; 32]);
 
 try_from_bytes_single_value!(EciesSk);
-
-impl CryptoAlg for EciesSk
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ECIES_OUTPUT
-	}
-}
+crypto_alg_str_impl!(EciesSk, ECIES_OUTPUT);
 
 impl Into<SecretKey> for EciesSk
 {

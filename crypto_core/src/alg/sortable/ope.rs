@@ -4,13 +4,15 @@ use ope::{get_ope, OpeKey};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::cryptomat::{CryptoAlg, SortableKey, SymKey};
-use crate::{get_rand, try_from_bytes_single_value, Error};
+use crate::{as_ref_bytes_single_value, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 pub const OPE_OUT: &str = "OPE-16";
 
 pub struct OpeSortableKey(OpeKey);
 
 try_from_bytes_single_value!(OpeSortableKey);
+try_from_bytes_owned_single_value!(OpeSortableKey);
+as_ref_bytes_single_value!(OpeSortableKey);
 
 impl CryptoAlg for OpeSortableKey
 {

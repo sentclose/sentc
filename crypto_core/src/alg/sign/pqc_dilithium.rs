@@ -5,19 +5,13 @@ use pqc_dilithium_edit::{Keypair, PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
-use crate::{get_rand, into_bytes_single_value, try_from_bytes_single_value, Error, SignKey, Signature, VerifyKey};
+use crate::{crypto_alg_str_impl, get_rand, into_bytes_single_value, try_from_bytes_single_value, Error, SignKey, Signature, VerifyKey};
 
 pub const DILITHIUM_OUTPUT: &str = "DILITHIUM_3";
 
 pub struct DilithiumSig([u8; SIGNBYTES]);
 
-impl CryptoAlg for DilithiumSig
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		DILITHIUM_OUTPUT
-	}
-}
+crypto_alg_str_impl!(DilithiumSig, DILITHIUM_OUTPUT);
 
 impl Into<Signature> for DilithiumSig
 {
@@ -45,14 +39,7 @@ impl Sig for DilithiumSig
 pub struct DilithiumSignKey([u8; SECRETKEYBYTES]);
 
 try_from_bytes_single_value!(DilithiumSignKey);
-
-impl CryptoAlg for DilithiumSignKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		DILITHIUM_OUTPUT
-	}
-}
+crypto_alg_str_impl!(DilithiumSignKey, DILITHIUM_OUTPUT);
 
 impl Into<SignKey> for DilithiumSignKey
 {
@@ -91,14 +78,7 @@ impl SignK for DilithiumSignKey
 pub struct DilithiumVerifyKey([u8; PUBLICKEYBYTES]);
 
 try_from_bytes_single_value!(DilithiumVerifyKey);
-
-impl CryptoAlg for DilithiumVerifyKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		DILITHIUM_OUTPUT
-	}
-}
+crypto_alg_str_impl!(DilithiumVerifyKey, DILITHIUM_OUTPUT);
 
 impl Into<VerifyKey> for DilithiumVerifyKey
 {

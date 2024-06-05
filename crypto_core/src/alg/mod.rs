@@ -25,6 +25,25 @@ macro_rules! try_from_bytes_single_value {
 }
 
 #[macro_export]
+macro_rules! try_from_bytes_owned_single_value {
+	($st:ty) => {
+		impl TryFrom<Vec<u8>> for $st
+		{
+			type Error = $crate::Error;
+
+			fn try_from(value: Vec<u8>) -> Result<Self, Self::Error>
+			{
+				Ok(Self(
+					value
+						.try_into()
+						.map_err(|_| $crate::Error::KeyDecryptFailed)?,
+				))
+			}
+		}
+	};
+}
+
+#[macro_export]
 macro_rules! into_bytes_single_value {
 	($st:ty) => {
 		impl Into<Vec<u8>> for $st
@@ -32,6 +51,32 @@ macro_rules! into_bytes_single_value {
 			fn into(self) -> Vec<u8>
 			{
 				Vec::from(self.0)
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! as_ref_bytes_single_value {
+	($st:ty) => {
+		impl AsRef<[u8]> for $st
+		{
+			fn as_ref(&self) -> &[u8]
+			{
+				&self.0
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! crypto_alg_str_impl {
+	($st:ty,$alg:ident) => {
+		impl CryptoAlg for $st
+		{
+			fn get_alg_str(&self) -> &'static str
+			{
+				$alg
 			}
 		}
 	};

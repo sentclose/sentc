@@ -7,7 +7,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::cryptomat::{CryptoAlg, Pk, SymKey};
 use crate::error::Error;
-use crate::{get_rand, try_from_bytes_single_value, SymmetricKey};
+use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, SymmetricKey};
 
 const AES_IV_LENGTH: usize = 12;
 
@@ -26,28 +26,15 @@ impl Aes256GcmKey
 }
 
 try_from_bytes_single_value!(Aes256GcmKey);
-
-impl CryptoAlg for Aes256GcmKey
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		AES_GCM_OUTPUT
-	}
-}
+try_from_bytes_owned_single_value!(Aes256GcmKey);
+as_ref_bytes_single_value!(Aes256GcmKey);
+crypto_alg_str_impl!(Aes256GcmKey, AES_GCM_OUTPUT);
 
 impl Into<SymmetricKey> for Aes256GcmKey
 {
 	fn into(self) -> SymmetricKey
 	{
 		SymmetricKey::Aes(self)
-	}
-}
-
-impl AsRef<[u8]> for Aes256GcmKey
-{
-	fn as_ref(&self) -> &[u8]
-	{
-		&self.0
 	}
 }
 

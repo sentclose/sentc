@@ -31,7 +31,7 @@ impl SymmetricKey
 	{
 		match alg_str {
 			aes_gcm::AES_GCM_OUTPUT => Ok(Self::Aes(bytes.try_into()?)),
-			_ => return Err(Error::AlgNotFound),
+			_ => Err(Error::AlgNotFound),
 		}
 	}
 
@@ -47,6 +47,11 @@ impl SymmetricKey
 		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
 
 		Self::from_bytes(&decrypted_bytes, alg_str)
+	}
+
+	pub fn aes_key_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+	{
+		Ok(Self::Aes(bytes.try_into()?))
 	}
 }
 

@@ -6,7 +6,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
 use crate::error::Error;
-use crate::{get_rand, into_bytes_single_value, try_from_bytes_single_value, SignKey, VerifyKey};
+use crate::{crypto_alg_str_impl, get_rand, into_bytes_single_value, try_from_bytes_single_value, SignKey, VerifyKey};
 
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
@@ -15,13 +15,7 @@ pub const ED25519_OUTPUT: &str = "ED25519";
 
 pub struct Ed25519Sig([u8; 64]);
 
-impl CryptoAlg for Ed25519Sig
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ED25519_OUTPUT
-	}
-}
+crypto_alg_str_impl!(Ed25519Sig, ED25519_OUTPUT);
 
 impl Into<crate::Signature> for Ed25519Sig
 {
@@ -49,14 +43,7 @@ impl Sig for Ed25519Sig
 pub struct Ed25519VerifyK([u8; 32]);
 
 try_from_bytes_single_value!(Ed25519VerifyK);
-
-impl CryptoAlg for Ed25519VerifyK
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ED25519_OUTPUT
-	}
-}
+crypto_alg_str_impl!(Ed25519VerifyK, ED25519_OUTPUT);
 
 impl Into<VerifyKey> for Ed25519VerifyK
 {
@@ -89,14 +76,7 @@ impl VerifyK for Ed25519VerifyK
 pub struct Ed25519SignK([u8; 32]);
 
 try_from_bytes_single_value!(Ed25519SignK);
-
-impl CryptoAlg for Ed25519SignK
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		ED25519_OUTPUT
-	}
-}
+crypto_alg_str_impl!(Ed25519SignK, ED25519_OUTPUT);
 
 impl Into<SignKey> for Ed25519SignK
 {

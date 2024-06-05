@@ -6,7 +6,7 @@ use sha2::Sha256;
 use crate::alg::hmac::HmacKey;
 use crate::alg::sym::aes_gcm::AesKey;
 use crate::cryptomat::{CryptoAlg, SearchableKey, SymKey};
-use crate::{alg, try_from_bytes_single_value, Error};
+use crate::{alg, as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 pub const HMAC_SHA256_OUTPUT: &str = "HMAC-SHA256";
 
@@ -15,20 +15,15 @@ type HmacSha256 = Hmac<Sha256>;
 pub struct HmacSha256Key(AesKey);
 
 try_from_bytes_single_value!(HmacSha256Key);
+try_from_bytes_owned_single_value!(HmacSha256Key);
+as_ref_bytes_single_value!(HmacSha256Key);
+crypto_alg_str_impl!(HmacSha256Key, HMAC_SHA256_OUTPUT);
 
 impl Into<HmacKey> for HmacSha256Key
 {
 	fn into(self) -> HmacKey
 	{
 		HmacKey::HmacSha256(self)
-	}
-}
-
-impl CryptoAlg for HmacSha256Key
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		HMAC_SHA256_OUTPUT
 	}
 }
 
