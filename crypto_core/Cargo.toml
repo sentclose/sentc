@@ -30,7 +30,7 @@ pqc_kyber = { version = "0.7.1", features = ["90s-fixslice", "std"] }
 pqc_dilithium_edit = { version = "0.2.0", features = ["mode3", "aes", "random_signing"] }
 
 [features]
-default = ["aes", "ecies_kyber_hybrid", "hmac_sha256", "ope_sort", "default_env"]
+default = ["aes", "ecies_kyber_hybrid", "ed25519_dilithium_hybrid", "hmac_sha256", "ope_sort", "argon2_hash", "default_env"]
 
 # symmetric encryption
 aes = []
@@ -48,6 +48,9 @@ hmac_sha256 = []
 
 # sortable
 ope_sort = []
+
+#pw hash
+argon2_hash = []
 
 # Descibe the used env for the crng
 default_env = []
