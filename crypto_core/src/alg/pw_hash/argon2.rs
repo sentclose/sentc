@@ -5,21 +5,10 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha256};
 
-use crate::alg::sym::aes_gcm::{decrypt_with_generated_key as aes_decrypt, encrypt_with_generated_key as aes_encrypt, AES_GCM_OUTPUT};
+use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt, AES_GCM_OUTPUT};
+use crate::cryptomat::{PwHash, SymKey};
 use crate::error::Error;
-use crate::{
-	get_rand,
-	ClientRandomValue,
-	DeriveAuthKeyForAuth,
-	DeriveKeyOutput,
-	DeriveKeysForAuthOutput,
-	DeriveMasterKeyForAuth,
-	HashedAuthenticationKey,
-	MasterKeyInfo,
-	PasswordEncryptOutput,
-	PasswordEncryptSalt,
-	SymKey,
-};
+use crate::{get_rand, Aes256GcmKey, ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, HashedAuthenticationKey, PasswordEncryptSalt};
 
 const RECOMMENDED_LENGTH: usize = 16;
 
@@ -29,72 +18,57 @@ const SALT_HASH_INPUT_LENGTH: usize = RECOMMENDED_LENGTH + SALT_STRING_MAX_LENGT
 
 const DERIVED_KEY_LENGTH: usize = 64;
 
-const HALF_DERIVED_KEY_LENGTH: usize = DERIVED_KEY_LENGTH / 2;
+pub(super) const HALF_DERIVED_KEY_LENGTH: usize = DERIVED_KEY_LENGTH / 2;
 
 pub const ARGON_2_OUTPUT: &str = "ARGON-2-SHA256";
 
-/**
-# Prepare registration
+pub struct Argon2PwHash;
 
-*/
-pub(crate) fn derived_keys_from_password(password: &[u8], master_key: &[u8]) -> Result<DeriveKeyOutput, Error>
+impl PwHash for Argon2PwHash
 {
-	derive_key_with_pw_internally(password, master_key, &mut get_rand())
-}
+	fn derived_keys_from_password<M: SymKey>(
+		&self,
+		password: &[u8],
+		master_key: &M,
+	) -> Result<(ClientRandomValue, HashedAuthenticationKey, Vec<u8>, &'static str), Error>
+	{
+		let (client_random_value, hashed_authentication_key_16bytes, encrypted_master_key, alg) =
+			derive_key_with_pw_internally(password, master_key.as_ref(), &mut get_rand())?;
 
-/**
-# Prepare the login
+		Ok((
+			ClientRandomValue::Argon2(client_random_value),
+			HashedAuthenticationKey::Argon2(hashed_authentication_key_16bytes),
+			encrypted_master_key,
+			alg,
+		))
+	}
 
-1. Takes the salt from the api (after sending the username)
-2. derived the encryption key (for the master key) and the auth key from the password and the salt
-3. return the encryption key and
-	return the auth key to send it to the server so the server can check the hashed auth key
-*/
-pub(crate) fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8]) -> Result<DeriveKeysForAuthOutput, Error>
-{
-	let (master_key_encryption_key, auth_key) = derived_keys(password, salt_bytes)?;
+	fn derive_keys_for_auth(&self, password: &[u8], salt_bytes: &[u8]) -> Result<(DeriveMasterKeyForAuth, DeriveAuthKeyForAuth), Error>
+	{
+		let (master_key_encryption_key, auth_key) = derived_keys(password, salt_bytes)?;
 
-	Ok(DeriveKeysForAuthOutput {
-		master_key_encryption_key: DeriveMasterKeyForAuth::Argon2(master_key_encryption_key),
-		auth_key: DeriveAuthKeyForAuth::Argon2(auth_key),
-	})
-}
+		Ok((
+			DeriveMasterKeyForAuth::Argon2(master_key_encryption_key),
+			DeriveAuthKeyForAuth::Argon2(auth_key),
+		))
+	}
 
-/**
-# Done Login
+	fn password_to_encrypt(&self, password: &[u8]) -> Result<(PasswordEncryptSalt, impl SymKey), Error>
+	{
+		let (aes_key_for_encrypt, salt) = derived_single_key(password, &mut get_rand())?;
 
-split login into two parts:
-1. is prepare, after sending username to the server and before sending auth key
-2. is decrypt the master key
-3. export it as Sym Key enum
-*/
-pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENGTH], encrypted_master_key: &[u8]) -> Result<SymKey, Error>
-{
-	let decrypted_master_key = aes_decrypt(derived_encryption_key, encrypted_master_key)?;
+		Ok((
+			PasswordEncryptSalt::Argon2(salt),
+			Aes256GcmKey::from_raw_key(aes_key_for_encrypt),
+		))
+	}
 
-	let decrypted_master_key: [u8; 32] = decrypted_master_key
-		.try_into()
-		.map_err(|_| Error::KeyDecryptFailed)?;
+	fn password_to_decrypt(&self, password: &[u8], salt: &[u8]) -> Result<impl SymKey, Error>
+	{
+		let key = get_derived_single_key(password, salt)?;
 
-	Ok(SymKey::Aes(decrypted_master_key))
-}
-
-pub(crate) fn password_to_encrypt(password: &[u8]) -> Result<(PasswordEncryptOutput, SymKey), Error>
-{
-	let (aes_key_for_encrypt, salt) = derived_single_key(password, &mut get_rand())?;
-
-	Ok((
-		PasswordEncryptOutput {
-			salt: PasswordEncryptSalt::Argon2(salt),
-			alg: ARGON_2_OUTPUT,
-		},
-		SymKey::Aes(aes_key_for_encrypt),
-	))
-}
-
-pub(crate) fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<[u8; 32], Error>
-{
-	get_derived_single_key(password, salt)
+		Ok(Aes256GcmKey::from_raw_key(key))
+	}
 }
 
 /**
@@ -102,17 +76,37 @@ pub(crate) fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<[u8; 3
 
 and keep only the first 16 bytes. This is used for registration and done login on the server.
 */
-pub(crate) fn get_hashed_auth_key(derived_authentication_key_bytes: &[u8]) -> Result<HashedAuthenticationKey, Error>
+pub(super) fn get_hashed_auth_key(derived_authentication_key_bytes: &[u8]) -> Result<HashedAuthenticationKey, Error>
 {
 	let hashed_authentication_key_16bytes = hash_auth_key(derived_authentication_key_bytes)?;
 
 	Ok(HashedAuthenticationKey::Argon2(hashed_authentication_key_16bytes))
 }
 
+/**
+# Done Login
+
+split login into two parts:
+1. is prepared, after sending username to the server and before sending auth key
+2. is decrypt the master key
+3. export it as Sym Key enum
+ */
+pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENGTH], encrypted_master_key: &[u8]) -> Result<impl SymKey, Error>
+{
+	let decrypted_master_key = aes_decrypt(derived_encryption_key, encrypted_master_key)?;
+
+	Aes256GcmKey::try_from(&decrypted_master_key[..])
+}
+
 //__________________________________________________________________________________________________
 //internally function
 
-fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master_key: &[u8], rng: &mut R) -> Result<DeriveKeyOutput, Error>
+#[allow(clippy::type_complexity)]
+fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(
+	password: &[u8],
+	master_key: &[u8],
+	rng: &mut R,
+) -> Result<([u8; 16], [u8; 16], Vec<u8>, &'static str), Error>
 {
 	//used for register and pw change
 
@@ -126,15 +120,12 @@ fn derive_key_with_pw_internally<R: CryptoRng + RngCore>(password: &[u8], master
 
 	let encrypted_master_key = aes_encrypt(&derived_encryption_key_bytes, master_key)?;
 
-	Ok(DeriveKeyOutput {
-		client_random_value: ClientRandomValue::Argon2(client_random_value),
-		hashed_authentication_key_bytes: HashedAuthenticationKey::Argon2(hashed_authentication_key_16bytes),
-		alg: ARGON_2_OUTPUT,
-		master_key_info: MasterKeyInfo {
-			encrypted_master_key,
-			alg: AES_GCM_OUTPUT,
-		},
-	})
+	Ok((
+		client_random_value,
+		hashed_authentication_key_16bytes,
+		encrypted_master_key,
+		AES_GCM_OUTPUT,
+	))
 }
 
 fn hash_auth_key(derived_authentication_key_bytes: &[u8]) -> Result<[u8; 16], Error>
@@ -189,7 +180,7 @@ fn derived_keys(password: &[u8], salt_bytes: &[u8]) -> Result<([u8; HALF_DERIVED
 }
 
 //this is pub crate because we need this function in later tests
-pub(crate) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH], add_str: &str) -> Vec<u8>
+pub(super) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH], add_str: &str) -> Vec<u8>
 {
 	//on server side, put the user identifier as add str to get unique checking time
 	let mut salt_string = "sentc".to_owned() + add_str;
@@ -203,8 +194,8 @@ pub(crate) fn generate_salt(client_random_value: [u8; RECOMMENDED_LENGTH], add_s
 
 	// Concatenate the Client Random Value bytes to the end of the salt string bytes
 	let mut salt_input_bytes_concatenated = Vec::with_capacity(SALT_HASH_INPUT_LENGTH);
-	salt_input_bytes_concatenated.extend(salt_string);
-	salt_input_bytes_concatenated.extend(client_random_value);
+	salt_input_bytes_concatenated.extend_from_slice(salt_string);
+	salt_input_bytes_concatenated.extend_from_slice(&client_random_value);
 
 	//create a sha 256
 	let mut hasher = Sha256::new();
@@ -265,53 +256,36 @@ mod test
 
 	use super::*;
 	use crate::alg::sym::aes_gcm::AES_GCM_OUTPUT;
-	use crate::{alg, SymKey};
 
 	#[test]
 	fn test_derived_keys_from_password()
 	{
-		let master_key = alg::sym::aes_gcm::generate_key().unwrap();
+		let key = Aes256GcmKey::generate().unwrap();
 
-		let key = match master_key.key {
-			SymKey::Aes(k) => k,
-		};
+		let (client_random_value, _hashed_authentication_key_bytes, _encrypted_master_key, encrypted_master_key_alg) = Argon2PwHash
+			.derived_keys_from_password(b"abc", &key)
+			.unwrap();
 
-		let out = derived_keys_from_password(b"abc", &key).unwrap();
-
-		assert_eq!(out.alg, ARGON_2_OUTPUT);
-		assert_eq!(out.master_key_info.alg, AES_GCM_OUTPUT);
+		assert_eq!(client_random_value.get_alg_str(), ARGON_2_OUTPUT);
+		assert_eq!(encrypted_master_key_alg, AES_GCM_OUTPUT);
 	}
 
 	#[test]
 	fn test_derive_keys_for_auth()
 	{
 		//prepare register input
-		let master_key = alg::sym::aes_gcm::generate_key().unwrap();
+		let key = Aes256GcmKey::generate().unwrap();
 
-		let key = match master_key.key {
-			SymKey::Aes(k) => k,
-		};
-
-		let out = derived_keys_from_password(b"abc", &key).unwrap();
-
-		let out_random_value = match out.client_random_value {
-			ClientRandomValue::Argon2(r) => r,
-		};
-
-		let out_hashed_auth_key = match out.hashed_authentication_key_bytes {
-			HashedAuthenticationKey::Argon2(k) => k,
-		};
+		let (client_random_value, hashed_authentication_key_bytes, encrypted_master_key, _encrypted_master_key_alg) = Argon2PwHash
+			.derived_keys_from_password(b"abc", &key)
+			.unwrap();
 
 		//create fake salt. this will be created on the server with the client random value
-		let salt = generate_salt(out_random_value, "");
+		let salt = client_random_value.generate_salt("");
 
-		let derived_out = derive_keys_for_auth(b"abc", &salt).unwrap();
+		let (master_key_encryption_key, auth_key) = Argon2PwHash.derive_keys_for_auth(b"abc", &salt).unwrap();
 
-		let master_key_key = match &derived_out.master_key_encryption_key {
-			DeriveMasterKeyForAuth::Argon2(k) => k,
-		};
-
-		let auth_key = match &derived_out.auth_key {
+		let auth_key = match &auth_key {
 			DeriveAuthKeyForAuth::Argon2(k) => k,
 		};
 
@@ -322,14 +296,15 @@ mod test
 		// Keep only the first 128 bits (16 bytes) of the Hashed Authentication Key
 		let hashed_authentication_key_16bytes: [u8; 16] = result[..16].as_ref().try_into().unwrap();
 
-		assert_eq!(hashed_authentication_key_16bytes, out_hashed_auth_key);
-
-		let decrypted_master_key = get_master_key(master_key_key, &out.master_key_info.encrypted_master_key).unwrap();
-		let decrypted_master_key = match decrypted_master_key {
-			SymKey::Aes(k) => k,
+		let hashed_authentication_key_bytes = match hashed_authentication_key_bytes {
+			HashedAuthenticationKey::Argon2(k) => k,
 		};
 
-		assert_eq!(key, decrypted_master_key);
+		assert_eq!(hashed_authentication_key_16bytes, hashed_authentication_key_bytes);
+
+		master_key_encryption_key
+			.get_master_key(&encrypted_master_key)
+			.unwrap();
 	}
 
 	#[test]
@@ -338,18 +313,22 @@ mod test
 		let test = "plaintext message";
 
 		//encrypt a value with a password, in prod this might be the key of the content
-		let (salt, aes_key_for_encrypt) = password_to_encrypt(b"my fancy password").unwrap();
+		let (salt, aes_key_for_encrypt) = Argon2PwHash
+			.password_to_encrypt(b"my fancy password")
+			.unwrap();
 
-		let (salt, aes_key_for_encrypt) = match (salt.salt, aes_key_for_encrypt) {
-			(PasswordEncryptSalt::Argon2(s), SymKey::Aes(k)) => (s, k),
+		let salt = match salt {
+			PasswordEncryptSalt::Argon2(s) => s,
 		};
 
-		let encrypted = alg::sym::aes_gcm::encrypt_with_generated_key(&aes_key_for_encrypt, test.as_ref()).unwrap();
+		let encrypted = aes_key_for_encrypt.encrypt(test.as_ref()).unwrap();
 
 		//decrypt a value with password
-		let aes_key_for_decrypt = password_to_decrypt(b"my fancy password", &salt).unwrap();
+		let aes_key_for_decrypt = Argon2PwHash
+			.password_to_decrypt(b"my fancy password", &salt)
+			.unwrap();
 
-		let decrypted = alg::sym::aes_gcm::decrypt_with_generated_key(&aes_key_for_decrypt, &encrypted).unwrap();
+		let decrypted = aes_key_for_decrypt.decrypt(&encrypted).unwrap();
 
 		let str = from_utf8(&decrypted).unwrap();
 
