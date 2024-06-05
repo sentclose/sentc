@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use crate::alg::asym::ecies::{EciesPk, EciesSk};
 use crate::alg::asym::ecies_kyber_hybrid::{EciesKyberHybridPk, EciesKyberHybridSk};
 use crate::alg::asym::pqc_kyber::{KyberPk, KyberSk};
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey};
+use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::{Error, Signature};
 
 pub(crate) mod ecies;
@@ -63,6 +63,11 @@ impl Pk for PublicKey
 		};
 
 		Ok(out)
+	}
+
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>
+	{
+		deref_macro!(self, verify_public_key, verify_key, sig)
 	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>

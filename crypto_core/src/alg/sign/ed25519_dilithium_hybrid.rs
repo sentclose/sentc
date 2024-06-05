@@ -145,7 +145,7 @@ impl SignK for Ed25519DilithiumHybridSignK
 {
 	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
-		let key = &[&self.x[..], &self.k].concat();
+		let key = [&self.x[..], &self.k].concat();
 
 		master_key.encrypt(&key)
 	}
@@ -317,7 +317,7 @@ mod test
 	#[test]
 	fn test_safety_number()
 	{
-		let (sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
@@ -333,8 +333,8 @@ mod test
 	#[test]
 	fn test_combined_safety_number()
 	{
-		let (sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
-		let (sk1, vk1) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
+		let (_, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
+		let (_, vk1) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {

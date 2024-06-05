@@ -281,7 +281,7 @@ mod test
 	#[test]
 	fn test_safety_number()
 	{
-		let (sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
@@ -297,8 +297,8 @@ mod test
 	#[test]
 	fn test_combined_safety_number()
 	{
-		let (sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
-		let (sk1, vk1) = Ed25519KeyPair::generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
+		let (_sk1, vk1) = Ed25519KeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {

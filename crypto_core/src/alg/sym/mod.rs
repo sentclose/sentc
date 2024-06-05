@@ -58,6 +58,14 @@ impl CryptoAlg for SymmetricKey
 	}
 }
 
+impl AsRef<[u8]> for SymmetricKey
+{
+	fn as_ref(&self) -> &[u8]
+	{
+		deref_macro!(self, as_ref)
+	}
+}
+
 impl SymKey for SymmetricKey
 {
 	fn generate() -> Result<impl SymKey, Error>

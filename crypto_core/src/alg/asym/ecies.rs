@@ -6,7 +6,7 @@ use sha2::Sha256;
 use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
 use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt, AesKey};
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey};
+use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::error::Error;
 use crate::{get_rand, try_from_bytes_single_value, SecretKey};
 
@@ -41,6 +41,11 @@ impl Pk for EciesPk
 	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
 	{
 		sign_key.sign_only(&self.0)
+	}
+
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>
+	{
+		verify_key.verify_only(sig, &self.0)
 	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>

@@ -4,7 +4,7 @@ use pqc_kyber::{decapsulate, encapsulate, keypair, PublicKey, SecretKey, KYBER_C
 use rand_core::{CryptoRng, RngCore};
 
 use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt};
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey};
+use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::{get_rand, try_from_bytes_single_value, Error};
 
 pub const KYBER_OUTPUT: &str = "KYBER_768";
@@ -34,6 +34,11 @@ impl Pk for KyberPk
 	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
 	{
 		sign_key.sign_only(&self.0)
+	}
+
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>
+	{
+		verify_key.verify_only(sig, &self.0)
 	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>

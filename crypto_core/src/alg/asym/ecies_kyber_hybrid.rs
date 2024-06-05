@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use pqc_kyber::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey};
+use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::{get_rand, Error, PublicKey, SecretKey};
 
 pub const ECIES_KYBER_HYBRID_OUTPUT: &str = "ECIES-ed25519_KYBER_768";
@@ -52,6 +52,13 @@ impl Pk for EciesKyberHybridPk
 		let k = [&self.x[..], &self.k[..]].concat();
 
 		sign_key.sign_only(k)
+	}
+
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>
+	{
+		let k = [&self.x[..], &self.k[..]].concat();
+
+		verify_key.verify_only(sig, &k)
 	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
@@ -134,11 +141,11 @@ impl StaticKeyPair for EciesKyberHybridKeyPair
 
 		Ok((
 			EciesKyberHybridSk {
-				x: x_pk.to_bytes(),
+				x: x_sk.to_bytes(),
 				k: k_sk,
 			},
 			EciesKyberHybridPk {
-				x: x_sk.to_bytes(),
+				x: x_pk.to_bytes(),
 				k: k_pk,
 			},
 		))

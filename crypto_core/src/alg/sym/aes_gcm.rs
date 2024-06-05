@@ -17,6 +17,14 @@ pub(crate) type AesKey = [u8; 32];
 
 pub struct Aes256GcmKey(AesKey);
 
+impl Aes256GcmKey
+{
+	pub(crate) fn from_raw_key(raw: AesKey) -> Self
+	{
+		Self(raw)
+	}
+}
+
 try_from_bytes_single_value!(Aes256GcmKey);
 
 impl CryptoAlg for Aes256GcmKey
@@ -32,6 +40,14 @@ impl Into<SymmetricKey> for Aes256GcmKey
 	fn into(self) -> SymmetricKey
 	{
 		SymmetricKey::Aes(self)
+	}
+}
+
+impl AsRef<[u8]> for Aes256GcmKey
+{
+	fn as_ref(&self) -> &[u8]
+	{
+		&self.0
 	}
 }
 

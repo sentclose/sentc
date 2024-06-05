@@ -250,7 +250,7 @@ mod test
 	#[test]
 	fn test_safety_number()
 	{
-		let (sk, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
+		let (_, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
@@ -266,8 +266,8 @@ mod test
 	#[test]
 	fn test_combined_safety_number()
 	{
-		let (sk, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
-		let (sk1, vk1) = DilithiumKeyPair::generate_key_pair().unwrap();
+		let (_, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
+		let (_, vk1) = DilithiumKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
