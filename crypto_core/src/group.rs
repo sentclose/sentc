@@ -84,7 +84,7 @@ fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
 		let public_key_sig = group_pk.sign_public_key(&sign_key)?.into();
 
 		(
-			Some(verify_key),
+			Some(verify_key.into()),
 			Some(encrypted_sign_key),
 			Some(public_key_sig),
 			Some(sign_key.get_alg_str()),
@@ -95,7 +95,7 @@ fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
 		encrypted_private_group_key,
 		encrypted_group_key,
 		creators_public_key.get_alg_str(),
-		verify_key.map(|i| i.into()),
+		verify_key,
 		encrypted_sign_key,
 		public_key_sig,
 		keypair_sign_alg,
