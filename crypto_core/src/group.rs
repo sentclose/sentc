@@ -259,9 +259,9 @@ let user_pk = Pk::Ecies([0u8; 32]); //get it from the server
 let new_user_out = prepare_group_keys_for_new_member(&user_pk, &group_keys);
 ```
 */
-pub fn prepare_group_keys_for_new_member<P: Pk, S: SymKey>(
+pub fn prepare_group_keys_for_new_member<P: Pk>(
 	requester_public_key: &P,
-	group_keys: &[&S],
+	group_keys: &[&impl SymKey],
 ) -> Result<Vec<PrepareGroupKeysForNewMemberOutput>, Error>
 {
 	//encrypt all group keys with the requester public key, so he / she can access the data
