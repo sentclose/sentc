@@ -196,6 +196,19 @@ pub enum Signature
 	Ed25519DilithiumHybrid(Ed25519DilithiumHybridSig),
 }
 
+impl Signature
+{
+	pub fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'a [u8], &'a [u8]), Error>
+	{
+		match alg {
+			ed25519::ED25519_OUTPUT => ed25519::split_sig_and_data(data_with_sign),
+			pqc_dilithium::DILITHIUM_OUTPUT => pqc_dilithium::split_sig_and_data(data_with_sign),
+			ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT => ed25519_dilithium_hybrid::split_sig_and_data(data_with_sign),
+			_ => Err(Error::AlgNotFound),
+		}
+	}
+}
+
 crypto_alg_impl!(Signature);
 get_inner_key!(Signature, Ed25519DilithiumHybridSig);
 
