@@ -23,6 +23,10 @@ pub const DILITHIUM_OUTPUT: &str = "DILITHIUM_3";
 pub struct DilithiumSig([u8; SIGNBYTES]);
 
 crypto_alg_str_impl!(DilithiumSig, DILITHIUM_OUTPUT);
+try_from_bytes_single_value!(DilithiumSig);
+try_from_bytes_owned_single_value!(DilithiumSig);
+as_ref_bytes_single_value!(DilithiumSig);
+into_bytes_single_value!(DilithiumSig);
 
 impl Into<Signature> for DilithiumSig
 {
@@ -31,8 +35,6 @@ impl Into<Signature> for DilithiumSig
 		Signature::Dilithium(self)
 	}
 }
-
-into_bytes_single_value!(DilithiumSig);
 
 impl Sig for DilithiumSig
 {

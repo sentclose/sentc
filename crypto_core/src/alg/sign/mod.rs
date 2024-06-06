@@ -197,6 +197,7 @@ pub enum Signature
 }
 
 crypto_alg_impl!(Signature);
+get_inner_key!(Signature, Ed25519DilithiumHybridSig);
 
 impl Into<Vec<u8>> for Signature
 {

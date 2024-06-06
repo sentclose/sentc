@@ -15,6 +15,7 @@ pub struct Ed25519DilithiumHybridSig
 }
 
 crypto_alg_str_impl!(Ed25519DilithiumHybridSig, ED25519_DILITHIUM_HYBRID_OUTPUT);
+hybrid_key_import_export!(Ed25519DilithiumHybridSig);
 
 impl Into<Signature> for Ed25519DilithiumHybridSig
 {

@@ -25,6 +25,10 @@ pub const ED25519_OUTPUT: &str = "ED25519";
 pub struct Ed25519Sig([u8; 64]);
 
 crypto_alg_str_impl!(Ed25519Sig, ED25519_OUTPUT);
+try_from_bytes_single_value!(Ed25519Sig);
+try_from_bytes_owned_single_value!(Ed25519Sig);
+as_ref_bytes_single_value!(Ed25519Sig);
+into_bytes_single_value!(Ed25519Sig);
 
 impl Into<crate::Signature> for Ed25519Sig
 {
@@ -33,8 +37,6 @@ impl Into<crate::Signature> for Ed25519Sig
 		crate::Signature::Ed25519(self)
 	}
 }
-
-into_bytes_single_value!(Ed25519Sig);
 
 impl Sig for Ed25519Sig
 {
