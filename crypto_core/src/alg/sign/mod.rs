@@ -147,15 +147,8 @@ impl SignK for SignKey
 
 impl SignKeyPair for SignKey
 {
-	#[cfg(feature = "ed25519_dilithium_hybrid")]
-	type SignKey = Ed25519DilithiumHybridSignK;
-	#[cfg(feature = "ed25519")]
-	type SignKey = Ed25519SignK;
-
-	#[cfg(feature = "ed25519_dilithium_hybrid")]
-	type VerifyKey = Ed25519DilithiumHybridVerifyKey;
-	#[cfg(feature = "ed25519")]
-	type VerifyKey = Ed25519VerifyK;
+	type SignKey = Self;
+	type VerifyKey = VerifyKey;
 
 	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
@@ -165,7 +158,7 @@ impl SignKeyPair for SignKey
 		#[cfg(feature = "ed25519")]
 		let (sk, vk) = ed25519::Ed25519KeyPair::generate_key_pair()?;
 
-		Ok((sk, vk))
+		Ok((sk.into(), vk.into()))
 	}
 }
 

@@ -141,15 +141,8 @@ impl SkComposer for SecretKey
 
 impl StaticKeyPair for SecretKey
 {
-	#[cfg(feature = "ecies_kyber_hybrid")]
-	type SecretKey = EciesKyberHybridSk;
-	#[cfg(feature = "ecies")]
-	type SecretKey = EciesSk;
-
-	#[cfg(feature = "ecies_kyber_hybrid")]
-	type PublicKey = EciesKyberHybridPk;
-	#[cfg(feature = "ecies")]
-	type PublicKey = EciesPk;
+	type SecretKey = Self;
+	type PublicKey = PublicKey;
 
 	fn generate_static_keypair() -> Result<(Self::SecretKey, Self::PublicKey), Error>
 	{
@@ -159,6 +152,6 @@ impl StaticKeyPair for SecretKey
 		#[cfg(feature = "ecies")]
 		let (sk, pk) = ecies::EciesKeyPair::generate_static_keypair()?;
 
-		Ok((sk, pk))
+		Ok((sk.into(), pk.into()))
 	}
 }

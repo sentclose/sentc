@@ -78,12 +78,11 @@ impl SearchableKey for HmacKey
 
 impl SearchableKeyGen for HmacKey
 {
-	#[cfg(feature = "hmac_sha256")]
-	type SearchableKey = HmacSha256Key;
+	type SearchableKey = Self;
 
 	fn generate() -> Result<Self::SearchableKey, Error>
 	{
 		#[cfg(feature = "hmac_sha256")]
-		HmacSha256Key::generate()
+		Ok(HmacSha256Key::generate()?.into())
 	}
 }

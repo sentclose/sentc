@@ -4,7 +4,7 @@ use ope::{get_ope, OpeKey};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::cryptomat::{CryptoAlg, SortableKey, SortableKeyGen, SymKey};
-use crate::{as_ref_bytes_single_value, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
+use crate::{as_ref_bytes_single_value, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error, SortKeys};
 
 pub const OPE_OUT: &str = "OPE-16";
 
@@ -37,6 +37,14 @@ impl SortableKey for OpeSortableKey
 
 		let ope = get_ope(&self.0);
 		Ok(ope.encrypt(data)?)
+	}
+}
+
+impl Into<SortKeys> for OpeSortableKey
+{
+	fn into(self) -> SortKeys
+	{
+		SortKeys::Ope(self)
 	}
 }
 

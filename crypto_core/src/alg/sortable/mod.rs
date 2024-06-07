@@ -73,12 +73,11 @@ impl SortableKey for SortKeys
 
 impl SortableKeyGen for SortKeys
 {
-	#[cfg(feature = "ope_sort")]
-	type SortableKey = OpeSortableKey;
+	type SortableKey = Self;
 
 	fn generate() -> Result<Self::SortableKey, Error>
 	{
 		#[cfg(feature = "ope_sort")]
-		OpeSortableKey::generate()
+		Ok(OpeSortableKey::generate()?.into())
 	}
 }

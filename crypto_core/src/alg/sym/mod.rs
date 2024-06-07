@@ -56,13 +56,12 @@ impl SymKeyComposer for SymmetricKey
 
 impl SymKeyGen for SymmetricKey
 {
-	#[cfg(feature = "aes")]
-	type SymmetricKey = Aes256GcmKey;
+	type SymmetricKey = Self;
 
 	fn generate() -> Result<Self::SymmetricKey, Error>
 	{
 		#[cfg(feature = "aes")]
-		Aes256GcmKey::generate()
+		Ok(Aes256GcmKey::generate()?.into())
 	}
 }
 
