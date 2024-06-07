@@ -1,447 +1,294 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerOutput};
-use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use base64ct::{Base64, Encoding};
+use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerOutput};
+use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::SymKeyId;
-use sentc_crypto_utils::keys::SignKeyFormatInt;
+use sentc_crypto_core::cryptomat::{CryptoAlg, SymKeyComposer, SymKeyGen};
+use sentc_crypto_core::SymmetricKey as CoreSymmetricKey;
+use sentc_crypto_utils::keys::{PublicKey, SecretKey, SymmetricKey};
+use serde::{Deserialize, Serialize};
 
-use crate::crypto::{
-	decrypt_asymmetric_internally,
-	decrypt_raw_asymmetric_internally,
-	decrypt_raw_symmetric_internally,
-	decrypt_raw_symmetric_with_aad_internally,
-	decrypt_string_asymmetric_internally,
-	decrypt_string_symmetric_internally,
-	decrypt_string_symmetric_with_aad_internally,
-	decrypt_sym_key_by_private_key_internally,
-	decrypt_sym_key_internally,
-	decrypt_symmetric_internally,
-	decrypt_symmetric_with_aad_internally,
-	deserialize_head_from_string_internally,
-	done_fetch_sym_key_by_private_key_internally,
-	done_fetch_sym_key_internally,
-	done_fetch_sym_keys_internally,
-	done_register_sym_key_internally,
-	encrypt_asymmetric_internally,
-	encrypt_raw_asymmetric_internally,
-	encrypt_raw_symmetric_internally,
-	encrypt_raw_symmetric_with_aad_internally,
-	encrypt_string_asymmetric_internally,
-	encrypt_string_symmetric_internally,
-	encrypt_string_symmetric_with_aad_internally,
-	encrypt_symmetric_internally,
-	encrypt_symmetric_with_aad_internally,
-	generate_non_register_sym_key_by_public_key_internally,
-	generate_non_register_sym_key_internally,
-	prepare_register_sym_key_by_public_key_internally,
-	prepare_register_sym_key_internally,
-	split_head_and_encrypted_data_internally,
-	split_head_and_encrypted_string_internally,
-};
+use crate::util::public::handle_server_response;
 use crate::SdkError;
 
-pub(crate) fn prepare_sign_key(sign_key: Option<&str>) -> Result<Option<SignKeyFormatInt>, SdkError>
-{
-	let sign_key = match sign_key {
-		None => None,
-		Some(k) => Some(k.parse()?),
-	};
+/**
+Get the head and the data.
 
-	Ok(sign_key)
+This can not only be used internally, to get the used key_id
+ */
+pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &[u8]), SdkError>
+{
+	Ok(sentc_crypto_utils::keys::split_head_and_encrypted_data(
+		data_with_head,
+	)?)
 }
 
-pub(crate) fn prepare_verify_key(verify_key_data: Option<&str>) -> Result<Option<UserVerifyKeyData>, SdkError>
-{
-	let verify_key = match verify_key_data {
-		None => None,
-		Some(k) => {
-			let k = UserVerifyKeyData::from_string(k)?;
+/**
+Get head from string.
 
-			Some(k)
+Just the head because of lifetime issues and we need the full data for encrypt and decrypt
+ */
+pub fn split_head_and_encrypted_string(encrypted_data_with_head: &str) -> Result<EncryptedHead, SdkError>
+{
+	let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
+
+	let (head, _) = split_head_and_encrypted_data(&encrypted)?;
+
+	Ok(head)
+}
+
+pub fn put_head_and_encrypted_data<T: Serialize>(head: &T, encrypted: &[u8]) -> Result<Vec<u8>, SdkError>
+{
+	let head = serde_json::to_string(head).map_err(|_| SdkError::JsonToStringFailed)?;
+
+	let mut out = Vec::with_capacity(head.len() + 1 + encrypted.len());
+
+	out.extend(head.as_bytes());
+	out.extend([0u8]);
+	out.extend(encrypted);
+
+	Ok(out)
+}
+
+/**
+Get the head from string
+
+This can be used to get the head struct when getting the head as string, like raw decrypt in the non rust sdk.
+ */
+pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, SdkError>
+{
+	Ok(EncryptedHead::from_string(head)?)
+}
+
+//__________________________________________________________________________________________________
+
+/**
+# Prepare key registration on the server
+
+1. create a new symmetric key
+2. export the symmetric key in base64
+3. encrypt the symmetric key with the master key
+4. return the server input
+ */
+pub(crate) fn prepare_register_sym_key(master_key: &SymmetricKey) -> Result<(String, SymmetricKey), SdkError>
+{
+	let (out, key) = prepare_registered_sym_key_internally_private(master_key)?;
+
+	Ok((out.to_string().map_err(|_| SdkError::JsonToStringFailed)?, key))
+}
+
+fn prepare_registered_sym_key_internally_private(master_key: &SymmetricKey) -> Result<(GeneratedSymKeyHeadServerInput, SymmetricKey), SdkError>
+{
+	let (encrypted_key, sym_key_alg, key) = SymmetricKey::generate_symmetric_with_master_key(&master_key.key)?;
+
+	let encrypted_key_string = Base64::encode_string(&encrypted_key);
+
+	let sym_key_format = SymmetricKey {
+		key,
+		key_id: "".to_string(),
+	};
+
+	Ok((
+		GeneratedSymKeyHeadServerInput {
+			encrypted_key_string,
+			alg: sym_key_alg.to_string(),
+			master_key_id: master_key.key_id.to_string(),
 		},
+		sym_key_format,
+	))
+}
+
+/**
+In two fn to avoid an extra request to get the key with the id
+ */
+pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &mut SymmetricKey)
+{
+	//put the key id to the non-registered key
+	non_registered_sym_key.key_id = key_id.to_string();
+}
+
+/**
+# Prepare key register
+
+but this time encrypted by a users public key
+
+Return the non-registered version but only to register the key on the server to get the id,
+then put the id back in
+ */
+pub fn prepare_register_sym_key_by_public_key(reply_public_key: &UserPublicKeyData) -> Result<(String, SymmetricKey), SdkError>
+{
+	let (out, key) = prepare_register_sym_key_by_public_key_internally_private(reply_public_key)?;
+
+	Ok((out.to_string().map_err(|_| SdkError::JsonToStringFailed)?, key))
+}
+
+fn prepare_register_sym_key_by_public_key_internally_private(
+	reply_public_key: &UserPublicKeyData,
+) -> Result<(GeneratedSymKeyHeadServerInput, SymmetricKey), SdkError>
+{
+	let public_key = PublicKey::try_from(reply_public_key)?;
+
+	let (encrypted_key, key) = CoreSymmetricKey::generate_symmetric_with_public_key(&public_key.key)?;
+
+	let encrypted_key_string = Base64::encode_string(&encrypted_key);
+
+	let sym_key_format = SymmetricKey {
+		key,
+		key_id: "".to_string(),
 	};
 
-	Ok(verify_key)
+	Ok((
+		GeneratedSymKeyHeadServerInput {
+			encrypted_key_string,
+			alg: key.get_alg_str().to_string(),
+			master_key_id: public_key.key_id,
+		},
+		sym_key_format,
+	))
 }
 
-pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), String>
+/**
+# Get the key from server fetch
+
+Decrypted the server output with the master key
+ */
+pub fn done_fetch_sym_key(master_key: &SymmetricKey, server_out: &str, non_registered: bool) -> Result<SymmetricKey, SdkError>
 {
-	Ok(split_head_and_encrypted_data_internally(data_with_head)?)
+	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+		GeneratedSymKeyHeadServerOutput::from_string(server_out)?
+	} else {
+		handle_server_response(server_out)?
+	};
+
+	decrypt_sym_key(master_key, &out)
 }
 
-pub fn split_head_and_encrypted_string(data_with_head: &str) -> Result<EncryptedHead, String>
+/**
+# Get the key from server fetch
+
+decrypt it with the private key
+ */
+pub fn done_fetch_sym_key_by_private_key(private_key: &SecretKey, server_out: &str, non_registered: bool) -> Result<SymmetricKey, SdkError>
 {
-	Ok(split_head_and_encrypted_string_internally(data_with_head)?)
+	let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+		GeneratedSymKeyHeadServerOutput::from_string(server_out)?
+	} else {
+		handle_server_response(server_out)?
+	};
+
+	decrypt_sym_key_by_private_key(private_key, &out)
 }
 
-pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, String>
+/**
+# Get the key from server fetch
+
+like done_fetch_sym_key_internally but this time with an array of keys as server output
+ */
+pub fn done_fetch_sym_keys(master_key: &SymmetricKey, server_out: &str) -> Result<(Vec<SymmetricKey>, u128, SymKeyId), SdkError>
 {
-	Ok(deserialize_head_from_string_internally(head)?)
+	let server_out: Vec<GeneratedSymKeyHeadServerOutput> = handle_server_response(server_out)?;
+
+	let mut keys = Vec::with_capacity(server_out.len());
+
+	let last_element = &server_out[server_out.len() - 1];
+	let last_time = last_element.time;
+	let last_id = last_element.key_id.to_string();
+
+	for out in server_out {
+		keys.push(decrypt_sym_key(master_key, &out)?)
+	}
+
+	Ok((keys, last_time, last_id))
 }
 
-pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
+/**
+# Get a symmetric key which was encrypted by a master key
+
+Backwards the process in prepare_register_sym_key.
+
+1. get the bytes of the encrypted symmetric key
+2. get the sym internal format by decrypting it with the master key
+4. return the key incl. key id in the right format
+ */
+pub fn decrypt_sym_key(master_key: &SymmetricKey, encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput) -> Result<SymmetricKey, SdkError>
 {
-	let key = key.parse()?;
+	let encrypted_sym_key = Base64::decode_vec(&encrypted_symmetric_key_info.encrypted_key_string).map_err(|_| SdkError::KeyDecryptFailed)?;
 
-	let sign_key = prepare_sign_key(sign_key)?;
+	let key = CoreSymmetricKey::decrypt_key_by_sym_key(
+		&master_key.key,
+		&encrypted_sym_key,
+		encrypted_symmetric_key_info.alg.as_str(),
+	)?;
 
-	let (head, encrypted) = encrypt_raw_symmetric_internally(&key, data, sign_key.as_ref())?;
-
-	let head = head
-		.to_string()
-		.map_err(|_e| SdkError::JsonToStringFailed)?;
-
-	Ok((head, encrypted))
+	Ok(SymmetricKey {
+		key,
+		key_id: encrypted_symmetric_key_info.key_id.to_string(),
+	})
 }
 
-pub fn encrypt_raw_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
+/**
+# Get a symmetric key which was encrypted by a public key
+ */
+pub fn decrypt_sym_key_by_private_key(
+	private_key: &SecretKey,
+	encrypted_symmetric_key_info: &GeneratedSymKeyHeadServerOutput,
+) -> Result<SymmetricKey, SdkError>
 {
-	let key = key.parse()?;
+	let encrypted_sym_key = Base64::decode_vec(&encrypted_symmetric_key_info.encrypted_key_string).map_err(|_| SdkError::KeyDecryptFailed)?;
 
-	let sign_key = prepare_sign_key(sign_key)?;
+	let key = CoreSymmetricKey::decrypt_key_by_master_key(
+		&private_key.key,
+		&encrypted_sym_key,
+		encrypted_symmetric_key_info.alg.as_str(),
+	)?;
 
-	let (head, encrypted) = encrypt_raw_symmetric_with_aad_internally(&key, data, aad, sign_key.as_ref())?;
-
-	let head = head
-		.to_string()
-		.map_err(|_e| SdkError::JsonToStringFailed)?;
-
-	Ok((head, encrypted))
+	Ok(SymmetricKey {
+		key,
+		key_id: encrypted_symmetric_key_info.key_id.to_string(),
+	})
 }
 
-pub fn decrypt_raw_symmetric(key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
+/**
+# Simulates the server key output
+
+This is used when the keys are not managed by the sentclose server.
+
+First call prepare_register_sym_key_internally to encrypt the key, then decrypt_sym_key_internally to get the raw key.
+
+Return both, the decrypted to use it, the encrypted to save it and use it for the next time with decrypt_sym_key_internally
+ */
+pub fn generate_non_register_sym_key(master_key: &SymmetricKey) -> Result<(SymmetricKey, GeneratedSymKeyHeadServerOutput), SdkError>
 {
-	let key = key.parse()?;
+	let (pre_out, key) = prepare_registered_sym_key_internally_private(master_key)?;
 
-	let verify_key = prepare_verify_key(verify_key_data)?;
+	let server_output = GeneratedSymKeyHeadServerOutput {
+		alg: pre_out.alg,
+		encrypted_key_string: pre_out.encrypted_key_string,
+		master_key_id: pre_out.master_key_id,
+		key_id: "non_registered".to_string(),
+		time: 0,
+	};
 
-	let head = EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)?;
-
-	Ok(decrypt_raw_symmetric_internally(
-		&key,
-		encrypted_data,
-		&head,
-		verify_key.as_ref(),
-	)?)
+	Ok((key, server_output))
 }
 
-pub fn decrypt_raw_symmetric_with_aad(
-	key: &str,
-	encrypted_data: &[u8],
-	head: &str,
-	aad: &[u8],
-	verify_key_data: Option<&str>,
-) -> Result<Vec<u8>, String>
+pub fn generate_non_register_sym_key_by_public_key(
+	reply_public_key: &UserPublicKeyData,
+) -> Result<(SymmetricKey, GeneratedSymKeyHeadServerOutput), SdkError>
 {
-	let key = key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	let head = EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)?;
-
-	Ok(decrypt_raw_symmetric_with_aad_internally(
-		&key,
-		encrypted_data,
-		&head,
-		aad,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<&str>) -> Result<(String, Vec<u8>), String>
-{
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(SdkError::JsonParseFailed)?;
-
-	let sign_key = prepare_sign_key(sign_key)?;
-
-	let (head, encrypted) = encrypt_raw_asymmetric_internally(&reply_public_key_data, data, sign_key.as_ref())?;
-
-	let head = head
-		.to_string()
-		.map_err(|_e| SdkError::JsonToStringFailed)?;
-
-	Ok((head, encrypted))
-}
-
-pub fn decrypt_raw_asymmetric(private_key: &str, encrypted_data: &[u8], head: &str, verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
-{
-	let private_key = private_key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	let head = EncryptedHead::from_string(head).map_err(SdkError::JsonParseFailed)?;
-
-	Ok(decrypt_raw_asymmetric_internally(
-		&private_key,
-		encrypted_data,
-		&head,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
-{
-	let key = key.parse()?;
-
-	let sign_key = prepare_sign_key(sign_key)?;
-
-	Ok(encrypt_symmetric_internally(&key, data, sign_key.as_ref())?)
-}
-
-pub fn encrypt_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
-{
-	let key = key.parse()?;
-
-	let sign_key = prepare_sign_key(sign_key)?;
-
-	Ok(encrypt_symmetric_with_aad_internally(
-		&key,
-		data,
-		aad,
-		sign_key.as_ref(),
-	)?)
-}
-
-pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
-{
-	let key = key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	Ok(decrypt_symmetric_internally(
-		&key,
-		encrypted_data,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn decrypt_symmetric_with_aad(key: &str, encrypted_data: &[u8], aad: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
-{
-	let key = key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	Ok(decrypt_symmetric_with_aad_internally(
-		&key,
-		encrypted_data,
-		aad,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
-{
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(SdkError::JsonParseFailed)?;
-
-	let sign_key = prepare_sign_key(sign_key)?;
-
-	Ok(encrypt_asymmetric_internally(
-		&reply_public_key_data,
-		data,
-		sign_key.as_ref(),
-	)?)
-}
-
-pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
-{
-	let private_key = private_key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	Ok(decrypt_asymmetric_internally(
-		&private_key,
-		encrypted_data,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<&str>) -> Result<String, String>
-{
-	let key = key.parse()?;
-
-	let sign_key = prepare_sign_key(sign_key)?;
-
-	Ok(encrypt_string_symmetric_internally(&key, data, sign_key.as_ref())?)
-}
-
-pub fn encrypt_string_symmetric_with_aad(key: &str, data: &str, aad: &str, sign_key: Option<&str>) -> Result<String, String>
-{
-	let key = key.parse()?;
-
-	let sign_key = prepare_sign_key(sign_key)?;
-
-	Ok(encrypt_string_symmetric_with_aad_internally(
-		&key,
-		data,
-		aad,
-		sign_key.as_ref(),
-	)?)
-}
-
-pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
-{
-	let key = key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	Ok(decrypt_string_symmetric_internally(
-		&key,
-		encrypted_data,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn decrypt_string_symmetric_with_aad(key: &str, encrypted_data: &str, aad: &str, verify_key_data: Option<&str>) -> Result<String, String>
-{
-	let key = key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	Ok(decrypt_string_symmetric_with_aad_internally(
-		&key,
-		encrypted_data,
-		aad,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_key: Option<&str>) -> Result<String, String>
-{
-	let reply_public_key_data = UserPublicKeyData::from_string(reply_public_key_data).map_err(SdkError::JsonParseFailed)?;
-
-	let sign_key = prepare_sign_key(sign_key)?;
-
-	Ok(encrypt_string_asymmetric_internally(
-		&reply_public_key_data,
-		data,
-		sign_key.as_ref(),
-	)?)
-}
-
-pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
-{
-	let private_key = private_key.parse()?;
-
-	let verify_key = prepare_verify_key(verify_key_data)?;
-
-	Ok(decrypt_string_asymmetric_internally(
-		&private_key,
-		encrypted_data,
-		verify_key.as_ref(),
-	)?)
-}
-
-pub fn prepare_register_sym_key(master_key: &str) -> Result<(String, String), String>
-{
-	let master_key = master_key.parse()?;
-
-	let (server_input, key) = prepare_register_sym_key_internally(&master_key)?;
-
-	Ok((server_input, key.to_string()?))
-}
-
-pub fn prepare_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
-{
-	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(SdkError::JsonParseFailed)?;
-
-	let (server_input, key) = prepare_register_sym_key_by_public_key_internally(&reply_public_key)?;
-
-	Ok((server_input, key.to_string()?))
-}
-
-pub fn done_register_sym_key(key_id: &str, non_registered_sym_key: &str) -> Result<String, String>
-{
-	let mut non_registered_sym_key = non_registered_sym_key.parse()?;
-
-	done_register_sym_key_internally(key_id, &mut non_registered_sym_key);
-
-	Ok(non_registered_sym_key.to_string()?)
-}
-
-pub fn done_fetch_sym_key(master_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
-{
-	let master_key = master_key.parse()?;
-
-	let out = done_fetch_sym_key_internally(&master_key, server_out, non_registered)?;
-
-	Ok(out.to_string()?)
-}
-
-pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
-{
-	let private_key = private_key.parse()?;
-
-	let out = done_fetch_sym_key_by_private_key_internally(&private_key, server_out, non_registered)?;
-
-	Ok(out.to_string()?)
-}
-
-pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<(Vec<String>, u128, SymKeyId), String>
-{
-	let master_key = master_key.parse()?;
-
-	let (out, last_time, last_id) = done_fetch_sym_keys_internally(&master_key, server_out)?;
-
-	let out = out
-		.into_iter()
-		.map(|k| k.to_string())
-		.collect::<Result<Vec<String>, _>>()?;
-
-	Ok((out, last_time, last_id))
-}
-
-pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
-{
-	let master_key = master_key.parse()?;
-	let encrypted_symmetric_key_info =
-		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(SdkError::JsonParseFailed)?;
-
-	let out = decrypt_sym_key_internally(&master_key, &encrypted_symmetric_key_info)?;
-
-	Ok(out.to_string()?)
-}
-
-pub fn decrypt_sym_key_by_private_key(private_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
-{
-	let private_key = private_key.parse()?;
-
-	let encrypted_symmetric_key_info =
-		GeneratedSymKeyHeadServerOutput::from_string(encrypted_symmetric_key_info).map_err(SdkError::JsonParseFailed)?;
-
-	let out = decrypt_sym_key_by_private_key_internally(&private_key, &encrypted_symmetric_key_info)?;
-
-	Ok(out.to_string()?)
-}
-
-pub fn generate_non_register_sym_key(master_key: &str) -> Result<(String, String), String>
-{
-	let master_key = master_key.parse()?;
-
-	let (key, encrypted_key) = generate_non_register_sym_key_internally(&master_key)?;
-
-	let exported_key = key.to_string()?;
-
-	let exported_encrypted_key = encrypted_key
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?;
-
-	Ok((exported_key, exported_encrypted_key))
-}
-
-pub fn generate_non_register_sym_key_by_public_key(reply_public_key: &str) -> Result<(String, String), String>
-{
-	let reply_public_key = UserPublicKeyData::from_string(reply_public_key).map_err(SdkError::JsonParseFailed)?;
-
-	let (key, encrypted_key) = generate_non_register_sym_key_by_public_key_internally(&reply_public_key)?;
-
-	let exported_key = key.to_string()?;
-
-	let exported_encrypted_key = encrypted_key
-		.to_string()
-		.map_err(|_| SdkError::JsonToStringFailed)?;
-
-	Ok((exported_key, exported_encrypted_key))
+	let (pre_out, key) = prepare_register_sym_key_by_public_key_internally_private(reply_public_key)?;
+
+	let server_output = GeneratedSymKeyHeadServerOutput {
+		alg: pre_out.alg,
+		encrypted_key_string: pre_out.encrypted_key_string,
+		master_key_id: pre_out.master_key_id,
+		key_id: "non_registered".to_string(),
+		time: 0,
+	};
+
+	Ok((key, server_output))
 }
 
 #[cfg(test)]
@@ -449,12 +296,9 @@ mod test
 {
 	use alloc::string::ToString;
 	use alloc::vec;
-	use core::str::FromStr;
 
 	use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_core::SymKey;
-	use sentc_crypto_utils::keys::SymKeyFormatInt;
 
 	use super::*;
 	use crate::group::test_fn::create_group;
@@ -464,14 +308,16 @@ mod test
 	fn test_encrypt_decrypt_sym_raw()
 	{
 		let user = create_user();
+
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), None).unwrap();
+		let (head, encrypted) = group_key.encrypt_raw(text.as_bytes(), None).unwrap();
 
-		let decrypted = decrypt_raw_symmetric(group_key, &encrypted, &head, None).unwrap();
+		let decrypted = group_key.decrypt_raw(&encrypted, &head, None).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -479,23 +325,22 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_sym_raw_with_sig()
 	{
+		//create a rust dummy user
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (_, key_data, _, _, _) = create_group(user_keys);
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let (head, encrypted) = encrypt_raw_symmetric(group_key, text.as_bytes(), Some(user_keys.sign_key.as_str())).unwrap();
+		let (head, encrypted) = group_key
+			.encrypt_raw(text.as_bytes(), Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_raw_symmetric(
-			group_key,
-			&encrypted,
-			&head,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = group_key
+			.decrypt_raw(&encrypted, &head, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -504,15 +349,21 @@ mod test
 	fn test_encrypt_decrypt_sym_raw_with_aad()
 	{
 		let user = create_user();
+
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 		let payload = b"payload1234567891011121314151617";
 
-		let (head, encrypted) = encrypt_raw_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+		let (head, encrypted) = group_key
+			.encrypt_raw_with_aad(text.as_bytes(), payload, None)
+			.unwrap();
 
-		let decrypted = decrypt_raw_symmetric_with_aad(group_key, &encrypted, &head, payload, None).unwrap();
+		let decrypted = group_key
+			.decrypt_raw_with_aad(&encrypted, payload, &head, None)
+			.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -520,25 +371,28 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_sym_raw_with_sig_with_aad()
 	{
+		//create a rust dummy user
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (_, key_data, _, _, _) = create_group(user_keys);
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 		let payload = b"payload1234567891011121314151617";
 
-		let (head, encrypted) = encrypt_raw_symmetric_with_aad(group_key, text.as_bytes(), payload, Some(user_keys.sign_key.as_str())).unwrap();
+		let (head, encrypted) = group_key
+			.encrypt_raw_with_aad(text.as_bytes(), payload, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_raw_symmetric_with_aad(
-			group_key,
-			&encrypted,
-			&head,
-			payload,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = group_key
+			.decrypt_raw_with_aad(
+				&encrypted,
+				payload,
+				&head,
+				Some(&user.user_keys[0].exported_verify_key),
+			)
+			.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -546,13 +400,15 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_asym_raw()
 	{
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (head, encrypted) = encrypt_raw_asymmetric(user_keys.exported_public_key.as_str(), text.as_bytes(), None).unwrap();
+		let (head, encrypted) = PublicKey::encrypt_raw_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes(), None).unwrap();
 
-		let decrypted = decrypt_raw_asymmetric(user_keys.private_key.as_str(), &encrypted, &head, None).unwrap();
+		let decrypted = user.user_keys[0]
+			.private_key
+			.decrypt_raw(&encrypted, &head, None)
+			.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -560,24 +416,20 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_asym_raw_with_sig()
 	{
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (head, encrypted) = encrypt_raw_asymmetric(
-			user_keys.exported_public_key.as_str(),
+		let (head, encrypted) = PublicKey::encrypt_raw_with_user_key(
+			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
-			Some(user_keys.sign_key.as_str()),
+			Some(&user.user_keys[0].sign_key),
 		)
 		.unwrap();
 
-		let decrypted = decrypt_raw_asymmetric(
-			user_keys.private_key.as_str(),
-			&encrypted,
-			&head,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = &user.user_keys[0]
+			.private_key
+			.decrypt_raw(&encrypted, &head, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -590,13 +442,14 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), None).unwrap();
+		let encrypted = group_key.encrypt(text.as_bytes(), None).unwrap();
 
-		let decrypted = decrypt_symmetric(group_key, &encrypted, None).unwrap();
+		let decrypted = group_key.decrypt(&encrypted, None).unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted);
+		assert_eq!(text.as_bytes(), decrypted)
 	}
 
 	#[test]
@@ -610,9 +463,13 @@ mod test
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let payload = b"payload1234567891011121314151617";
 
-		let encrypted = encrypt_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+		let encrypted = group_key
+			.encrypt_with_aad(text.as_bytes(), payload, None)
+			.unwrap();
 
-		let decrypted = decrypt_symmetric_with_aad(group_key, &encrypted, payload, None).unwrap();
+		let decrypted = group_key
+			.decrypt_with_aad(&encrypted, payload, None)
+			.unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 	}
@@ -629,9 +486,11 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 		let payload2 = b"payload1234567891011121314151618";
 
-		let encrypted = encrypt_symmetric_with_aad(group_key, text.as_bytes(), payload, None).unwrap();
+		let encrypted = group_key
+			.encrypt_with_aad(text.as_bytes(), payload, None)
+			.unwrap();
 
-		let decrypted = decrypt_symmetric_with_aad(group_key, &encrypted, payload2, None);
+		let decrypted = group_key.decrypt_with_aad(&encrypted, payload2, None);
 
 		match decrypted {
 			Err(_e) => {},
@@ -640,75 +499,84 @@ mod test
 	}
 
 	#[test]
-	fn test_encrypt_decrypt_sym_with_sig()
+	fn test_encrypt_decrypt_sym_with_sign()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_symmetric(group_key, text.as_bytes(), Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = group_key
+			.encrypt(text.as_bytes(), Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_symmetric(group_key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
+		let decrypted = group_key
+			.decrypt(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted);
+		assert_eq!(text.as_bytes(), decrypted)
 	}
 
 	#[test]
 	fn test_encrypt_decrypt_asym()
 	{
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let encrypted = encrypt_asymmetric(user_keys.exported_public_key.as_str(), text.as_bytes(), None).unwrap();
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let decrypted = decrypt_asymmetric(user_keys.private_key.as_str(), &encrypted, None).unwrap();
+		let encrypted = PublicKey::encrypt_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes(), None).unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted);
+		let decrypted = user.user_keys[0]
+			.private_key
+			.decrypt(&encrypted, None)
+			.unwrap();
+
+		assert_eq!(text.as_bytes(), decrypted)
 	}
 
 	#[test]
-	fn test_encrypt_decrypt_asym_with_sig()
+	fn test_encrypt_decrypt_asym_with_sign()
 	{
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let encrypted = encrypt_asymmetric(
-			user_keys.exported_public_key.as_str(),
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = PublicKey::encrypt_with_user_key(
+			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
-			Some(user_keys.sign_key.as_str()),
+			Some(&user.user_keys[0].sign_key),
 		)
 		.unwrap();
 
-		let decrypted = decrypt_asymmetric(
-			user_keys.private_key.as_str(),
-			&encrypted,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = user.user_keys[0]
+			.private_key
+			.decrypt(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
-		assert_eq!(text.as_bytes(), decrypted);
+		assert_eq!(text.as_bytes(), decrypted)
 	}
 
 	#[test]
 	fn test_encrypt_decrypt_string_sym()
 	{
 		let user = create_user();
+
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(group_key, text, None).unwrap();
+		let encrypted = group_key.encrypt_string(text, None).unwrap();
 
-		let decrypted = decrypt_string_symmetric(group_key, &encrypted, None).unwrap();
+		let decrypted = group_key.decrypt_string(&encrypted, None).unwrap();
 
-		assert_eq!(text, decrypted);
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
@@ -721,76 +589,85 @@ mod test
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let payload = "payload1234567891011121314151617";
 
-		let encrypted = encrypt_string_symmetric_with_aad(group_key, text, payload, None).unwrap();
+		let encrypted = group_key
+			.encrypt_string_with_aad(text, payload, None)
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric_with_aad(group_key, &encrypted, payload, None).unwrap();
+		let decrypted = group_key
+			.decrypt_string_with_aad(&encrypted, payload, None)
+			.unwrap();
 
 		assert_eq!(text, decrypted);
 	}
 
 	#[test]
-	fn test_encrypt_decrypt_string_sym_with_sig()
+	fn test_encrypt_decrypt_string_sym_with_sign()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(group_key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = group_key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(group_key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
+		let decrypted = group_key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
-		assert_eq!(text, decrypted);
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
 	fn test_encrypt_decrypt_string_asym()
 	{
-		let text = "123*+^êéèüöß@€&$ 👍";
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let encrypted = encrypt_string_asymmetric(user_keys.exported_public_key.as_str(), text, None).unwrap();
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
 
-		let decrypted = decrypt_string_asymmetric(user_keys.private_key.as_str(), &encrypted, None).unwrap();
+		let encrypted = PublicKey::encrypt_string_with_user_key(&user.user_keys[0].exported_public_key, text, None).unwrap();
 
-		assert_eq!(text, decrypted);
+		let decrypted = user.user_keys[0]
+			.private_key
+			.decrypt_string(&encrypted, None)
+			.unwrap();
+
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
-	fn test_encrypt_decrypt_string_asym_with_sig()
+	fn test_encrypt_decrypt_string_asym_with_sign()
 	{
-		let text = "123*+^êéèüöß@€&$ 👍";
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let encrypted = encrypt_string_asymmetric(
-			user_keys.exported_public_key.as_str(),
+		//now start encrypt and decrypt with the group master key
+		let text = "123*+^êéèüöß@€&$";
+
+		let encrypted = PublicKey::encrypt_string_with_user_key(
+			&user.user_keys[0].exported_public_key,
 			text,
-			Some(user_keys.sign_key.as_str()),
+			Some(&user.user_keys[0].sign_key),
 		)
 		.unwrap();
 
-		let decrypted = decrypt_string_asymmetric(
-			user_keys.private_key.as_str(),
-			&encrypted,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = user.user_keys[0]
+			.private_key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
-		assert_eq!(text, decrypted);
+		assert_eq!(text, decrypted)
 	}
 
 	#[test]
 	fn test_encrypt_decrypt_sym_key()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
-
-		let (_, key_data, _, _, _) = create_group(user_keys);
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let master_key = &key_data[0].group_key;
 
 		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
@@ -807,19 +684,18 @@ mod test
 		};
 
 		//get the key
-		let decrypted_key = decrypt_sym_key(master_key, server_out.to_string().unwrap().as_str()).unwrap();
+		let decrypted_key = decrypt_sym_key(master_key, &server_out).unwrap();
 
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = decrypted_key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(
-			&decrypted_key,
-			&encrypted,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = decrypted_key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -828,14 +704,11 @@ mod test
 	fn test_getting_sym_key_from_server()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
-
-		let (_, key_data, _, _, _) = create_group(user_keys);
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let master_key = &key_data[0].group_key;
 
 		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
 
-		//get the server output
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 
 		let server_out = GeneratedSymKeyHeadServerOutput {
@@ -858,14 +731,13 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = decrypted_key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(
-			&decrypted_key,
-			&encrypted,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = decrypted_key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -874,9 +746,7 @@ mod test
 	fn test_getting_sym_keys_as_array()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
-
-		let (_, key_data, _, _, _) = create_group(user_keys);
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let master_key = &key_data[0].group_key;
 
 		let (server_in, _) = prepare_register_sym_key(master_key).unwrap();
@@ -901,6 +771,7 @@ mod test
 
 		let server_outputs = vec![server_out_0, server_out_1];
 
+		//test server out decrypt
 		let server_response = ServerOutput {
 			status: true,
 			err_msg: None,
@@ -913,14 +784,13 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		for decrypted_key in decrypted_keys {
-			let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
+			let encrypted = decrypted_key
+				.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+				.unwrap();
 
-			let decrypted = decrypt_string_symmetric(
-				&decrypted_key,
-				&encrypted,
-				Some(user_keys.exported_verify_key.as_str()),
-			)
-			.unwrap();
+			let decrypted = decrypted_key
+				.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+				.unwrap();
 
 			assert_eq!(decrypted, text);
 		}
@@ -930,9 +800,7 @@ mod test
 	fn test_generate_non_register_sym_key()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
-
-		let (_, key_data, _, _, _) = create_group(user_keys);
+		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let master_key = &key_data[0].group_key;
 
 		let (key, encrypted_key) = generate_non_register_sym_key(master_key).unwrap();
@@ -940,9 +808,13 @@ mod test
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(&key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
+		let decrypted = key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(decrypted, text);
 
@@ -950,34 +822,30 @@ mod test
 
 		let decrypted_key = decrypt_sym_key(master_key, &encrypted_key).unwrap();
 
-		let key = SymKeyFormatInt::from_str(&key).unwrap();
-		let decrypted_key = SymKeyFormatInt::from_str(&decrypted_key).unwrap();
-
-		match (key.key, decrypted_key.key) {
-			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
-				assert_eq!(k1, k2);
-			},
-		}
+		assert_eq!(key.key.as_ref(), decrypted_key.key.as_ref());
 	}
 
 	#[test]
 	fn test_generating_sym_key_by_public_key()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (server_in, non_registered_key) = prepare_register_sym_key_by_public_key(user_keys.exported_public_key.as_str()).unwrap();
+		let (server_in, mut key) = prepare_register_sym_key_by_public_key(&user.user_keys[0].exported_public_key).unwrap();
 
 		//get the server output
 		let server_in = GeneratedSymKeyHeadServerInput::from_string(server_in.as_str()).unwrap();
 
-		let key = done_register_sym_key("123", &non_registered_key).unwrap();
+		done_register_sym_key("123", &mut key);
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(&key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
+		let decrypted = key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(decrypted, text);
 
@@ -1000,7 +868,7 @@ mod test
 		};
 
 		let decrypted_key = done_fetch_sym_key_by_private_key(
-			user_keys.private_key.as_str(),
+			&user.user_keys[0].private_key,
 			server_response.to_string().unwrap().as_str(),
 			false,
 		)
@@ -1008,14 +876,13 @@ mod test
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = decrypted_key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(
-			&decrypted_key,
-			&encrypted,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = decrypted_key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(decrypted, text);
 	}
@@ -1024,43 +891,38 @@ mod test
 	fn test_generate_non_register_sym_key_by_public_key()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (key, encrypted_key) = generate_non_register_sym_key_by_public_key(&user_keys.exported_public_key).unwrap();
+		let (key, encrypted_key) = generate_non_register_sym_key_by_public_key(&user.user_keys[0].exported_public_key).unwrap();
 
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(&key, &encrypted, Some(user_keys.exported_verify_key.as_str())).unwrap();
+		let decrypted = key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(decrypted, text);
 
 		//check if we can decrypt the key with the master key
 
-		let decrypted_key = decrypt_sym_key_by_private_key(&user_keys.private_key, &encrypted_key).unwrap();
+		let decrypted_key = decrypt_sym_key_by_private_key(&user.user_keys[0].private_key, &encrypted_key).unwrap();
 
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = encrypt_string_symmetric(&decrypted_key, text, Some(user_keys.sign_key.as_str())).unwrap();
+		let encrypted = decrypted_key
+			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.unwrap();
 
-		let decrypted = decrypt_string_symmetric(
-			&decrypted_key,
-			&encrypted,
-			Some(user_keys.exported_verify_key.as_str()),
-		)
-		.unwrap();
+		let decrypted = decrypted_key
+			.decrypt_string(&encrypted, Some(&user.user_keys[0].exported_verify_key))
+			.unwrap();
 
 		assert_eq!(decrypted, text);
 
-		let key = SymKeyFormatInt::from_str(&key).unwrap();
-		let decrypted_key = SymKeyFormatInt::from_str(&decrypted_key).unwrap();
-
-		match (key.key, decrypted_key.key) {
-			(SymKey::Aes(k1), SymKey::Aes(k2)) => {
-				assert_eq!(k1, k2);
-			},
-		}
+		assert_eq!(key.key.as_ref(), decrypted_key.key.as_ref());
 	}
 }
