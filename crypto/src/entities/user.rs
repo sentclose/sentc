@@ -4,22 +4,22 @@ use alloc::vec::Vec;
 use sentc_crypto_common::group::GroupHmacData;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, SymKeyId, UserId};
+use sentc_crypto_utils::keys::{PublicKey, SecretKey, SignKey, SymmetricKey, VerifyKey};
 pub use sentc_crypto_utils::user::DeviceKeyDataExport;
 use sentc_crypto_utils::user::DeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
 
 use crate::entities::group::GroupOutDataHmacKeyExport;
-use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
 use crate::SdkError;
 
 pub struct UserKeyDataInt
 {
-	pub group_key: SymKeyFormatInt,
-	pub private_key: PrivateKeyFormatInt,
-	pub public_key: PublicKeyFormatInt,
+	pub group_key: SymmetricKey,
+	pub private_key: SecretKey,
+	pub public_key: PublicKey,
 	pub time: u128,
-	pub sign_key: SignKeyFormatInt,
-	pub verify_key: VerifyKeyFormatInt,
+	pub sign_key: SignKey,
+	pub verify_key: VerifyKey,
 	pub exported_public_key: UserPublicKeyData,
 	pub exported_verify_key: UserVerifyKeyData,
 }

@@ -7,7 +7,7 @@ use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
 pub use sentc_crypto_utils::group::*;
 use serde::{Deserialize, Serialize};
 
-use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
+use crate::entities::keys::{PublicKey, SecretKey, SymmetricKey};
 use crate::SdkError;
 
 pub struct GroupOutData
@@ -28,9 +28,9 @@ pub struct GroupOutData
 
 pub struct GroupKeyData
 {
-	pub group_key: SymKeyFormatInt,
-	pub private_group_key: PrivateKeyFormatInt,
-	pub public_group_key: PublicKeyFormatInt,
+	pub group_key: SymmetricKey,
+	pub private_group_key: SecretKey,
+	pub public_group_key: PublicKey,
 	pub exported_public_key: UserPublicKeyData,
 	pub time: u128,
 }
