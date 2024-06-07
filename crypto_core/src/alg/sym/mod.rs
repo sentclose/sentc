@@ -21,14 +21,6 @@ pub enum SymmetricKey
 
 impl SymmetricKey
 {
-	pub fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		match alg_str {
-			aes_gcm::AES_GCM_OUTPUT => Ok(Self::Aes(bytes.try_into()?)),
-			_ => Err(Error::AlgNotFound),
-		}
-	}
-
 	pub fn aes_key_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
 	{
 		Ok(Self::Aes(bytes.try_into()?))
@@ -39,18 +31,12 @@ impl SymKeyComposer for SymmetricKey
 {
 	type SymmetricKey = Self;
 
-	fn decrypt_key_by_master_key<M: Sk>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
+	fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
 	{
-		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
-
-		Self::from_bytes(&decrypted_bytes, alg_str)
-	}
-
-	fn decrypt_key_by_sym_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
-	{
-		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
-
-		Self::from_bytes(&decrypted_bytes, alg_str)
+		match alg_str {
+			aes_gcm::AES_GCM_OUTPUT => Ok(Self::Aes(bytes.try_into()?)),
+			_ => Err(Error::AlgNotFound),
+		}
 	}
 }
 

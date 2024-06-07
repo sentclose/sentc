@@ -32,15 +32,36 @@ pub trait SymKeyGen
 	type SymmetricKey: SymKey;
 
 	fn generate() -> Result<Self::SymmetricKey, Error>;
+
+	fn generate_symmetric_with_sym_key<M: SymKey>(master_key: &M) -> Result<(Vec<u8>, Self::SymmetricKey), Error>
+	{
+		let out = Self::generate()?;
+
+		let encrypted_sym_key = out.encrypt_with_sym_key(master_key)?;
+
+		Ok((encrypted_sym_key, out))
+	}
 }
 
 pub trait SymKeyComposer
 {
 	type SymmetricKey: SymKey;
 
-	fn decrypt_key_by_master_key<M: Sk>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>;
+	fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>;
 
-	fn decrypt_key_by_sym_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>;
+	fn decrypt_key_by_master_key<M: Sk>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
+	{
+		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
+
+		Self::from_bytes(&decrypted_bytes, alg_str)
+	}
+
+	fn decrypt_key_by_sym_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
+	{
+		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
+
+		Self::from_bytes(&decrypted_bytes, alg_str)
+	}
 }
 
 //__________________________________________________________________________________________________
