@@ -28,7 +28,8 @@ use sentc_crypto_common::user::{
 	VerifyLoginOutput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, Pk};
+use sentc_crypto_core::cryptomat::{Pk, SignKeyComposer};
+use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, PublicKey as CorePublicKey, SignKey as CoreSignKey};
 use sentc_crypto_utils::error::SdkUtilError;
 use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
 use sentc_crypto_utils::{
@@ -41,10 +42,10 @@ use sentc_crypto_utils::{
 	import_verify_key_from_pem_with_alg,
 };
 
-use crate::entities::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, SymKeyFormatInt, VerifyKeyFormatInt};
+use crate::entities::keys::{PublicKey, SecretKey, SignKey, SymmetricKey, VerifyKey};
 use crate::entities::user::{UserDataInt, UserKeyDataInt};
 use crate::util::public::handle_server_response;
-use crate::{group, SdkError};
+use crate::SdkError;
 
 #[cfg(feature = "rust")]
 mod user_rust;
@@ -136,13 +137,13 @@ fn register_typed_internally(user_identifier: &str, password: &str) -> Result<Re
 	//6. create the user group
 	//6.1 get a "fake" public key from the register data for group create
 	//the public key id will be set later after the registration on the server
-	let group_public_key = PublicKeyFormatInt {
+	let group_public_key = PublicKey {
 		key: raw_public_key,
 		key_id: "non_registered".to_string(),
 	};
 
 	//6.2 create a group
-	let (group, _, _) = group::prepare_create_private_internally(&group_public_key, true)?;
+	let (group, _, _) = crate::group::group::prepare_create_private_internally(&group_public_key, true)?;
 
 	Ok(RegisterData {
 		device,
@@ -191,14 +192,14 @@ fn done_register_device_start_internally(server_output: &str) -> Result<(), SdkE
 	Ok(())
 }
 
-fn prepare_register_device_private_internally(device_identifier: &str, password: &str) -> Result<(UserDeviceRegisterInput, Pk), SdkError>
+fn prepare_register_device_private_internally(device_identifier: &str, password: &str) -> Result<(UserDeviceRegisterInput, CorePublicKey), SdkError>
 {
 	let out = core_user::register(password)?;
 
 	//transform the register output into json
 
 	//1. encode the encrypted data to base64
-	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
+	let encrypted_master_key = Base64::encode_string(&out.encrypted_master_key);
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
 	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
@@ -217,7 +218,7 @@ fn prepare_register_device_private_internally(device_identifier: &str, password:
 	let master_key = MasterKey {
 		encrypted_master_key,
 		master_key_alg: out.master_key_alg.to_string(),
-		encrypted_master_key_alg: out.master_key_info.alg.to_string(),
+		encrypted_master_key_alg: out.encrypted_master_key_alg.to_string(),
 	};
 
 	let derived = KeyDerivedData {
@@ -251,7 +252,7 @@ Return the public key of the device, for the key session
 */
 fn prepare_register_device_internally(
 	server_output: &str,
-	group_keys: &[&SymKeyFormatInt],
+	group_keys: &[&SymmetricKey],
 	key_session: bool,
 ) -> Result<(String, UserPublicKeyData), SdkError>
 {
@@ -266,7 +267,7 @@ fn prepare_register_device_internally(
 		public_key_sig_key_id: None,
 	};
 
-	let user_keys = group::prepare_group_keys_for_new_member_private_internally(&exported_public_key, group_keys, key_session, None)?;
+	let user_keys = crate::group::group::prepare_group_keys_for_new_member_typed(&exported_public_key, group_keys, key_session, None)?;
 
 	Ok((
 		serde_json::to_string(&UserDeviceDoneRegisterInput {
@@ -376,7 +377,7 @@ fn verify_login_internally(server_output: &str, user_id: UserId, device_id: Devi
 	})
 }
 
-fn done_key_fetch_internally(private_key: &PrivateKeyFormatInt, server_output: &str) -> Result<UserKeyDataInt, SdkError>
+fn done_key_fetch_internally(private_key: &SecretKey, server_output: &str) -> Result<UserKeyDataInt, SdkError>
 {
 	let out: GroupKeyServerOutput = handle_server_response(server_output)?;
 
@@ -393,7 +394,7 @@ But decrypt the sign key too
 
 It can be immediately decrypt because the there is only one device key row not multiple like for group
 */
-fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_group_key: GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
+fn done_login_internally_with_user_out(private_key: &SecretKey, user_group_key: GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
 {
 	let keypair_sign_id = user_group_key.keypair_sign_id.to_owned();
 	let keypair_sign_alg = user_group_key.keypair_sign_alg.to_owned();
@@ -412,9 +413,9 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 			//get the sign key first to not use to owned for it because we only need the ref here
 			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-			let keys = group::decrypt_group_keys_internally(private_key, user_group_key)?;
+			let keys = crate::group::group::decrypt_group_keys(private_key, user_group_key)?;
 
-			let sign_key = sentc_crypto_core::decrypt_sign_key(&encrypted_sign_key, &keys.group_key.key, &keypair_sign_alg)?;
+			let sign_key = CoreSignKey::decrypt_by_master_key(&keys.group_key.key, &encrypted_sign_key, &keypair_sign_alg)?;
 
 			let verify_key = import_verify_key_from_pem_with_alg(&server_verify_key, &keypair_sign_alg)?;
 
@@ -434,11 +435,11 @@ fn done_login_internally_with_user_out(private_key: &PrivateKeyFormatInt, user_g
 		private_key: keys.private_group_key,
 		public_key: keys.public_group_key,
 		time: keys.time,
-		sign_key: SignKeyFormatInt {
+		sign_key: SignKey {
 			key: sign_key,
 			key_id: keypair_sign_id.clone(),
 		},
-		verify_key: VerifyKeyFormatInt {
+		verify_key: VerifyKey {
 			key: verify_key,
 			key_id: keypair_sign_id,
 		},
@@ -482,15 +483,11 @@ pub fn change_password(
 	)?)
 }
 
-fn reset_password_internally(
-	new_password: &str,
-	decrypted_private_key: &PrivateKeyFormatInt,
-	decrypted_sign_key: &SignKeyFormatInt,
-) -> Result<String, SdkError>
+fn reset_password_internally(new_password: &str, decrypted_private_key: &SecretKey, decrypted_sign_key: &SignKey) -> Result<String, SdkError>
 {
 	let out = core_user::password_reset(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)?;
 
-	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
+	let encrypted_master_key = Base64::encode_string(&out.encrypted_master_key);
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
 	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
@@ -501,7 +498,7 @@ fn reset_password_internally(
 	let master_key = MasterKey {
 		encrypted_master_key,
 		master_key_alg: out.master_key_alg.to_string(),
-		encrypted_master_key_alg: out.master_key_info.alg.to_string(),
+		encrypted_master_key_alg: out.encrypted_master_key_alg.to_string(),
 	};
 
 	let data = ResetPasswordData {
@@ -589,7 +586,7 @@ fn verify_user_public_key_internally(verify_key: &UserVerifyKeyData, public_key:
 
 	let public_key = import_public_key_from_pem_with_alg(&public_key.public_key_pem, &public_key.public_key_alg)?;
 
-	Ok(core_user::verify_user_public_key(&raw_verify_key, &sig, &public_key)?)
+	Ok(public_key.verify_public_key(&raw_verify_key, &sig)?)
 }
 
 #[cfg(test)]
@@ -721,7 +718,6 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	#[cfg(feature = "rust")]
 	pub(crate) fn create_user() -> UserDataInt
 	{
 		let username = "admin";
@@ -757,8 +753,7 @@ pub(crate) mod test_fn
 		out
 	}
 
-	#[cfg(not(feature = "rust"))]
-	pub(crate) fn create_user() -> UserDataExport
+	pub(crate) fn create_user_export() -> UserDataExport
 	{
 		let username = "admin";
 		let password = "12345";
@@ -789,7 +784,6 @@ pub(crate) mod test_fn
 		)
 		.unwrap();
 
-		#[cfg(not(feature = "rust"))]
 		out
 	}
 }
