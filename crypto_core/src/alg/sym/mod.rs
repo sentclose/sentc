@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::alg::sym::aes_gcm::Aes256GcmKey;
-use crate::cryptomat::{CryptoAlg, Pk, Sk, SymKey, SymKeyComposer, SymKeyGen};
+use crate::cryptomat::{CryptoAlg, Pk, SymKey, SymKeyComposer, SymKeyGen};
 use crate::Error;
 
 pub(crate) mod aes_gcm;
