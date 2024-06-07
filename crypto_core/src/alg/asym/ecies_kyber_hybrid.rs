@@ -50,7 +50,7 @@ impl Pk for EciesKyberHybridPk
 		sign_key.sign_only(k)
 	}
 
-	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &V::Signature) -> Result<bool, Error>
 	{
 		let k = [&self.x[..], &self.k[..]].concat();
 

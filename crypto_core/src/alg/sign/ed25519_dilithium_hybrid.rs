@@ -69,6 +69,8 @@ impl Into<VerifyKey> for Ed25519DilithiumHybridVerifyKey
 
 impl VerifyK for Ed25519DilithiumHybridVerifyKey
 {
+	type Signature = Ed25519DilithiumHybridSig;
+
 	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
 	{
 		let (sig, data) = split_sig_and_data(data_with_sig)?;
@@ -79,11 +81,9 @@ impl VerifyK for Ed25519DilithiumHybridVerifyKey
 		Ok((data, verify_internally(&self.x, &self.k, sig_x, sig_k, data)?))
 	}
 
-	fn verify_only(&self, sig: &[u8], data: &[u8]) -> Result<bool, Error>
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>
 	{
-		let (sig_x, sig_k) = split_sig(sig);
-
-		verify_internally(&self.x, &self.k, sig_x, sig_k, data)
+		verify_internally(&self.x, &self.k, &sig.x, &sig.k, data)
 	}
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D)
@@ -204,6 +204,7 @@ fn sign_internal(x: &[u8; 32], k: &[u8; SECRETKEYBYTES], data: &[u8]) -> Result<
 	Ok((sig_x, sig_k))
 }
 
+#[allow(unused)]
 fn split_sig(sig: &[u8]) -> (&[u8], &[u8])
 {
 	//the first is ed25519

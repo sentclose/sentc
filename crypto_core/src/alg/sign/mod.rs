@@ -186,14 +186,21 @@ crypto_alg_impl!(VerifyKey);
 
 impl VerifyK for VerifyKey
 {
+	type Signature = Signature;
+
 	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
 	{
 		deref_macro!(self, verify, data_with_sig)
 	}
 
-	fn verify_only(&self, sig: &[u8], data: &[u8]) -> Result<bool, Error>
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>
 	{
-		deref_macro!(self, verify_only, sig, data)
+		match (self, sig) {
+			(Self::Ed25519(inner), Signature::Ed25519(s)) => inner.verify_only(s, data),
+			(Self::Dilithium(inner), Signature::Dilithium(s)) => inner.verify_only(s, data),
+			(Self::Ed25519DilithiumHybrid(inner), Signature::Ed25519DilithiumHybrid(s)) => inner.verify_only(s, data),
+			_ => Err(Error::AlgNotFound),
+		}
 	}
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D)

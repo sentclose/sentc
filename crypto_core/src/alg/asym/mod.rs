@@ -78,7 +78,7 @@ impl Pk for PublicKey
 		Ok(out)
 	}
 
-	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &V::Signature) -> Result<bool, Error>
 	{
 		deref_macro!(self, verify_public_key, verify_key, sig)
 	}

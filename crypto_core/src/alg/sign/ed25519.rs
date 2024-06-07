@@ -68,6 +68,8 @@ impl Into<VerifyKey> for Ed25519VerifyK
 
 impl VerifyK for Ed25519VerifyK
 {
+	type Signature = Ed25519Sig;
+
 	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
 	{
 		let (sig, data) = split_sig_and_data(data_with_sig)?;
@@ -75,9 +77,9 @@ impl VerifyK for Ed25519VerifyK
 		Ok((data, verify_internally(&self.0, sig, data)?))
 	}
 
-	fn verify_only(&self, sig: &[u8], data: &[u8]) -> Result<bool, Error>
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>
 	{
-		verify_internally(&self.0, sig, data)
+		verify_internally(&self.0, &sig.0, data)
 	}
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D)

@@ -39,7 +39,7 @@ impl Pk for EciesPk
 		sign_key.sign_only(&self.0)
 	}
 
-	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &V::Signature) -> Result<bool, Error>
 	{
 		verify_key.verify_only(sig, &self.0)
 	}

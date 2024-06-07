@@ -50,7 +50,7 @@ pub trait Pk: CryptoAlg + Clone
 {
 	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>;
 
-	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &[u8]) -> Result<bool, Error>;
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &V::Signature) -> Result<bool, Error>;
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
 }
@@ -93,9 +93,11 @@ pub trait SignK: CryptoAlg
 
 pub trait VerifyK: CryptoAlg
 {
+	type Signature: Sig;
+
 	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>;
 
-	fn verify_only(&self, sig: &[u8], data: &[u8]) -> Result<bool, Error>;
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>;
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D);
 }

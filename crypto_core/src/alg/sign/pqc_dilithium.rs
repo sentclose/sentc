@@ -109,6 +109,8 @@ impl Into<VerifyKey> for DilithiumVerifyKey
 
 impl VerifyK for DilithiumVerifyKey
 {
+	type Signature = DilithiumSig;
+
 	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
 	{
 		let (sig, data) = split_sig_and_data(data_with_sig)?;
@@ -116,9 +118,9 @@ impl VerifyK for DilithiumVerifyKey
 		Ok((data, verify_internally(&self.0, sig, data)?))
 	}
 
-	fn verify_only(&self, sig: &[u8], data: &[u8]) -> Result<bool, Error>
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>
 	{
-		verify_internally(&self.0, sig, data)
+		verify_internally(&self.0, &sig.0, data)
 	}
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D)
