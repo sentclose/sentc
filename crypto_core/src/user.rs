@@ -1,21 +1,11 @@
 use alloc::vec::Vec;
 
-use crate::alg::{asym, pw_hash, sign, sym};
-use crate::cryptomat::{CryptoAlg, PwHash, SignK, Sk};
+use crate::alg::{pw_hash, sign};
+use crate::cryptomat::{CryptoAlg, Pk, PwHash, SignK, SignKeyComposer, SignKeyPair, Sk, SkComposer, StaticKeyPair, SymKeyGen, VerifyK};
 use crate::error::Error;
-use crate::{
-	ClientRandomValue,
-	DeriveAuthKeyForAuth,
-	DeriveMasterKeyForAuth,
-	HashedAuthenticationKey,
-	PublicKey,
-	SafetyNumber,
-	SecretKey,
-	SignKey,
-	VerifyKey,
-};
+use crate::{ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, HashedAuthenticationKey, SafetyNumber};
 
-pub struct RegisterOutPut
+pub struct RegisterOutPut<P: Pk, V: VerifyK>
 {
 	//info about the raw master key (not the encrypted by the password!)
 	pub master_key_alg: &'static str,
@@ -28,18 +18,18 @@ pub struct RegisterOutPut
 	pub derived_alg: &'static str,
 
 	//the key pairs incl. the encrypted secret keys
-	pub public_key: PublicKey,
+	pub public_key: P,
 	pub encrypted_private_key: Vec<u8>,
 	pub keypair_encrypt_alg: &'static str,
-	pub verify_key: VerifyKey,
+	pub verify_key: V,
 	pub encrypted_sign_key: Vec<u8>,
 	pub keypair_sign_alg: &'static str,
 }
 
-pub struct LoginDoneOutput
+pub struct LoginDoneOutput<S: Sk, Si: SignK>
 {
-	pub private_key: SecretKey,
-	pub sign_key: SignKey,
+	pub private_key: S,
+	pub sign_key: Si,
 }
 
 pub struct ChangePasswordOutput
@@ -71,7 +61,7 @@ pub struct PrepareLoginOutput
 }
 
 /**
-# register a new user
+# Register a new user
 
 Every user got a master key, every other user key is encrypted by this master key.
 
@@ -90,16 +80,16 @@ Just register the user again with a password, it should be the same password for
 Then login again and encrypt everything what was encrypted by the old keys with the new keys
 (e.g. group keys (encrypted by public key), or direct encrypted data).
 */
-pub fn register(password: &str) -> Result<RegisterOutPut, Error>
+pub fn register<S: SymKeyGen, St: StaticKeyPair, Sign: SignKeyPair>(password: &str) -> Result<RegisterOutPut<St::PublicKey, Sign::VerifyKey>, Error>
 {
 	//1. create master key
-	let master_key = sym::generate_key()?;
+	let master_key = S::generate()?;
 
 	//2. create static pub/pri key pair for encrypt and decrypt
-	let (sk, pk) = asym::generate_keys()?;
+	let (sk, public_key) = St::generate_static_keypair()?;
 
 	//3. create sign key pair for sign and verify
-	let (sign_k, verify_k) = sign::generate_keys()?;
+	let (sign_k, verify_key) = Sign::generate_key_pair()?;
 
 	let encrypted_private_key = sk.encrypt_by_master_key(&master_key)?;
 	let encrypted_sign_key = sign_k.encrypt_by_master_key(&master_key)?;
@@ -115,10 +105,10 @@ pub fn register(password: &str) -> Result<RegisterOutPut, Error>
 		encrypted_master_key,
 		encrypted_master_key_alg,
 		encrypted_sign_key,
-		verify_key: verify_k.into(),
+		verify_key,
 		keypair_sign_alg: sign_k.get_alg_str(),
 		encrypted_private_key,
-		public_key: pk.into(),
+		public_key,
 		keypair_encrypt_alg: sk.get_alg_str(),
 	})
 }
@@ -144,21 +134,21 @@ pub fn prepare_login(password: &str, salt: &[u8], derived_encryption_key_alg: &s
 
 Get all information about the current used login keys
 */
-pub fn done_login(
+pub fn done_login<SkC: SkComposer, SiC: SignKeyComposer>(
 	derived_encryption_key: &DeriveMasterKeyForAuth, //the value from prepare_login
 	encrypted_master_key: &[u8],                     //as base64 encoded string from the server
 	encrypted_private_key: &[u8],
 	keypair_encrypt_alg: &str,
 	encrypted_sign_key: &[u8],
 	keypair_sign_alg: &str,
-) -> Result<LoginDoneOutput, Error>
+) -> Result<LoginDoneOutput<SkC::SecretKey, SiC::Key>, Error>
 {
 	//decrypt the master key from the derived key from password
 	let master_key = derived_encryption_key.get_master_key(encrypted_master_key)?;
 
 	//decode the private keys to the enums to use them later
-	let private_key = SecretKey::decrypt_by_maser_key(&master_key, encrypted_private_key, keypair_encrypt_alg)?;
-	let sign_key = SignKey::decrypt_by_master_key(&master_key, encrypted_sign_key, keypair_sign_alg)?;
+	let private_key = SkC::decrypt_by_master_key(&master_key, encrypted_private_key, keypair_encrypt_alg)?;
+	let sign_key = SiC::decrypt_by_master_key(&master_key, encrypted_sign_key, keypair_sign_alg)?;
 
 	Ok(LoginDoneOutput {
 		private_key,
@@ -228,10 +218,14 @@ Only works if the user still got access to the decrypted private key and the dec
 - the server still awaits a valid auth token when sending the reset password request
 - an attacker needs access to the decrypted private key, decrypted sign key and the auth token
 */
-pub fn password_reset<S: Sk, Si: SignK>(new_pw: &str, decrypted_private_key: &S, decrypted_sign_key: &Si) -> Result<ResetPasswordOutput, Error>
+pub fn password_reset<S: SymKeyGen>(
+	new_pw: &str,
+	decrypted_private_key: &impl Sk,
+	decrypted_sign_key: &impl SignK,
+) -> Result<ResetPasswordOutput, Error>
 {
 	//1. create a new master key (because the old key was encrypted by the forgotten password and can't be restored)
-	let master_key = sym::generate_key()?;
+	let master_key = S::generate()?;
 
 	//2. encrypt the private and the sign key with the new master key
 	let encrypted_private_key = decrypted_private_key.encrypt_by_master_key(&master_key)?;
@@ -261,7 +255,7 @@ Creates a safety number in byte of a given verify key and additional user inform
 To create a combination of two identities set for user_2 another SafetyNumberUser struct.
 Make sure to keep the order of user_1 and user_2 on the other user too, otherwise the number will not be the same.
 */
-pub fn safety_number(user_1: SafetyNumber<VerifyKey>, user_2: Option<SafetyNumber<VerifyKey>>) -> Vec<u8>
+pub fn safety_number<V: VerifyK>(user_1: SafetyNumber<V>, user_2: Option<SafetyNumber<V>>) -> Vec<u8>
 {
 	sign::safety_number(user_1, user_2)
 }
@@ -272,7 +266,7 @@ mod test
 	use core::str::from_utf8;
 
 	use super::*;
-	use crate::cryptomat::{Pk, VerifyK};
+	use crate::{SecretKey, SignKey, SymmetricKey, VerifyKey};
 
 	#[test]
 	fn test_register()
@@ -280,7 +274,7 @@ mod test
 		let password = "abc*èéöäüê";
 
 		//register should not panic because we only use internally values!
-		let _ = register(password).unwrap();
+		let _ = register::<SymmetricKey, SecretKey, SignKey>(password).unwrap();
 	}
 
 	#[test]
@@ -289,7 +283,7 @@ mod test
 		//the normal register
 		let password = "abc*èéöäüê";
 
-		let out = register(password).unwrap();
+		let out = register::<SymmetricKey, SecretKey, SignKey>(password).unwrap();
 
 		//and now try to log in
 		//normally the salt gets calc by the api
@@ -298,7 +292,7 @@ mod test
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
 		//try to decrypt the master key
-		let login_out = done_login(
+		let login_out = done_login::<SecretKey, SignKey>(
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
 			&out.encrypted_master_key,
 			&out.encrypted_private_key,
@@ -334,7 +328,7 @@ mod test
 		let password = "abc*èéöäüê";
 		let new_password = "abcdfg";
 
-		let out = register(password).unwrap();
+		let out = register::<SymmetricKey, SecretKey, SignKey>(password).unwrap();
 
 		//normally the salt gets calc by the api
 		//for all different random value alg
@@ -361,30 +355,28 @@ mod test
 		let new_salt = pw_change_out.client_random_value.generate_salt("");
 		let prep_login_new = prepare_login(new_password, &new_salt, pw_change_out.derived_alg).unwrap();
 
-		let _ = prep_login_old
+		let _key = prep_login_old
 			.master_key_encryption_key
 			.get_master_key(&out.encrypted_master_key)
-			.unwrap()
-			.into();
-		let _ = prep_login_new
+			.unwrap();
+		let _key = prep_login_new
 			.master_key_encryption_key
 			.get_master_key(&pw_change_out.encrypted_master_key)
-			.unwrap()
-			.into();
+			.unwrap();
 	}
 
 	#[test]
 	fn test_password_reset()
 	{
 		let password = "abc*èéöäüê";
-		let out = register(password).unwrap();
+		let out = register::<SymmetricKey, SecretKey, SignKey>(password).unwrap();
 
 		let salt_from_rand_value = out.client_random_value.generate_salt("");
 
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
 		//try to decrypt the master key
-		let login_out = done_login(
+		let login_out = done_login::<SecretKey, SignKey>(
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
 			&out.encrypted_master_key,
 			&out.encrypted_private_key,
@@ -397,7 +389,7 @@ mod test
 		//reset the password
 		let new_password = "123";
 
-		let password_reset_out = password_reset(new_password, &login_out.private_key, &login_out.sign_key).unwrap();
+		let password_reset_out = password_reset::<SymmetricKey>(new_password, &login_out.private_key, &login_out.sign_key).unwrap();
 
 		//test if we can log in with the new password
 		let salt_from_rand_value = password_reset_out.client_random_value.generate_salt("");
@@ -405,7 +397,7 @@ mod test
 		let prep_login_out_pw_reset = prepare_login(new_password, &salt_from_rand_value, password_reset_out.derived_alg).unwrap();
 
 		//try to decrypt the master key
-		let _ = done_login(
+		let _ = done_login::<SecretKey, SignKey>(
 			&prep_login_out_pw_reset.master_key_encryption_key, //the value comes from prepare login
 			&password_reset_out.encrypted_master_key,
 			&password_reset_out.encrypted_private_key,
@@ -418,17 +410,17 @@ mod test
 		assert_ne!(out.encrypted_master_key, password_reset_out.encrypted_master_key);
 	}
 
-	fn create_dummy_user_for_safety_number() -> (VerifyKey, LoginDoneOutput)
+	fn create_dummy_user_for_safety_number() -> (VerifyKey, LoginDoneOutput<SecretKey, SignKey>)
 	{
 		let password = "abc*èéöäüê";
-		let out = register(password).unwrap();
+		let out = register::<SymmetricKey, SecretKey, SignKey>(password).unwrap();
 
 		let salt_from_rand_value = out.client_random_value.generate_salt("");
 
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, out.derived_alg).unwrap();
 
 		//try to decrypt the master key
-		let login_out = done_login(
+		let login_out = done_login::<SecretKey, SignKey>(
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
 			&out.encrypted_master_key,
 			&out.encrypted_private_key,
@@ -438,7 +430,7 @@ mod test
 		)
 		.unwrap();
 
-		(out.verify_key, login_out)
+		(out.verify_key.into(), login_out)
 	}
 
 	#[test]

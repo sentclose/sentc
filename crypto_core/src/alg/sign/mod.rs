@@ -5,23 +5,12 @@ use sha2::{Digest, Sha256};
 use crate::alg::sign::ed25519::Ed25519SignK;
 use crate::alg::sign::ed25519_dilithium_hybrid::Ed25519DilithiumHybridSignK;
 use crate::alg::sign::pqc_dilithium::{DilithiumSig, DilithiumSignKey, DilithiumVerifyKey};
-use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
+use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyComposer, SignKeyPair, SymKey, VerifyK};
 use crate::{Ed25519DilithiumHybridSig, Ed25519DilithiumHybridVerifyKey, Ed25519Sig, Ed25519VerifyK, Error};
 
 pub(crate) mod ed25519;
 pub(crate) mod ed25519_dilithium_hybrid;
 pub(crate) mod pqc_dilithium;
-
-pub fn generate_keys() -> Result<(impl SignK, impl VerifyK), Error>
-{
-	#[cfg(feature = "ed25519_dilithium_hybrid")]
-	let (sk, vk) = ed25519_dilithium_hybrid::Ed25519DilithiumHybridKeyPair::generate_key_pair()?;
-
-	#[cfg(feature = "ed25519")]
-	let (sk, vk) = ed25519::Ed25519KeyPair::generate_key_pair()?;
-
-	Ok((sk, vk))
-}
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8], len: usize) -> Result<(&[u8], &[u8]), Error>
 {
@@ -125,13 +114,6 @@ impl SignKey
 
 		Ok(key)
 	}
-
-	pub fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		let key = master_key.decrypt(encrypted_key)?;
-
-		Self::from_bytes(&key, alg_str)
-	}
 }
 
 get_inner_key!(SignKey, Ed25519DilithiumHybridSignK);
@@ -139,6 +121,8 @@ crypto_alg_impl!(SignKey);
 
 impl SignK for SignKey
 {
+	type Signature = Signature;
+
 	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		deref_macro!(self, encrypt_by_master_key, master_key)
@@ -149,7 +133,7 @@ impl SignK for SignKey
 		deref_macro!(self, sign, data)
 	}
 
-	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<Self::Signature, Error>
 	{
 		let out: Signature = match self {
 			Self::Ed25519(inner) => inner.sign_only(data)?.into(),
@@ -158,6 +142,42 @@ impl SignK for SignKey
 		};
 
 		Ok(out)
+	}
+}
+
+impl SignKeyPair for SignKey
+{
+	#[cfg(feature = "ed25519_dilithium_hybrid")]
+	type SignKey = Ed25519DilithiumHybridSignK;
+	#[cfg(feature = "ed25519")]
+	type SignKey = Ed25519SignK;
+
+	#[cfg(feature = "ed25519_dilithium_hybrid")]
+	type VerifyKey = Ed25519DilithiumHybridVerifyKey;
+	#[cfg(feature = "ed25519")]
+	type VerifyKey = Ed25519VerifyK;
+
+	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
+	{
+		#[cfg(feature = "ed25519_dilithium_hybrid")]
+		let (sk, vk) = ed25519_dilithium_hybrid::Ed25519DilithiumHybridKeyPair::generate_key_pair()?;
+
+		#[cfg(feature = "ed25519")]
+		let (sk, vk) = ed25519::Ed25519KeyPair::generate_key_pair()?;
+
+		Ok((sk, vk))
+	}
+}
+
+impl SignKeyComposer for SignKey
+{
+	type Key = Self;
+
+	fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::Key, Error>
+	{
+		let key = master_key.decrypt(encrypted_key)?;
+
+		Self::from_bytes(&key, alg_str)
 	}
 }
 

@@ -5,7 +5,7 @@ use aes_gcm::aead::{Aead, NewAead, Payload};
 use aes_gcm::{Aes256Gcm, Key};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::cryptomat::{CryptoAlg, Pk, SymKey};
+use crate::cryptomat::{CryptoAlg, Pk, SymKey, SymKeyGen};
 use crate::error::Error;
 use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, SymmetricKey};
 
@@ -40,13 +40,6 @@ impl Into<SymmetricKey> for Aes256GcmKey
 
 impl SymKey for Aes256GcmKey
 {
-	fn generate() -> Result<impl SymKey, Error>
-	{
-		let key = generate_key_internally(&mut get_rand())?;
-
-		Ok(Self(key))
-	}
-
 	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		master_key.encrypt(&self.0)
@@ -75,6 +68,18 @@ impl SymKey for Aes256GcmKey
 	fn decrypt_with_aad(&self, ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
 	{
 		decrypt_internally(&self.0, ciphertext, Some(aad))
+	}
+}
+
+impl SymKeyGen for Aes256GcmKey
+{
+	type SymmetricKey = Self;
+
+	fn generate() -> Result<Self::SymmetricKey, Error>
+	{
+		let key = generate_key_internally(&mut get_rand())?;
+
+		Ok(Aes256GcmKey(key))
 	}
 }
 

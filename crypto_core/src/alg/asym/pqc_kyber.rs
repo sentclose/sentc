@@ -4,7 +4,7 @@ use pqc_kyber::{decapsulate, encapsulate, keypair, PublicKey, SecretKey, KYBER_C
 use rand_core::{CryptoRng, RngCore};
 
 use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt};
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
+use crate::cryptomat::{CryptoAlg, Pk, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 pub const KYBER_OUTPUT: &str = "KYBER_768";
@@ -27,7 +27,7 @@ impl Into<crate::PublicKey> for KyberPk
 
 impl Pk for KyberPk
 {
-	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
+	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>
 	{
 		sign_key.sign_only(&self.0)
 	}
@@ -75,7 +75,10 @@ pub struct KyberKeyPair;
 
 impl StaticKeyPair for KyberKeyPair
 {
-	fn generate_static_keypair() -> Result<(impl Sk, impl Pk), Error>
+	type SecretKey = KyberSk;
+	type PublicKey = KyberPk;
+
+	fn generate_static_keypair() -> Result<(Self::SecretKey, Self::PublicKey), Error>
 	{
 		let (sk, pk) = generate_keypair_internally(&mut get_rand())?;
 

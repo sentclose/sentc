@@ -1,16 +1,10 @@
 use alloc::vec::Vec;
 
 use crate::alg::sortable::ope::OpeSortableKey;
-use crate::cryptomat::{CryptoAlg, SortableKey, SymKey};
+use crate::cryptomat::{CryptoAlg, SortableKey, SortableKeyGen, SymKey};
 use crate::Error;
 
 pub(crate) mod ope;
-
-pub fn generate_key() -> Result<impl SortableKey, Error>
-{
-	#[cfg(feature = "ope_sort")]
-	OpeSortableKey::generate()
-}
 
 macro_rules! deref_macro {
     ($self:expr, $method:ident $(, $args:expr)*) => {
@@ -66,11 +60,6 @@ impl AsRef<[u8]> for SortKeys
 
 impl SortableKey for SortKeys
 {
-	fn generate() -> Result<impl SortableKey, Error>
-	{
-		generate_key()
-	}
-
 	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		deref_macro!(self, encrypt_key_with_master_key, master_key)
@@ -79,5 +68,17 @@ impl SortableKey for SortKeys
 	fn encrypt_sortable(&self, data: u64) -> Result<u64, Error>
 	{
 		deref_macro!(self, encrypt_sortable, data)
+	}
+}
+
+impl SortableKeyGen for SortKeys
+{
+	#[cfg(feature = "ope_sort")]
+	type SortableKey = OpeSortableKey;
+
+	fn generate() -> Result<Self::SortableKey, Error>
+	{
+		#[cfg(feature = "ope_sort")]
+		OpeSortableKey::generate()
 	}
 }

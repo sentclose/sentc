@@ -128,6 +128,8 @@ impl Into<SignKey> for Ed25519DilithiumHybridSignK
 
 impl SignK for Ed25519DilithiumHybridSignK
 {
+	type Signature = Ed25519DilithiumHybridSig;
+
 	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		let key = [&self.x[..], &self.k].concat();
@@ -147,7 +149,7 @@ impl SignK for Ed25519DilithiumHybridSignK
 		Ok(output)
 	}
 
-	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<Self::Signature, Error>
 	{
 		let (x, k) = sign_internal(&self.x, &self.k, data.as_ref())?;
 
@@ -162,7 +164,10 @@ pub struct Ed25519DilithiumHybridKeyPair;
 
 impl SignKeyPair for Ed25519DilithiumHybridKeyPair
 {
-	fn generate_key_pair() -> Result<(impl SignK, impl VerifyK), Error>
+	type SignKey = Ed25519DilithiumHybridSignK;
+	type VerifyKey = Ed25519DilithiumHybridVerifyKey;
+
+	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
 		let kp = super::ed25519::generate_key_pair_internally(&mut get_rand())?;
 		let (sk, pk) = super::pqc_dilithium::generate_key_pair_internally(&mut get_rand())?;

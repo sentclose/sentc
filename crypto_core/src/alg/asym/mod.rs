@@ -3,23 +3,12 @@ use alloc::vec::Vec;
 use crate::alg::asym::ecies::{EciesPk, EciesSk};
 use crate::alg::asym::ecies_kyber_hybrid::{EciesKyberHybridPk, EciesKyberHybridSk};
 use crate::alg::asym::pqc_kyber::{KyberPk, KyberSk};
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
-use crate::{Error, Signature};
+use crate::cryptomat::{CryptoAlg, Pk, SignK, Sk, SkComposer, StaticKeyPair, SymKey, VerifyK};
+use crate::Error;
 
 pub(crate) mod ecies;
 pub(crate) mod ecies_kyber_hybrid;
 pub(crate) mod pqc_kyber;
-
-pub fn generate_keys() -> Result<(impl Sk, impl Pk), Error>
-{
-	#[cfg(feature = "ecies_kyber_hybrid")]
-	let (sk, pk) = ecies_kyber_hybrid::EciesKyberHybridKeyPair::generate_static_keypair()?;
-
-	#[cfg(feature = "ecies")]
-	let (sk, pk) = ecies::EciesKeyPair::generate_static_keypair()?;
-
-	Ok((sk, pk))
-}
 
 macro_rules! deref_macro {
     ($self:expr, $method:ident $(, $args:expr)*) => {
@@ -78,12 +67,12 @@ crypto_alg_impl!(PublicKey);
 
 impl Pk for PublicKey
 {
-	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
+	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>
 	{
-		let out: Signature = match self {
-			PublicKey::Ecies(k) => k.sign_public_key(sign_key)?.into(),
-			PublicKey::Kyber(k) => k.sign_public_key(sign_key)?.into(),
-			PublicKey::EciesKyberHybrid(k) => k.sign_public_key(sign_key)?.into(),
+		let out = match self {
+			PublicKey::Ecies(k) => k.sign_public_key(sign_key)?,
+			PublicKey::Kyber(k) => k.sign_public_key(sign_key)?,
+			PublicKey::EciesKyberHybrid(k) => k.sign_public_key(sign_key)?,
 		};
 
 		Ok(out)
@@ -120,13 +109,6 @@ impl SecretKey
 
 		Ok(key)
 	}
-
-	pub fn decrypt_by_maser_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
-
-		Self::from_bytes(&decrypted_bytes, alg_str)
-	}
 }
 
 get_inner_key!(SecretKey, EciesKyberHybridSk);
@@ -142,5 +124,41 @@ impl Sk for SecretKey
 	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 	{
 		deref_macro!(self, decrypt, ciphertext)
+	}
+}
+
+impl SkComposer for SecretKey
+{
+	type SecretKey = Self;
+
+	fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SecretKey, Error>
+	{
+		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
+
+		Self::from_bytes(&decrypted_bytes, alg_str)
+	}
+}
+
+impl StaticKeyPair for SecretKey
+{
+	#[cfg(feature = "ecies_kyber_hybrid")]
+	type SecretKey = EciesKyberHybridSk;
+	#[cfg(feature = "ecies")]
+	type SecretKey = EciesSk;
+
+	#[cfg(feature = "ecies_kyber_hybrid")]
+	type PublicKey = EciesKyberHybridPk;
+	#[cfg(feature = "ecies")]
+	type PublicKey = EciesPk;
+
+	fn generate_static_keypair() -> Result<(Self::SecretKey, Self::PublicKey), Error>
+	{
+		#[cfg(feature = "ecies_kyber_hybrid")]
+		let (sk, pk) = ecies_kyber_hybrid::EciesKyberHybridKeyPair::generate_static_keypair()?;
+
+		#[cfg(feature = "ecies")]
+		let (sk, pk) = ecies::EciesKeyPair::generate_static_keypair()?;
+
+		Ok((sk, pk))
 	}
 }

@@ -1,16 +1,32 @@
 use alloc::vec::Vec;
 
-use crate::alg::{asym, hmac, sign, sortable, sym};
-use crate::cryptomat::{CryptoAlg, Pk, SearchableKey, SignK, Sk, SortableKey, SymKey};
-use crate::{Error, PublicKey, SecretKey, Signature, SymmetricKey, VerifyKey};
+use crate::cryptomat::{
+	CryptoAlg,
+	Pk,
+	SearchableKey,
+	SearchableKeyGen,
+	Sig,
+	SignK,
+	SignKeyPair,
+	Sk,
+	SkComposer,
+	SortableKey,
+	SortableKeyGen,
+	StaticKeyPair,
+	SymKey,
+	SymKeyComposer,
+	SymKeyGen,
+	VerifyK,
+};
+use crate::Error;
 
-pub struct CreateGroupOutput
+pub struct CreateGroupOutput<P: Pk, V: VerifyK, S: Sig>
 {
 	pub encrypted_group_key: Vec<u8>,          //encrypted by creators public key
 	pub group_key_alg: &'static str,           //info about the raw master key (not the encrypted by the pk!)
 	pub encrypted_group_key_alg: &'static str, //info about how the encrypted group key was encrypted by the pk (important for the server)
 	pub encrypted_private_group_key: Vec<u8>,
-	pub public_group_key: PublicKey,
+	pub public_group_key: P,
 	pub keypair_encrypt_alg: &'static str,
 	pub encrypted_hmac_key: Vec<u8>,
 	pub encrypted_hmac_alg: &'static str,
@@ -18,29 +34,29 @@ pub struct CreateGroupOutput
 	pub encrypted_sortable_key_alg: &'static str,
 
 	//for user group
-	pub verify_key: Option<VerifyKey>,
+	pub verify_key: Option<V>,
 	pub encrypted_sign_key: Option<Vec<u8>>,
 	pub keypair_sign_alg: Option<&'static str>,
-	pub public_key_sig: Option<Signature>,
+	pub public_key_sig: Option<S>,
 }
 
-pub struct KeyRotationOutput
+pub struct KeyRotationOutput<P: Pk, V: VerifyK, S: Sig>
 {
 	pub encrypted_group_key_by_user: Vec<u8>, //encrypted by invoker public key
 	pub group_key_alg: &'static str,
 	pub encrypted_group_key_alg: &'static str, //info about how the encrypted group key was encrypted by the pk from the invoker (important for the server)
 	pub encrypted_private_group_key: Vec<u8>,
-	pub public_group_key: PublicKey,
+	pub public_group_key: P,
 	pub keypair_encrypt_alg: &'static str,
 	pub encrypted_group_key_by_ephemeral: Vec<u8>,
 	pub ephemeral_alg: &'static str,
 	pub encrypted_ephemeral_key: Vec<u8>, //encrypted by the previous_group_key group key. encrypt this key with every other member public key on the server
 
 	//for user group
-	pub verify_key: Option<VerifyKey>,
+	pub verify_key: Option<V>,
 	pub encrypted_sign_key: Option<Vec<u8>>,
 	pub keypair_sign_alg: Option<&'static str>,
-	pub public_key_sig: Option<Signature>,
+	pub public_key_sig: Option<S>,
 }
 
 pub struct PrepareGroupKeysForNewMemberOutput
@@ -51,20 +67,20 @@ pub struct PrepareGroupKeysForNewMemberOutput
 }
 
 #[allow(clippy::type_complexity)]
-fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
-	creators_public_key: &P,
+fn prepare_keys<Sign: SignKeyPair>(
+	creators_public_key: &impl Pk,
 	user_group: bool,
-	group_key: &S,
-	group_sk: &Gsk,
-	group_pk: &Gpk,
+	group_key: &impl SymKey,
+	group_sk: &impl Sk,
+	group_pk: &impl Pk,
 ) -> Result<
 	(
 		Vec<u8>,
 		Vec<u8>,
 		&'static str,
-		Option<VerifyKey>,
+		Option<Sign::VerifyKey>,
 		Option<Vec<u8>>,
-		Option<Signature>,
+		Option<<<Sign>::SignKey as SignK>::Signature>,
 		Option<&'static str>,
 	),
 	Error,
@@ -77,14 +93,14 @@ fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
 	let (verify_key, encrypted_sign_key, public_key_sig, keypair_sign_alg) = if !user_group {
 		(None, None, None, None)
 	} else {
-		let (sign_key, verify_key) = sign::generate_keys()?;
+		let (sign_key, verify_key) = Sign::generate_key_pair()?;
 
 		let encrypted_sign_key = sign_key.encrypt_by_master_key(group_key)?;
 
-		let public_key_sig = group_pk.sign_public_key(&sign_key)?.into();
+		let public_key_sig = group_pk.sign_public_key(&sign_key)?;
 
 		(
-			Some(verify_key.into()),
+			Some(verify_key),
 			Some(encrypted_sign_key),
 			Some(public_key_sig),
 			Some(sign_key.get_alg_str()),
@@ -102,18 +118,34 @@ fn prepare_keys<P: Pk, S: SymKey, Gsk: Sk, Gpk: Pk>(
 	))
 }
 
-pub fn prepare_create<P: Pk>(creators_public_key: &P, user_group: bool) -> Result<(CreateGroupOutput, impl SymKey), Error>
+#[allow(clippy::type_complexity)]
+pub fn prepare_create<S, St, Sign, Search, Sort>(
+	creators_public_key: &impl Pk,
+	user_group: bool,
+) -> Result<
+	(
+		CreateGroupOutput<St::PublicKey, Sign::VerifyKey, <<Sign>::SignKey as SignK>::Signature>,
+		S::SymmetricKey,
+	),
+	Error,
+>
+where
+	S: SymKeyGen,
+	St: StaticKeyPair,
+	Sign: SignKeyPair,
+	Search: SearchableKeyGen,
+	Sort: SortableKeyGen,
 {
 	//1. create the keys:
 	//	1. master symmetric key
 	//	2. pub / pri keys
 
-	let group_key = sym::generate_key()?;
+	let group_key = S::generate()?;
 
-	let (sk, pk) = asym::generate_keys()?;
+	let (sk, public_group_key) = St::generate_static_keypair()?;
 
 	let (encrypted_private_group_key, encrypted_group_key, encrypted_group_key_alg, verify_key, encrypted_sign_key, public_key_sig, keypair_sign_alg) =
-		prepare_keys(creators_public_key, user_group, &group_key, &sk, &pk)?;
+		prepare_keys::<Sign>(creators_public_key, user_group, &group_key, &sk, &public_group_key)?;
 
 	/*
 	create the searchable encryption hmac key and encrypt it with the group key
@@ -123,17 +155,17 @@ pub fn prepare_create<P: Pk>(creators_public_key: &P, user_group: bool) -> Resul
 	 */
 
 	//3. get the hmac key
-	let searchable_encryption = hmac::generate_key()?;
+	let searchable_encryption = Search::generate()?;
 	let encrypted_hmac_key = searchable_encryption.encrypt_key_with_master_key(&group_key)?;
 
-	let sortable_encryption = sortable::generate_key()?;
+	let sortable_encryption = Sort::generate()?;
 	let encrypted_sortable_key = sortable_encryption.encrypt_key_with_master_key(&group_key)?;
 
 	Ok((
 		CreateGroupOutput {
 			encrypted_group_key,
 			encrypted_private_group_key,
-			public_group_key: pk.into(),
+			public_group_key,
 			group_key_alg: group_key.get_alg_str(),
 			keypair_encrypt_alg: sk.get_alg_str(),
 			encrypted_hmac_key,
@@ -150,12 +182,17 @@ pub fn prepare_create<P: Pk>(creators_public_key: &P, user_group: bool) -> Resul
 	))
 }
 
-pub fn key_rotation<S: SymKey, P: Pk>(previous_group_key: &S, invoker_public_key: &P, user_group: bool) -> Result<KeyRotationOutput, Error>
+#[allow(clippy::type_complexity)]
+pub fn key_rotation<S: SymKeyGen, St: StaticKeyPair, Sign: SignKeyPair>(
+	previous_group_key: &impl SymKey,
+	invoker_public_key: &impl Pk,
+	user_group: bool,
+) -> Result<KeyRotationOutput<St::PublicKey, Sign::VerifyKey, <<Sign as SignKeyPair>::SignKey as SignK>::Signature>, Error>
 {
 	//1. create new group keys
-	let group_key = sym::generate_key()?;
+	let group_key = S::generate()?;
 
-	let (sk, pk) = asym::generate_keys()?;
+	let (sk, public_group_key) = St::generate_static_keypair()?;
 
 	//2. encrypt the private key with the group key
 	let (
@@ -166,10 +203,10 @@ pub fn key_rotation<S: SymKey, P: Pk>(previous_group_key: &S, invoker_public_key
 		encrypted_sign_key,
 		public_key_sig,
 		keypair_sign_alg,
-	) = prepare_keys(invoker_public_key, user_group, &group_key, &sk, &pk)?;
+	) = prepare_keys::<Sign>(invoker_public_key, user_group, &group_key, &sk, &public_group_key)?;
 
 	//3. create an ephemeral key to encrypt the new group key
-	let ephemeral_key = sym::generate_key()?;
+	let ephemeral_key = S::generate()?;
 
 	//4. encrypt the new group with the ephemeral_key.
 	let encrypted_group_key_by_ephemeral = group_key.encrypt_with_sym_key(&ephemeral_key)?;
@@ -186,7 +223,7 @@ pub fn key_rotation<S: SymKey, P: Pk>(previous_group_key: &S, invoker_public_key
 		group_key_alg: group_key.get_alg_str(),
 		keypair_encrypt_alg: sk.get_alg_str(),
 		encrypted_group_key_by_ephemeral,
-		public_group_key: pk.into(),
+		public_group_key,
 		encrypted_ephemeral_key,
 		verify_key,
 		encrypted_sign_key,
@@ -196,10 +233,10 @@ pub fn key_rotation<S: SymKey, P: Pk>(previous_group_key: &S, invoker_public_key
 	})
 }
 
-pub fn done_key_rotation<S: SymKey, Sek: Sk, P: Pk>(
-	private_key: &Sek,
-	public_key: &P,
-	previous_group_key: &S,
+pub fn done_key_rotation<SymC: SymKeyComposer>(
+	private_key: &impl Sk,
+	public_key: &impl Pk,
+	previous_group_key: &impl SymKey,
 	encrypted_ephemeral_key_by_group_key_and_public_key: &[u8],
 	encrypted_group_key_by_ephemeral: &[u8],
 	ephemeral_alg: &str,
@@ -209,7 +246,7 @@ pub fn done_key_rotation<S: SymKey, Sek: Sk, P: Pk>(
 	let decrypted_encrypted_ephemeral_key = private_key.decrypt(encrypted_ephemeral_key_by_group_key_and_public_key)?;
 
 	//2. decrypt the encrypted ephemeral key then with the previous_group_key group key (the previous group key)
-	let ephemeral_key = SymmetricKey::decrypt_key_by_sym_key(previous_group_key, &decrypted_encrypted_ephemeral_key, ephemeral_alg)?;
+	let ephemeral_key = SymC::decrypt_key_by_sym_key(previous_group_key, &decrypted_encrypted_ephemeral_key, ephemeral_alg)?;
 
 	//3.decrypt the new group key with the decrypted ephemeral key
 	let new_group_key = ephemeral_key.decrypt(encrypted_group_key_by_ephemeral)?;
@@ -221,20 +258,20 @@ pub fn done_key_rotation<S: SymKey, Sek: Sk, P: Pk>(
 	Ok(encrypted_new_group_key)
 }
 
-pub fn get_group<Sek: Sk>(
-	private_key: &Sek,
+pub fn get_group<SymC: SymKeyComposer, SkC: SkComposer>(
+	private_key: &impl Sk,
 	encrypted_group_key: &[u8],
 	encrypted_private_group_key: &[u8],
 	group_key_alg: &str,
 	key_pair_alg: &str,
-) -> Result<(SymmetricKey, SecretKey), Error>
+) -> Result<(SymC::SymmetricKey, SkC::SecretKey), Error>
 {
 	//call this for every group key with the private key, because every group key can be created and encrypted by different alg.
 
 	//1. decrypt the group key
-	let decrypted_group_key = SymmetricKey::decrypt_key_by_master_key(private_key, encrypted_group_key, group_key_alg)?;
+	let decrypted_group_key = SymC::decrypt_key_by_master_key(private_key, encrypted_group_key, group_key_alg)?;
 
-	let decrypted_private_group_key = SecretKey::decrypt_by_maser_key(&decrypted_group_key, encrypted_private_group_key, key_pair_alg)?;
+	let decrypted_private_group_key = SkC::decrypt_by_master_key(&decrypted_group_key, encrypted_private_group_key, key_pair_alg)?;
 
 	Ok((decrypted_group_key, decrypted_private_group_key))
 }
@@ -296,15 +333,15 @@ mod test
 	use core::str::from_utf8;
 
 	use super::*;
-	use crate::generate_salt;
 	use crate::user::{done_login, prepare_login, register, LoginDoneOutput};
+	use crate::{generate_salt, HmacKey, SecretKey, SignKey, SortKeys, SymmetricKey};
 
-	fn create_dummy_user() -> (impl Pk, LoginDoneOutput)
+	fn create_dummy_user() -> (impl Pk, LoginDoneOutput<SecretKey, SignKey>)
 	{
 		let password = "12345";
 
 		//create a test user
-		let register_out = register(password).unwrap();
+		let register_out = register::<SymmetricKey, SecretKey, SignKey>(password).unwrap();
 
 		//and now try to log in
 		//normally the salt gets calc by the api
@@ -313,7 +350,7 @@ mod test
 		let prep_login_out = prepare_login(password, &salt_from_rand_value, register_out.derived_alg).unwrap();
 
 		//try to decrypt the master key
-		let login_out = done_login(
+		let login_out = done_login::<SecretKey, SignKey>(
 			&prep_login_out.master_key_encryption_key, //the value comes from prepare login
 			&register_out.encrypted_master_key,
 			&register_out.encrypted_private_key,
@@ -331,15 +368,12 @@ mod test
 	{
 		let (pk, login_out) = create_dummy_user();
 
-		let group_out = prepare_create(&pk, false).unwrap();
+		let group_out = prepare_create::<SymmetricKey, SecretKey, SignKey, HmacKey, SortKeys>(&pk, false).unwrap();
 		let created_key = group_out.1;
 		let group_out = group_out.0;
 
-		#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
-		assert_eq!(group_out.group_key_alg, AES_GCM_OUTPUT);
-
 		//decrypt the group key
-		let (group_key, group_pri_key) = get_group(
+		let (group_key, group_pri_key) = get_group::<SymmetricKey, SecretKey>(
 			&login_out.private_key,
 			&group_out.encrypted_group_key,
 			&group_out.encrypted_private_group_key,
@@ -379,13 +413,12 @@ mod test
 	{
 		let (pk, login_out) = create_dummy_user();
 
-		let group_out = prepare_create(&pk, false).unwrap().0;
-
-		#[cfg(any(feature = "argon2_aes_ecies_ed25519", feature = "argon2_aes_ecies_ed25519_kyber_hybrid"))]
-		assert_eq!(group_out.group_key_alg, AES_GCM_OUTPUT);
+		let group_out = prepare_create::<SymmetricKey, SecretKey, SignKey, HmacKey, SortKeys>(&pk, false)
+			.unwrap()
+			.0;
 
 		//decrypt the group key
-		let (group_key, _group_pri_key) = get_group(
+		let (group_key, _group_pri_key) = get_group::<SymmetricKey, SecretKey>(
 			&login_out.private_key,
 			&group_out.encrypted_group_key,
 			&group_out.encrypted_private_group_key,
@@ -394,10 +427,10 @@ mod test
 		)
 		.unwrap();
 
-		let rotation_out = key_rotation(&group_key, &pk, false).unwrap();
+		let rotation_out = key_rotation::<SymmetricKey, SecretKey, SignKey>(&group_key, &pk, false).unwrap();
 
 		//it should get the values from own encrypted group key
-		let (_, _new_group_pri_key) = get_group(
+		let (_, _new_group_pri_key) = get_group::<SymmetricKey, SecretKey>(
 			&login_out.private_key,
 			&rotation_out.encrypted_group_key_by_user,
 			&rotation_out.encrypted_private_group_key,
@@ -415,7 +448,7 @@ mod test
 		//the encrypted_group_key_by_ephemeral is for everyone the same because this is encrypted by the previous group key
 
 		//done key rotation to get the new group key
-		let out = done_key_rotation(
+		let out = done_key_rotation::<SymmetricKey>(
 			&login_out.private_key,
 			&pk,
 			&group_key,
@@ -426,7 +459,7 @@ mod test
 		.unwrap();
 
 		//get the new group by get_group
-		let (_, _new_group_pri_key2) = get_group(
+		let (_, _new_group_pri_key2) = get_group::<SymmetricKey, SecretKey>(
 			&login_out.private_key,
 			&out,
 			&rotation_out.encrypted_private_group_key,
@@ -442,8 +475,10 @@ mod test
 		let (user_1_pk, user_1_out) = create_dummy_user();
 		let (user_2_pk, user_2_out) = create_dummy_user();
 
-		let group_out = prepare_create(&user_1_pk, false).unwrap().0;
-		let (group_key, _group_pri_key) = get_group(
+		let group_out = prepare_create::<SymmetricKey, SecretKey, SignKey, HmacKey, SortKeys>(&user_1_pk, false)
+			.unwrap()
+			.0;
+		let (group_key, _group_pri_key) = get_group::<SymmetricKey, SecretKey>(
 			&user_1_out.private_key,
 			&group_out.encrypted_group_key,
 			&group_out.encrypted_private_group_key,
@@ -453,8 +488,8 @@ mod test
 		.unwrap();
 
 		//create multiple group keys
-		let rotation_out = key_rotation(&group_key, &user_1_pk, false).unwrap();
-		let (new_group_key, _new_group_pri_key) = get_group(
+		let rotation_out = key_rotation::<SymmetricKey, SecretKey, SignKey>(&group_key, &user_1_pk, false).unwrap();
+		let (new_group_key, _new_group_pri_key) = get_group::<SymmetricKey, SecretKey>(
 			&user_1_out.private_key,
 			&rotation_out.encrypted_group_key_by_user,
 			&rotation_out.encrypted_private_group_key,
@@ -463,8 +498,8 @@ mod test
 		)
 		.unwrap();
 
-		let rotation_out_1 = key_rotation(&new_group_key, &user_1_pk, false).unwrap();
-		let (new_group_key_1, _new_group_pri_key_1) = get_group(
+		let rotation_out_1 = key_rotation::<SymmetricKey, SecretKey, SignKey>(&new_group_key, &user_1_pk, false).unwrap();
+		let (new_group_key_1, _new_group_pri_key_1) = get_group::<SymmetricKey, SecretKey>(
 			&user_1_out.private_key,
 			&rotation_out_1.encrypted_group_key_by_user,
 			&rotation_out_1.encrypted_private_group_key,
@@ -473,8 +508,8 @@ mod test
 		)
 		.unwrap();
 
-		let rotation_out_2 = key_rotation(&new_group_key_1, &user_1_pk, false).unwrap();
-		let (new_group_key_2, _new_group_pri_key_2) = get_group(
+		let rotation_out_2 = key_rotation::<SymmetricKey, SecretKey, SignKey>(&new_group_key_1, &user_1_pk, false).unwrap();
+		let (new_group_key_2, _new_group_pri_key_2) = get_group::<SymmetricKey, SecretKey>(
 			&user_1_out.private_key,
 			&rotation_out_2.encrypted_group_key_by_user,
 			&rotation_out_2.encrypted_private_group_key,
@@ -493,7 +528,7 @@ mod test
 		//can't use loop here because we need to know which group key we are actual processing
 		let group_key_2 = &new_user_out[1];
 
-		let (_, _new_user_group_pri_key_2) = get_group(
+		let (_, _new_user_group_pri_key_2) = get_group::<SymmetricKey, SecretKey>(
 			&user_2_out.private_key,
 			&group_key_2.encrypted_group_key,
 			&rotation_out.encrypted_private_group_key, //normally get from the server
@@ -504,7 +539,7 @@ mod test
 
 		let group_key_3 = &new_user_out[2];
 
-		let (_, _new_user_group_pri_key_3) = get_group(
+		let (_, _new_user_group_pri_key_3) = get_group::<SymmetricKey, SecretKey>(
 			&user_2_out.private_key,
 			&group_key_3.encrypted_group_key,
 			&rotation_out_1.encrypted_private_group_key, //normally get from the server

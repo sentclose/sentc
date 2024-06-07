@@ -1,16 +1,10 @@
 use alloc::vec::Vec;
 
 use crate::alg::hmac::hmac_sha256::HmacSha256Key;
-use crate::cryptomat::{CryptoAlg, SearchableKey, SymKey};
+use crate::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyGen, SymKey};
 use crate::Error;
 
 pub(crate) mod hmac_sha256;
-
-pub fn generate_key() -> Result<impl SearchableKey, Error>
-{
-	#[cfg(feature = "hmac_sha256")]
-	HmacSha256Key::generate()
-}
 
 macro_rules! deref_macro {
     ($self:expr, $method:ident $(, $args:expr)*) => {
@@ -66,11 +60,6 @@ impl AsRef<[u8]> for HmacKey
 
 impl SearchableKey for HmacKey
 {
-	fn generate() -> Result<impl SearchableKey, Error>
-	{
-		generate_key()
-	}
-
 	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		deref_macro!(self, encrypt_key_with_master_key, master_key)
@@ -84,5 +73,17 @@ impl SearchableKey for HmacKey
 	fn verify_encrypted_searchable(&self, data: &[u8], check: &[u8]) -> Result<bool, Error>
 	{
 		deref_macro!(self, verify_encrypted_searchable, data, check)
+	}
+}
+
+impl SearchableKeyGen for HmacKey
+{
+	#[cfg(feature = "hmac_sha256")]
+	type SearchableKey = HmacSha256Key;
+
+	fn generate() -> Result<Self::SearchableKey, Error>
+	{
+		#[cfg(feature = "hmac_sha256")]
+		HmacSha256Key::generate()
 	}
 }

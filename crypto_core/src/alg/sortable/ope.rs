@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use ope::{get_ope, OpeKey};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::cryptomat::{CryptoAlg, SortableKey, SymKey};
+use crate::cryptomat::{CryptoAlg, SortableKey, SortableKeyGen, SymKey};
 use crate::{as_ref_bytes_single_value, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 pub const OPE_OUT: &str = "OPE-16";
@@ -24,11 +24,6 @@ impl CryptoAlg for OpeSortableKey
 
 impl SortableKey for OpeSortableKey
 {
-	fn generate() -> Result<impl SortableKey, Error>
-	{
-		Ok(Self(generate_key_internally(&mut get_rand())?))
-	}
-
 	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		master_key.encrypt(&self.0)
@@ -42,6 +37,16 @@ impl SortableKey for OpeSortableKey
 
 		let ope = get_ope(&self.0);
 		Ok(ope.encrypt(data)?)
+	}
+}
+
+impl SortableKeyGen for OpeSortableKey
+{
+	type SortableKey = Self;
+
+	fn generate() -> Result<Self::SortableKey, Error>
+	{
+		Ok(Self(generate_key_internally(&mut get_rand())?))
 	}
 }
 

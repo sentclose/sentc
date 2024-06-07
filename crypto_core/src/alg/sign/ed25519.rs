@@ -103,6 +103,8 @@ impl Into<SignKey> for Ed25519SignK
 
 impl SignK for Ed25519SignK
 {
+	type Signature = Ed25519Sig;
+
 	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		master_key.encrypt(&self.0)
@@ -119,7 +121,7 @@ impl SignK for Ed25519SignK
 		Ok(output)
 	}
 
-	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<Self::Signature, Error>
 	{
 		let sig = sign_internally(&self.0, data.as_ref())?;
 
@@ -131,7 +133,10 @@ pub struct Ed25519KeyPair;
 
 impl SignKeyPair for Ed25519KeyPair
 {
-	fn generate_key_pair() -> Result<(impl SignK, impl VerifyK), Error>
+	type SignKey = Ed25519SignK;
+	type VerifyKey = Ed25519VerifyK;
+
+	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
 		let keypair = generate_key_pair_internally(&mut get_rand())?;
 

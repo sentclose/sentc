@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use pqc_kyber::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
+use crate::cryptomat::{CryptoAlg, Pk, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::{crypto_alg_str_impl, get_rand, hybrid_key_import_export, Error, PublicKey, SecretKey};
 
 pub const ECIES_KYBER_HYBRID_OUTPUT: &str = "ECIES-ed25519_KYBER_768";
@@ -43,7 +43,7 @@ impl Into<PublicKey> for EciesKyberHybridPk
 
 impl Pk for EciesKyberHybridPk
 {
-	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
+	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>
 	{
 		let k = [&self.x[..], &self.k[..]].concat();
 
@@ -125,7 +125,10 @@ pub struct EciesKyberHybridKeyPair;
 
 impl StaticKeyPair for EciesKyberHybridKeyPair
 {
-	fn generate_static_keypair() -> Result<(impl Sk, impl Pk), Error>
+	type SecretKey = EciesKyberHybridSk;
+	type PublicKey = EciesKyberHybridPk;
+
+	fn generate_static_keypair() -> Result<(Self::SecretKey, Self::PublicKey), Error>
 	{
 		let (x_sk, x_pk) = super::ecies::generate_static_keypair_internally(&mut get_rand());
 		let (k_sk, k_pk) = super::pqc_kyber::generate_keypair_internally(&mut get_rand())?;

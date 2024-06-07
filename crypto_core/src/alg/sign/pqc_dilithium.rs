@@ -66,6 +66,8 @@ impl Into<SignKey> for DilithiumSignKey
 
 impl SignK for DilithiumSignKey
 {
+	type Signature = DilithiumSig;
+
 	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		master_key.encrypt(&self.0)
@@ -82,7 +84,7 @@ impl SignK for DilithiumSignKey
 		Ok(output)
 	}
 
-	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<impl Sig, Error>
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<Self::Signature, Error>
 	{
 		let sig = sign_internally(&self.0, data.as_ref())?;
 
@@ -129,7 +131,10 @@ pub struct DilithiumKeyPair;
 
 impl SignKeyPair for DilithiumKeyPair
 {
-	fn generate_key_pair() -> Result<(impl SignK, impl VerifyK), Error>
+	type SignKey = DilithiumSignKey;
+	type VerifyKey = DilithiumVerifyKey;
+
+	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
 		let (sk, pk) = generate_key_pair_internally(&mut get_rand())?;
 

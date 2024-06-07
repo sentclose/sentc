@@ -256,6 +256,7 @@ mod test
 
 	use super::*;
 	use crate::alg::sym::aes_gcm::AES_GCM_OUTPUT;
+	use crate::cryptomat::SymKeyGen;
 
 	#[test]
 	fn test_derived_keys_from_password()

@@ -6,7 +6,7 @@ use sha2::Sha256;
 use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
 use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt, AesKey};
-use crate::cryptomat::{CryptoAlg, Pk, Sig, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
+use crate::cryptomat::{CryptoAlg, Pk, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::error::Error;
 use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, SecretKey};
 
@@ -34,7 +34,7 @@ impl Into<crate::PublicKey> for EciesPk
 
 impl Pk for EciesPk
 {
-	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<impl Sig, Error>
+	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>
 	{
 		sign_key.sign_only(&self.0)
 	}
@@ -82,7 +82,10 @@ pub struct EciesKeyPair;
 
 impl StaticKeyPair for EciesKeyPair
 {
-	fn generate_static_keypair() -> Result<(impl Sk, impl Pk), Error>
+	type SecretKey = EciesSk;
+	type PublicKey = EciesPk;
+
+	fn generate_static_keypair() -> Result<(Self::SecretKey, Self::PublicKey), Error>
 	{
 		let (sk, pk) = generate_static_keypair_internally(&mut get_rand());
 

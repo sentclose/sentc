@@ -5,7 +5,7 @@ use sha2::Sha256;
 
 use crate::alg::hmac::HmacKey;
 use crate::alg::sym::aes_gcm::AesKey;
-use crate::cryptomat::{CryptoAlg, SearchableKey, SymKey};
+use crate::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyGen, SymKey};
 use crate::{alg, as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 pub const HMAC_SHA256_OUTPUT: &str = "HMAC-SHA256";
@@ -29,11 +29,6 @@ impl Into<HmacKey> for HmacSha256Key
 
 impl SearchableKey for HmacSha256Key
 {
-	fn generate() -> Result<impl SearchableKey, Error>
-	{
-		Ok(Self(alg::sym::aes_gcm::raw_generate()?))
-	}
-
 	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
 	{
 		master_key.encrypt(&self.0)
@@ -58,6 +53,16 @@ impl SearchableKey for HmacSha256Key
 		mac.update(data);
 
 		Ok(mac.verify_slice(check).is_ok())
+	}
+}
+
+impl SearchableKeyGen for HmacSha256Key
+{
+	type SearchableKey = Self;
+
+	fn generate() -> Result<Self::SearchableKey, Error>
+	{
+		Ok(Self(alg::sym::aes_gcm::raw_generate()?))
 	}
 }
 
