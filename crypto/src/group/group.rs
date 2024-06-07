@@ -1,306 +1,612 @@
-use alloc::string::String;
+//use here key ids from the api, the core sdk don't care about the ids because we have to call every function with the right keys
+//but in the higher level mod we must care
+//handle the key id for get group, and the rotation + accept / invite user
+
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
+use base64ct::{Base64, Encoding};
+use sentc_crypto_common::crypto::SignHead;
 use sentc_crypto_common::group::{
 	CreateData,
+	DoneKeyRotationData,
+	GroupChangeRankServerInput,
 	GroupHmacData,
 	GroupKeyServerOutput,
+	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
+	GroupLightServerData,
+	GroupServerData,
 	GroupSortableData,
+	GroupUserAccessBy,
+	KeyRotationData,
 	KeyRotationInput,
 };
-use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::UserId;
-use serde_json::from_str;
+use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_core::cryptomat::{CryptoAlg, SignK};
+use sentc_crypto_core::{group as core_group, HmacKey as CoreHmacKey, PublicKey as CorePublicKey, Signature as CoreSig, SortKeys as CoreSortableKey};
+use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::{export_raw_public_key_to_pem, export_raw_verify_key_to_pem, import_public_key_from_pem_with_alg, sig_to_string};
 
-use crate::crypto::{prepare_sign_key, prepare_verify_key};
-use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport, GroupOutDataKeyExport, GroupOutDataLightExport};
-use crate::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
-use crate::group::{
-	decrypt_group_hmac_key_internally,
-	decrypt_group_keys_internally,
-	decrypt_group_sortable_key_internally,
-	done_key_rotation_internally,
-	get_done_key_rotation_server_input_internally,
-	get_group_data_internally,
-	get_group_key_from_server_output_internally,
-	get_group_keys_from_server_output_internally,
-	get_group_light_data_internally,
-	key_rotation_internally,
-	prepare_change_rank_internally,
-	prepare_create_internally,
-	prepare_create_typed_internally,
-	prepare_group_keys_for_new_member_internally,
-	prepare_group_keys_for_new_member_internally_with_group_public_key,
-	prepare_group_keys_for_new_member_typed_internally,
-	prepare_group_keys_for_new_member_via_session_internally,
-};
-use crate::SdkError;
+use crate::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
+use crate::entities::keys::{HmacKey, PublicKey, SecretKey, SignKey, SortableKey, SymmetricKey};
+use crate::util::public::handle_server_response;
+use crate::{crypto, SdkError};
 
-pub fn prepare_create_typed(creators_public_key: &str) -> Result<CreateData, String>
+fn get_access_by(access_by: GroupUserAccessBy) -> (Option<GroupId>, Option<GroupId>)
 {
-	let out = prepare_create_typed_internally(&creators_public_key.parse()?)?;
+	match access_by {
+		GroupUserAccessBy::User => (None, None),
+		GroupUserAccessBy::Parent(id) => (None, Some(id)),
+		GroupUserAccessBy::GroupAsUser(id) => (Some(id), None),
+		GroupUserAccessBy::GroupAsUserAsParent {
+			parent,
+			group_as_user,
+		} => (Some(group_as_user), Some(parent)),
+	}
+}
+
+pub fn prepare_create_typed(creators_public_key: &PublicKey) -> Result<CreateData, SdkError>
+{
+	let out = prepare_create_private_internally(creators_public_key, false)?;
 
 	Ok(out.0)
 }
 
-pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
+pub fn prepare_create(creators_public_key: &PublicKey) -> Result<String, SdkError>
 {
-	let out = prepare_create_internally(&creators_public_key.parse()?)?;
+	let out = prepare_create_batch(creators_public_key)?;
 
 	Ok(out.0)
 }
 
-pub fn prepare_create_batch_typed(creators_public_key: &str) -> Result<(CreateData, String, String), String>
+pub fn prepare_create_batch_typed(creators_public_key: &PublicKey) -> Result<(CreateData, PublicKey, SymmetricKey), SdkError>
 {
-	let out = prepare_create_typed_internally(&creators_public_key.parse()?)?;
-
-	let public_key = out.1.to_string()?;
-	let group_key = out.2.to_string()?;
-
-	Ok((out.0, public_key, group_key))
+	prepare_create_private_internally(creators_public_key, false)
 }
 
-pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String, String), String>
+pub fn prepare_create_batch(creators_public_key: &PublicKey) -> Result<(String, PublicKey, SymmetricKey), SdkError>
 {
-	let out = prepare_create_internally(&creators_public_key.parse()?)?;
+	let out = prepare_create_private_internally(creators_public_key, false)?;
+	let input = out
+		.0
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)?;
 
-	let public_key = out.1.to_string()?;
-	let group_key = out.2.to_string()?;
+	Ok((input, out.1, out.2))
+}
 
-	Ok((out.0, public_key, group_key))
+/**
+Prepare the server input for the group creation.
+
+Use the public key of the group for creating a child group.
+ */
+pub(crate) fn prepare_create_private_internally(
+	creators_public_key: &PublicKey,
+	user_group: bool,
+) -> Result<(CreateData, PublicKey, SymmetricKey), SdkError>
+{
+	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
+	let out = core_group::prepare_create(&creators_public_key.key, user_group)?;
+	let created_group_key = out.1;
+	let out = out.0;
+
+	//1. encode the values to base64 for the server
+	let encrypted_group_key = Base64::encode_string(&out.encrypted_group_key);
+	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
+	let encrypted_hmac_key = Base64::encode_string(&out.encrypted_hmac_key);
+	let encrypted_sortable_key = Base64::encode_string(&out.encrypted_sortable_key);
+
+	//2. export the public key
+	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
+
+	//3. user group values
+	let (encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig) = if !user_group {
+		(None, None, None, None)
+	} else {
+		let encrypted_sign_key = match &out.encrypted_sign_key {
+			None => None,
+			Some(k) => Some(Base64::encode_string(k)),
+		};
+
+		let verify_key = match &out.verify_key {
+			None => None,
+			Some(k) => Some(export_raw_verify_key_to_pem(k)?),
+		};
+
+		let keypair_sign_alg = match out.keypair_sign_alg {
+			None => None,
+			Some(alg) => Some(alg.to_string()),
+		};
+
+		let public_key_sig = match &out.public_key_sig {
+			None => None,
+			Some(s) => Some(sig_to_string(s)),
+		};
+
+		(encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig)
+	};
+
+	let create_out = CreateData {
+		public_group_key,
+		encrypted_group_key,
+		encrypted_private_group_key,
+		encrypted_group_key_alg: out.encrypted_group_key_alg.to_string(),
+		group_key_alg: out.group_key_alg.to_string(),
+		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
+		creator_public_key_id: creators_public_key.key_id.clone(),
+		encrypted_hmac_key,
+		encrypted_hmac_alg: out.encrypted_hmac_alg.to_string(),
+		encrypted_sortable_key,
+		encrypted_sortable_alg: out.encrypted_sortable_key_alg.to_string(),
+
+		//user group values
+		encrypted_sign_key,
+		verify_key,
+		keypair_sign_alg,
+		public_key_sig,
+	};
+
+	//return the non-registered version of the group key and the public group key to use it
+	// to create child groups or connect to a group without register the group
+	let group_public_key_int = PublicKey {
+		key: out.public_group_key,
+		key_id: "non_registered".to_string(),
+	};
+
+	let created_group_key = SymmetricKey {
+		key: created_group_key,
+		key_id: "non_registered".to_string(),
+	};
+
+	Ok((create_out, group_public_key_int, created_group_key))
 }
 
 pub fn key_rotation(
-	previous_group_key: &str,
-	invoker_public_key: &str,
+	previous_group_key: &SymmetricKey,
+	invoker_public_key: &PublicKey,
 	user_group: bool,
-	sign_key: Option<&str>,
+	sign_key: Option<&SignKey>,
 	starter: UserId,
-) -> Result<String, String>
+) -> Result<String, SdkError>
 {
-	let sign_key = prepare_sign_key(sign_key)?;
+	let out = core_group::key_rotation(&previous_group_key.key, &invoker_public_key.key, user_group)?;
 
-	//the ids comes from the storage of the current impl from the sdk, the group key id comes from get group
+	//1. encode the values to base64 for the server
+	let encrypted_group_key_by_user = Base64::encode_string(&out.encrypted_group_key_by_user);
+	let encrypted_private_group_key = Base64::encode_string(&out.encrypted_private_group_key);
+	let encrypted_ephemeral_key = Base64::encode_string(&out.encrypted_ephemeral_key);
 
-	Ok(key_rotation_internally(
-		&previous_group_key.parse()?,
-		&invoker_public_key.parse()?,
-		user_group,
-		sign_key.as_ref(),
-		starter,
-	)?)
+	//2. export the public key
+	let public_group_key = export_raw_public_key_to_pem(&out.public_group_key)?;
+
+	//3. user group values
+	let (encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig) = if !user_group {
+		(None, None, None, None)
+	} else {
+		let encrypted_sign_key = out.encrypted_sign_key.map(|k| Base64::encode_string(&k));
+
+		let verify_key = out.verify_key.map(|k| export_raw_verify_key_to_pem(&k)?);
+
+		let keypair_sign_alg = out.keypair_sign_alg.map(|alg| alg.to_string());
+
+		let public_key_sig = out.public_key_sig.map(|s| sig_to_string(&s));
+
+		(encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig)
+	};
+
+	//4. if set sign the encrypted group key
+	let (encrypted_group_key_by_ephemeral, signed_by_user_id, signed_by_user_sign_key_id, signed_by_user_sign_key_alg) = if let Some(sk) = sign_key {
+		let sig = sk.sign(&out.encrypted_group_key_by_ephemeral)?;
+		(
+			Base64::encode_string(&sig),
+			Some(starter),
+			Some(sk.key_id.clone()),
+			Some(sk.get_alg_str().to_string()),
+		)
+	} else {
+		(
+			Base64::encode_string(&out.encrypted_group_key_by_ephemeral),
+			None,
+			None,
+			None,
+		)
+	};
+
+	let rotation_out = KeyRotationData {
+		encrypted_group_key_by_user,
+		group_key_alg: out.group_key_alg.to_string(),
+		encrypted_group_key_alg: out.encrypted_group_key_alg.to_string(),
+		encrypted_private_group_key,
+		public_group_key,
+		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
+		encrypted_group_key_by_ephemeral,
+		ephemeral_alg: out.ephemeral_alg.to_string(),
+		encrypted_ephemeral_key,
+		previous_group_key_id: previous_group_key.key_id.clone(),
+		invoker_public_key_id: invoker_public_key.key_id.clone(),
+
+		signed_by_user_id,
+		signed_by_user_sign_key_id,
+		signed_by_user_sign_key_alg,
+
+		//user group
+		encrypted_sign_key,
+		verify_key,
+		keypair_sign_alg,
+		public_key_sig,
+	};
+
+	rotation_out
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
-pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, String>
+/**
+Deserialize the server output
+ */
+pub fn get_done_key_rotation_server_input(server_output: &str) -> Result<KeyRotationInput, SdkError>
 {
-	Ok(get_done_key_rotation_server_input_internally(server_output)?)
+	KeyRotationInput::from_string(server_output).map_err(|_| SdkError::KeyRotationServerOutputWrong)
 }
 
 pub fn done_key_rotation(
-	private_key: &str,
-	public_key: &str,
-	previous_group_key: &str,
-	server_output: &str,
-	verify_key: Option<&str>,
-) -> Result<String, String>
+	private_key: &SecretKey,
+	public_key: &PublicKey,
+	previous_group_key: &SymmetricKey,
+	server_output: KeyRotationInput,
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<String, SdkError>
 {
-	let verify_key = prepare_verify_key(verify_key)?;
+	if let Some(e) = server_output.error {
+		return Err(SdkError::KeyRotationEncryptError(e));
+	}
 
-	let server_output = get_done_key_rotation_server_input(server_output)?;
+	//the id of the previous group key was returned by the server too so the sdk impl knows which key it used
 
-	Ok(done_key_rotation_internally(
-		&private_key.parse()?,
-		&public_key.parse()?,
-		&previous_group_key.parse()?,
-		server_output,
-		verify_key.as_ref(),
-	)?)
-}
+	//these values were encoded by key_rotation_internally
+	let encrypted_ephemeral_key_by_group_key_and_public_key =
+		Base64::decode_vec(&server_output.encrypted_ephemeral_key_by_group_key_and_public_key).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
+	let encrypted_group_key_by_ephemeral =
+		Base64::decode_vec(&server_output.encrypted_group_key_by_ephemeral).map_err(|_| SdkError::KeyRotationServerOutputWrong)?;
 
-pub fn decrypt_group_hmac_key(group_key: &str, server_key_output: &str) -> Result<String, String>
-{
-	let server_output: GroupHmacData = from_str(server_key_output).map_err(SdkError::JsonParseFailed)?;
+	//if verify key set then verify the new group key first
 
-	let hmac_key = decrypt_group_hmac_key_internally(&group_key.parse()?, server_output)?;
+	//get from the KeyRotationInput also if the key was signed before and only then do to verify, even if a verify key was set.
+	//the user id doesn't matter here.
+	let encrypted_group_key_by_ephemeral = match (
+		server_output.signed_by_user_id,
+		server_output.signed_by_user_sign_key_id,
+		server_output.signed_by_user_sign_key_alg,
+	) {
+		(Some(_user_id), Some(sign_key_id), Some(sign_key_alg)) => {
+			match verify_key {
+				Some(vk) => {
+					crypto::verify_internally(
+						vk,
+						&encrypted_group_key_by_ephemeral,
+						&SignHead {
+							id: sign_key_id,
+							alg: sign_key_alg,
+						},
+					)?
+				},
+				None => {
+					//if no verify key set, still split the data to get only the group key without the sign
+					let (_, encrypted_group_key_by_ephemeral) = CoreSig::split_sig_and_data(&sign_key_alg, &encrypted_group_key_by_ephemeral)?;
 
-	Ok(hmac_key.to_string()?)
-}
+					encrypted_group_key_by_ephemeral
+				},
+			}
+		},
+		_ => {
+			//no sign headset for key rotation
+			&encrypted_group_key_by_ephemeral
+		},
+	};
 
-pub fn decrypt_group_sortable_key(group_key: &str, server_key_output: &str) -> Result<String, String>
-{
-	let server_output: GroupSortableData = from_str(server_key_output).map_err(SdkError::JsonParseFailed)?;
+	let out = core_group::done_key_rotation(
+		&private_key.key,
+		&public_key.key,
+		&previous_group_key.key,
+		&encrypted_ephemeral_key_by_group_key_and_public_key,
+		encrypted_group_key_by_ephemeral,
+		&server_output.ephemeral_alg,
+	)?;
 
-	let key = decrypt_group_sortable_key_internally(&group_key.parse()?, server_output)?;
+	let encrypted_new_group_key = Base64::encode_string(&out);
 
-	Ok(key.to_string()?)
-}
+	let encrypted_alg = public_key.key.get_alg_str().to_string();
 
-pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<GroupKeyDataExport, String>
-{
-	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(SdkError::JsonParseFailed)?;
+	let done_rotation_out = DoneKeyRotationData {
+		encrypted_new_group_key,
+		public_key_id: public_key.key_id.clone(),
+		encrypted_alg,
+	};
 
-	let result = decrypt_group_keys_internally(&private_key.parse()?, server_key_output)?;
-
-	Ok(result.try_into()?)
+	done_rotation_out
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 /**
-Call this fn for pagination key fetch
-*/
-pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<GroupOutDataKeyExport>, String>
+Get the key data from str
+ */
+pub fn get_group_keys_from_server_output(server_output: &str) -> Result<Vec<GroupKeyServerOutput>, SdkError>
 {
-	let out = get_group_keys_from_server_output_internally(server_output)?;
+	let server_output: Vec<GroupKeyServerOutput> = handle_server_response(server_output)?;
 
-	Ok(out
-		.into_iter()
-		.map(|k| k.try_into())
-		.collect::<Result<_, SdkError>>()?)
+	Ok(server_output)
 }
 
-pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupOutDataKeyExport, String>
+pub fn get_group_key_from_server_output(server_output: &str) -> Result<GroupKeyServerOutput, SdkError>
 {
-	let out = get_group_key_from_server_output_internally(server_output)?;
+	let server_output: GroupKeyServerOutput = handle_server_response(server_output)?;
 
-	Ok(out.try_into()?)
+	Ok(server_output)
 }
 
-pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLightExport, String>
+pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 {
-	let out = get_group_light_data_internally(server_output)?;
+	let server_output: GroupServerData = handle_server_response(server_output)?;
 
-	Ok(out.into())
+	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+
+	Ok(GroupOutData {
+		keys: server_output.keys,
+		hmac_keys: server_output.hmac_keys,
+		key_update: server_output.key_update,
+		parent_group_id: server_output.parent_group_id,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
+		rank: server_output.rank,
+		group_id: server_output.group_id,
+		access_by_group_as_member,
+		access_by_parent_group,
+		is_connected_group: server_output.is_connected_group,
+		sortable_keys: server_output.sortable_keys,
+	})
+}
+
+pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, SdkError>
+{
+	let server_output: GroupLightServerData = handle_server_response(server_output)?;
+
+	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+
+	Ok(GroupOutDataLight {
+		group_id: server_output.group_id,
+		parent_group_id: server_output.parent_group_id,
+		rank: server_output.rank,
+		created_time: server_output.created_time,
+		joined_time: server_output.joined_time,
+		is_connected_group: server_output.is_connected_group,
+		access_by_group_as_member,
+		access_by_parent_group,
+	})
 }
 
 /**
-Returns the Group data.
-
-Returns the server keys to use get_group_keys to decrypt each group key with the right private key
-*/
-pub fn get_group_data(server_output: &str) -> Result<GroupOutDataExport, String>
+Decrypt the group hmac key which is used for searchable encryption.
+ */
+pub fn decrypt_group_hmac_key(group_key: &SymmetricKey, server_output: GroupHmacData) -> Result<HmacKey, SdkError>
 {
-	let out = get_group_data_internally(server_output)?;
+	let encrypted_hmac_key = Base64::decode_vec(&server_output.encrypted_hmac_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	Ok(out.try_into()?)
+	let key = CoreHmacKey::decrypt_key_with_master_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
+
+	Ok(HmacKey {
+		key_id: server_output.id,
+		key,
+	})
 }
 
-pub fn prepare_group_keys_for_new_member_with_group_public_key(
-	requester_public_key: &str,
-	group_keys: &str,
-	key_session: bool,
-	rank: Option<i32>,
-) -> Result<GroupKeysForNewMemberServerInput, String>
+pub fn decrypt_group_sortable_key(group_key: &SymmetricKey, server_output: GroupSortableData) -> Result<SortableKey, SdkError>
 {
-	//the same like the other fn but with the public key format and not the exported public key from server fetch
-	let group_keys: Vec<SymKeyFormatExport> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
+	let encrypted_key = Base64::decode_vec(&server_output.encrypted_sortable_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	//split group key and id
-	let saved_keys = group_keys
-		.iter()
-		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
+	let key = CoreSortableKey::decrypt_key_with_master_key(&group_key.key, &encrypted_key, &server_output.encrypted_sortable_alg)?;
 
-	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
-
-	Ok(prepare_group_keys_for_new_member_internally_with_group_public_key(
-		&requester_public_key.parse()?,
-		&split_group_keys,
-		key_session,
-		rank,
-	)?)
+	Ok(SortableKey {
+		key_id: server_output.id,
+		key,
+	})
 }
 
-pub fn prepare_group_keys_for_new_member_typed(
-	requester_public_key_data: &str,
-	group_keys: &str,
-	key_session: bool,
-	rank: Option<i32>,
-) -> Result<GroupKeysForNewMemberServerInput, String>
+/**
+Call this fn for each key, with the right private key
+ */
+pub fn decrypt_group_keys(private_key: &SecretKey, server_output: GroupKeyServerOutput) -> Result<GroupKeyData, SdkError>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
+	//the user_public_key_id is used to get the right private key
+	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_group_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
+	let encrypted_private_key =
+		Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	let group_keys: Vec<SymKeyFormatExport> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
+	let (group_key, private_group_key) = core_group::get_group(
+		&private_key.key,
+		&encrypted_master_key,
+		&encrypted_private_key,
+		server_output.group_key_alg.as_str(),
+		server_output.keypair_encrypt_alg.as_str(),
+	)?;
 
-	//split group key and id
-	let saved_keys = group_keys
-		.iter()
-		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
+	let public_group_key = import_public_key_from_pem_with_alg(
+		&server_output.public_group_key,
+		server_output.keypair_encrypt_alg.as_str(),
+	)?;
 
-	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
+	//export it to use it for connecting to a group without fetching the key again
+	let exported_public_key = UserPublicKeyData {
+		public_key_pem: server_output.public_group_key,
+		public_key_alg: server_output.keypair_encrypt_alg,
+		public_key_id: server_output.key_pair_id.clone(),
+		public_key_sig: server_output.public_key_sig,
+		public_key_sig_key_id: server_output.public_key_sig_key_id,
+	};
 
-	Ok(prepare_group_keys_for_new_member_typed_internally(
-		&requester_public_key_data,
-		&split_group_keys,
-		key_session,
-		rank,
-	)?)
+	Ok(GroupKeyData {
+		group_key: SymmetricKey {
+			key: group_key,
+			key_id: server_output.group_key_id,
+		},
+		private_group_key: SecretKey {
+			key_id: server_output.key_pair_id.clone(),
+			key: private_group_key,
+		},
+		public_group_key: PublicKey {
+			key_id: server_output.key_pair_id,
+			key: public_group_key,
+		},
+		exported_public_key,
+		time: server_output.time,
+	})
 }
 
 pub fn prepare_group_keys_for_new_member(
-	requester_public_key_data: &str,
-	group_keys: &str,
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymmetricKey],
+	key_session: bool, //this value must be set form each sdk impl from key storage when more than 100 keys are used
+	rank: Option<i32>,
+) -> Result<String, SdkError>
+{
+	let server_input = prepare_group_keys_for_new_member_typed(requester_public_key_data, group_keys, key_session, rank)?;
+
+	server_input
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)
+}
+
+pub fn prepare_group_keys_for_new_member_typed(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymmetricKey],
 	key_session: bool,
 	rank: Option<i32>,
-) -> Result<String, String>
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
+	let public_key = import_public_key_from_pem_with_alg(
+		requester_public_key_data.public_key_pem.as_str(),
+		requester_public_key_data.public_key_alg.as_str(),
+	)?;
 
-	let group_keys: Vec<SymKeyFormatExport> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
+	let keys = prepare_group_keys_for_new_member_internally_with_public_key(
+		&public_key,
+		requester_public_key_data.public_key_id.as_str(),
+		group_keys,
+	)?;
 
-	//split group key and id
-	let saved_keys = group_keys
-		.iter()
-		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
-
-	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
-
-	Ok(prepare_group_keys_for_new_member_internally(
-		&requester_public_key_data,
-		&split_group_keys,
+	let server_input = GroupKeysForNewMemberServerInput {
+		keys,
 		key_session,
 		rank,
-	)?)
+	};
+
+	Ok(server_input)
 }
 
-pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: &str, group_keys: &str) -> Result<String, String>
+pub fn prepare_group_keys_for_new_member_with_group_public_key(
+	requester_public_key_data: &PublicKey,
+	group_keys: &[&SymmetricKey],
+	key_session: bool,
+	rank: Option<i32>,
+) -> Result<GroupKeysForNewMemberServerInput, SdkError>
 {
-	let requester_public_key_data = UserPublicKeyData::from_string(requester_public_key_data).map_err(SdkError::JsonParseFailed)?;
+	//this can be used to not fetch the group public key but use it if the user already fetch the group
+	let keys = prepare_group_keys_for_new_member_internally_with_public_key(
+		&requester_public_key_data.key,
+		&requester_public_key_data.key_id,
+		group_keys,
+	)?;
 
-	let group_keys: Vec<SymKeyFormatExport> = from_str(group_keys).map_err(SdkError::JsonParseFailed)?;
+	let server_input = GroupKeysForNewMemberServerInput {
+		keys,
+		key_session,
+		rank,
+	};
 
-	//split group key and id
-	let saved_keys = group_keys
-		.iter()
-		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
-
-	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
-
-	Ok(prepare_group_keys_for_new_member_via_session_internally(
-		&requester_public_key_data,
-		&split_group_keys,
-	)?)
+	Ok(server_input)
 }
 
-pub(crate) fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymKeyFormatInt>) -> Vec<&SymKeyFormatInt>
+/**
+When there are mor than 100 keys used in this group, upload the rest of the keys via a session
+ */
+pub fn prepare_group_keys_for_new_member_via_session(
+	requester_public_key_data: &UserPublicKeyData,
+	group_keys: &[&SymmetricKey],
+) -> Result<String, SdkError>
 {
-	//this is needed because we need only ref of the group key not the group key itself.
-	//but for the non rust version the key is just a string which gets
+	let public_key = import_public_key_from_pem_with_alg(
+		requester_public_key_data.public_key_pem.as_str(),
+		requester_public_key_data.public_key_alg.as_str(),
+	)?;
 
-	let mut split_group_keys = Vec::with_capacity(saved_keys.len());
+	let keys = prepare_group_keys_for_new_member_internally_with_public_key(
+		&public_key,
+		requester_public_key_data.public_key_id.as_str(),
+		group_keys,
+	)?;
 
-	for saved_key in saved_keys {
-		split_group_keys.push(saved_key);
+	serde_json::to_string(&keys).map_err(|_| SdkError::JsonToStringFailed)
+}
+
+fn prepare_group_keys_for_new_member_internally_with_public_key(
+	public_key: &CorePublicKey,
+	public_key_id: &str,
+	group_keys: &[&SymmetricKey],
+) -> Result<Vec<GroupKeysForNewMember>, SdkError>
+{
+	//split group keys and their ids
+	let mut split_group_keys = Vec::with_capacity(group_keys.len());
+	let mut split_group_ids = Vec::with_capacity(group_keys.len());
+
+	for group_key in group_keys {
+		split_group_keys.push(&group_key.key);
+		split_group_ids.push(group_key.key_id.as_str());
 	}
 
-	split_group_keys
+	//get all the group keys from the server and use get group for all (if not already on the device)
+	let out = core_group::prepare_group_keys_for_new_member(public_key, &split_group_keys)?;
+
+	//transform this vec to the server input by encode each encrypted key to base64
+	let mut encrypted_group_keys: Vec<GroupKeysForNewMember> = Vec::with_capacity(out.len());
+
+	let mut i = 0;
+
+	for key_out in out {
+		let encrypted_group_key = Base64::encode_string(&key_out.encrypted_group_key);
+		let key_id = split_group_ids[i].to_string();
+
+		encrypted_group_keys.push(GroupKeysForNewMember {
+			encrypted_group_key,
+			alg: key_out.alg.to_string(),
+			user_public_key_id: public_key_id.to_string(),
+			key_id, //support multiple groups at once (important for user key update)
+			encrypted_alg: key_out.encrypted_group_key_alg.to_string(),
+		});
+
+		i += 1;
+	}
+
+	Ok(encrypted_group_keys)
 }
 
-pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, String>
+pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, SdkError>
 {
-	Ok(prepare_change_rank_internally(user_id, new_rank, admin_rank)?)
+	if new_rank < 1 || new_rank > 4 {
+		return Err(SdkError::GroupRank);
+	}
+
+	if admin_rank > 1 {
+		return Err(SdkError::GroupPermission);
+	}
+
+	GroupChangeRankServerInput {
+		changed_user_id: user_id.to_string(),
+		new_rank,
+	}
+	.to_string()
+	.map_err(|_| SdkError::JsonToStringFailed)
 }
 
 #[cfg(test)]
@@ -308,25 +614,19 @@ mod test
 {
 	use alloc::string::ToString;
 	use alloc::vec;
-	use core::str::FromStr;
 
 	use base64ct::{Base64, Encoding};
 	use sentc_crypto_common::group::{
 		CreateData,
 		DoneKeyRotationData,
-		GroupHmacData,
 		GroupKeysForNewMember,
 		GroupKeysForNewMemberServerInput,
 		GroupServerData,
-		GroupSortableData,
 		GroupUserAccessBy,
 		KeyRotationData,
 	};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_core::crypto::encrypt_asymmetric as encrypt_asymmetric_core;
-	use sentc_crypto_core::SymKey;
-	use sentc_crypto_utils::keys::PublicKeyFormatInt;
-	use serde_json::to_string;
+	use sentc_crypto_core::cryptomat::Pk;
 
 	use super::*;
 	use crate::group::test_fn::create_group;
@@ -337,13 +637,12 @@ mod test
 	{
 		//create a rust dummy user
 		let user = create_user();
+		let user_keys = &user.user_keys[0];
 
-		let group = prepare_create(&user.user_keys[0].public_key).unwrap();
+		let group = prepare_create(&user_keys.public_key).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
-		let pk = PublicKeyFormatInt::from_str(&user.user_keys[0].public_key).unwrap();
-
-		assert_eq!(group.creator_public_key_id, pk.key_id);
+		assert_eq!(group.creator_public_key_id, user_keys.public_key.key_id);
 	}
 
 	#[test]
@@ -362,20 +661,22 @@ mod test
 	fn test_get_group_data_and_keys()
 	{
 		let user = create_user();
+		let user_keys = &user.user_keys[0];
 
-		let (_, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
+		let (_, key_data, group_server_out, _, _) = create_group(user_keys);
 
 		let keys = group_server_out.keys;
 
+		//server output for one key
 		let single_fetch = ServerOutput {
 			status: true,
 			err_msg: None,
 			err_code: None,
 			result: Some(&keys[0]),
 		};
+		let single_fetch = serde_json::to_string(&single_fetch).unwrap();
 
-		let single_fetch = to_string(&single_fetch).unwrap();
-
+		//server output for multiple keys
 		let server_key_out = ServerOutput {
 			status: true,
 			err_msg: None,
@@ -387,26 +688,25 @@ mod test
 
 		let group_keys_from_server_out = get_group_keys_from_server_output(server_key_out.as_str()).unwrap();
 
-		let group_keys_from_server_out = decrypt_group_keys(
-			user.user_keys[0].private_key.as_str(),
-			&group_keys_from_server_out[0].key_data,
-		)
-		.unwrap();
+		let mut group_keys = Vec::with_capacity(group_keys_from_server_out.len());
 
-		//only one key
+		for k in group_keys_from_server_out {
+			group_keys.push(decrypt_group_keys(&user_keys.private_key, k).unwrap());
+		}
+
 		assert_eq!(
-			key_data[0].group_key.to_string(),
-			group_keys_from_server_out.group_key
+			key_data[0].group_key.key.as_ref(),
+			group_keys[0].group_key.key.as_ref()
 		);
 
 		//fetch the key single
 		let key = get_group_key_from_server_output(single_fetch.as_str()).unwrap();
 
-		let group_keys_from_single_server_out = decrypt_group_keys(user.user_keys[0].private_key.as_str(), &key.key_data).unwrap();
+		let group_keys_from_single_server_out = decrypt_group_keys(&user_keys.private_key, key).unwrap();
 
 		assert_eq!(
-			key_data[0].group_key.to_string(),
-			group_keys_from_single_server_out.group_key
+			&key_data[0].group_key.key.as_ref(),
+			&group_keys_from_single_server_out.group_key.key.as_ref()
 		);
 	}
 
@@ -414,10 +714,12 @@ mod test
 	fn test_prepare_group_keys_for_new_member()
 	{
 		let user = create_user();
+		let user_keys = &user.user_keys[0];
 
 		let user1 = create_user();
+		let user_keys1 = &user1.user_keys[0];
 
-		let group_create = prepare_create(user.user_keys[0].public_key.as_str()).unwrap();
+		let group_create = prepare_create(&user_keys.public_key).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -442,6 +744,12 @@ mod test
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output_user_0],
+			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 			hmac_keys: vec![GroupHmacData {
 				id: "123".to_string(),
 				encrypted_hmac_encryption_key_id: "".to_string(),
@@ -456,12 +764,6 @@ mod test
 				encrypted_sortable_encryption_key_id: "".to_string(),
 				time: 0,
 			}],
-			key_update: false,
-			rank: 0,
-			created_time: 0,
-			joined_time: 0,
-			access_by: GroupUserAccessBy::User,
-			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -473,20 +775,16 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = decrypt_group_keys(
-			user.user_keys[0].private_key.as_str(),
-			group_data_user_0.keys[0].key_data.as_str(),
-		)
-		.unwrap();
+		let mut group_keys = Vec::with_capacity(group_data_user_0.keys.len());
 
-		let g_k: SymKeyFormatExport = from_str(&group_key_user_0.group_key).unwrap();
-
-		let group_keys = to_string(&vec![g_k]).unwrap();
+		for key in group_data_user_0.keys {
+			group_keys.push(decrypt_group_keys(&user_keys.private_key, key).unwrap());
+		}
 
 		//prepare the keys for user 1
 		let out = prepare_group_keys_for_new_member(
-			user1.user_keys[0].exported_public_key.as_str(),
-			group_keys.as_str(),
+			&user_keys1.exported_public_key,
+			&[&group_keys[0].group_key],
 			false,
 			None,
 		)
@@ -516,6 +814,12 @@ mod test
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output_user_1],
+			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 			hmac_keys: vec![GroupHmacData {
 				id: "123".to_string(),
 				encrypted_hmac_encryption_key_id: "".to_string(),
@@ -530,12 +834,6 @@ mod test
 				encrypted_sortable_encryption_key_id: "".to_string(),
 				time: 0,
 			}],
-			key_update: false,
-			rank: 0,
-			created_time: 0,
-			joined_time: 0,
-			access_by: GroupUserAccessBy::User,
-			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -546,34 +844,32 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = decrypt_group_keys(
-			user1.user_keys[0].private_key.as_str(),
-			group_data_user_1.keys[0].key_data.as_str(),
-		)
-		.unwrap();
 
-		let group_key_0 = SymKeyFormatInt::from_str(&group_key_user_0.group_key).unwrap();
-		let group_key_1 = SymKeyFormatInt::from_str(&group_key_user_1.group_key).unwrap();
+		let mut group_keys_u2 = Vec::with_capacity(group_data_user_1.keys.len());
 
-		assert_eq!(group_key_0.key_id, group_key_1.key_id);
-
-		match (&group_key_0.key, &group_key_1.key) {
-			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
-				assert_eq!(*k0, *k1);
-			},
+		for key in group_data_user_1.keys {
+			group_keys_u2.push(decrypt_group_keys(&user_keys1.private_key, key).unwrap());
 		}
+
+		assert_eq!(group_keys_u2[0].group_key.key_id, group_keys_u2[0].group_key.key_id);
+
+		assert_eq!(
+			group_keys[0].group_key.key.as_ref(),
+			group_keys_u2[0].group_key.key.as_ref()
+		)
 	}
 
+	/**
+	The same test as before but this time with prepare_group_keys_for_new_member_via_session
+	 */
 	#[test]
 	fn test_prepare_group_keys_for_new_member_via_session()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
 		let user1 = create_user();
-		let user_keys1 = &user1.user_keys[0];
 
-		let group_create = prepare_create(user_keys.public_key.as_str()).unwrap();
+		let group_create = prepare_create(&user.user_keys[0].public_key).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -598,6 +894,12 @@ mod test
 			group_id: "123".to_string(),
 			parent_group_id: None,
 			keys: vec![group_server_output_user_0],
+			key_update: false,
+			rank: 0,
+			created_time: 0,
+			joined_time: 0,
+			access_by: GroupUserAccessBy::User,
+			is_connected_group: false,
 			hmac_keys: vec![GroupHmacData {
 				id: "123".to_string(),
 				encrypted_hmac_encryption_key_id: "".to_string(),
@@ -612,12 +914,6 @@ mod test
 				encrypted_sortable_encryption_key_id: "".to_string(),
 				time: 0,
 			}],
-			key_update: false,
-			rank: 0,
-			created_time: 0,
-			joined_time: 0,
-			access_by: GroupUserAccessBy::User,
-			is_connected_group: false,
 		};
 
 		let server_output = ServerOutput {
@@ -629,19 +925,20 @@ mod test
 
 		let group_data_user_0 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
 
-		let group_key_user_0 = decrypt_group_keys(
-			user.user_keys[0].private_key.as_str(),
-			group_data_user_0.keys[0].key_data.as_str(),
+		let mut group_keys_u0 = Vec::with_capacity(group_data_user_0.keys.len());
+
+		for key in group_data_user_0.keys {
+			group_keys_u0.push(decrypt_group_keys(&user.user_keys[0].private_key, key).unwrap());
+		}
+
+		//prepare the keys for user 1
+		let out = prepare_group_keys_for_new_member_via_session(
+			&user1.user_keys[0].exported_public_key,
+			&[&group_keys_u0[0].group_key],
 		)
 		.unwrap();
 
-		let g_k: SymKeyFormatExport = from_str(&group_key_user_0.group_key).unwrap();
-		let group_keys = to_string(&vec![g_k]).unwrap();
-
-		//prepare the keys for user 1
-		let out = prepare_group_keys_for_new_member_via_session(user_keys1.exported_public_key.as_str(), group_keys.as_str()).unwrap();
-
-		let out: Vec<GroupKeysForNewMember> = from_str(out.as_str()).unwrap();
+		let out: Vec<GroupKeysForNewMember> = serde_json::from_str(out.as_str()).unwrap();
 		let out_group_1 = &out[0]; //this group only got one key
 
 		let group_server_output_user_1 = GroupKeyServerOutput {
@@ -696,38 +993,34 @@ mod test
 		};
 
 		let group_data_user_1 = get_group_data(server_output.to_string().unwrap().as_str()).unwrap();
-		let group_key_user_1 = decrypt_group_keys(
-			user_keys1.private_key.as_str(),
-			group_data_user_1.keys[0].key_data.as_str(),
-		)
-		.unwrap();
 
-		let group_key_0 = SymKeyFormatInt::from_str(&group_key_user_0.group_key).unwrap();
-		let group_key_1 = SymKeyFormatInt::from_str(&group_key_user_1.group_key).unwrap();
+		let mut group_keys_u1 = Vec::with_capacity(group_data_user_1.keys.len());
 
-		assert_eq!(group_key_0.key_id, group_key_1.key_id);
-
-		match (&group_key_0.key, &group_key_1.key) {
-			(SymKey::Aes(k0), SymKey::Aes(k1)) => {
-				assert_eq!(*k0, *k1);
-			},
+		for key in group_data_user_1.keys {
+			group_keys_u1.push(decrypt_group_keys(&user1.user_keys[0].private_key, key).unwrap());
 		}
+
+		assert_eq!(group_keys_u0[0].group_key.key_id, group_keys_u1[0].group_key.key_id);
+
+		assert_eq!(
+			group_keys_u0[0].group_key.key.as_ref(),
+			&group_keys_u1[0].group_key.key.as_ref()
+		);
 	}
 
 	#[test]
 	fn test_key_rotation()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (_data, key_data, group_server_out, _, _) = create_group(user_keys);
+		let (_data, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
 
 		let rotation_out = key_rotation(
-			key_data[0].group_key.as_str(),
-			user_keys.public_key.as_str(),
+			&key_data[0].group_key,
+			&user.user_keys[0].public_key,
 			false,
 			None,
-			"".to_string(),
+			Default::default(),
 		)
 		.unwrap();
 		let rotation_out = KeyRotationData::from_string(rotation_out.as_str()).unwrap();
@@ -741,7 +1034,7 @@ mod test
 			public_group_key: rotation_out.public_group_key.to_string(),
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
-			user_public_key_id: "abc".to_string(),
+			user_public_key_id: user.user_keys[0].public_key.key_id.to_string(),
 			time: 0,
 			encrypted_sign_key: None,
 			verify_key: None,
@@ -751,24 +1044,17 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let new_group_key_direct = decrypt_group_keys(
-			user_keys.private_key.as_str(),
-			&server_key_output_direct.to_string().unwrap(),
-		)
-		.unwrap();
+		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
 
 		//simulate server key rotation encrypt. encrypt the ephemeral_key (encrypted by the previous room key) with the public keys of all users
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
-		let encrypted_ephemeral_key_by_group_key_and_public_key = encrypt_asymmetric_core(
-			&PublicKeyFormatInt::from_str(&user_keys.public_key)
-				.unwrap()
-				.key,
-			&encrypted_ephemeral_key,
-		)
-		.unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key = user.user_keys[0]
+			.public_key
+			.key
+			.encrypt(&encrypted_ephemeral_key)
+			.unwrap();
 
 		let server_output = KeyRotationInput {
-			error: None,
 			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
 			encrypted_group_key_by_ephemeral: rotation_out.encrypted_group_key_by_ephemeral.to_string(),
 			ephemeral_alg: rotation_out.ephemeral_alg.to_string(),
@@ -776,6 +1062,7 @@ mod test
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 			time: 0,
 			new_group_key_id: "abc".to_string(),
+			error: None,
 
 			signed_by_user_id: None,
 			signed_by_user_sign_key_id: None,
@@ -783,10 +1070,10 @@ mod test
 		};
 
 		let done_key_rotation = done_key_rotation(
-			user.user_keys[0].private_key.as_str(),
-			user.user_keys[0].public_key.as_str(),
-			key_data[0].group_key.as_str(),
-			server_output.to_string().unwrap().as_str(),
+			&user.user_keys[0].private_key,
+			&user.user_keys[0].public_key,
+			&key_data[0].group_key,
+			server_output,
 			None,
 		)
 		.unwrap();
@@ -811,46 +1098,29 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let out = decrypt_group_keys(
-			user_keys.private_key.as_str(),
-			&server_key_output.to_string().unwrap(),
-		)
-		.unwrap();
-
-		let old_group_key = SymKeyFormatInt::from_str(&key_data[0].group_key).unwrap();
-
-		let new_group_key_direct = SymKeyFormatInt::from_str(&new_group_key_direct.group_key).unwrap();
-
-		let new_group_key = SymKeyFormatInt::from_str(&out.group_key).unwrap();
+		let out = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
-		match (&old_group_key.key, &new_group_key.key) {
-			(SymKey::Aes(k_old), SymKey::Aes(k_new)) => {
-				assert_ne!(*k_old, *k_new);
-			},
-		}
+		assert_ne!(key_data[0].group_key.key.as_ref(), out.group_key.key.as_ref());
 
-		match (&new_group_key_direct.key, &new_group_key.key) {
-			(SymKey::Aes(k_0), SymKey::Aes(k_1)) => {
-				//should be the same for all users
-				assert_eq!(*k_0, *k_1);
-			},
-		}
+		assert_eq!(
+			new_group_key_direct.group_key.key.as_ref(),
+			out.group_key.key.as_ref()
+		);
 	}
 
 	#[test]
 	fn test_signed_key_rotation()
 	{
 		let user = create_user();
-		let user_keys = &user.user_keys[0];
 
-		let (_data, key_data, group_server_out, _, _) = create_group(user_keys);
+		let (_data, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
 
 		let rotation_out = key_rotation(
-			key_data[0].group_key.as_str(),
-			user_keys.public_key.as_str(),
+			&key_data[0].group_key,
+			&user.user_keys[0].public_key,
 			false,
-			Some(&user_keys.sign_key),
+			Some(&user.user_keys[0].sign_key),
 			user.user_id.clone(),
 		)
 		.unwrap();
@@ -859,7 +1129,7 @@ mod test
 		assert_eq!(rotation_out.signed_by_user_id.as_ref(), Some(&user.user_id));
 		assert_eq!(
 			rotation_out.signed_by_user_sign_key_id.as_ref(),
-			Some(&user_keys.group_key_id)
+			Some(&user.user_keys[0].sign_key.key_id)
 		);
 
 		//__________________________________________________________________________________________
@@ -872,7 +1142,7 @@ mod test
 			public_group_key: rotation_out.public_group_key.to_string(),
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
-			user_public_key_id: "abc".to_string(),
+			user_public_key_id: user.user_keys[0].public_key.key_id.to_string(),
 			time: 0,
 			encrypted_sign_key: None,
 			verify_key: None,
@@ -882,24 +1152,18 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let new_group_key_direct = decrypt_group_keys(
-			user_keys.private_key.as_str(),
-			&server_key_output_direct.to_string().unwrap(),
-		)
-		.unwrap();
+		let new_group_key_direct = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
 
 		//__________________________________________________________________________________________
 		//do the server part
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
-		let encrypted_ephemeral_key_by_group_key_and_public_key = encrypt_asymmetric_core(
-			&PublicKeyFormatInt::from_str(&user_keys.public_key)
-				.unwrap()
-				.key,
-			&encrypted_ephemeral_key,
-		)
-		.unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key = user.user_keys[0]
+			.public_key
+			.key
+			.encrypt(&encrypted_ephemeral_key)
+			.unwrap();
+
 		let server_output = KeyRotationInput {
-			error: None,
 			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
 			encrypted_group_key_by_ephemeral: rotation_out.encrypted_group_key_by_ephemeral.to_string(),
 			ephemeral_alg: rotation_out.ephemeral_alg.to_string(),
@@ -907,20 +1171,21 @@ mod test
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 			time: 0,
 			new_group_key_id: "abc".to_string(),
+			error: None,
 
-			signed_by_user_id: rotation_out.signed_by_user_id,
-			signed_by_user_sign_key_id: rotation_out.signed_by_user_sign_key_id,
-			signed_by_user_sign_key_alg: rotation_out.signed_by_user_sign_key_alg,
+			signed_by_user_id: rotation_out.signed_by_user_id.clone(),
+			signed_by_user_sign_key_id: rotation_out.signed_by_user_sign_key_id.clone(),
+			signed_by_user_sign_key_alg: rotation_out.signed_by_user_sign_key_alg.clone(),
 		};
 
 		//__________________________________________________________________________________________
 		//test done key rotation without verify key (should work even if it is signed, sign is here ignored)
 
 		let done_key_rotation_out = done_key_rotation(
-			user.user_keys[0].private_key.as_str(),
-			user.user_keys[0].public_key.as_str(),
-			key_data[0].group_key.as_str(),
-			server_output.to_string().unwrap().as_str(),
+			&user.user_keys[0].private_key,
+			&user.user_keys[0].public_key,
+			&key_data[0].group_key,
+			server_output,
 			None,
 		)
 		.unwrap();
@@ -933,7 +1198,7 @@ mod test
 			group_key_id: group_server_out.keys[0].group_key_id.to_string(),
 			encrypted_private_group_key: rotation_out.encrypted_private_group_key.to_string(),
 			public_group_key: rotation_out.public_group_key.to_string(),
-			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
+			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.clone(),
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: done_key_rotation_out.public_key_id,
 			time: 0,
@@ -945,41 +1210,40 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let out = decrypt_group_keys(
-			user_keys.private_key.as_str(),
-			&server_key_output.to_string().unwrap(),
-		)
-		.unwrap();
-
-		let old_group_key = SymKeyFormatInt::from_str(&key_data[0].group_key).unwrap();
-
-		let new_group_key_direct = SymKeyFormatInt::from_str(&new_group_key_direct.group_key).unwrap();
-
-		let new_group_key = SymKeyFormatInt::from_str(&out.group_key).unwrap();
+		let out = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
-		match (&old_group_key.key, &new_group_key.key) {
-			(SymKey::Aes(k_old), SymKey::Aes(k_new)) => {
-				assert_ne!(*k_old, *k_new);
-			},
-		}
+		assert_ne!(key_data[0].group_key.key.as_ref(), out.group_key.key.as_ref());
 
-		match (&new_group_key_direct.key, &new_group_key.key) {
-			(SymKey::Aes(k_0), SymKey::Aes(k_1)) => {
-				//should be the same for all users
-				assert_eq!(*k_0, *k_1);
-			},
-		}
+		assert_eq!(
+			new_group_key_direct.group_key.key.as_ref(),
+			out.group_key.key.as_ref()
+		);
 
 		//__________________________________________________________________________________________
 		//now test rotation with verify
 
+		let server_output = KeyRotationInput {
+			encrypted_ephemeral_key_by_group_key_and_public_key: Base64::encode_string(&encrypted_ephemeral_key_by_group_key_and_public_key),
+			encrypted_group_key_by_ephemeral: rotation_out.encrypted_group_key_by_ephemeral.to_string(),
+			ephemeral_alg: rotation_out.ephemeral_alg.to_string(),
+			encrypted_eph_key_key_id: "".to_string(),
+			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
+			time: 0,
+			new_group_key_id: "abc".to_string(),
+			error: None,
+
+			signed_by_user_id: rotation_out.signed_by_user_id,
+			signed_by_user_sign_key_id: rotation_out.signed_by_user_sign_key_id,
+			signed_by_user_sign_key_alg: rotation_out.signed_by_user_sign_key_alg,
+		};
+
 		let done_key_rotation_out = done_key_rotation(
-			user.user_keys[0].private_key.as_str(),
-			user.user_keys[0].public_key.as_str(),
-			key_data[0].group_key.as_str(),
-			server_output.to_string().unwrap().as_str(),
-			Some(&user_keys.exported_verify_key),
+			&user.user_keys[0].private_key,
+			&user.user_keys[0].public_key,
+			&key_data[0].group_key,
+			server_output,
+			Some(&user.user_keys[0].exported_verify_key),
 		)
 		.unwrap();
 		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
@@ -1003,28 +1267,14 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let out = decrypt_group_keys(
-			user_keys.private_key.as_str(),
-			&server_key_output.to_string().unwrap(),
-		)
-		.unwrap();
-
-		let old_group_key = SymKeyFormatInt::from_str(&key_data[0].group_key).unwrap();
-
-		let new_group_key = SymKeyFormatInt::from_str(&out.group_key).unwrap();
+		let out = decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
-		match (&old_group_key.key, &new_group_key.key) {
-			(SymKey::Aes(k_old), SymKey::Aes(k_new)) => {
-				assert_ne!(*k_old, *k_new);
-			},
-		}
+		assert_ne!(key_data[0].group_key.key.as_ref(), out.group_key.key.as_ref());
 
-		match (&new_group_key_direct.key, &new_group_key.key) {
-			(SymKey::Aes(k_0), SymKey::Aes(k_1)) => {
-				//should be the same for all users
-				assert_eq!(*k_0, *k_1);
-			},
-		}
+		assert_eq!(
+			new_group_key_direct.group_key.key.as_ref(),
+			out.group_key.key.as_ref()
+		);
 	}
 }
