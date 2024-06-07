@@ -5,13 +5,14 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::file::{BelongsToType, FileHead, FileNameUpdate, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::{FileId, FileSessionId};
-use sentc_crypto_core::cryptomat::{CryptoAlg, SymKey, SymKeyComposer, SymKeyGen};
+use sentc_crypto_core::cryptomat::{CryptoAlg, SignK, SymKey, SymKeyComposer, SymKeyGen};
 use sentc_crypto_core::{Signature, SymmetricKey as CoreSymmetricKey};
+use sentc_crypto_utils::keys::VerifyKey;
 
-use crate::crypto::{put_head_and_encrypted_data_internally, sign_internally, split_head_and_encrypted_data_internally, verify_internally};
+use crate::crypto::crypto::{put_head_and_encrypted_data, split_head_and_encrypted_data};
 use crate::entities::keys::{SignKey, SymmetricKey};
 use crate::util::public::handle_server_response;
-use crate::{crypto, SdkError};
+use crate::SdkError;
 
 pub fn prepare_register_file(
 	master_key_id: String,
@@ -42,7 +43,7 @@ pub fn prepare_register_file(
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(crypto::encrypt_string_symmetric_internally(key, &f, None)?)
+			Some(key.encrypt_string(&f, None)?)
 		},
 	};
 
@@ -73,7 +74,7 @@ pub fn prepare_file_name_update(key: &SymmetricKey, file_name: Option<String>) -
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(crypto::encrypt_string_symmetric_internally(key, &f, None)?)
+			Some(key.encrypt_string(&f, None)?)
 		},
 	};
 
@@ -104,7 +105,7 @@ pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: O
 
 	//sign the data
 	let sign = if let Some(sk) = sign_key {
-		let (sign_head, data_with_sign) = sign_internally(sk, &encrypted_part)?;
+		let (sign_head, data_with_sign) = sk.sign_with_head(&encrypted_part)?;
 		encrypted_part = data_with_sign;
 		Some(sign_head)
 	} else {
@@ -118,10 +119,7 @@ pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: O
 		sym_key_alg: file_key.get_alg_str().to_string(),
 	};
 
-	Ok((
-		put_head_and_encrypted_data_internally(&file_head, &encrypted_part)?,
-		file_key,
-	))
+	Ok((put_head_and_encrypted_data(&file_head, &encrypted_part)?, file_key))
 }
 
 pub fn decrypt_file_part_start(key: &SymmetricKey, part: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<(Vec<u8>, impl SymKey), SdkError>
@@ -135,7 +133,7 @@ pub fn decrypt_file_part(
 	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<(Vec<u8>, impl SymKey), SdkError>
 {
-	let (head, encrypted_part) = split_head_and_encrypted_data_internally::<FileHead>(part)?;
+	let (head, encrypted_part) = split_head_and_encrypted_data::<FileHead>(part)?;
 
 	//decrypt the key with the pre key
 	let encrypted_key = Base64::decode_vec(&head.key).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
@@ -152,7 +150,7 @@ pub fn decrypt_file_part(
 					file_key.decrypt(encrypted_data_without_sig)?
 				},
 				Some(vk) => {
-					let encrypted_data_without_sig = verify_internally(vk, encrypted_part, h)?;
+					let encrypted_data_without_sig = VerifyKey::verify_with_user_key(vk, encrypted_part, h)?;
 					file_key.decrypt(encrypted_data_without_sig)?
 				},
 			}
