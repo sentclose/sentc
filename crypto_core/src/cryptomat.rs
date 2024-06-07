@@ -41,6 +41,15 @@ pub trait SymKeyGen
 
 		Ok((encrypted_sym_key, out))
 	}
+
+	fn generate_symmetric_with_public_key<M: Pk>(master_key: &M) -> Result<(Vec<u8>, Self::SymmetricKey), Error>
+	{
+		let out = Self::generate()?;
+
+		let encrypted_sym_key = out.encrypt_key_with_master_key(master_key)?;
+
+		Ok((encrypted_sym_key, out))
+	}
 }
 
 pub trait SymKeyComposer
