@@ -26,12 +26,13 @@ use sentc_crypto_common::UserId;
 use sentc_crypto_core::cryptomat::{CryptoAlg, SignK};
 use sentc_crypto_core::{group as core_group, HmacKey as CoreHmacKey, PublicKey as CorePublicKey, Signature as CoreSig, SortKeys as CoreSortableKey};
 use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::keys::VerifyKey;
 use sentc_crypto_utils::{export_raw_public_key_to_pem, export_raw_verify_key_to_pem, import_public_key_from_pem_with_alg, sig_to_string};
 
 use crate::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
 use crate::entities::keys::{HmacKey, PublicKey, SecretKey, SignKey, SortableKey, SymmetricKey};
 use crate::util::public::handle_server_response;
-use crate::{crypto, SdkError};
+use crate::SdkError;
 
 pub fn prepare_create_typed(creators_public_key: &PublicKey) -> Result<CreateData, SdkError>
 {
@@ -254,7 +255,7 @@ pub fn done_key_rotation(
 		(Some(_user_id), Some(sign_key_id), Some(sign_key_alg)) => {
 			match verify_key {
 				Some(vk) => {
-					crypto::verify_internally(
+					VerifyKey::verify_with_user_key(
 						vk,
 						&encrypted_group_key_by_ephemeral,
 						&SignHead {
