@@ -1,174 +1,456 @@
-use alloc::string::String;
-use alloc::vec::Vec;
+use alloc::borrow::ToOwned;
+use alloc::string::{String, ToString};
 
-use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_utils::keys::MasterKeyFormat;
-use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
-use serde_json::from_str;
-
-use crate::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
-use crate::entities::user::{UserDataExport, UserKeyDataExport};
-use crate::user::{
-	create_safety_number_internally,
-	done_check_user_identifier_available_internally,
-	done_key_fetch_internally,
-	done_register_device_start_internally,
-	done_register_internally,
-	done_validate_mfa_internally,
-	generate_user_register_data_internally,
-	prepare_check_user_identifier_available_internally,
-	prepare_login_start_internally,
-	prepare_refresh_jwt_internally,
-	prepare_register_device_internally,
-	prepare_register_device_start_internally,
-	prepare_user_identifier_update_internally,
-	register_internally,
-	register_typed_internally,
-	reset_password_internally,
-	verify_login_internally,
-	verify_user_public_key_internally,
+use base64ct::{Base64, Base64UrlUnpadded, Encoding};
+use sentc_crypto_common::group::GroupKeyServerOutput;
+use sentc_crypto_common::user::{
+	KeyDerivedData,
+	MasterKey,
+	RegisterData,
+	RegisterServerOutput,
+	ResetPasswordData,
+	UserDeviceDoneRegisterInput,
+	UserDeviceRegisterInput,
+	UserDeviceRegisterOutput,
+	UserIdentifierAvailableServerInput,
+	UserIdentifierAvailableServerOutput,
+	UserPublicKeyData,
+	UserVerifyKeyData,
+	VerifyLoginOutput,
 };
-use crate::{group, SdkError};
+use sentc_crypto_common::{DeviceId, UserId};
+use sentc_crypto_core::cryptomat::{Pk, SignKeyComposer};
+use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, PublicKey as CorePublicKey, SignKey as CoreSignKey};
+use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
+use sentc_crypto_utils::{
+	client_random_value_to_string,
+	export_raw_public_key_to_pem,
+	export_raw_verify_key_to_pem,
+	hashed_authentication_key_to_string,
+	import_public_key_from_pem_with_alg,
+	import_sig_from_string,
+	import_verify_key_from_pem_with_alg,
+};
 
-pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, String>
+use crate::entities::keys::{PublicKey, SecretKey, SignKey, SymmetricKey, VerifyKey};
+use crate::entities::user::{UserDataInt, UserKeyDataInt};
+use crate::util::public::handle_server_response;
+use crate::SdkError;
+
+/**
+# Prepare the server input for the check
+ */
+pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
 {
-	Ok(prepare_check_user_identifier_available_internally(user_identifier)?)
+	UserIdentifierAvailableServerInput {
+		user_identifier: user_identifier.to_string(),
+	}
+	.to_string()
+	.map_err(|_| SdkError::JsonToStringFailed)
 }
 
-pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, String>
+pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, SdkError>
 {
-	Ok(done_check_user_identifier_available_internally(server_output)?)
+	let server_output: UserIdentifierAvailableServerOutput = handle_server_response(server_output)?;
+
+	Ok(server_output.available)
 }
 
-pub fn generate_user_register_data() -> Result<(String, String), String>
+pub fn generate_user_register_data() -> Result<(String, String), SdkError>
 {
-	Ok(generate_user_register_data_internally()?)
+	let (identifier, password) = sentc_crypto_core::generate_user_register_data()?;
+
+	let encoded_identifier = Base64UrlUnpadded::encode_string(&identifier);
+	let encoded_password = Base64UrlUnpadded::encode_string(&password);
+
+	Ok((encoded_identifier, encoded_password))
 }
 
-pub fn register_typed(user_identifier: &str, password: &str) -> Result<RegisterData, String>
+/**
+# Prepare the register input incl. keys
+ */
+pub fn register_typed(user_identifier: &str, password: &str) -> Result<RegisterData, SdkError>
 {
-	Ok(register_typed_internally(user_identifier, password)?)
+	let (device, raw_public_key) = prepare_register_device_private_internally(user_identifier, password)?;
+
+	//6. create the user group
+	//6.1 get a "fake" public key from the register data for group create
+	//the public key id will be set later after the registration on the server
+	let group_public_key = PublicKey {
+		key: raw_public_key,
+		key_id: "non_registered".to_string(),
+	};
+
+	//6.2 create a group
+	let (group, _, _) = crate::group::group::prepare_create_private_internally(&group_public_key, true)?;
+
+	Ok(RegisterData {
+		device,
+		group,
+	})
 }
 
-pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
+pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
 {
-	Ok(register_internally(user_identifier, password)?)
+	let register_out = register_typed(user_identifier, password)?;
+
+	//use always to string, even for rust feature enable because this data is for the server
+	register_out
+		.to_string()
+		.map_err(|_| SdkError::JsonToStringFailed)
 }
 
-pub fn done_register(server_output: &str) -> Result<UserId, String>
+pub fn done_register(server_output: &str) -> Result<UserId, SdkError>
 {
-	Ok(done_register_internally(server_output)?)
+	let out: RegisterServerOutput = handle_server_response(server_output)?;
+
+	Ok(out.user_id)
 }
 
-pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, String>
+/**
+Call this fn before the register device request in the new device.
+
+Transfer the output from this request to the active device to accept this device
+ */
+pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, SdkError>
 {
-	Ok(prepare_register_device_start_internally(device_identifier, password)?)
+	let (device, _) = prepare_register_device_private_internally(device_identifier, password)?;
+
+	serde_json::to_string(&device).map_err(|_| SdkError::JsonToStringFailed)
 }
 
-pub fn done_register_device_start(server_output: &str) -> Result<(), String>
+/**
+Call this fn after the register device request in the new device to get the token.
+
+This is just a check if the response was successful
+ */
+pub fn done_register_device_start(server_output: &str) -> Result<(), SdkError>
 {
-	Ok(done_register_device_start_internally(server_output)?)
+	let _out: UserDeviceRegisterOutput = handle_server_response(server_output)?;
+
+	Ok(())
 }
 
-pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session: bool) -> Result<(String, String), String>
+fn prepare_register_device_private_internally(device_identifier: &str, password: &str) -> Result<(UserDeviceRegisterInput, CorePublicKey), SdkError>
 {
-	let user_keys: Vec<SymKeyFormatExport> = from_str(user_keys).map_err(SdkError::JsonParseFailed)?;
+	let out = core_user::register(password)?;
 
-	let saved_keys = user_keys
-		.iter()
-		.map(|k| k.try_into())
-		.collect::<Result<Vec<SymKeyFormatInt>, _>>()?;
+	//transform the register output into json
 
-	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
+	//1. encode the encrypted data to base64
+	let encrypted_master_key = Base64::encode_string(&out.encrypted_master_key);
+	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
+	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
-	let (input, exported_public_key) = prepare_register_device_internally(server_output, &split_group_keys, key_session)?;
+	//2. export the public keys (decrypt and verify) to a key format
+	let public_key = export_raw_public_key_to_pem(&out.public_key)?;
+
+	let verify_key = export_raw_verify_key_to_pem(&out.verify_key)?;
+
+	//3. export the random value
+	let client_random_value = client_random_value_to_string(&out.client_random_value);
+
+	//4. export the hashed auth key (the first 16 bits)
+	let hashed_authentication_key = hashed_authentication_key_to_string(&out.hashed_authentication_key_bytes);
+
+	//5. create the structs
+	let master_key = MasterKey {
+		encrypted_master_key,
+		master_key_alg: out.master_key_alg.to_string(),
+		encrypted_master_key_alg: out.encrypted_master_key_alg.to_string(),
+	};
+
+	let derived = KeyDerivedData {
+		public_key,
+		verify_key,
+		derived_alg: out.derived_alg.to_string(),
+		client_random_value,
+		encrypted_private_key,
+		encrypted_sign_key,
+		keypair_encrypt_alg: out.keypair_encrypt_alg.to_string(),
+		keypair_sign_alg: out.keypair_sign_alg.to_string(),
+		hashed_authentication_key,
+	};
 
 	Ok((
-		input,
-		exported_public_key
-			.to_string()
-			.map_err(|_e| SdkError::JsonToStringFailed)?,
+		UserDeviceRegisterInput {
+			master_key,
+			derived,
+			device_identifier: device_identifier.to_string(),
+		},
+		out.public_key, //needed for register
 	))
 }
 
-pub fn prepare_login_start(user_id: &str) -> Result<String, String>
+/**
+Prepare the user group keys for the new device.
+
+Call this fn from the active device with the server output from register device
+
+Return the public key of the device, for the key session
+ */
+pub fn prepare_register_device(server_output: &str, group_keys: &[&SymmetricKey], key_session: bool)
+	-> Result<(String, UserPublicKeyData), SdkError>
 {
-	Ok(prepare_login_start_internally(user_id)?)
+	let out: UserDeviceRegisterOutput = handle_server_response(server_output)?;
+
+	//no sig for device keys
+	let exported_public_key = UserPublicKeyData {
+		public_key_pem: out.public_key_string,
+		public_key_alg: out.keypair_encrypt_alg,
+		public_key_id: out.device_id,
+		public_key_sig: None,
+		public_key_sig_key_id: None,
+	};
+
+	let user_keys = crate::group::group::prepare_group_keys_for_new_member_typed(&exported_public_key, group_keys, key_session, None)?;
+
+	Ok((
+		serde_json::to_string(&UserDeviceDoneRegisterInput {
+			user_keys,
+			token: out.token,
+		})
+		.map_err(|_| SdkError::JsonToStringFailed)?,
+		exported_public_key,
+	))
+}
+
+//__________________________________________________________________________________________________
+
+/**
+# prepare the data for the server req
+
+ */
+pub fn prepare_login_start(user_identifier: &str) -> Result<String, SdkError>
+{
+	Ok(sentc_crypto_utils::user::prepare_login_start(user_identifier)?)
 }
 
 pub fn done_validate_mfa(
-	master_key_encryption: &str,
+	master_key_encryption: &DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
 	server_output: &str,
 ) -> Result<UserPreVerifyLogin, SdkError>
 {
-	let master_key_encryption: MasterKeyFormat = master_key_encryption.parse()?;
-
-	done_validate_mfa_internally(
-		&master_key_encryption.try_into()?,
+	Ok(sentc_crypto_utils::user::done_validate_mfa(
+		master_key_encryption,
 		auth_key,
 		device_identifier,
 		server_output,
-	)
-}
-
-pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataExport, String>
-{
-	let out = verify_login_internally(server_output, user_id, device_id, device_keys)?;
-
-	Ok(out.try_into()?)
-}
-
-pub fn done_key_fetch(private_key: &str, server_output: &str) -> Result<UserKeyDataExport, String>
-{
-	let key = done_key_fetch_internally(&private_key.parse()?, server_output)?;
-
-	Ok(key.try_into()?)
-}
-
-pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, String>
-{
-	Ok(prepare_user_identifier_update_internally(user_identifier)?)
-}
-
-pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, String>
-{
-	Ok(prepare_refresh_jwt_internally(refresh_token)?)
-}
-
-pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
-{
-	Ok(reset_password_internally(
-		new_password,
-		&decrypted_private_key.parse()?,
-		&decrypted_sign_key.parse()?,
 	)?)
 }
 
-pub fn create_safety_number(verify_key_1: &str, user_id_1: &str, verify_key_2: Option<&str>, user_id_2: Option<&str>) -> Result<String, String>
+pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataInt, SdkError>
 {
-	let verify_key_1 = UserVerifyKeyData::from_string(verify_key_1).map_err(SdkError::JsonParseFailed)?;
-	let verify_key_2 = match verify_key_2 {
-		Some(k) => Some(UserVerifyKeyData::from_string(k).map_err(SdkError::JsonParseFailed)?),
-		None => None,
+	let server_output: VerifyLoginOutput = handle_server_response(server_output)?;
+
+	//export the hmac keys to decrypt it later
+	Ok(UserDataInt {
+		user_keys: server_output
+			.user_keys
+			.into_iter()
+			.map(|i| done_login_internally_with_user_out(&device_keys.private_key, i))
+			.collect::<Result<_, _>>()?,
+		hmac_keys: server_output.hmac_keys,
+		device_keys,
+		jwt: server_output.jwt,
+		refresh_token: server_output.refresh_token,
+		user_id,
+		device_id,
+	})
+}
+
+pub fn done_key_fetch(private_key: &SecretKey, server_output: &str) -> Result<UserKeyDataInt, SdkError>
+{
+	let out: GroupKeyServerOutput = handle_server_response(server_output)?;
+
+	let key = done_login_internally_with_user_out(private_key, out)?;
+
+	Ok(key)
+}
+
+/**
+# Get the user keys from the user group
+
+Decrypt it like group decrypt keys (which is used here)
+But decrypt the sign key too
+
+It can be immediately decrypt because the there is only one device key row not multiple like for group
+ */
+fn done_login_internally_with_user_out(private_key: &SecretKey, user_group_key: GroupKeyServerOutput) -> Result<UserKeyDataInt, SdkError>
+{
+	let keypair_sign_id = user_group_key.keypair_sign_id.to_owned();
+	let keypair_sign_alg = user_group_key.keypair_sign_alg.to_owned();
+	let verify_key = user_group_key.verify_key.to_owned();
+
+	//now get the verify key
+	let (keys, sign_key, verify_key, exported_verify_key, keypair_sign_id) = match (
+		&user_group_key.encrypted_sign_key,
+		verify_key,
+		keypair_sign_alg,
+		keypair_sign_id,
+	) {
+		(Some(encrypted_sign_key), Some(server_verify_key), Some(keypair_sign_alg), Some(keypair_sign_id)) => {
+			//handle it, only for user group
+
+			//get the sign key first to not use to owned for it because we only need the ref here
+			let encrypted_sign_key = Base64::decode_vec(encrypted_sign_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
+
+			let keys = crate::group::group::decrypt_group_keys(private_key, user_group_key)?;
+
+			let sign_key = CoreSignKey::decrypt_by_master_key(&keys.group_key.key, &encrypted_sign_key, &keypair_sign_alg)?;
+
+			let verify_key = import_verify_key_from_pem_with_alg(&server_verify_key, &keypair_sign_alg)?;
+
+			let exported_verify_key = UserVerifyKeyData {
+				verify_key_pem: server_verify_key,
+				verify_key_alg: keypair_sign_alg,
+				verify_key_id: keypair_sign_id.clone(),
+			};
+
+			(keys, sign_key, verify_key, exported_verify_key, keypair_sign_id)
+		},
+		_ => return Err(SdkError::LoginServerOutputWrong),
 	};
 
-	Ok(create_safety_number_internally(
-		&verify_key_1,
-		user_id_1,
-		verify_key_2.as_ref(),
-		user_id_2,
+	Ok(UserKeyDataInt {
+		group_key: keys.group_key,
+		private_key: keys.private_group_key,
+		public_key: keys.public_group_key,
+		time: keys.time,
+		sign_key: SignKey {
+			key: sign_key,
+			key_id: keypair_sign_id.clone(),
+		},
+		verify_key: VerifyKey {
+			key: verify_key,
+			key_id: keypair_sign_id,
+		},
+		exported_public_key: keys.exported_public_key,
+		exported_verify_key,
+	})
+}
+
+//__________________________________________________________________________________________________
+
+pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String, SdkError>
+{
+	Ok(sentc_crypto_utils::user::prepare_user_identifier_update(
+		user_identifier,
 	)?)
 }
 
-pub fn verify_user_public_key(verify_key: &str, public_key: &str) -> Result<bool, String>
+pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, SdkError>
 {
-	let verify_key = UserVerifyKeyData::from_string(verify_key).map_err(SdkError::JsonParseFailed)?;
-	let public_key = UserPublicKeyData::from_string(public_key).map_err(SdkError::JsonParseFailed)?;
+	Ok(sentc_crypto_utils::user::prepare_refresh_jwt(refresh_token)?)
+}
 
-	Ok(verify_user_public_key_internally(&verify_key, &public_key)?)
+pub fn reset_password(new_password: &str, decrypted_private_key: &SecretKey, decrypted_sign_key: &SignKey) -> Result<String, SdkError>
+{
+	let out = core_user::password_reset(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)?;
+
+	let encrypted_master_key = Base64::encode_string(&out.encrypted_master_key);
+	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
+	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
+
+	//prepare for the server
+	let client_random_value = client_random_value_to_string(&out.client_random_value);
+	let hashed_authentication_key = hashed_authentication_key_to_string(&out.hashed_authentication_key_bytes);
+
+	let master_key = MasterKey {
+		encrypted_master_key,
+		master_key_alg: out.master_key_alg.to_string(),
+		encrypted_master_key_alg: out.encrypted_master_key_alg.to_string(),
+	};
+
+	let data = ResetPasswordData {
+		client_random_value,
+		hashed_authentication_key,
+		master_key,
+		derived_alg: out.derived_alg.to_string(),
+		encrypted_sign_key,
+		encrypted_private_key,
+	};
+
+	data.to_string().map_err(|_| SdkError::JsonToStringFailed)
+}
+
+/**
+Create a safety number
+
+When creating a combined number than use always the user id which comes first in the alphabet as the first user
+ */
+pub fn create_safety_number(
+	verify_key_1: &UserVerifyKeyData,
+	user_id_1: &str,
+	verify_key_2: Option<&UserVerifyKeyData>,
+	user_id_2: Option<&str>,
+) -> Result<String, SdkError>
+{
+	let verify_key_1 = import_verify_key_from_pem_with_alg(&verify_key_1.verify_key_pem, &verify_key_1.verify_key_alg)?;
+
+	let number = match (verify_key_2, user_id_2) {
+		(Some(k), Some(id)) => {
+			let verify_key_2 = import_verify_key_from_pem_with_alg(&k.verify_key_pem, &k.verify_key_alg)?;
+
+			if id > user_id_1 {
+				//if the user id 1 comes first in the alphabet
+
+				core_user::safety_number(
+					sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_1,
+						user_info: user_id_1,
+					},
+					Some(sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_2,
+						user_info: id,
+					}),
+				)
+			} else {
+				core_user::safety_number(
+					sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_2,
+						user_info: id,
+					},
+					Some(sentc_crypto_core::SafetyNumber {
+						verify_key: &verify_key_1,
+						user_info: user_id_1,
+					}),
+				)
+			}
+		},
+		_ => {
+			core_user::safety_number(
+				sentc_crypto_core::SafetyNumber {
+					verify_key: &verify_key_1,
+					user_info: user_id_1,
+				},
+				None,
+			)
+		},
+	};
+
+	Ok(Base64UrlUnpadded::encode_string(&number))
+}
+
+pub fn verify_user_public_key(verify_key: &UserVerifyKeyData, public_key: &UserPublicKeyData) -> Result<bool, SdkError>
+{
+	let raw_verify_key = import_verify_key_from_pem_with_alg(&verify_key.verify_key_pem, &verify_key.verify_key_alg)?;
+
+	let sig = match &public_key.public_key_sig {
+		Some(s) => s,
+		None => {
+			return Ok(false);
+		},
+	};
+
+	let sig = import_sig_from_string(sig, &verify_key.verify_key_alg)?;
+
+	let public_key = import_public_key_from_pem_with_alg(&public_key.public_key_pem, &public_key.public_key_alg)?;
+
+	Ok(public_key.verify_public_key(&raw_verify_key, &sig)?)
 }
 
 #[cfg(test)]
@@ -177,7 +459,6 @@ mod test
 	extern crate std;
 
 	use alloc::string::ToString;
-	use alloc::vec;
 
 	use sentc_crypto_common::group::CreateData;
 	use sentc_crypto_common::user::{
@@ -188,7 +469,6 @@ mod test
 		UserDeviceRegisterOutput,
 	};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_utils::keys::PrivateKeyFormatExport;
 	use serde_json::to_string;
 
 	use super::*;
@@ -203,7 +483,7 @@ mod test
 
 		let out = register(username, password).unwrap();
 
-		std::println!("{}", out);
+		std::println!("rust: {}", out);
 	}
 
 	#[test]
@@ -227,52 +507,27 @@ mod test
 		let server_output = simulate_server_prepare_login(&out.device.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_input, auth_key, master_key_encryption_key) = prepare_login(username, password, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let done_login = done_login(
-			&master_key_encryption_key, //the value comes from prepare login
+		let login_out = done_login(
+			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
 			server_output,
 		)
 		.unwrap();
 
-		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &done_login.challenge);
-		let out = verify_login(
+		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &login_out.challenge);
+		let _out = verify_login(
 			&server_output,
-			done_login.user_id,
-			done_login.device_id,
-			done_login.device_keys,
+			login_out.user_id,
+			login_out.device_id,
+			login_out.device_keys,
 		)
 		.unwrap();
-
-		let private_key: PrivateKeyFormatExport = from_str(&out.user_keys[0].private_key).unwrap();
-
-		let private_key = match private_key {
-			PrivateKeyFormatExport::Ecies {
-				key_id: _,
-				key,
-			} => key,
-			PrivateKeyFormatExport::Kyber {
-				key_id: _,
-				key,
-			} => key,
-			PrivateKeyFormatExport::EciesKyberHybrid {
-				key_id: _,
-				k,
-				x,
-			} => {
-				assert_ne!(k, "");
-				assert_ne!(x, "");
-
-				return;
-			},
-		};
-
-		assert_ne!(private_key, "");
 	}
 
 	#[test]
@@ -313,7 +568,7 @@ mod test
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.device.derived);
-		let (_input, auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
@@ -345,7 +600,7 @@ mod test
 		let server_input = prepare_register_device_start(device_id, device_pw).unwrap();
 
 		//3. simulate server
-		let input: UserDeviceRegisterInput = from_str(&server_input).unwrap();
+		let input: UserDeviceRegisterInput = serde_json::from_str(&server_input).unwrap();
 
 		//4. server output
 		let server_output = UserDeviceRegisterOutput {
@@ -369,19 +624,17 @@ mod test
 		done_register_device_start(&server_output).unwrap();
 
 		//6. register the device with the main device
-		let g_k: SymKeyFormatExport = from_str(&user.user_keys[0].group_key).unwrap();
-		let user_keys = to_string(&vec![g_k]).unwrap();
 
-		let (out, _) = prepare_register_device(&server_output, &user_keys, false).unwrap();
+		let (out, _) = prepare_register_device(&server_output, &[&user.user_keys[0].group_key], false).unwrap();
 
-		let out: UserDeviceDoneRegisterInput = from_str(&out).unwrap();
+		let out: UserDeviceDoneRegisterInput = serde_json::from_str(&out).unwrap();
 		let user_keys = &out.user_keys.keys[0];
 
 		//7. check login with new device
 		let out_new_device = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&input.derived);
-		let (_input, auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
 
 		let new_device_register_data = to_string(&RegisterData {
 			device: input,
@@ -407,7 +660,7 @@ mod test
 		})
 		.unwrap();
 
-		let server_output = simulate_server_done_login(from_str(&new_device_register_data).unwrap());
+		let server_output = simulate_server_done_login(serde_json::from_str(&new_device_register_data).unwrap());
 
 		let new_device_data = done_login(
 			&master_key_encryption_key,
@@ -418,7 +671,7 @@ mod test
 		.unwrap();
 
 		let server_output = simulate_verify_login(
-			from_str(&new_device_register_data).unwrap(),
+			serde_json::from_str(&new_device_register_data).unwrap(),
 			&new_device_data.challenge,
 		);
 
@@ -430,8 +683,15 @@ mod test
 		)
 		.unwrap();
 
-		assert_eq!(user.user_keys[0].group_key, new_device_data.user_keys[0].group_key);
-		assert_ne!(user.device_keys.private_key, new_device_data.device_keys.private_key);
+		assert_eq!(
+			user.user_keys[0].group_key.key.as_ref(),
+			new_device_data.user_keys[0].group_key.key.as_ref()
+		);
+
+		assert_ne!(
+			user.device_keys.private_key.key.as_ref(),
+			new_device_data.device_keys.private_key.key.as_ref()
+		);
 	}
 
 	#[test]
@@ -487,26 +747,5 @@ mod test
 		.unwrap();
 
 		assert!(verify);
-	}
-
-	#[test]
-	fn test_verify_public_key_with_wrong_key()
-	{
-		let user_1 = create_user();
-		let user_2 = create_user();
-
-		let verify = verify_user_public_key(
-			&user_1.user_keys[0].exported_verify_key,
-			&user_2.user_keys[0].exported_public_key,
-		)
-		.unwrap();
-		assert!(!verify);
-
-		let verify = verify_user_public_key(
-			&user_2.user_keys[0].exported_verify_key,
-			&user_1.user_keys[0].exported_public_key,
-		)
-		.unwrap();
-		assert!(!verify);
 	}
 }
