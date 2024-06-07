@@ -197,3 +197,12 @@ pub trait PwHash
 
 	fn password_to_decrypt(&self, password: &[u8], salt: &[u8]) -> Result<impl SymKey, Error>;
 }
+
+pub trait PwHashComposer
+{
+	type Hasher: PwHash;
+
+	fn get_hasher() -> Self::Hasher;
+
+	fn get_from_alg(alg: &str) -> Result<Self::Hasher, Error>;
+}

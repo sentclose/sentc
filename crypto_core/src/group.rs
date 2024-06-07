@@ -334,20 +334,20 @@ mod test
 
 	use super::*;
 	use crate::user::{done_login, prepare_login, register, LoginDoneOutput};
-	use crate::{generate_salt, HmacKey, SecretKey, SignKey, SortKeys, SymmetricKey};
+	use crate::{generate_salt, HmacKey, PwHasherGetter, SecretKey, SignKey, SortKeys, SymmetricKey};
 
 	fn create_dummy_user() -> (impl Pk, LoginDoneOutput<SecretKey, SignKey>)
 	{
 		let password = "12345";
 
 		//create a test user
-		let register_out = register::<SymmetricKey, SecretKey, SignKey>(password).unwrap();
+		let register_out = register::<SymmetricKey, SecretKey, SignKey, PwHasherGetter>(password).unwrap();
 
 		//and now try to log in
 		//normally the salt gets calc by the api
 		let salt_from_rand_value = generate_salt(register_out.client_random_value, "");
 
-		let prep_login_out = prepare_login(password, &salt_from_rand_value, register_out.derived_alg).unwrap();
+		let prep_login_out = prepare_login::<PwHasherGetter>(password, &salt_from_rand_value, register_out.derived_alg).unwrap();
 
 		//try to decrypt the master key
 		let login_out = done_login::<SecretKey, SignKey>(

@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::alg::pw_hash::argon2::{Argon2PwHash, ARGON_2_OUTPUT};
-use crate::cryptomat::{PwHash, SymKey};
+use crate::cryptomat::{PwHashComposer, SymKey};
 use crate::Error;
 
 pub(crate) mod argon2;
@@ -32,17 +32,24 @@ macro_rules! prepare_export_single_value {
 	};
 }
 
-pub(crate) fn get_hasher() -> impl PwHash
+pub struct PwHasherGetter;
+
+impl PwHashComposer for PwHasherGetter
 {
 	#[cfg(feature = "argon2_hash")]
-	Argon2PwHash
-}
+	type Hasher = Argon2PwHash;
 
-pub(crate) fn get_hasher_from_alg(alg: &str) -> Result<impl PwHash, Error>
-{
-	match alg {
-		ARGON_2_OUTPUT => Ok(Argon2PwHash),
-		_ => Err(Error::AlgNotFound),
+	fn get_hasher() -> Self::Hasher
+	{
+		Argon2PwHash
+	}
+
+	fn get_from_alg(alg: &str) -> Result<Self::Hasher, Error>
+	{
+		match alg {
+			ARGON_2_OUTPUT => Ok(Argon2PwHash),
+			_ => Err(Error::AlgNotFound),
+		}
 	}
 }
 

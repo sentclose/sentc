@@ -37,7 +37,14 @@ pub use self::alg::asym::{PublicKey, SecretKey};
 pub use self::alg::hmac::hmac_sha256::{HmacSha256Key, HMAC_SHA256_OUTPUT};
 pub use self::alg::hmac::HmacKey;
 pub use self::alg::pw_hash::argon2::ARGON_2_OUTPUT;
-pub use self::alg::pw_hash::{ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, HashedAuthenticationKey, PasswordEncryptSalt};
+pub use self::alg::pw_hash::{
+	ClientRandomValue,
+	DeriveAuthKeyForAuth,
+	DeriveMasterKeyForAuth,
+	HashedAuthenticationKey,
+	PasswordEncryptSalt,
+	PwHasherGetter,
+};
 pub use self::alg::sign::ed25519::{Ed25519KeyPair, Ed25519Sig, Ed25519SignK, Ed25519VerifyK, ED25519_OUTPUT};
 pub use self::alg::sign::ed25519_dilithium_hybrid::{
 	Ed25519DilithiumHybridKeyPair,
