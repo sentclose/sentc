@@ -18,12 +18,11 @@ use sentc_crypto_common::group::{
 	GroupLightServerData,
 	GroupServerData,
 	GroupSortableData,
-	GroupUserAccessBy,
 	KeyRotationData,
 	KeyRotationInput,
 };
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_common::UserId;
 use sentc_crypto_core::cryptomat::{CryptoAlg, SignK};
 use sentc_crypto_core::{group as core_group, HmacKey as CoreHmacKey, PublicKey as CorePublicKey, Signature as CoreSig, SortKeys as CoreSortableKey};
 use sentc_crypto_utils::error::SdkUtilError;
@@ -33,19 +32,6 @@ use crate::entities::group::{GroupKeyData, GroupOutData, GroupOutDataLight};
 use crate::entities::keys::{HmacKey, PublicKey, SecretKey, SignKey, SortableKey, SymmetricKey};
 use crate::util::public::handle_server_response;
 use crate::{crypto, SdkError};
-
-fn get_access_by(access_by: GroupUserAccessBy) -> (Option<GroupId>, Option<GroupId>)
-{
-	match access_by {
-		GroupUserAccessBy::User => (None, None),
-		GroupUserAccessBy::Parent(id) => (None, Some(id)),
-		GroupUserAccessBy::GroupAsUser(id) => (Some(id), None),
-		GroupUserAccessBy::GroupAsUserAsParent {
-			parent,
-			group_as_user,
-		} => (Some(group_as_user), Some(parent)),
-	}
-}
 
 pub fn prepare_create_typed(creators_public_key: &PublicKey) -> Result<CreateData, SdkError>
 {
@@ -105,25 +91,10 @@ pub(crate) fn prepare_create_private_internally(
 	let (encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig) = if !user_group {
 		(None, None, None, None)
 	} else {
-		let encrypted_sign_key = match &out.encrypted_sign_key {
-			None => None,
-			Some(k) => Some(Base64::encode_string(k)),
-		};
-
-		let verify_key = match &out.verify_key {
-			None => None,
-			Some(k) => Some(export_raw_verify_key_to_pem(k)?),
-		};
-
-		let keypair_sign_alg = match out.keypair_sign_alg {
-			None => None,
-			Some(alg) => Some(alg.to_string()),
-		};
-
-		let public_key_sig = match &out.public_key_sig {
-			None => None,
-			Some(s) => Some(sig_to_string(s)),
-		};
+		let encrypted_sign_key = out.encrypted_sign_key.map(|k| Base64::encode_string(&k));
+		let verify_key = out.verify_key.map(|k| export_raw_verify_key_to_pem(k)?);
+		let keypair_sign_alg = out.keypair_sign_alg.map(|s| s.to_string());
+		let public_key_sig = out.public_key_sig.map(|s| sig_to_string(s));
 
 		(encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig)
 	};
@@ -351,7 +322,7 @@ pub fn get_group_data(server_output: &str) -> Result<GroupOutData, SdkError>
 {
 	let server_output: GroupServerData = handle_server_response(server_output)?;
 
-	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+	let (access_by_group_as_member, access_by_parent_group) = sentc_crypto_utils::group::get_access_by(server_output.access_by);
 
 	Ok(GroupOutData {
 		keys: server_output.keys,
@@ -373,7 +344,7 @@ pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, Sd
 {
 	let server_output: GroupLightServerData = handle_server_response(server_output)?;
 
-	let (access_by_group_as_member, access_by_parent_group) = get_access_by(server_output.access_by);
+	let (access_by_group_as_member, access_by_parent_group) = sentc_crypto_utils::group::get_access_by(server_output.access_by);
 
 	Ok(GroupOutDataLight {
 		group_id: server_output.group_id,
