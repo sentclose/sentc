@@ -25,6 +25,7 @@ pub enum SdkUtilError
 	ImportingSignKeyFailed,
 	ImportVerifyKeyFailed,
 	ImportAuthMasterKeyFailed,
+	ImportKeyFailed,
 
 	DerivedKeyWrongFormat,
 	InvalidJwt,
@@ -152,6 +153,7 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 		SdkUtilError::ImportVerifyKeyFailed => out_error("client_114", "Can't import verify key"),
 		SdkUtilError::ImportingKeyFromPemFailed => out_error("client_115", "Can't import this key. It has a wrong format"),
 		SdkUtilError::ImportAuthMasterKeyFailed => out_error("client_116", "Can't import auth master key"),
+		SdkUtilError::ImportKeyFailed => out_error("client_109", "Can't import the key"),
 
 		//exporting error
 		SdkUtilError::ExportingPublicKeyFailed => {
