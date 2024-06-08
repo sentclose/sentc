@@ -4,10 +4,12 @@ use sentc_crypto_common::content_sortable::SortableEncryptOutput;
 use sentc_crypto_core::cryptomat::SortableKey as CoreSort;
 use sentc_crypto_utils::keys::SortableKey;
 
+use crate::SdkError;
+
 pub fn encrypt_raw_number(key: &str, data: u64) -> Result<u64, String>
 {
 	let key: SortableKey = key.parse()?;
-	Ok(key.encrypt_sortable(data)?)
+	Ok(key.encrypt_sortable(data).map_err(Into::<SdkError>::into)?)
 }
 
 pub fn encrypt_number(key: &str, data: u64) -> Result<SortableEncryptOutput, String>

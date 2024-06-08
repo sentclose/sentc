@@ -87,12 +87,12 @@ pub fn prepare_file_name_update(key: &SymmetricKey, file_name: Option<String>) -
 /**
 The first part is encrypted by the file initial key. This key id is stored in the file data and must not be in every file head
  */
-pub fn encrypt_file_part_start(key: &SymmetricKey, part: &[u8], sign_key: Option<&SignKey>) -> Result<(Vec<u8>, impl SymKey), SdkError>
+pub fn encrypt_file_part_start(key: &SymmetricKey, part: &[u8], sign_key: Option<&SignKey>) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
 {
 	encrypt_file_part(&key.key, part, sign_key)
 }
 
-pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: Option<&SignKey>) -> Result<(Vec<u8>, impl SymKey), SdkError>
+pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: Option<&SignKey>) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
 {
 	/*
 	Just create a normal core key without id
@@ -122,7 +122,11 @@ pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: O
 	Ok((put_head_and_encrypted_data(&file_head, &encrypted_part)?, file_key))
 }
 
-pub fn decrypt_file_part_start(key: &SymmetricKey, part: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<(Vec<u8>, impl SymKey), SdkError>
+pub fn decrypt_file_part_start(
+	key: &SymmetricKey,
+	part: &[u8],
+	verify_key: Option<&UserVerifyKeyData>,
+) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
 {
 	decrypt_file_part(&key.key, part, verify_key)
 }
@@ -131,7 +135,7 @@ pub fn decrypt_file_part(
 	pre_content_key: &impl SymKey,
 	part: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<(Vec<u8>, impl SymKey), SdkError>
+) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
 {
 	let (head, encrypted_part) = split_head_and_encrypted_data::<FileHead>(part)?;
 

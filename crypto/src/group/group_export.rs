@@ -57,11 +57,13 @@ pub fn key_rotation(
 {
 	//the ids come from the storage of the current impl from the sdk, the group key id comes from get group
 
+	let sign_key = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
+
 	Ok(super::group::key_rotation(
 		&previous_group_key.parse()?,
 		&invoker_public_key.parse()?,
 		user_group,
-		sign_key.map(|k| k.parse()?).as_ref(),
+		sign_key.as_ref(),
 		starter,
 	)?)
 }
@@ -81,14 +83,18 @@ pub fn done_key_rotation(
 {
 	let server_output = get_done_key_rotation_server_input(server_output)?;
 
+	let verify_key = if let Some(k) = verify_key {
+		Some(UserVerifyKeyData::from_string(k).map_err(SdkError::JsonParseFailed)?)
+	} else {
+		None
+	};
+
 	Ok(super::group::done_key_rotation(
 		&private_key.parse()?,
 		&public_key.parse()?,
 		&previous_group_key.parse()?,
 		server_output,
-		verify_key
-			.map(|k| UserVerifyKeyData::from_string(k)?)
-			.as_ref(),
+		verify_key.as_ref(),
 	)?)
 }
 

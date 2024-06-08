@@ -10,12 +10,20 @@ use crate::SdkError;
 
 pub(crate) fn prepare_sign_key(sign_key: Option<&str>) -> Result<Option<SignKey>, SdkError>
 {
-	Ok(sign_key.map(|k| k.parse()?))
+	let k = if let Some(sk) = sign_key { Some(sk.parse()?) } else { None };
+
+	Ok(k)
 }
 
 pub(crate) fn prepare_verify_key(verify_key_data: Option<&str>) -> Result<Option<UserVerifyKeyData>, SdkError>
 {
-	Ok(verify_key_data.map(|k| UserVerifyKeyData::from_string(k)?))
+	let k = if let Some(k) = verify_key_data {
+		Some(UserVerifyKeyData::from_string(k)?)
+	} else {
+		None
+	};
+
+	Ok(k)
 }
 
 pub fn split_head_and_encrypted_data(data_with_head: &[u8]) -> Result<(EncryptedHead, &[u8]), String>
