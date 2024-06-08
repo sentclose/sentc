@@ -2415,12 +2415,12 @@ pub fn sortable_encrypt_number(key: String, data: u64) -> Result<SortableEncrypt
 
 pub fn sortable_encrypt_raw_string(key: String, data: String) -> Result<u64>
 {
-	sentc_crypto::crypto_sortable::encrypt_raw_string(&key, &data)
+	sentc_crypto::crypto_sortable::encrypt_raw_string(&key, &data, Some(4))
 }
 
 pub fn sortable_encrypt_string(key: String, data: String) -> Result<SortableEncryptOutput>
 {
-	let out = sentc_crypto::crypto_sortable::encrypt_string(&key, &data)?;
+	let out = sentc_crypto::crypto_sortable::encrypt_string(&key, &data, Some(4))?;
 
 	Ok(out.into())
 }

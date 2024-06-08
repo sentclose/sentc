@@ -452,13 +452,13 @@ pub fn sortable_encrypt_number(key: &str, data: u64) -> Result<SortableEncryptOu
 #[wasm_bindgen]
 pub fn sortable_encrypt_raw_string(key: &str, data: &str) -> Result<u64, JsValue>
 {
-	Ok(sentc_crypto::crypto_sortable::encrypt_raw_string(key, data)?)
+	Ok(sentc_crypto::crypto_sortable::encrypt_raw_string(key, data, Some(4))?)
 }
 
 #[wasm_bindgen]
 pub fn sortable_encrypt_string(key: &str, data: &str) -> Result<SortableEncryptOutput, JsValue>
 {
-	let out = sentc_crypto::crypto_sortable::encrypt_string(key, data)?;
+	let out = sentc_crypto::crypto_sortable::encrypt_string(key, data, Some(4))?;
 
 	Ok(out.into())
 }
