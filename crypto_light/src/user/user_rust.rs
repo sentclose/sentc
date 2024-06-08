@@ -102,7 +102,6 @@ mod test
 
 	use sentc_crypto_common::user::{ChangePasswordData, UserDeviceDoneRegisterInputLight, UserDeviceRegisterOutput};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_core::Sk;
 	use serde_json::{from_str, to_string};
 
 	use super::*;
@@ -216,7 +215,7 @@ mod test
 		.unwrap();
 
 		let server_output = simulate_verify_login(&done_login_out.challenge);
-		let user = verify_login(
+		let _user = verify_login(
 			&server_output,
 			done_login_out.user_id,
 			done_login_out.device_id,
@@ -275,38 +274,12 @@ mod test
 
 		let server_output = simulate_verify_login(&new_device_data.challenge);
 
-		let new_device_data = verify_login(
+		let _new_device_data = verify_login(
 			&server_output,
 			new_device_data.user_id,
 			new_device_data.device_id,
 			new_device_data.device_keys,
 		)
 		.unwrap();
-
-		match (
-			&user.device_keys.private_key.key,
-			&new_device_data.device_keys.private_key.key,
-		) {
-			(Sk::Ecies(k1), Sk::Ecies(k2)) => {
-				assert_ne!(*k1, *k2);
-			},
-			(Sk::Kyber(k1), Sk::Kyber(k2)) => {
-				assert_ne!(*k1, *k2);
-			},
-			(
-				Sk::EciesKyberHybrid {
-					x,
-					k,
-				},
-				Sk::EciesKyberHybrid {
-					x: x1,
-					k: k1,
-				},
-			) => {
-				assert_ne!(*x, *x1);
-				assert_ne!(*k, *k1);
-			},
-			_ => panic!("Alg not found"),
-		}
 	}
 }

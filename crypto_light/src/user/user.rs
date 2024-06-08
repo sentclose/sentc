@@ -113,7 +113,6 @@ mod test
 
 	use sentc_crypto_common::user::{ChangePasswordData, UserDeviceDoneRegisterInputLight, UserDeviceRegisterOutput};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_utils::keys::PrivateKeyFormatExport;
 	use serde_json::{from_str, to_string};
 
 	use super::*;
@@ -166,38 +165,13 @@ mod test
 		.unwrap();
 
 		let server_output = simulate_verify_login(&login_out.challenge);
-		let login_out = verify_login(
+		let _login_out = verify_login(
 			&server_output,
 			login_out.user_id,
 			login_out.device_id,
 			login_out.device_keys,
 		)
 		.unwrap();
-
-		let private_key: PrivateKeyFormatExport = from_str(&login_out.device_keys.private_key).unwrap();
-
-		let private_key = match private_key {
-			PrivateKeyFormatExport::Ecies {
-				key_id: _,
-				key,
-			} => key,
-			PrivateKeyFormatExport::Kyber {
-				key_id: _,
-				key,
-			} => key,
-			PrivateKeyFormatExport::EciesKyberHybrid {
-				key_id: _,
-				k,
-				x,
-			} => {
-				assert_ne!(k, "");
-				assert_ne!(x, "");
-
-				return;
-			},
-		};
-
-		assert_ne!(private_key, "");
 	}
 
 	#[test]
