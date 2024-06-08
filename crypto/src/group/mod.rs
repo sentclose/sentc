@@ -13,7 +13,9 @@ pub use self::group_rank_check::*;
 #[cfg(test)]
 pub(crate) mod test_fn
 {
-	use alloc::string::{String, ToString};
+	#[cfg(not(feature = "rust"))]
+	use alloc::string::String;
+	use alloc::string::ToString;
 	use alloc::vec;
 	use alloc::vec::Vec;
 

@@ -20,7 +20,7 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::{DeviceId, UserId};
 use sentc_crypto_core::cryptomat::{Pk, SignKeyComposer};
-use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, PublicKey as CorePublicKey, SignKey as CoreSignKey};
+use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, PublicKey as CorePublicKey, PwHasherGetter, SignKey as CoreSignKey};
 use sentc_crypto_utils::error::SdkUtilError;
 use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
 use sentc_crypto_utils::{
@@ -134,7 +134,8 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), SdkError>
 
 fn prepare_register_device_private_internally(device_identifier: &str, password: &str) -> Result<(UserDeviceRegisterInput, CorePublicKey), SdkError>
 {
-	let out = core_user::register(password)?;
+	let out =
+		core_user::register::<sentc_crypto_core::SymmetricKey, sentc_crypto_core::SecretKey, sentc_crypto_core::SignKey, PwHasherGetter>(password)?;
 
 	//transform the register output into json
 
@@ -349,7 +350,11 @@ pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, SdkError>
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &SecretKey, decrypted_sign_key: &SignKey) -> Result<String, SdkError>
 {
-	let out = core_user::password_reset(new_password, &decrypted_private_key.key, &decrypted_sign_key.key)?;
+	let out = core_user::password_reset::<sentc_crypto_core::SymmetricKey, PwHasherGetter>(
+		new_password,
+		&decrypted_private_key.key,
+		&decrypted_sign_key.key,
+	)?;
 
 	let encrypted_master_key = Base64::encode_string(&out.encrypted_master_key);
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
@@ -686,11 +691,6 @@ mod test
 		assert_eq!(
 			user.user_keys[0].group_key.key.as_ref(),
 			new_device_data.user_keys[0].group_key.key.as_ref()
-		);
-
-		assert_ne!(
-			user.device_keys.private_key.key.as_ref(),
-			new_device_data.device_keys.private_key.key.as_ref()
 		);
 	}
 

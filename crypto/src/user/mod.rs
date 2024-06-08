@@ -13,9 +13,6 @@ use sentc_crypto_utils::user::UserPreVerifyLogin;
 
 use crate::SdkError;
 
-#[cfg(feature = "rust")]
-mod user_rust;
-
 pub(crate) mod user;
 #[cfg(not(feature = "rust"))]
 mod user_export;

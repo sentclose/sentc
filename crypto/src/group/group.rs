@@ -24,7 +24,14 @@ use sentc_crypto_common::group::{
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::cryptomat::{CryptoAlg, SignK};
-use sentc_crypto_core::{group as core_group, HmacKey as CoreHmacKey, PublicKey as CorePublicKey, Signature as CoreSig, SortKeys as CoreSortableKey};
+use sentc_crypto_core::{
+	group as core_group,
+	HmacKey as CoreHmacKey,
+	PublicKey as CorePublicKey,
+	Signature as CoreSig,
+	SortKeys as CoreSortableKey,
+	SortKeys,
+};
 use sentc_crypto_utils::error::SdkUtilError;
 use sentc_crypto_utils::keys::VerifyKey;
 use sentc_crypto_utils::{export_raw_public_key_to_pem, export_raw_verify_key_to_pem, import_public_key_from_pem_with_alg, sig_to_string};
@@ -75,7 +82,13 @@ pub(crate) fn prepare_create_private_internally(
 ) -> Result<(CreateData, PublicKey, SymmetricKey), SdkError>
 {
 	//it is ok to use the internal format of the public key here because this is the own public key and get return from the done login fn
-	let out = core_group::prepare_create(&creators_public_key.key, user_group)?;
+	let out = core_group::prepare_create::<
+		sentc_crypto_core::SymmetricKey,
+		sentc_crypto_core::SecretKey,
+		sentc_crypto_core::SignKey,
+		sentc_crypto_core::HmacKey,
+		SortKeys,
+	>(&creators_public_key.key, user_group)?;
 	let created_group_key = out.1;
 	let out = out.0;
 
@@ -93,9 +106,15 @@ pub(crate) fn prepare_create_private_internally(
 		(None, None, None, None)
 	} else {
 		let encrypted_sign_key = out.encrypted_sign_key.map(|k| Base64::encode_string(&k));
-		let verify_key = out.verify_key.map(|k| export_raw_verify_key_to_pem(k)?);
+
+		let verify_key = if let Some(vk) = out.verify_key {
+			Some(export_raw_verify_key_to_pem(&vk)?)
+		} else {
+			None
+		};
+
 		let keypair_sign_alg = out.keypair_sign_alg.map(|s| s.to_string());
-		let public_key_sig = out.public_key_sig.map(|s| sig_to_string(s));
+		let public_key_sig = out.public_key_sig.map(|s| sig_to_string(&s));
 
 		(encrypted_sign_key, verify_key, keypair_sign_alg, public_key_sig)
 	};
@@ -143,7 +162,11 @@ pub fn key_rotation(
 	starter: UserId,
 ) -> Result<String, SdkError>
 {
-	let out = core_group::key_rotation(&previous_group_key.key, &invoker_public_key.key, user_group)?;
+	let out = core_group::key_rotation::<sentc_crypto_core::SymmetricKey, sentc_crypto_core::SecretKey, sentc_crypto_core::SignKey>(
+		&previous_group_key.key,
+		&invoker_public_key.key,
+		user_group,
+	)?;
 
 	//1. encode the values to base64 for the server
 	let encrypted_group_key_by_user = Base64::encode_string(&out.encrypted_group_key_by_user);
@@ -159,7 +182,11 @@ pub fn key_rotation(
 	} else {
 		let encrypted_sign_key = out.encrypted_sign_key.map(|k| Base64::encode_string(&k));
 
-		let verify_key = out.verify_key.map(|k| export_raw_verify_key_to_pem(&k)?);
+		let verify_key = if let Some(vk) = out.verify_key {
+			Some(export_raw_verify_key_to_pem(&vk)?)
+		} else {
+			None
+		};
 
 		let keypair_sign_alg = out.keypair_sign_alg.map(|alg| alg.to_string());
 
@@ -278,7 +305,7 @@ pub fn done_key_rotation(
 		},
 	};
 
-	let out = core_group::done_key_rotation(
+	let out = core_group::done_key_rotation::<sentc_crypto_core::SymmetricKey>(
 		&private_key.key,
 		&public_key.key,
 		&previous_group_key.key,
@@ -396,7 +423,7 @@ pub fn decrypt_group_keys(private_key: &SecretKey, server_output: GroupKeyServer
 	let encrypted_private_key =
 		Base64::decode_vec(server_output.encrypted_private_group_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	let (group_key, private_group_key) = core_group::get_group(
+	let (group_key, private_group_key) = core_group::get_group::<sentc_crypto_core::SymmetricKey, sentc_crypto_core::SecretKey>(
 		&private_key.key,
 		&encrypted_master_key,
 		&encrypted_private_key,
@@ -976,7 +1003,7 @@ mod test
 
 		assert_eq!(
 			group_keys_u0[0].group_key.key.as_ref(),
-			&group_keys_u1[0].group_key.key.as_ref()
+			group_keys_u1[0].group_key.key.as_ref()
 		);
 	}
 
