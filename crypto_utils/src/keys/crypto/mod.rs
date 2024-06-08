@@ -4,20 +4,17 @@ mod sign;
 mod sortable;
 mod symmetric_key;
 
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::ops::Deref;
 use core::str::FromStr;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_common::crypto::{EncryptedHead, SignHead};
 use sentc_crypto_common::SymKeyId;
-use sentc_crypto_core::cryptomat::CryptoAlg;
 use sentc_crypto_core::{HmacKey as CoreHmacKey, SortKeys as CoreSortableKey};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkUtilError;
-use crate::keys::{SignKey, SymmetricKey};
 
 /**
 Get the head and the data.
@@ -54,28 +51,6 @@ pub fn put_head_and_encrypted_data<T: Serialize>(head: &T, encrypted: &[u8]) -> 
 	out.extend_from_slice(encrypted);
 
 	Ok(out)
-}
-
-fn get_head_from_keys(key: &SymmetricKey, sign_key: Option<&SignKey>) -> EncryptedHead
-{
-	if let Some(sk) = sign_key {
-		let alg = sk.key.get_alg_str().to_string();
-
-		let sign = SignHead {
-			id: key.key_id.to_string(),
-			alg,
-		};
-
-		EncryptedHead {
-			id: key.key_id.to_string(),
-			sign: Some(sign),
-		}
-	} else {
-		EncryptedHead {
-			id: key.key_id.to_string(),
-			sign: None,
-		}
-	}
 }
 
 //__________________________________________________________________________________________________
