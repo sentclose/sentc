@@ -20,16 +20,16 @@ include = [
 
 [dependencies]
 # own crypto lib
-sentc-crypto = {workspace=true}
+sentc-crypto = { workspace = true }
 
-sentc-crypto-common = {workspace=true}
+sentc-crypto-common = { workspace = true }
 
-sentc-crypto-utils = {workspace=true, features = ["crypto_full"]}
+sentc-crypto-utils = { workspace = true, features = ["crypto_full", "encryption"] }
 
 #_______________________________________________________________________________________________________________________
 
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
-serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.81", default-features = false, features = ["alloc"] }
 
 [features]
 default = ["sentc-crypto/default", "rustls"]
