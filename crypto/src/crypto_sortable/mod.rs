@@ -1,82 +1,76 @@
-use alloc::string::ToString;
-use core::cmp::Ordering;
-
-use sentc_crypto_common::content_sortable::SortableEncryptOutput;
-use sentc_crypto_core::getting_alg_from_sortable_key;
-
-use crate::entities::keys::SortableKeyFormatInt;
-use crate::SdkError;
+#[cfg(not(feature = "rust"))]
+mod crypto_sortable_export;
 
 #[cfg(not(feature = "rust"))]
-mod crypto_sortable;
-#[cfg(feature = "rust")]
-mod crypto_sortable_rust;
+pub use crypto_sortable_export::*;
 
-#[cfg(not(feature = "rust"))]
-pub use self::crypto_sortable::{encrypt_number, encrypt_raw_number, encrypt_raw_string, encrypt_string};
-#[cfg(feature = "rust")]
-pub use self::crypto_sortable_rust::{encrypt_number, encrypt_raw_number, encrypt_raw_string, encrypt_string};
-
-fn encrypt_raw_number_internally(key: &SortableKeyFormatInt, data: u64) -> Result<u64, SdkError>
+#[cfg(test)]
+mod test
 {
-	Ok(sentc_crypto_core::crypto::encrypt_sortable(&key.key, data)?)
-}
+	use core::str::FromStr;
 
-fn encrypt_number_internally(key: &SortableKeyFormatInt, data: u64) -> Result<SortableEncryptOutput, SdkError>
-{
-	let number = encrypt_raw_number_internally(key, data)?;
+	use sentc_crypto_core::cryptomat::SortableKey as CoreSort;
+	use sentc_crypto_utils::keys::SortableKey;
 
-	Ok(SortableEncryptOutput {
-		number,
-		alg: getting_alg_from_sortable_key(&key.key).to_string(),
-		key_id: key.key_id.clone(),
-	})
-}
+	use super::*;
+	use crate::group::test_fn::create_group;
+	use crate::user::test_fn::create_user;
 
-fn encrypt_raw_string_internally(key: &SortableKeyFormatInt, data: &str) -> Result<u64, SdkError>
-{
-	let n = prepare_string(data, 4);
+	extern crate std;
 
-	encrypt_raw_number_internally(key, n)
-}
+	#[test]
+	fn test_simple()
+	{
+		let user = create_user();
+		let (_, _, _, _, sortable_keys) = create_group(&user.user_keys[0]);
 
-fn encrypt_string_internally(key: &SortableKeyFormatInt, data: &str) -> Result<SortableEncryptOutput, SdkError>
-{
-	let number = encrypt_raw_string_internally(key, data)?;
+		let key = &sortable_keys[0];
 
-	Ok(SortableEncryptOutput {
-		number,
-		alg: getting_alg_from_sortable_key(&key.key).to_string(),
-		key_id: key.key_id.clone(),
-	})
-}
+		let values = ["a", "az", "azzz", "b", "ba", "baaa", "o", "oe", "z", "zaaa"];
 
-fn prepare_string(data: &str, max_len: usize) -> u64
-{
-	match data.len().cmp(&max_len) {
-		Ordering::Greater => transform_string_to_number(&data[..max_len]),
-		Ordering::Less => {
-			//fill it with dummy chars to get the len
-			let mut st = data.to_string();
+		let mut encrypted_vars = [0u64; 10];
 
-			for _i in data.len()..max_len {
-				st += "*";
-			}
+		for (i, value) in values.iter().enumerate() {
+			encrypted_vars[i] = key.encrypt_raw_string(value, None).unwrap();
+		}
 
-			transform_string_to_number(&st)
-		},
-		Ordering::Equal => transform_string_to_number(data),
-	}
-}
+		//check
+		let mut past_item = 0;
 
-fn transform_string_to_number(s: &str) -> u64
-{
-	let mut number: u64 = 0;
+		for item in encrypted_vars {
+			assert!(past_item < item);
 
-	for c in s.chars() {
-		let ascii_value = c as u64;
-		number = number * 256 + ascii_value;
+			past_item = item;
+		}
 	}
 
-	number / (u16::max_value() as u64 - 1)
+	#[test]
+	fn test_with_generated_key()
+	{
+		const KEY: &str = r#"{"Ope16":{"key":"5kGPKgLQKmuZeOWQyJ7vOg==","key_id":"1876b629-5795-471f-9704-0cac52eaf9a1"}}"#;
+
+		let a = SortableKey::from_str(KEY)
+			.unwrap()
+			.encrypt_sortable(262)
+			.unwrap();
+
+		let b = SortableKey::from_str(KEY)
+			.unwrap()
+			.encrypt_sortable(263)
+			.unwrap();
+
+		let c = SortableKey::from_str(KEY)
+			.unwrap()
+			.encrypt_sortable(65321)
+			.unwrap();
+
+		std::println!("a: {a}, b: {b}, c: {c}");
+
+		assert!(a < b);
+		assert!(b < c);
+
+		assert_eq!(a, 17455249);
+		assert_eq!(b, 17488544);
+		assert_eq!(c, 4280794268);
+	}
 }

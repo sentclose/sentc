@@ -17,8 +17,6 @@ pub enum SdkError
 	DecodeEncryptedDataFailed,
 	DecodeSymKeyFailed,
 
-	SigFoundNotKey,
-	VerifyFailed,
 	KeyDecryptFailed,
 
 	LoginServerOutputWrong,
@@ -30,10 +28,6 @@ pub enum SdkError
 	GroupRank,
 	GroupUserKickRank,
 	GroupPermission,
-
-	SearchableEncryptionDataTooLong,
-
-	SearchableEncryptionDataNotFound,
 }
 
 /**
@@ -92,14 +86,7 @@ pub fn err_to_msg(error: SdkError) -> String
 		},
 		SdkError::DecodeEncryptedDataFailed => out_error("client_10", "Can't decode the encrypted data"),
 
-		SdkError::SigFoundNotKey => {
-			out_error(
-				"client_20",
-				"The verification key can't verify this signature. The signature was signed by another key pair.",
-			)
-		},
 		SdkError::KeyDecryptFailed => out_error("client_21", "Can't decrypt a key. Maybe the format is wrong"),
-		SdkError::VerifyFailed => out_error("client_22", "The verification failed. A wrong verify key was used"),
 
 		//Login error
 		SdkError::LoginServerOutputWrong => {
@@ -126,14 +113,5 @@ pub fn err_to_msg(error: SdkError) -> String
 				&("Key rotation failed for this account with this error message: ".to_string() + &e),
 			)
 		},
-
-		SdkError::SearchableEncryptionDataTooLong => {
-			out_error(
-				"client_300",
-				"The input data is too long to hash. The maximal length is 200 characters.",
-			)
-		},
-
-		SdkError::SearchableEncryptionDataNotFound => out_error("client_301", "No data found to hash. Empty Strings are not allowed."),
 	}
 }
