@@ -1,66 +1,149 @@
 use alloc::vec::Vec;
 
-use x25519_dalek::{PublicKey, StaticSecret};
+use pqc_kyber_edit::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 
-use crate::alg::asym::AsymKeyOutput;
-use crate::{get_rand, Error, Pk, Sk};
+use crate::cryptomat::{CryptoAlg, Pk, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
+use crate::{crypto_alg_str_impl, get_rand, hybrid_key_import_export, Error, PublicKey, SecretKey};
 
 pub const ECIES_KYBER_HYBRID_OUTPUT: &str = "ECIES-ed25519_KYBER_768";
 
-pub(crate) fn generate_static_keypair() -> Result<AsymKeyOutput, Error>
+#[derive(Clone)]
+pub struct EciesKyberHybridPk
 {
-	let (x_sk, x_pk) = super::ecies::generate_static_keypair_internally(&mut get_rand());
-	let (k_sk, k_pk) = super::pqc_kyber::generate_keypair_internally(&mut get_rand())?;
-
-	Ok(AsymKeyOutput {
-		pk: Pk::EciesKyberHybrid {
-			x: x_pk.to_bytes(),
-			k: k_pk,
-		},
-		sk: Sk::EciesKyberHybrid {
-			x: x_sk.to_bytes(),
-			k: k_sk,
-		},
-		alg: ECIES_KYBER_HYBRID_OUTPUT,
-	})
+	x: [u8; 32],
+	k: [u8; KYBER_PUBLICKEYBYTES],
 }
 
-pub(crate) fn encrypt(receiver_pub: &Pk, data: &[u8]) -> Result<Vec<u8>, Error>
+impl<'a> TryFrom<&'a [u8]> for EciesKyberHybridPk
 {
-	//encrypt with ecies first then with kyber
+	type Error = Error;
 
-	let (x_pk, k_pk) = match receiver_pub {
-		Pk::EciesKyberHybrid {
-			k,
-			x,
-		} => (PublicKey::from(*x), k),
-		_ => return Err(Error::AlgNotFound),
-	};
+	fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
+	{
+		let x = &value[..32];
+		let k = &value[32..];
 
-	let encrypted = super::ecies::encrypt_internally(&x_pk, data, &mut get_rand())?;
-
-	let encrypted = super::pqc_kyber::encrypt_internally(k_pk, &encrypted, &mut get_rand())?;
-
-	Ok(encrypted)
+		Ok(Self {
+			x: x.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+			k: k.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+		})
+	}
 }
 
-pub(crate) fn decrypt(receiver_sec: &Sk, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+hybrid_key_import_export!(EciesKyberHybridPk);
+crypto_alg_str_impl!(EciesKyberHybridPk, ECIES_KYBER_HYBRID_OUTPUT);
+
+impl Into<PublicKey> for EciesKyberHybridPk
 {
-	//decrypt with kyber first then with ecies
+	fn into(self) -> PublicKey
+	{
+		PublicKey::EciesKyberHybrid(self)
+	}
+}
 
-	let (x_sk, k_sk) = match receiver_sec {
-		Sk::EciesKyberHybrid {
-			k,
-			x,
-		} => (StaticSecret::from(*x), k),
-		_ => return Err(Error::AlgNotFound),
-	};
+impl Pk for EciesKyberHybridPk
+{
+	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>
+	{
+		let k = [&self.x[..], &self.k[..]].concat();
 
-	let decrypted = super::pqc_kyber::decrypt_internally(k_sk, ciphertext)?;
+		sign_key.sign_only(k)
+	}
 
-	let decrypted = super::ecies::decrypt_internally(&x_sk, &decrypted)?;
+	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &V::Signature) -> Result<bool, Error>
+	{
+		let k = [&self.x[..], &self.k[..]].concat();
 
-	Ok(decrypted)
+		verify_key.verify_only(sig, &k)
+	}
+
+	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		//encrypt with ecies first then with kyber
+
+		let encrypted = super::ecies::encrypt_internally(&self.x.into(), data, &mut get_rand())?;
+
+		let encrypted = super::pqc_kyber::encrypt_internally(&self.k, &encrypted, &mut get_rand())?;
+
+		Ok(encrypted)
+	}
+}
+
+pub struct EciesKyberHybridSk
+{
+	x: [u8; 32],
+	k: [u8; KYBER_SECRETKEYBYTES],
+}
+
+impl<'a> TryFrom<&'a [u8]> for EciesKyberHybridSk
+{
+	type Error = Error;
+
+	fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
+	{
+		let x = &value[..32];
+		let k = &value[32..];
+
+		Ok(Self {
+			x: x.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+			k: k.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+		})
+	}
+}
+
+hybrid_key_import_export!(EciesKyberHybridSk);
+crypto_alg_str_impl!(EciesKyberHybridSk, ECIES_KYBER_HYBRID_OUTPUT);
+
+impl Into<SecretKey> for EciesKyberHybridSk
+{
+	fn into(self) -> SecretKey
+	{
+		SecretKey::EciesKyberHybrid(self)
+	}
+}
+
+impl Sk for EciesKyberHybridSk
+{
+	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		let private_key = [&self.x[..], &self.k].concat();
+
+		master_key.encrypt(&private_key)
+	}
+
+	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		let decrypted = super::pqc_kyber::decrypt_internally(&self.k, ciphertext)?;
+
+		let decrypted = super::ecies::decrypt_internally(&self.x.into(), &decrypted)?;
+
+		Ok(decrypted)
+	}
+}
+
+pub struct EciesKyberHybridKeyPair;
+
+impl StaticKeyPair for EciesKyberHybridKeyPair
+{
+	type SecretKey = EciesKyberHybridSk;
+	type PublicKey = EciesKyberHybridPk;
+
+	fn generate_static_keypair() -> Result<(Self::SecretKey, Self::PublicKey), Error>
+	{
+		let (x_sk, x_pk) = super::ecies::generate_static_keypair_internally(&mut get_rand());
+		let (k_sk, k_pk) = super::pqc_kyber::generate_keypair_internally(&mut get_rand())?;
+
+		Ok((
+			EciesKyberHybridSk {
+				x: x_sk.to_bytes(),
+				k: k_sk,
+			},
+			EciesKyberHybridPk {
+				x: x_pk.to_bytes(),
+				k: k_pk,
+			},
+		))
+	}
 }
 
 #[cfg(test)]
@@ -68,58 +151,25 @@ mod test
 {
 	use core::str::from_utf8;
 
-	use pqc_kyber::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
-
 	use super::*;
 	use crate::error::Error::{DecryptionFailed, DecryptionFailedCiphertextShort};
-
-	fn test_key_gen_output(out: &AsymKeyOutput)
-	{
-		assert_eq!(out.alg, ECIES_KYBER_HYBRID_OUTPUT);
-
-		let (x, k) = match out.pk {
-			Pk::EciesKyberHybrid {
-				x,
-				k,
-			} => (x, k),
-			_ => panic!("alg not found"),
-		};
-
-		assert_eq!(k.len(), KYBER_PUBLICKEYBYTES);
-		assert_eq!(x.len(), 32);
-
-		let (x, k) = match out.sk {
-			Sk::EciesKyberHybrid {
-				x,
-				k,
-			} => (x, k),
-			_ => panic!("alg not found"),
-		};
-
-		assert_eq!(k.len(), KYBER_SECRETKEYBYTES);
-		assert_eq!(x.len(), 32);
-	}
 
 	#[test]
 	fn test_key_gen()
 	{
-		let out = generate_static_keypair().unwrap();
-
-		test_key_gen_output(&out);
+		let _ = EciesKyberHybridKeyPair::generate_static_keypair().unwrap();
 	}
 
 	#[test]
 	fn test_encrypt_and_decrypt()
 	{
-		let out = generate_static_keypair().unwrap();
-		let sk = out.sk;
-		let pk = out.pk;
+		let (sk, pk) = EciesKyberHybridKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
-		let decrypted = decrypt(&sk, &encrypted).unwrap();
+		let decrypted = sk.decrypt(&encrypted).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 
@@ -131,17 +181,15 @@ mod test
 	#[test]
 	fn test_not_decrypt_with_wrong_key()
 	{
-		let out = generate_static_keypair().unwrap();
-		let pk = out.pk;
+		let (_sk, pk) = EciesKyberHybridKeyPair::generate_static_keypair().unwrap();
 
-		let out1 = generate_static_keypair().unwrap();
-		let sk1 = out1.sk;
+		let (sk, _pk) = EciesKyberHybridKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
-		let decrypted_result = decrypt(&sk1, &encrypted);
+		let decrypted_result = sk.decrypt(&encrypted);
 
 		assert!(matches!(decrypted_result, Err(DecryptionFailed)));
 	}
@@ -149,18 +197,16 @@ mod test
 	#[test]
 	fn test_not_decrypt_with_wrong_ciphertext()
 	{
-		let out = generate_static_keypair().unwrap();
-		let sk = out.sk;
-		let pk = out.pk;
+		let (sk, pk) = EciesKyberHybridKeyPair::generate_static_keypair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let encrypted = encrypt(&pk, text.as_bytes()).unwrap();
+		let encrypted = pk.encrypt(text.as_bytes()).unwrap();
 
 		//too short ciphertext: text must be min 32 long, output was 88 long
 		let encrypted = &encrypted[..(encrypted.len() - 156)];
 
-		let decrypted_result = decrypt(&sk, encrypted);
+		let decrypted_result = sk.decrypt(encrypted);
 
 		assert!(matches!(decrypted_result, Err(DecryptionFailedCiphertextShort)));
 	}

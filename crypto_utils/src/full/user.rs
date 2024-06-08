@@ -69,7 +69,7 @@ async fn done_login_internally(
 			let mfa_token = mfa_token.ok_or(SdkUtilError::JsonToStringFailed)?;
 			let mfa_recovery = mfa_recovery.ok_or(SdkUtilError::JsonToStringFailed)?;
 
-			//use this with the token of the auth app but without the verify
+			//use this with the token of the auth app but without to verify
 
 			let url = base_url.clone() +
 				if mfa_recovery {

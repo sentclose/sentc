@@ -5,8 +5,9 @@ use aes_gcm::aead::{Aead, NewAead, Payload};
 use aes_gcm::{Aes256Gcm, Key};
 use rand_core::{CryptoRng, RngCore};
 
+use crate::cryptomat::{CryptoAlg, Pk, SymKey, SymKeyGen};
 use crate::error::Error;
-use crate::{get_rand, SymKey, SymKeyOutput};
+use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value, SymmetricKey};
 
 const AES_IV_LENGTH: usize = 12;
 
@@ -14,62 +15,91 @@ pub const AES_GCM_OUTPUT: &str = "AES-GCM-256";
 
 pub(crate) type AesKey = [u8; 32];
 
-pub(crate) fn generate_key() -> Result<SymKeyOutput, Error>
-{
-	let key = generate_key_internally(&mut get_rand())?;
+pub struct Aes256GcmKey(AesKey);
 
-	Ok(SymKeyOutput {
-		alg: AES_GCM_OUTPUT,
-		key: SymKey::Aes(key),
-	})
+impl Aes256GcmKey
+{
+	pub(crate) fn from_raw_key(raw: AesKey) -> Self
+	{
+		Self(raw)
+	}
 }
 
-pub(crate) fn encrypt(key: &SymKey, data: &[u8]) -> Result<Vec<u8>, Error>
-{
-	let key = get_key_from_enum(key);
+try_from_bytes_single_value!(Aes256GcmKey);
+try_from_bytes_owned_single_value!(Aes256GcmKey);
+as_ref_bytes_single_value!(Aes256GcmKey);
+crypto_alg_str_impl!(Aes256GcmKey, AES_GCM_OUTPUT);
 
-	encrypt_with_generated_key(key, data)
+impl Into<SymmetricKey> for Aes256GcmKey
+{
+	fn into(self) -> SymmetricKey
+	{
+		SymmetricKey::Aes(self)
+	}
 }
 
-pub(crate) fn encrypt_with_generated_key(key: &AesKey, data: &[u8]) -> Result<Vec<u8>, Error>
+impl SymKey for Aes256GcmKey
+{
+	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
+
+	fn encrypt_with_sym_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
+
+	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		encrypt_internally(&self.0, data, None, &mut get_rand())
+	}
+
+	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		decrypt_internally(&self.0, ciphertext, None)
+	}
+
+	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		encrypt_internally(&self.0, data, Some(aad), &mut get_rand())
+	}
+
+	fn decrypt_with_aad(&self, ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		decrypt_internally(&self.0, ciphertext, Some(aad))
+	}
+}
+
+impl SymKeyGen for Aes256GcmKey
+{
+	type SymmetricKey = Self;
+
+	fn generate() -> Result<Self::SymmetricKey, Error>
+	{
+		let key = generate_key_internally(&mut get_rand())?;
+
+		Ok(Aes256GcmKey(key))
+	}
+}
+
+pub fn raw_encrypt(key: &AesKey, data: &[u8]) -> Result<Vec<u8>, Error>
 {
 	encrypt_internally(key, data, None, &mut get_rand())
 }
 
-pub(crate) fn decrypt(key: &SymKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
-{
-	let key = get_key_from_enum(key);
-
-	decrypt_internally(key, ciphertext, None)
-}
-
-pub(crate) fn decrypt_with_generated_key(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+pub fn raw_decrypt(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
 	decrypt_internally(key, ciphertext, None)
 }
 
-//___________________________________
-//with aad
-
-pub(crate) fn encrypt_with_generated_key_with_aad(key: &AesKey, data: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
+pub fn raw_generate() -> Result<AesKey, Error>
 {
-	encrypt_internally(key, data, Some(aad), &mut get_rand())
-}
-
-pub(crate) fn decrypt_with_generated_key_with_aad(key: &AesKey, ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
-{
-	decrypt_internally(key, ciphertext, Some(aad))
+	generate_key_internally(&mut get_rand())
 }
 
 //__________________________________________________________________________________________________
 //internally function
-
-fn get_key_from_enum(key: &SymKey) -> &AesKey
-{
-	match key {
-		SymKey::Aes(k) => k,
-	}
-}
 
 fn generate_key_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<[u8; 32], Error>
 {
@@ -107,8 +137,8 @@ fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], aad: Op
 
 	//put the IV in front of the ciphertext
 	let mut output = Vec::with_capacity(AES_IV_LENGTH + ciphertext.len());
-	output.extend(nonce);
-	output.extend(ciphertext);
+	output.extend_from_slice(nonce);
+	output.extend_from_slice(&ciphertext);
 
 	Ok(output)
 }
@@ -145,23 +175,10 @@ mod test
 	use super::*;
 	use crate::error::Error::DecryptionFailed;
 
-	fn test_key_gen_output(output: &SymKeyOutput)
-	{
-		assert_eq!(output.alg, AES_GCM_OUTPUT);
-
-		let key = match output.key {
-			SymKey::Aes(k) => k,
-		};
-
-		assert_eq!(key.len(), 32);
-	}
-
 	#[test]
 	fn test_key_generated()
 	{
-		let output = generate_key().unwrap();
-
-		test_key_gen_output(&output);
+		let _output = Aes256GcmKey::generate().unwrap();
 	}
 
 	#[test]
@@ -169,34 +186,11 @@ mod test
 	{
 		let text = "Hello world üöäéèßê°";
 
-		let output = generate_key().unwrap();
+		let output = Aes256GcmKey::generate().unwrap();
 
-		//test with plain key
-		let key = match output.key {
-			SymKey::Aes(k) => k,
-		};
+		let encrypted = output.encrypt(text.as_bytes()).unwrap();
 
-		let encrypted = encrypt_with_generated_key(&key, text.as_bytes()).unwrap();
-
-		let decrypted = decrypt_with_generated_key(&key, &encrypted).unwrap();
-
-		assert_eq!(text.as_bytes(), decrypted);
-
-		let decrypted_text = from_utf8(&decrypted).unwrap();
-
-		assert_eq!(text, decrypted_text);
-	}
-
-	#[test]
-	fn test_encrypt_decrypt()
-	{
-		let text = "Hello world üöäéèßê°";
-
-		let output = generate_key().unwrap();
-
-		let encrypted = encrypt(&output.key, text.as_bytes()).unwrap();
-
-		let decrypted = decrypt(&output.key, &encrypted).unwrap();
+		let decrypted = output.decrypt(&encrypted).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 
@@ -210,12 +204,12 @@ mod test
 	{
 		let text = "Hello world üöäéèßê°";
 
-		let output1 = generate_key().unwrap();
-		let output2 = generate_key().unwrap();
+		let output1 = Aes256GcmKey::generate().unwrap();
+		let output2 = Aes256GcmKey::generate().unwrap();
 
-		let encrypted = encrypt(&output1.key, text.as_bytes()).unwrap();
+		let encrypted = output1.encrypt(text.as_bytes()).unwrap();
 
-		let decrypt_result = decrypt(&output2.key, &encrypted);
+		let decrypt_result = output2.decrypt(&encrypted);
 
 		assert!(matches!(decrypt_result, Err(DecryptionFailed)));
 	}
@@ -226,15 +220,11 @@ mod test
 		let text = "Hello world üöäéèßê°";
 		let payload = b"payload1234567891011121314151617";
 
-		let output = generate_key().unwrap();
+		let output = Aes256GcmKey::generate().unwrap();
 
-		let key = match output.key {
-			SymKey::Aes(k) => k,
-		};
+		let encrypted = output.encrypt_with_aad(text.as_bytes(), payload).unwrap();
 
-		let encrypted = encrypt_with_generated_key_with_aad(&key, text.as_bytes(), payload).unwrap();
-
-		let decrypted = decrypt_with_generated_key_with_aad(&key, &encrypted, payload).unwrap();
+		let decrypted = output.decrypt_with_aad(&encrypted, payload).unwrap();
 
 		assert_eq!(text.as_bytes(), decrypted);
 
@@ -250,21 +240,12 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 		let payload2 = b"payload1234567891011121314151618";
 
-		let output = generate_key().unwrap();
+		let output = Aes256GcmKey::generate().unwrap();
 
-		let key = match output.key {
-			SymKey::Aes(k) => k,
-		};
+		let encrypted = output.encrypt_with_aad(text.as_bytes(), payload).unwrap();
 
-		let encrypted = encrypt_with_generated_key_with_aad(&key, text.as_bytes(), payload).unwrap();
+		let decrypted = output.decrypt_with_aad(&encrypted, payload2);
 
-		let decrypted = decrypt_with_generated_key_with_aad(&key, &encrypted, payload2);
-
-		match decrypted {
-			Err(DecryptionFailed) => {
-				//
-			},
-			_ => panic!("Should be an error"),
-		}
+		assert!(matches!(decrypted, Err(DecryptionFailed)));
 	}
 }

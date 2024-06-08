@@ -1,79 +1,152 @@
 use alloc::vec::Vec;
 
+use hmac::digest::Digest;
 use pqc_dilithium_edit::{Keypair, PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::alg::sign::SignOutput;
-use crate::{get_rand, Error, Sig, SignK, VerifyK};
+use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
+use crate::{
+	as_ref_bytes_single_value,
+	crypto_alg_str_impl,
+	get_rand,
+	into_bytes_single_value,
+	try_from_bytes_owned_single_value,
+	try_from_bytes_single_value,
+	Error,
+	SignKey,
+	Signature,
+	VerifyKey,
+};
 
 pub const DILITHIUM_OUTPUT: &str = "DILITHIUM_3";
 
-#[allow(unused)]
-pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
-{
-	let (sk, pk) = generate_key_pair_internally(&mut get_rand())?;
+pub struct DilithiumSig([u8; SIGNBYTES]);
 
-	Ok(SignOutput {
-		sign_key: SignK::Dilithium(sk),
-		verify_key: VerifyK::Dilithium(pk),
-		alg: DILITHIUM_OUTPUT,
-	})
+crypto_alg_str_impl!(DilithiumSig, DILITHIUM_OUTPUT);
+try_from_bytes_single_value!(DilithiumSig);
+try_from_bytes_owned_single_value!(DilithiumSig);
+as_ref_bytes_single_value!(DilithiumSig);
+into_bytes_single_value!(DilithiumSig);
+
+impl Into<Signature> for DilithiumSig
+{
+	fn into(self) -> Signature
+	{
+		Signature::Dilithium(self)
+	}
 }
 
-pub(crate) fn sign(sign_key: &SignK, data: &[u8]) -> Result<Vec<u8>, Error>
+impl Sig for DilithiumSig
 {
-	let sig = sign_only_raw(sign_key, data)?;
-
-	let mut output = Vec::with_capacity(sig.len() + data.len());
-	output.extend(sig);
-	output.extend(data);
-
-	Ok(output)
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
+	// {
+	// 	split_sig_and_data(&self.0)
+	// }
+	//
+	// fn get_raw(&self) -> &[u8]
+	// {
+	// 	&self.0
+	// }
 }
 
-pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
-{
-	let sig = sign_only_raw(sign_key, data)?;
+pub struct DilithiumSignKey([u8; SECRETKEYBYTES]);
 
-	Ok(Sig::Dilithium(sig))
+try_from_bytes_single_value!(DilithiumSignKey);
+try_from_bytes_owned_single_value!(DilithiumSignKey);
+crypto_alg_str_impl!(DilithiumSignKey, DILITHIUM_OUTPUT);
+as_ref_bytes_single_value!(DilithiumSignKey);
+
+impl Into<SignKey> for DilithiumSignKey
+{
+	fn into(self) -> SignKey
+	{
+		SignKey::Dilithium(self)
+	}
 }
 
-pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; SIGNBYTES], Error>
+impl SignK for DilithiumSignKey
 {
-	match sign_key {
-		SignK::Dilithium(sk) => sign_internally(sk, data),
-		_ => Err(Error::AlgNotFound),
+	type Signature = DilithiumSig;
+
+	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
+
+	fn sign(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		let sig = sign_internally(&self.0, data)?;
+
+		let mut output = Vec::with_capacity(sig.len() + data.len());
+		output.extend_from_slice(&sig);
+		output.extend_from_slice(data);
+
+		Ok(output)
+	}
+
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<Self::Signature, Error>
+	{
+		let sig = sign_internally(&self.0, data.as_ref())?;
+
+		Ok(DilithiumSig(sig))
+	}
+}
+
+pub struct DilithiumVerifyKey([u8; PUBLICKEYBYTES]);
+
+try_from_bytes_single_value!(DilithiumVerifyKey);
+try_from_bytes_owned_single_value!(DilithiumVerifyKey);
+crypto_alg_str_impl!(DilithiumVerifyKey, DILITHIUM_OUTPUT);
+as_ref_bytes_single_value!(DilithiumVerifyKey);
+
+impl Into<VerifyKey> for DilithiumVerifyKey
+{
+	fn into(self) -> VerifyKey
+	{
+		VerifyKey::Dilithium(self)
+	}
+}
+
+impl VerifyK for DilithiumVerifyKey
+{
+	type Signature = DilithiumSig;
+
+	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
+	{
+		let (sig, data) = split_sig_and_data(data_with_sig)?;
+
+		Ok((data, verify_internally(&self.0, sig, data)?))
+	}
+
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>
+	{
+		verify_internally(&self.0, &sig.0, data)
+	}
+
+	fn create_hash<D: Digest>(&self, hasher: &mut D)
+	{
+		hasher.update(self.0)
+	}
+}
+
+pub struct DilithiumKeyPair;
+
+impl SignKeyPair for DilithiumKeyPair
+{
+	type SignKey = DilithiumSignKey;
+	type VerifyKey = DilithiumVerifyKey;
+
+	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
+	{
+		let (sk, pk) = generate_key_pair_internally(&mut get_rand())?;
+
+		Ok((DilithiumSignKey(sk), DilithiumVerifyKey(pk)))
 	}
 }
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
 	super::split_sig_and_data(data_with_sig, SIGNBYTES)
-}
-
-pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
-{
-	let (sig, data) = split_sig_and_data(data_with_sig)?;
-
-	Ok((data, verify_only_raw(verify_key, sig, data)?))
-}
-
-pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool, Error>
-{
-	let sig = match sig {
-		Sig::Dilithium(s) => s,
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	verify_only_raw(verify_key, sig, data)
-}
-
-pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
-{
-	match verify_key {
-		VerifyK::Dilithium(k) => verify_internally(k, sig, data),
-		_ => Err(Error::AlgNotFound),
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -114,34 +187,19 @@ mod test
 	#[test]
 	fn test_generate_keypair()
 	{
-		let out = generate_key_pair().unwrap();
-
-		assert_eq!(out.alg, DILITHIUM_OUTPUT);
-
-		let sk = match out.sign_key {
-			SignK::Dilithium(k) => k,
-			_ => panic!("Wrong alg"),
-		};
-
-		let vk = match out.verify_key {
-			VerifyK::Dilithium(k) => k,
-			_ => panic!("Wrong alg"),
-		};
-
-		assert_eq!(sk.len(), SECRETKEYBYTES);
-		assert_eq!(vk.len(), PUBLICKEYBYTES);
+		let _ = DilithiumKeyPair::generate_key_pair().unwrap();
 	}
 
 	#[test]
 	fn test_sign_and_verify()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
-		let (data, check) = verify(&out.verify_key, &data_with_sig).unwrap();
+		let (data, check) = vk.verify(&data_with_sig).unwrap();
 
 		assert!(check);
 		assert_eq!(data, text.as_bytes());
@@ -150,14 +208,14 @@ mod test
 	#[test]
 	fn test_wrong_verify()
 	{
-		let out = generate_key_pair().unwrap();
-		let out1 = generate_key_pair().unwrap();
+		let (_sk, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
+		let (sk, _vk) = DilithiumKeyPair::generate_key_pair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
-		let (data, check) = verify(&out1.verify_key, &data_with_sig).unwrap();
+		let (data, check) = vk.verify(&data_with_sig).unwrap();
 
 		assert!(!check);
 		assert_eq!(data, text.as_bytes());
@@ -166,14 +224,14 @@ mod test
 	#[test]
 	fn test_too_short_sig_bytes()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
 		let data_with_sig = &data_with_sig[..31];
 
-		let check_result = verify(&out.verify_key, data_with_sig);
+		let check_result = vk.verify(data_with_sig);
 
 		assert!(matches!(check_result, Err(DataToSignTooShort)));
 	}
@@ -181,14 +239,14 @@ mod test
 	#[test]
 	fn test_wrong_sig_bytes()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
 		let data_with_sig = &data_with_sig[..SIGNBYTES + 2];
 
-		let (_data, check) = verify(&out.verify_key, data_with_sig).unwrap();
+		let (_data, check) = vk.verify(data_with_sig).unwrap();
 
 		assert!(!check);
 	}
@@ -196,11 +254,11 @@ mod test
 	#[test]
 	fn test_safety_number()
 	{
-		let u1 = generate_key_pair().unwrap();
+		let (_, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			},
 			None,
@@ -212,16 +270,16 @@ mod test
 	#[test]
 	fn test_combined_safety_number()
 	{
-		let u1 = generate_key_pair().unwrap();
-		let u2 = generate_key_pair().unwrap();
+		let (_, vk) = DilithiumKeyPair::generate_key_pair().unwrap();
+		let (_, vk1) = DilithiumKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			},
 			Some(SafetyNumber {
-				verify_key: &u2.verify_key,
+				verify_key: &vk1,
 				user_info: "321",
 			}),
 		);
@@ -232,11 +290,11 @@ mod test
 
 		let number_2 = safety_number(
 			SafetyNumber {
-				verify_key: &u2.verify_key,
+				verify_key: &vk1,
 				user_info: "321",
 			},
 			Some(SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			}),
 		);

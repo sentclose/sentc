@@ -1,7 +1,8 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_core::{crypto as crypto_core, hash_auth_key, DeriveAuthKeyForAuth, HashedAuthenticationKey};
+use sentc_crypto_core::cryptomat::Pk;
+use sentc_crypto_core::{DeriveAuthKeyForAuth, HashedAuthenticationKey};
 use sentc_crypto_utils::import_public_key_from_pem_with_alg;
 
 use crate::util::public::generate_salt_from_base64;
@@ -39,7 +40,7 @@ pub fn get_auth_keys_from_base64(
 	let server_hashed_auth_key = hashed_authentication_key_from_base64(server_hashed_auth_key, alg)?;
 
 	//hash the client key
-	let hashed_client_key = hash_auth_key(&client_auth_key)?;
+	let hashed_client_key = client_auth_key.hash_auth_key()?;
 
 	Ok((server_hashed_auth_key, hashed_client_key))
 }
@@ -50,7 +51,7 @@ pub fn encrypt_ephemeral_group_key_with_public_key(public_key_in_pem: &str, publ
 
 	let eph_key = Base64::decode_vec(eph_key).map_err(|_| SdkError::DecodeSymKeyFailed)?;
 
-	let encrypted_eph_key = crypto_core::encrypt_asymmetric(&public_key, &eph_key)?;
+	let encrypted_eph_key = public_key.encrypt(&eph_key)?;
 
 	Ok(Base64::encode_string(&encrypted_eph_key))
 }
@@ -59,7 +60,7 @@ pub fn encrypt_login_verify_challenge(public_key_in_pem: &str, public_key_alg: &
 {
 	let public_key = import_public_key_from_pem_with_alg(public_key_in_pem, public_key_alg)?;
 
-	let encrypted_eph_key = crypto_core::encrypt_asymmetric(&public_key, challenge.as_bytes())?;
+	let encrypted_eph_key = public_key.encrypt(challenge.as_bytes())?;
 
 	Ok(Base64::encode_string(&encrypted_eph_key))
 }

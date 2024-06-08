@@ -25,6 +25,7 @@ pub enum SdkUtilError
 	ImportingSignKeyFailed,
 	ImportVerifyKeyFailed,
 	ImportAuthMasterKeyFailed,
+	ImportKeyFailed,
 
 	DerivedKeyWrongFormat,
 	InvalidJwt,
@@ -38,6 +39,17 @@ pub enum SdkUtilError
 	ResponseErrText,
 	#[cfg(any(feature = "rustls", feature = "wasm"))]
 	ResponseErrBytes,
+
+	#[cfg(feature = "encryption")]
+	SigFoundNotKey,
+	#[cfg(feature = "encryption")]
+	VerifyFailed,
+	#[cfg(feature = "encryption")]
+	DecodeEncryptedDataFailed,
+	#[cfg(feature = "encryption")]
+	SearchableEncryptionDataNotFound,
+	#[cfg(feature = "encryption")]
+	SearchableEncryptionDataTooLong,
 }
 
 /**
@@ -152,6 +164,7 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 		SdkUtilError::ImportVerifyKeyFailed => out_error("client_114", "Can't import verify key"),
 		SdkUtilError::ImportingKeyFromPemFailed => out_error("client_115", "Can't import this key. It has a wrong format"),
 		SdkUtilError::ImportAuthMasterKeyFailed => out_error("client_116", "Can't import auth master key"),
+		SdkUtilError::ImportKeyFailed => out_error("client_109", "Can't import the key"),
 
 		//exporting error
 		SdkUtilError::ExportingPublicKeyFailed => {
@@ -172,6 +185,27 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 		SdkUtilError::ResponseErrText => out_error("client_1002", "Can't decode the response to text"),
 		#[cfg(any(feature = "rustls", feature = "wasm"))]
 		SdkUtilError::ResponseErrBytes => out_error("client_1003", "Can't get bytes from response"),
+
+		#[cfg(feature = "encryption")]
+		SdkUtilError::SigFoundNotKey => {
+			out_error(
+				"client_20",
+				"The verification key can't verify this signature. The signature was signed by another key pair.",
+			)
+		},
+		#[cfg(feature = "encryption")]
+		SdkUtilError::VerifyFailed => out_error("client_22", "The verification failed. A wrong verify key was used"),
+		#[cfg(feature = "encryption")]
+		SdkUtilError::DecodeEncryptedDataFailed => out_error("client_10", "Can't decode the encrypted data"),
+		#[cfg(feature = "encryption")]
+		SdkUtilError::SearchableEncryptionDataTooLong => {
+			out_error(
+				"client_300",
+				"The input data is too long to hash. The maximal length is 200 characters.",
+			)
+		},
+		#[cfg(feature = "encryption")]
+		SdkUtilError::SearchableEncryptionDataNotFound => out_error("client_301", "No data found to hash. Empty Strings are not allowed."),
 	}
 }
 

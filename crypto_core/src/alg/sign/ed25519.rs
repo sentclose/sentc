@@ -1,82 +1,157 @@
 use alloc::vec::Vec;
 
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
+use hmac::digest::Digest;
 use rand_core::{CryptoRng, RngCore};
 
+use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
 use crate::error::Error;
-use crate::{get_rand, Sig, SignK, SignOutput, VerifyK};
+use crate::{
+	as_ref_bytes_single_value,
+	crypto_alg_str_impl,
+	get_rand,
+	into_bytes_single_value,
+	try_from_bytes_owned_single_value,
+	try_from_bytes_single_value,
+	SignKey,
+	VerifyKey,
+};
 
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
 
 pub const ED25519_OUTPUT: &str = "ED25519";
 
-#[allow(unused)]
-pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
-{
-	let keypair = generate_key_pair_internally(&mut get_rand())?;
+pub struct Ed25519Sig([u8; 64]);
 
-	Ok(SignOutput {
-		sign_key: SignK::Ed25519(keypair.secret.to_bytes()),
-		verify_key: VerifyK::Ed25519(keypair.public.to_bytes()),
-		alg: ED25519_OUTPUT,
-	})
+crypto_alg_str_impl!(Ed25519Sig, ED25519_OUTPUT);
+try_from_bytes_single_value!(Ed25519Sig);
+try_from_bytes_owned_single_value!(Ed25519Sig);
+as_ref_bytes_single_value!(Ed25519Sig);
+into_bytes_single_value!(Ed25519Sig);
+
+impl Into<crate::Signature> for Ed25519Sig
+{
+	fn into(self) -> crate::Signature
+	{
+		crate::Signature::Ed25519(self)
+	}
 }
 
-pub(crate) fn sign(sign_key: &SignK, data: &[u8]) -> Result<Vec<u8>, Error>
+impl Sig for Ed25519Sig
 {
-	let sig = sign_only_raw(sign_key, data)?;
-
-	let mut output = Vec::with_capacity(sig.len() + data.len());
-	output.extend(sig);
-	output.extend(data);
-
-	Ok(output)
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
+	// {
+	// 	split_sig_and_data(&self.0)
+	// }
+	//
+	// fn get_raw(&self) -> &[u8]
+	// {
+	// 	&self.0
+	// }
 }
 
-pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
-{
-	let sig = sign_only_raw(sign_key, data)?;
+pub struct Ed25519VerifyK([u8; 32]);
 
-	Ok(Sig::Ed25519(sig))
+try_from_bytes_single_value!(Ed25519VerifyK);
+try_from_bytes_owned_single_value!(Ed25519VerifyK);
+crypto_alg_str_impl!(Ed25519VerifyK, ED25519_OUTPUT);
+as_ref_bytes_single_value!(Ed25519VerifyK);
+
+impl Into<VerifyKey> for Ed25519VerifyK
+{
+	fn into(self) -> VerifyKey
+	{
+		VerifyKey::Ed25519(self)
+	}
 }
 
-pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<[u8; 64], Error>
+impl VerifyK for Ed25519VerifyK
 {
-	match sign_key {
-		SignK::Ed25519(sk) => sign_internally(sk, data),
-		_ => Err(Error::AlgNotFound),
+	type Signature = Ed25519Sig;
+
+	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
+	{
+		let (sig, data) = split_sig_and_data(data_with_sig)?;
+
+		Ok((data, verify_internally(&self.0, sig, data)?))
+	}
+
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>
+	{
+		verify_internally(&self.0, &sig.0, data)
+	}
+
+	fn create_hash<D: Digest>(&self, hasher: &mut D)
+	{
+		hasher.update(self.0)
+	}
+}
+
+pub struct Ed25519SignK([u8; 32]);
+
+try_from_bytes_single_value!(Ed25519SignK);
+try_from_bytes_owned_single_value!(Ed25519SignK);
+crypto_alg_str_impl!(Ed25519SignK, ED25519_OUTPUT);
+as_ref_bytes_single_value!(Ed25519SignK);
+
+impl Into<SignKey> for Ed25519SignK
+{
+	fn into(self) -> SignKey
+	{
+		SignKey::Ed25519(self)
+	}
+}
+
+impl SignK for Ed25519SignK
+{
+	type Signature = Ed25519Sig;
+
+	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(&self.0)
+	}
+
+	fn sign(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		let sig = sign_internally(&self.0, data)?;
+
+		let mut output = Vec::with_capacity(sig.len() + data.len());
+		output.extend_from_slice(&sig);
+		output.extend_from_slice(data);
+
+		Ok(output)
+	}
+
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<Self::Signature, Error>
+	{
+		let sig = sign_internally(&self.0, data.as_ref())?;
+
+		Ok(Ed25519Sig(sig))
+	}
+}
+
+pub struct Ed25519KeyPair;
+
+impl SignKeyPair for Ed25519KeyPair
+{
+	type SignKey = Ed25519SignK;
+	type VerifyKey = Ed25519VerifyK;
+
+	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
+	{
+		let keypair = generate_key_pair_internally(&mut get_rand())?;
+
+		Ok((
+			Ed25519SignK(keypair.secret.to_bytes()),
+			Ed25519VerifyK(keypair.public.to_bytes()),
+		))
 	}
 }
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
 	super::split_sig_and_data(data_with_sig, SIG_LENGTH)
-}
-
-pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
-{
-	let (sig, data) = split_sig_and_data(data_with_sig)?;
-
-	Ok((data, verify_only_raw(verify_key, sig, data)?))
-}
-
-pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool, Error>
-{
-	let sig = match sig {
-		Sig::Ed25519(s) => s,
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	verify_only_raw(verify_key, sig, data)
-}
-
-pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig: &[u8], data: &[u8]) -> Result<bool, Error>
-{
-	match verify_key {
-		VerifyK::Ed25519(k) => verify_internally(k, sig, data),
-		_ => Err(Error::AlgNotFound),
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -101,7 +176,7 @@ pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) 
 
 pub(super) fn sign_internally(sign_key: &[u8; 32], data: &[u8]) -> Result<[u8; 64], Error>
 {
-	//create the key pair like the from bytes functions but only from the select key not both to avoid select key leak
+	//create the key pair like the bytes functions but only from the select key not both to avoid select key leak
 	//see here: https://github.com/MystenLabs/ed25519-unsafe-libs
 
 	let sk = SecretKey::from_bytes(sign_key).map_err(|_| Error::InitSignFailed)?;
@@ -141,34 +216,19 @@ mod test
 	#[test]
 	fn test_generate_keypair()
 	{
-		let out = generate_key_pair().unwrap();
-
-		assert_eq!(out.alg, ED25519_OUTPUT);
-
-		let sk = match out.sign_key {
-			SignK::Ed25519(k) => k,
-			_ => panic!("Wrong alg"),
-		};
-
-		let vk = match out.verify_key {
-			VerifyK::Ed25519(k) => k,
-			_ => panic!("Wrong alg"),
-		};
-
-		assert_eq!(sk.len(), 32);
-		assert_eq!(vk.len(), 32);
+		let _ = Ed25519KeyPair::generate_key_pair().unwrap();
 	}
 
 	#[test]
 	fn test_sign_and_verify()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
-		let (data, check) = verify(&out.verify_key, &data_with_sig).unwrap();
+		let (data, check) = vk.verify(&data_with_sig).unwrap();
 
 		assert!(check);
 		assert_eq!(data, text.as_bytes());
@@ -177,14 +237,14 @@ mod test
 	#[test]
 	fn test_wrong_verify()
 	{
-		let out = generate_key_pair().unwrap();
-		let out1 = generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
+		let (sk, _vk) = Ed25519KeyPair::generate_key_pair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
-		let (data, check) = verify(&out1.verify_key, &data_with_sig).unwrap();
+		let (data, check) = vk.verify(&data_with_sig).unwrap();
 
 		assert!(!check);
 		assert_eq!(data, text.as_bytes());
@@ -193,14 +253,14 @@ mod test
 	#[test]
 	fn test_too_short_sig_bytes()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
 		let data_with_sig = &data_with_sig[..31];
 
-		let check_result = verify(&out.verify_key, data_with_sig);
+		let check_result = vk.verify(data_with_sig);
 
 		assert!(matches!(check_result, Err(DataToSignTooShort)));
 	}
@@ -208,14 +268,14 @@ mod test
 	#[test]
 	fn test_wrong_sig_bytes()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
 		let data_with_sig = &data_with_sig[..SIG_LENGTH + 2];
 
-		let (_data, check) = verify(&out.verify_key, data_with_sig).unwrap();
+		let (_data, check) = vk.verify(data_with_sig).unwrap();
 
 		assert!(!check);
 	}
@@ -223,11 +283,11 @@ mod test
 	#[test]
 	fn test_safety_number()
 	{
-		let u1 = generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			},
 			None,
@@ -239,16 +299,16 @@ mod test
 	#[test]
 	fn test_combined_safety_number()
 	{
-		let u1 = generate_key_pair().unwrap();
-		let u2 = generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519KeyPair::generate_key_pair().unwrap();
+		let (_sk1, vk1) = Ed25519KeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			},
 			Some(SafetyNumber {
-				verify_key: &u2.verify_key,
+				verify_key: &vk1,
 				user_info: "321",
 			}),
 		);
@@ -259,11 +319,11 @@ mod test
 
 		let number_2 = safety_number(
 			SafetyNumber {
-				verify_key: &u2.verify_key,
+				verify_key: &vk1,
 				user_info: "321",
 			},
 			Some(SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			}),
 		);

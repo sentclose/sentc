@@ -1,96 +1,118 @@
-use alloc::string::{String, ToString};
-use alloc::vec;
-use alloc::vec::Vec;
-
-use base64ct::{Base64UrlUnpadded, Encoding};
-use sentc_crypto_common::content_searchable::SearchableCreateOutput;
-use sentc_crypto_core::getting_alg_from_hmac_key;
-
-use crate::entities::keys::HmacKeyFormatInt;
-use crate::SdkError;
+#[cfg(not(feature = "rust"))]
+mod crypto_searchable_export;
 
 #[cfg(not(feature = "rust"))]
-mod crypto_searchable;
-#[cfg(feature = "rust")]
-mod crypto_searchable_rust;
+pub use self::crypto_searchable_export::*;
 
-#[cfg(not(feature = "rust"))]
-pub use self::crypto_searchable::{create_searchable, create_searchable_raw, search};
-#[cfg(feature = "rust")]
-pub use self::crypto_searchable_rust::{create_searchable, create_searchable_raw, search};
-
-fn search_internally(key: &HmacKeyFormatInt, data: &str) -> Result<String, SdkError>
+#[cfg(test)]
+mod test
 {
-	hash_value_internally(key, data.as_bytes())
-}
+	use crate::group::test_fn::create_group;
+	use crate::user::test_fn::create_user;
 
-fn create_searchable_raw_internally(key: &HmacKeyFormatInt, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, SdkError>
-{
-	hash_full_internally(key, data, full, limit)
-}
+	#[test]
+	fn test_create_full_searchable_item()
+	{
+		//create a group and use the hmac key
+		let user = create_user();
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
-fn create_searchable_internally(key: &HmacKeyFormatInt, data: &str, full: bool, limit: Option<usize>) -> Result<SearchableCreateOutput, SdkError>
-{
-	let hashes = hash_full_internally(key, data, full, limit)?;
+		let hmac_key = &hmac_keys[0];
 
-	Ok(SearchableCreateOutput {
-		hashes,
-		alg: getting_alg_from_hmac_key(&key.key).to_string(),
-		key_id: key.key_id.to_string(),
-	})
-}
+		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-fn hash_full_internally(key: &HmacKeyFormatInt, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, SdkError>
-{
-	if data.is_empty() {
-		return Err(SdkError::SearchableEncryptionDataNotFound);
+		let out = hmac_key.create_searchable(text, true, None).unwrap();
+
+		//should be only one -> the full hash
+		assert_eq!(out.hashes.len(), 1);
 	}
 
-	if full {
-		//create only one hash for 1:1 lookup. good for situations where the item should not be searched but checked
-		let hash = hash_value_internally(key, data.as_bytes())?;
+	#[test]
+	fn test_create_searchable_item()
+	{
+		//create a group and use the hmac key
+		let user = create_user();
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
-		return Ok(vec![hash]);
+		let hmac_key = &hmac_keys[0];
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+		let out = hmac_key.create_searchable(text, false, None).unwrap();
+
+		assert_eq!(out.hashes.len(), 39);
 	}
 
-	//how many bytes should be hashed
-	let limit_length = if let Some(l) = limit {
-		if l > data.len() {
-			data.len()
-		} else {
-			l
-		}
-	} else {
-		data.len()
-	};
+	#[test]
+	fn test_searchable_full_item()
+	{
+		//create a group and use the hmac key
+		let user = create_user();
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
-	if limit_length > 200 {
-		return Err(SdkError::SearchableEncryptionDataTooLong);
+		let hmac_key = &hmac_keys[0];
+
+		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+		let out = hmac_key.create_searchable(text, true, None).unwrap();
+
+		assert_eq!(out.hashes.len(), 1);
+
+		//now get the output of the prepare search
+		let search_str = hmac_key.search("123").unwrap();
+
+		//should not contain only a part of the word because we used full
+		assert!(!out.hashes.contains(&search_str));
+
+		//but should contain the full word
+		let search_str = hmac_key.search("123*+^êéèüöß@€&$ 👍 🚀 😎").unwrap();
+
+		assert!(out.hashes.contains(&search_str));
 	}
 
-	let mut word_to_hash = Vec::with_capacity(limit_length);
-	let mut hashed = Vec::with_capacity(limit_length);
+	#[test]
+	fn test_searchable_item()
+	{
+		//create a group and use the hmac key
+		let user = create_user();
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
 
-	for (i, datum) in data.bytes().enumerate() {
-		//make sure we not iterate over the limit when limit is set
-		if i > limit_length {
-			break;
-		}
+		let hmac_key = &hmac_keys[0];
 
-		//hash each char or byte of the string.
-		//hash the next byte as an combination of the previous and the actual
-		//like: word hello -> 1st hash('h'), 2nd hash('he'), 3rd hash('hel'), ...
-		word_to_hash.push(datum);
+		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
 
-		hashed.push(hash_value_internally(key, &word_to_hash)?);
+		let out = hmac_key.create_searchable(text, false, None).unwrap();
+
+		assert_eq!(out.hashes.len(), 39);
+
+		//now get the output of the prepare search
+		let search_str = hmac_key.search("123").unwrap();
+
+		assert!(out.hashes.contains(&search_str));
 	}
 
-	Ok(hashed)
-}
+	#[test]
+	fn test_not_create_same_output_with_different_hmac_keys()
+	{
+		let user = create_user();
+		let (_, _, _, hmac_keys, _) = create_group(&user.user_keys[0]);
+		let hmac_key = &hmac_keys[0];
 
-fn hash_value_internally(key: &HmacKeyFormatInt, data: &[u8]) -> Result<String, SdkError>
-{
-	let hash = sentc_crypto_core::crypto::encrypt_searchable(&key.key, data)?;
+		let (_, _, _, hmac_keys2, _) = create_group(&user.user_keys[0]);
+		let hmac_key2 = &hmac_keys2[0];
 
-	Ok(Base64UrlUnpadded::encode_string(&hash))
+		let text = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+		let out = hmac_key.create_searchable(text, false, None).unwrap();
+
+		let search_str = hmac_key.search("123").unwrap();
+
+		let search_str2 = hmac_key2.search("123").unwrap();
+
+		assert_ne!(search_str, search_str2);
+
+		assert!(out.hashes.contains(&search_str));
+
+		assert!(!out.hashes.contains(&search_str2));
+	}
 }

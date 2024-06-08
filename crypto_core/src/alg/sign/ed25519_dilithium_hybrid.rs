@@ -1,63 +1,200 @@
 use alloc::vec::Vec;
 
-use pqc_dilithium_edit::SIGNBYTES;
+use hmac::digest::Digest;
+use pqc_dilithium_edit::{PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 
-use crate::alg::sign::SignOutput;
-use crate::{get_rand, Error, Sig, SignK, VerifyK};
+use crate::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
+use crate::{crypto_alg_str_impl, get_rand, hybrid_key_import_export, Error, SignKey, Signature, VerifyKey};
 
 pub const ED25519_DILITHIUM_HYBRID_OUTPUT: &str = "ED25519_DILITHIUM_3";
 
-#[allow(unused)]
-pub(crate) fn generate_key_pair() -> Result<SignOutput, Error>
+pub struct Ed25519DilithiumHybridSig
 {
-	let kp = super::ed25519::generate_key_pair_internally(&mut get_rand())?;
-	let (sk, pk) = super::pqc_dilithium::generate_key_pair_internally(&mut get_rand())?;
-
-	Ok(SignOutput {
-		alg: ED25519_DILITHIUM_HYBRID_OUTPUT,
-		sign_key: SignK::Ed25519DilithiumHybrid {
-			x: kp.secret.to_bytes(),
-			k: sk,
-		},
-		verify_key: VerifyK::Ed25519DilithiumHybrid {
-			x: kp.public.to_bytes(),
-			k: pk,
-		},
-	})
+	x: [u8; 64],
+	k: [u8; SIGNBYTES],
 }
 
-pub(crate) fn sign(sign_key: &SignK, data: &[u8]) -> Result<Vec<u8>, Error>
+crypto_alg_str_impl!(Ed25519DilithiumHybridSig, ED25519_DILITHIUM_HYBRID_OUTPUT);
+hybrid_key_import_export!(Ed25519DilithiumHybridSig);
+
+impl Into<Signature> for Ed25519DilithiumHybridSig
 {
-	let (sig_x, sig_k) = sign_only_raw(sign_key, data)?;
-
-	let mut output = Vec::with_capacity(sig_x.len() + sig_k.len() + data.len());
-	output.extend(sig_x);
-	output.extend(sig_k);
-	output.extend(data);
-
-	Ok(output)
+	fn into(self) -> Signature
+	{
+		Signature::Ed25519DilithiumHybrid(self)
+	}
 }
 
-pub(crate) fn sign_only(sign_key: &SignK, data: &[u8]) -> Result<Sig, Error>
+impl Into<Vec<u8>> for Ed25519DilithiumHybridSig
 {
-	let (x, k) = sign_only_raw(sign_key, data)?;
+	fn into(self) -> Vec<u8>
+	{
+		let mut output = Vec::with_capacity(self.x.len() + self.k.len());
+		output.extend_from_slice(&self.x);
+		output.extend_from_slice(&self.k);
 
-	Ok(Sig::Ed25519DilithiumHybrid {
-		x,
-		k,
-	})
+		output
+	}
 }
 
-pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<([u8; 64], [u8; SIGNBYTES]), Error>
+impl Sig for Ed25519DilithiumHybridSig
 {
-	let (x, k) = match sign_key {
-		SignK::Ed25519DilithiumHybrid {
+	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
+	// {
+	// 	split_sig_and_data(&self.0)
+	// }
+	//
+	// fn get_raw(&self) -> &[u8]
+	// {
+	// 	&self.0
+	// }
+}
+
+pub struct Ed25519DilithiumHybridVerifyKey
+{
+	x: [u8; 32],
+	k: [u8; PUBLICKEYBYTES],
+}
+
+hybrid_key_import_export!(Ed25519DilithiumHybridVerifyKey);
+crypto_alg_str_impl!(Ed25519DilithiumHybridVerifyKey, ED25519_DILITHIUM_HYBRID_OUTPUT);
+
+impl Into<VerifyKey> for Ed25519DilithiumHybridVerifyKey
+{
+	fn into(self) -> VerifyKey
+	{
+		VerifyKey::Ed25519DilithiumHybrid(self)
+	}
+}
+
+impl VerifyK for Ed25519DilithiumHybridVerifyKey
+{
+	type Signature = Ed25519DilithiumHybridSig;
+
+	fn verify<'a>(&self, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
+	{
+		let (sig, data) = split_sig_and_data(data_with_sig)?;
+
+		//now split the both sig
+		let (sig_x, sig_k) = super::split_sig_and_data(sig, super::ed25519::SIG_LENGTH)?;
+
+		Ok((data, verify_internally(&self.x, &self.k, sig_x, sig_k, data)?))
+	}
+
+	fn verify_only(&self, sig: &Self::Signature, data: &[u8]) -> Result<bool, Error>
+	{
+		verify_internally(&self.x, &self.k, &sig.x, &sig.k, data)
+	}
+
+	fn create_hash<D: Digest>(&self, hasher: &mut D)
+	{
+		hasher.update(self.x);
+		hasher.update(self.k);
+	}
+}
+
+pub struct Ed25519DilithiumHybridSignK
+{
+	x: [u8; 32],
+	k: [u8; SECRETKEYBYTES],
+}
+
+impl<'a> TryFrom<&'a [u8]> for Ed25519DilithiumHybridSignK
+{
+	type Error = Error;
+
+	fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
+	{
+		let x = &value[..32];
+		let k = &value[32..];
+
+		Ok(Self {
+			x: x.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+			k: k.try_into().map_err(|_| Error::KeyDecryptFailed)?,
+		})
+	}
+}
+
+hybrid_key_import_export!(Ed25519DilithiumHybridSignK);
+crypto_alg_str_impl!(Ed25519DilithiumHybridSignK, ED25519_DILITHIUM_HYBRID_OUTPUT);
+
+impl Into<SignKey> for Ed25519DilithiumHybridSignK
+{
+	fn into(self) -> SignKey
+	{
+		SignKey::Ed25519DilithiumHybrid(self)
+	}
+}
+
+impl SignK for Ed25519DilithiumHybridSignK
+{
+	type Signature = Ed25519DilithiumHybridSig;
+
+	fn encrypt_by_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		let key = [&self.x[..], &self.k].concat();
+
+		master_key.encrypt(&key)
+	}
+
+	fn sign(&self, data: &[u8]) -> Result<Vec<u8>, Error>
+	{
+		let (sig_x, sig_k) = sign_internal(&self.x, &self.k, data)?;
+
+		let mut output = Vec::with_capacity(sig_x.len() + sig_k.len() + data.len());
+		output.extend_from_slice(&sig_x);
+		output.extend_from_slice(&sig_k);
+		output.extend_from_slice(data);
+
+		Ok(output)
+	}
+
+	fn sign_only<D: AsRef<[u8]>>(&self, data: D) -> Result<Self::Signature, Error>
+	{
+		let (x, k) = sign_internal(&self.x, &self.k, data.as_ref())?;
+
+		Ok(Ed25519DilithiumHybridSig {
 			x,
 			k,
-		} => (x, k),
-		_ => return Err(Error::AlgNotFound),
-	};
+		})
+	}
+}
 
+pub struct Ed25519DilithiumHybridKeyPair;
+
+impl SignKeyPair for Ed25519DilithiumHybridKeyPair
+{
+	type SignKey = Ed25519DilithiumHybridSignK;
+	type VerifyKey = Ed25519DilithiumHybridVerifyKey;
+
+	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
+	{
+		let kp = super::ed25519::generate_key_pair_internally(&mut get_rand())?;
+		let (sk, pk) = super::pqc_dilithium::generate_key_pair_internally(&mut get_rand())?;
+
+		Ok((
+			Ed25519DilithiumHybridSignK {
+				x: kp.secret.to_bytes(),
+				k: sk,
+			},
+			Ed25519DilithiumHybridVerifyKey {
+				x: kp.public.to_bytes(),
+				k: pk,
+			},
+		))
+	}
+}
+
+pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
+{
+	super::split_sig_and_data(data_with_sig, super::ed25519::SIG_LENGTH + SIGNBYTES)
+}
+
+//__________________________________________________________________________________________________
+//internally function
+
+fn sign_internal(x: &[u8; 32], k: &[u8; SECRETKEYBYTES], data: &[u8]) -> Result<([u8; 64], [u8; SIGNBYTES]), Error>
+{
 	//first sign the data with ed25519
 	let sig_x = super::ed25519::sign_internally(x, data)?;
 
@@ -67,44 +204,18 @@ pub(crate) fn sign_only_raw(sign_key: &SignK, data: &[u8]) -> Result<([u8; 64], 
 	Ok((sig_x, sig_k))
 }
 
-pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
+#[allow(unused)]
+fn split_sig(sig: &[u8]) -> (&[u8], &[u8])
 {
-	super::split_sig_and_data(data_with_sig, super::ed25519::SIG_LENGTH + SIGNBYTES)
+	//the first is ed25519
+	let ed25519_sig = &sig[..super::ed25519::SIG_LENGTH];
+	let dilithium_sig = &sig[super::ed25519::SIG_LENGTH..];
+
+	(ed25519_sig, dilithium_sig)
 }
 
-pub(crate) fn verify<'a>(verify_key: &VerifyK, data_with_sig: &'a [u8]) -> Result<(&'a [u8], bool), Error>
+fn verify_internally(x: &[u8; 32], k: &[u8; PUBLICKEYBYTES], sig_x: &[u8], sig_k: &[u8], data: &[u8]) -> Result<bool, Error>
 {
-	let (sig, data) = split_sig_and_data(data_with_sig)?;
-
-	//now split the both sig
-	let (sig_x, sig_k) = super::split_sig_and_data(sig, super::ed25519::SIG_LENGTH)?;
-
-	Ok((data, verify_only_raw(verify_key, sig_x, sig_k, data)?))
-}
-
-pub(crate) fn verify_only(verify_key: &VerifyK, sig: &Sig, data: &[u8]) -> Result<bool, Error>
-{
-	let (sig_x, sig_k) = match sig {
-		Sig::Ed25519DilithiumHybrid {
-			x,
-			k,
-		} => (x, k),
-		_ => return Err(Error::AlgNotFound),
-	};
-
-	verify_only_raw(verify_key, sig_x, sig_k, data)
-}
-
-pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig_x: &[u8], sig_k: &[u8], data: &[u8]) -> Result<bool, Error>
-{
-	let (x, k) = match verify_key {
-		VerifyK::Ed25519DilithiumHybrid {
-			x,
-			k,
-		} => (x, k),
-		_ => return Err(Error::AlgNotFound),
-	};
-
 	//first verify with dilithium with the data and the sig_x attached
 
 	let res = super::pqc_dilithium::verify_internally(k, sig_k, &[data, sig_x].concat())?;
@@ -121,8 +232,6 @@ pub(crate) fn verify_only_raw(verify_key: &VerifyK, sig_x: &[u8], sig_k: &[u8], 
 #[cfg(test)]
 mod test
 {
-	use pqc_dilithium_edit::{PUBLICKEYBYTES, SECRETKEYBYTES};
-
 	use super::*;
 	use crate::alg::sign::ed25519::SIG_LENGTH;
 	use crate::alg::sign::safety_number;
@@ -132,43 +241,19 @@ mod test
 	#[test]
 	fn test_generate_keypair()
 	{
-		let out = generate_key_pair().unwrap();
-
-		assert_eq!(out.alg, ED25519_DILITHIUM_HYBRID_OUTPUT);
-
-		match out.sign_key {
-			SignK::Ed25519DilithiumHybrid {
-				x,
-				k,
-			} => {
-				assert_eq!(k.len(), SECRETKEYBYTES);
-				assert_eq!(x.len(), 32);
-			},
-			_ => panic!("Wrong alg"),
-		}
-
-		match out.verify_key {
-			VerifyK::Ed25519DilithiumHybrid {
-				x,
-				k,
-			} => {
-				assert_eq!(k.len(), PUBLICKEYBYTES);
-				assert_eq!(x.len(), 32);
-			},
-			_ => panic!("Wrong alg"),
-		}
+		let _ = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 	}
 
 	#[test]
 	fn test_sign_and_verify()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
-		let (data, check) = verify(&out.verify_key, &data_with_sig).unwrap();
+		let (data, check) = vk.verify(&data_with_sig).unwrap();
 
 		assert!(check);
 		assert_eq!(data, text.as_bytes());
@@ -177,14 +262,14 @@ mod test
 	#[test]
 	fn test_wrong_verify()
 	{
-		let out = generate_key_pair().unwrap();
-		let out1 = generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
+		let (sk, _vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
-		let (data, check) = verify(&out1.verify_key, &data_with_sig).unwrap();
+		let (data, check) = vk.verify(&data_with_sig).unwrap();
 
 		assert!(!check);
 		assert_eq!(data, text.as_bytes());
@@ -193,14 +278,14 @@ mod test
 	#[test]
 	fn test_too_short_sig_bytes()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
 		let data_with_sig = &data_with_sig[..31];
 
-		let check_result = verify(&out.verify_key, data_with_sig);
+		let check_result = vk.verify(data_with_sig);
 
 		assert!(matches!(check_result, Err(DataToSignTooShort)));
 	}
@@ -208,14 +293,14 @@ mod test
 	#[test]
 	fn test_wrong_sig_bytes()
 	{
-		let out = generate_key_pair().unwrap();
+		let (sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 		let text = "Hello world üöäéèßê°";
 
-		let data_with_sig = sign(&out.sign_key, text.as_bytes()).unwrap();
+		let data_with_sig = sk.sign(text.as_bytes()).unwrap();
 
 		let data_with_sig = &data_with_sig[..SIGNBYTES + SIG_LENGTH + 2];
 
-		let (_data, check) = verify(&out.verify_key, data_with_sig).unwrap();
+		let (_data, check) = vk.verify(data_with_sig).unwrap();
 
 		assert!(!check);
 	}
@@ -223,11 +308,11 @@ mod test
 	#[test]
 	fn test_safety_number()
 	{
-		let u1 = generate_key_pair().unwrap();
+		let (_sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			},
 			None,
@@ -239,16 +324,16 @@ mod test
 	#[test]
 	fn test_combined_safety_number()
 	{
-		let u1 = generate_key_pair().unwrap();
-		let u2 = generate_key_pair().unwrap();
+		let (_, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
+		let (_, vk1) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
 		let number = safety_number(
 			SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			},
 			Some(SafetyNumber {
-				verify_key: &u2.verify_key,
+				verify_key: &vk1,
 				user_info: "321",
 			}),
 		);
@@ -259,11 +344,11 @@ mod test
 
 		let number_2 = safety_number(
 			SafetyNumber {
-				verify_key: &u2.verify_key,
+				verify_key: &vk1,
 				user_info: "321",
 			},
 			Some(SafetyNumber {
-				verify_key: &u1.verify_key,
+				verify_key: &vk,
 				user_info: "123",
 			}),
 		);

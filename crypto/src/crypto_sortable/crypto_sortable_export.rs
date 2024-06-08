@@ -1,43 +1,49 @@
 use alloc::string::String;
 
 use sentc_crypto_common::content_sortable::SortableEncryptOutput;
+use sentc_crypto_core::cryptomat::SortableKey as CoreSort;
+use sentc_crypto_utils::keys::SortableKey;
 
-use crate::crypto_sortable::{encrypt_number_internally, encrypt_raw_number_internally, encrypt_raw_string_internally, encrypt_string_internally};
+use crate::SdkError;
 
 pub fn encrypt_raw_number(key: &str, data: u64) -> Result<u64, String>
 {
-	Ok(encrypt_raw_number_internally(&key.parse()?, data)?)
+	let key: SortableKey = key.parse()?;
+	Ok(key.encrypt_sortable(data).map_err(Into::<SdkError>::into)?)
 }
 
 pub fn encrypt_number(key: &str, data: u64) -> Result<SortableEncryptOutput, String>
 {
-	Ok(encrypt_number_internally(&key.parse()?, data)?)
+	let key: SortableKey = key.parse()?;
+	Ok(key.encrypt_number(data)?)
 }
 
-pub fn encrypt_raw_string(key: &str, data: &str) -> Result<u64, String>
+pub fn encrypt_raw_string(key: &str, data: &str, max_len: Option<usize>) -> Result<u64, String>
 {
-	Ok(encrypt_raw_string_internally(&key.parse()?, data)?)
+	let key: SortableKey = key.parse()?;
+	Ok(key.encrypt_raw_string(data, max_len)?)
 }
 
-pub fn encrypt_string(key: &str, data: &str) -> Result<SortableEncryptOutput, String>
+pub fn encrypt_string(key: &str, data: &str, max_len: Option<usize>) -> Result<SortableEncryptOutput, String>
 {
-	Ok(encrypt_string_internally(&key.parse()?, data)?)
+	let key: SortableKey = key.parse()?;
+	Ok(key.encrypt_string(data, max_len)?)
 }
 
 #[cfg(test)]
 mod test
 {
 	use super::*;
-	use crate::group::test_fn::create_group;
-	use crate::user::test_fn::create_user;
+	use crate::group::test_fn::create_group_export;
+	use crate::user::test_fn::create_user_export;
 
 	extern crate std;
 
 	#[test]
 	fn test_simple()
 	{
-		let user = create_user();
-		let (_, _, _, _, sortable_keys) = create_group(&user.user_keys[0]);
+		let user = create_user_export();
+		let (_, _, _, _, sortable_keys) = create_group_export(&user.user_keys[0]);
 
 		let key = &sortable_keys[0];
 
@@ -46,7 +52,7 @@ mod test
 		let mut encrypted_vars = [0u64; 10];
 
 		for (i, value) in values.iter().enumerate() {
-			encrypted_vars[i] = encrypt_raw_string(key, value).unwrap();
+			encrypted_vars[i] = encrypt_raw_string(key, value, None).unwrap();
 		}
 
 		//check

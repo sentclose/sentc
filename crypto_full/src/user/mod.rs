@@ -96,7 +96,7 @@ pub async fn register_device(
 	server_output: &str,
 	key_count: i32,
 	#[cfg(not(feature = "rust"))] user_keys: &str,
-	#[cfg(feature = "rust")] user_keys: &[&sentc_crypto::entities::keys::SymKeyFormatInt],
+	#[cfg(feature = "rust")] user_keys: &[&sentc_crypto::entities::keys::SymmetricKey],
 ) -> SessionRes
 {
 	let url = base_url + "/api/v1/user/done_register_device";
@@ -120,7 +120,7 @@ pub fn device_key_session<'a>(
 	#[cfg(not(feature = "rust"))] user_public_key: &'a str,
 	#[cfg(feature = "rust")] user_public_key: &'a sentc_crypto_common::user::UserPublicKeyData,
 	#[cfg(not(feature = "rust"))] group_keys: &'a str,
-	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::entities::keys::SymKeyFormatInt],
+	#[cfg(feature = "rust")] group_keys: &'a [&'a sentc_crypto::entities::keys::SymmetricKey],
 ) -> impl Future<Output = VoidRes> + 'a
 {
 	crate::group::insert_session_keys(
@@ -229,7 +229,7 @@ pub async fn fetch_user_key(
 	jwt: &str,
 	key_id: &str,
 	#[cfg(not(feature = "rust"))] private_key: &str,
-	#[cfg(feature = "rust")] private_key: &sentc_crypto::entities::keys::PrivateKeyFormatInt,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::entities::keys::SecretKey,
 ) -> UserKeyFetchRes
 {
 	let url = base_url + "/api/v1/user/user_keys/key/" + key_id;
@@ -323,8 +323,8 @@ pub async fn reset_password(
 	new_password: &str,
 	#[cfg(not(feature = "rust"))] decrypted_private_key: &str,
 	#[cfg(not(feature = "rust"))] decrypted_sign_key: &str,
-	#[cfg(feature = "rust")] decrypted_private_key: &sentc_crypto::entities::keys::PrivateKeyFormatInt,
-	#[cfg(feature = "rust")] decrypted_sign_key: &sentc_crypto::entities::keys::SignKeyFormatInt,
+	#[cfg(feature = "rust")] decrypted_private_key: &sentc_crypto::entities::keys::SecretKey,
+	#[cfg(feature = "rust")] decrypted_sign_key: &sentc_crypto::entities::keys::SignKey,
 ) -> VoidRes
 {
 	let url = base_url + "/api/v1/user/reset_pw";
@@ -433,9 +433,9 @@ pub fn key_rotation<'a>(
 	auth_token: &'a str,
 	jwt: &'a str,
 	#[cfg(not(feature = "rust"))] device_public_key: &'a str,
-	#[cfg(feature = "rust")] device_public_key: &'a sentc_crypto::entities::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] device_public_key: &'a sentc_crypto::entities::keys::PublicKey,
 	#[cfg(not(feature = "rust"))] pre_user_key: &'a str,
-	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::entities::keys::SymKeyFormatInt,
+	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::entities::keys::SymmetricKey,
 ) -> impl Future<Output = Res> + 'a
 {
 	crate::group::key_rotation(
@@ -464,11 +464,11 @@ pub fn done_key_rotation<'a>(
 	#[cfg(not(feature = "rust"))] server_output: &'a str,
 	#[cfg(feature = "rust")] server_output: sentc_crypto_common::group::KeyRotationInput,
 	#[cfg(not(feature = "rust"))] pre_user_key: &'a str,
-	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::entities::keys::SymKeyFormatInt,
+	#[cfg(feature = "rust")] pre_user_key: &'a sentc_crypto::entities::keys::SymmetricKey,
 	#[cfg(not(feature = "rust"))] device_public_key: &'a str,
-	#[cfg(feature = "rust")] device_public_key: &'a sentc_crypto::entities::keys::PublicKeyFormatInt,
+	#[cfg(feature = "rust")] device_public_key: &'a sentc_crypto::entities::keys::PublicKey,
 	#[cfg(not(feature = "rust"))] device_private_key: &'a str,
-	#[cfg(feature = "rust")] device_private_key: &'a sentc_crypto::entities::keys::PrivateKeyFormatInt,
+	#[cfg(feature = "rust")] device_private_key: &'a sentc_crypto::entities::keys::SecretKey,
 ) -> impl Future<Output = VoidRes> + 'a
 {
 	crate::group::done_key_rotation(

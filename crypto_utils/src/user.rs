@@ -17,11 +17,12 @@ use sentc_crypto_common::user::{
 	VerifyLoginInput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_core::cryptomat::Sk;
+use sentc_crypto_core::{DeriveMasterKeyForAuth, PwHasherGetter};
 use serde::{Deserialize, Serialize};
 
 use crate::error::SdkUtilError;
-use crate::keys::{PrivateKeyFormatInt, PublicKeyFormatInt, SignKeyFormatInt, VerifyKeyFormatInt};
+use crate::keys::{PublicKey, SecretKey, SignKey, VerifyKey};
 use crate::{
 	client_random_value_to_string,
 	derive_auth_key_for_auth_to_string,
@@ -41,10 +42,10 @@ the KeyFormat is sued for each where, were the key id is saved too
  */
 pub struct DeviceKeyDataInt
 {
-	pub private_key: PrivateKeyFormatInt,
-	pub sign_key: SignKeyFormatInt,
-	pub public_key: PublicKeyFormatInt,
-	pub verify_key: VerifyKeyFormatInt,
+	pub private_key: SecretKey,
+	pub sign_key: SignKey,
+	pub public_key: PublicKey,
+	pub verify_key: VerifyKey,
 	pub exported_public_key: UserPublicKeyData,
 	pub exported_verify_key: UserVerifyKeyData,
 }
@@ -91,13 +92,13 @@ pub struct UserPreVerifyLogin
 	pub device_id: DeviceId,
 }
 
-fn decrypt_login_challenge(private_key: &PrivateKeyFormatInt, challenge: &str) -> Result<String, SdkUtilError>
+fn decrypt_login_challenge(private_key: &SecretKey, challenge: &str) -> Result<String, SdkUtilError>
 {
 	//moved to util crate because this must be done for light and normal sdk
 
 	let challenge = Base64::decode_vec(challenge).map_err(|_| SdkUtilError::DecryptingLoginChallengeFailed)?;
 
-	let decrypted = sentc_crypto_core::crypto::decrypt_asymmetric(&private_key.key, &challenge)?;
+	let decrypted = private_key.key.decrypt(&challenge)?;
 
 	String::from_utf8(decrypted).map_err(|_| SdkUtilError::DecryptingLoginChallengeFailed)
 }
@@ -126,7 +127,7 @@ pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str)
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
 	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
-	let result = sentc_crypto_core::user::prepare_login(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
+	let result = sentc_crypto_core::user::prepare_login::<PwHasherGetter>(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
 	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
@@ -218,7 +219,7 @@ fn done_login_internally_with_device_out(
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	let out = sentc_crypto_core::user::done_login(
+	let out = sentc_crypto_core::user::done_login::<sentc_crypto_core::SecretKey, sentc_crypto_core::SignKey>(
 		master_key_encryption,
 		&encrypted_master_key,
 		&encrypted_private_key,
@@ -254,19 +255,19 @@ fn done_login_internally_with_device_out(
 	};
 
 	Ok(DeviceKeyDataInt {
-		private_key: PrivateKeyFormatInt {
+		private_key: SecretKey {
 			key_id: server_output.keypair_encrypt_id.clone(),
 			key: out.private_key,
 		},
-		sign_key: SignKeyFormatInt {
+		sign_key: SignKey {
 			key_id: server_output.keypair_sign_id.clone(),
 			key: out.sign_key,
 		},
-		public_key: PublicKeyFormatInt {
+		public_key: PublicKey {
 			key_id: server_output.keypair_encrypt_id.clone(),
 			key: public_key,
 		},
-		verify_key: VerifyKeyFormatInt {
+		verify_key: VerifyKey {
 			key_id: server_output.keypair_sign_id.clone(),
 			key: verify_key,
 		},
@@ -299,7 +300,7 @@ pub fn change_password(
 	.map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 
-	let output = sentc_crypto_core::user::change_password(
+	let output = sentc_crypto_core::user::change_password::<PwHasherGetter>(
 		old_pw,
 		new_pw,
 		&old_salt,
@@ -308,7 +309,7 @@ pub fn change_password(
 	)?;
 
 	//prepare for the server
-	let new_encrypted_master_key = Base64::encode_string(&output.master_key_info.encrypted_master_key);
+	let new_encrypted_master_key = Base64::encode_string(&output.encrypted_master_key);
 
 	let new_client_random_value = client_random_value_to_string(&output.client_random_value);
 
@@ -322,7 +323,7 @@ pub fn change_password(
 		new_encrypted_master_key,
 		new_client_random_value,
 		new_hashed_authentication_key,
-		new_encrypted_master_key_alg: output.master_key_info.alg.to_string(),
+		new_encrypted_master_key_alg: output.encrypted_master_key_alg.to_string(),
 		old_auth_key,
 	};
 

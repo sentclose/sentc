@@ -19,7 +19,7 @@ pub async fn register_sym_key(
 	auth_token: &str,
 	jwt: &str,
 	#[cfg(not(feature = "rust"))] master_key: &str,
-	#[cfg(feature = "rust")] master_key: &sentc_crypto::entities::keys::SymKeyFormatInt,
+	#[cfg(feature = "rust")] master_key: &sentc_crypto::entities::keys::SymmetricKey,
 ) -> GenKeyRes
 {
 	let url = base_url + "/api/v1/keys/sym_key";
@@ -52,7 +52,7 @@ pub async fn get_sym_key_by_id(
 	auth_token: &str,
 	key_id: &str,
 	#[cfg(not(feature = "rust"))] master_key: &str,
-	#[cfg(feature = "rust")] master_key: &sentc_crypto::entities::keys::SymKeyFormatInt,
+	#[cfg(feature = "rust")] master_key: &sentc_crypto::entities::keys::SymmetricKey,
 ) -> KeyRes
 {
 	let url = base_url + "/api/v1/keys/sym_key/" + key_id;
@@ -71,7 +71,7 @@ pub async fn get_keys_for_master_key(
 	last_fetched_time: &str,
 	last_key_id: &str,
 	#[cfg(not(feature = "rust"))] master_key: &str,
-	#[cfg(feature = "rust")] master_key: &sentc_crypto::entities::keys::SymKeyFormatInt,
+	#[cfg(feature = "rust")] master_key: &sentc_crypto::entities::keys::SymmetricKey,
 ) -> KeysRes
 {
 	let url = base_url + "/api/v1/keys/sym_key/" + master_key_id + "/" + last_fetched_time + "/" + last_key_id;
@@ -133,7 +133,7 @@ pub async fn get_sym_key_by_id_by_private_key(
 	auth_token: &str,
 	key_id: &str,
 	#[cfg(not(feature = "rust"))] private_key: &str,
-	#[cfg(feature = "rust")] private_key: &sentc_crypto::entities::keys::PrivateKeyFormatInt,
+	#[cfg(feature = "rust")] private_key: &sentc_crypto::entities::keys::SecretKey,
 ) -> KeyRes
 {
 	let url = base_url + "/api/v1/keys/sym_key/" + key_id;
