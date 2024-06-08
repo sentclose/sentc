@@ -72,7 +72,7 @@ pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, SdkErro
 3. encrypt the symmetric key with the master key
 4. return the server input
  */
-pub(crate) fn prepare_register_sym_key(master_key: &SymmetricKey) -> Result<(String, SymmetricKey), SdkError>
+pub fn prepare_register_sym_key(master_key: &SymmetricKey) -> Result<(String, SymmetricKey), SdkError>
 {
 	let (out, key) = prepare_registered_sym_key_internally_private(master_key)?;
 
