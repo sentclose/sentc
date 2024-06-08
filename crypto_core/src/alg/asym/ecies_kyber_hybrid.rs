@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use pqc_kyber::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
+use pqc_kyber_edit::{KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 
 use crate::cryptomat::{CryptoAlg, Pk, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
 use crate::{crypto_alg_str_impl, get_rand, hybrid_key_import_export, Error, PublicKey, SecretKey};

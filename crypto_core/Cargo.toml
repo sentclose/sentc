@@ -26,7 +26,7 @@ hkdf = { version = "0.12.3", default-features = false }
 hmac = "0.12.1"
 argon2 = "0.3"
 ope = "0.1.1"
-pqc_kyber = { version = "0.7.1", features = ["90s-fixslice", "std"] }
+pqc_kyber_edit = { version = "0.7.1", features = ["90s-fixslice"] }
 pqc_dilithium_edit = { version = "0.2.0", features = ["mode3", "aes", "random_signing"] }
 
 [features]

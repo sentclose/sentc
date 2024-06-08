@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use pqc_kyber::{decapsulate, encapsulate, keypair, PublicKey, SecretKey, KYBER_CIPHERTEXTBYTES, KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
+use pqc_kyber_edit::{decapsulate, encapsulate, keypair, PublicKey, SecretKey, KYBER_CIPHERTEXTBYTES, KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::alg::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt};
