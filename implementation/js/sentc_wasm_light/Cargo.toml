@@ -1,6 +1,6 @@
 [package]
 name = "sentc_wasm_light"
-version = "0.11.2"
+version = "0.12.0"
 edition = "2021"
 
 description = "Wasm for sentc. End-to-end encryption sdk light"
@@ -16,15 +16,15 @@ repository = "https://github.com/sentclose/sentc"
 crate-type = ["cdylib"]
 
 [dependencies]
-sentc-crypto-common = {workspace=true}
-sentc-crypto-light = {workspace=true, features = ["default"]}
-sentc-crypto-light-full={workspace=true, features = ["default","wasm"]}
+sentc-crypto-common = { workspace = true }
+sentc-crypto-light = { workspace = true, features = ["default"] }
+sentc-crypto-light-full = { workspace = true, features = ["default", "wasm"] }
 
 # must be js feature for wasm
 getrandom = { version = "0.2", features = ["js"] }
 
 # wasm dep
-wasm-bindgen = {version = "0.2.74", features = ["serde-serialize"]}
+wasm-bindgen = { version = "0.2.74", features = ["serde-serialize"] }
 js-sys = "0.3.58"
 
 # sha2 with non std
@@ -32,4 +32,4 @@ sha2 = { version = "0.10", default-features = false }
 
 wasm-bindgen-futures = "0.4.31"
 
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
