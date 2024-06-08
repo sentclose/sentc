@@ -12,7 +12,6 @@ mod test
 	use sentc_crypto_core::cryptomat::SortableKey as CoreSort;
 	use sentc_crypto_utils::keys::SortableKey;
 
-	use super::*;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
 

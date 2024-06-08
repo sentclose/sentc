@@ -5,7 +5,7 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::file::{BelongsToType, FileHead, FileNameUpdate, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::{FileId, FileSessionId};
-use sentc_crypto_core::cryptomat::{CryptoAlg, SignK, SymKey, SymKeyComposer, SymKeyGen};
+use sentc_crypto_core::cryptomat::{CryptoAlg, SymKey, SymKeyComposer, SymKeyGen};
 use sentc_crypto_core::{Signature, SymmetricKey as CoreSymmetricKey};
 use sentc_crypto_utils::keys::VerifyKey;
 

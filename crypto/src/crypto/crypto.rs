@@ -81,7 +81,7 @@ pub(crate) fn prepare_register_sym_key(master_key: &SymmetricKey) -> Result<(Str
 
 fn prepare_registered_sym_key_internally_private(master_key: &SymmetricKey) -> Result<(GeneratedSymKeyHeadServerInput, SymmetricKey), SdkError>
 {
-	let (encrypted_key, sym_key_alg, key) = SymmetricKey::generate_symmetric_with_master_key(&master_key.key)?;
+	let (encrypted_key, key) = CoreSymmetricKey::generate_symmetric_with_sym_key(&master_key.key)?;
 
 	let encrypted_key_string = Base64::encode_string(&encrypted_key);
 
@@ -93,7 +93,7 @@ fn prepare_registered_sym_key_internally_private(master_key: &SymmetricKey) -> R
 	Ok((
 		GeneratedSymKeyHeadServerInput {
 			encrypted_key_string,
-			alg: sym_key_alg.to_string(),
+			alg: sym_key_format.key.get_alg_str().to_string(),
 			master_key_id: master_key.key_id.to_string(),
 		},
 		sym_key_format,
@@ -142,7 +142,7 @@ fn prepare_register_sym_key_by_public_key_internally_private(
 	Ok((
 		GeneratedSymKeyHeadServerInput {
 			encrypted_key_string,
-			alg: key.get_alg_str().to_string(),
+			alg: sym_key_format.key.get_alg_str().to_string(),
 			master_key_id: public_key.key_id,
 		},
 		sym_key_format,
