@@ -104,8 +104,8 @@ pub fn export_raw_public_key_to_pem(key: &PublicKey) -> Result<String, SdkUtilEr
 		PublicKey::EciesKyberHybrid(key) => {
 			let (x, k) = key.get_raw_keys();
 
-			let x = Base64::encode_string(x);
-			let k = Base64::encode_string(k);
+			let x = export_key_to_pem(x)?;
+			let k = export_key_to_pem(k)?;
 
 			serde_json::to_string(&HybridPublicKeyExportFormat {
 				x,
@@ -138,8 +138,8 @@ pub fn export_raw_verify_key_to_pem(key: &VerifyKey) -> Result<String, SdkUtilEr
 		VerifyKey::Ed25519DilithiumHybrid(key) => {
 			let (x, k) = key.get_raw_keys();
 
-			let x = Base64::encode_string(x);
-			let k = Base64::encode_string(k);
+			let x = export_key_to_pem(x)?;
+			let k = export_key_to_pem(k)?;
 
 			serde_json::to_string(&HybridPublicKeyExportFormat {
 				x,
