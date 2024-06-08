@@ -262,6 +262,7 @@ pub(crate) mod test_fn
 		out
 	}
 
+	#[cfg(not(feature = "rust"))]
 	pub(crate) fn create_user_export() -> UserDataExport
 	{
 		let username = "admin";

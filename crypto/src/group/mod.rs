@@ -135,6 +135,7 @@ pub(crate) mod test_fn
 		)
 	}
 
+	#[cfg(not(feature = "rust"))]
 	pub(crate) fn create_group_export(
 		user: &crate::entities::user::UserKeyDataExport,
 	) -> (
