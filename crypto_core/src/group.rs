@@ -430,7 +430,7 @@ mod test
 		let rotation_out = key_rotation::<SymmetricKey, SecretKey, SignKey>(&group_key, &pk, false).unwrap();
 
 		//it should get the values from own encrypted group key
-		let (_, _new_group_pri_key) = get_group::<SymmetricKey, SecretKey>(
+		let (new_group_key, _new_group_pri_key) = get_group::<SymmetricKey, SecretKey>(
 			&login_out.private_key,
 			&rotation_out.encrypted_group_key_by_user,
 			&rotation_out.encrypted_private_group_key,
@@ -438,6 +438,8 @@ mod test
 			rotation_out.keypair_encrypt_alg,
 		)
 		.unwrap();
+
+		assert_ne!(group_key.as_ref(), new_group_key.as_ref());
 
 		//do the server key rotation
 		//executed on the server not the client. the client invokes done_key_rotation after
@@ -459,7 +461,7 @@ mod test
 		.unwrap();
 
 		//get the new group by get_group
-		let (_, _new_group_pri_key2) = get_group::<SymmetricKey, SecretKey>(
+		let (new_group_key2, _new_group_pri_key2) = get_group::<SymmetricKey, SecretKey>(
 			&login_out.private_key,
 			&out,
 			&rotation_out.encrypted_private_group_key,
@@ -467,6 +469,9 @@ mod test
 			rotation_out.keypair_encrypt_alg,
 		)
 		.unwrap();
+
+		assert_eq!(new_group_key.as_ref(), new_group_key2.as_ref());
+		assert_ne!(group_key.as_ref(), new_group_key2.as_ref());
 	}
 
 	#[test]
@@ -528,7 +533,7 @@ mod test
 		//can't use loop here because we need to know which group key we are actual processing
 		let group_key_2 = &new_user_out[1];
 
-		let (_, _new_user_group_pri_key_2) = get_group::<SymmetricKey, SecretKey>(
+		let (new_user_group_key_2, _new_user_group_pri_key_2) = get_group::<SymmetricKey, SecretKey>(
 			&user_2_out.private_key,
 			&group_key_2.encrypted_group_key,
 			&rotation_out.encrypted_private_group_key, //normally get from the server
@@ -537,9 +542,11 @@ mod test
 		)
 		.unwrap();
 
+		assert_eq!(new_group_key.as_ref(), new_user_group_key_2.as_ref());
+
 		let group_key_3 = &new_user_out[2];
 
-		let (_, _new_user_group_pri_key_3) = get_group::<SymmetricKey, SecretKey>(
+		let (new_user_group_key_3, _new_user_group_pri_key_3) = get_group::<SymmetricKey, SecretKey>(
 			&user_2_out.private_key,
 			&group_key_3.encrypted_group_key,
 			&rotation_out_1.encrypted_private_group_key, //normally get from the server
@@ -547,5 +554,7 @@ mod test
 			rotation_out_1.keypair_encrypt_alg,
 		)
 		.unwrap();
+
+		assert_eq!(new_group_key_1.as_ref(), new_user_group_key_3.as_ref());
 	}
 }

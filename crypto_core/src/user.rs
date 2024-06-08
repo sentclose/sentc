@@ -369,14 +369,16 @@ mod test
 		let new_salt = pw_change_out.client_random_value.generate_salt("");
 		let prep_login_new = prepare_login::<PwHasherGetter>(new_password, &new_salt, pw_change_out.derived_alg).unwrap();
 
-		let _key = prep_login_old
+		let key_old = prep_login_old
 			.master_key_encryption_key
 			.get_master_key(&out.encrypted_master_key)
 			.unwrap();
-		let _key = prep_login_new
+		let key_new = prep_login_new
 			.master_key_encryption_key
 			.get_master_key(&pw_change_out.encrypted_master_key)
 			.unwrap();
+
+		assert_eq!(key_old.as_ref(), key_new.as_ref());
 	}
 
 	#[test]
@@ -411,7 +413,7 @@ mod test
 		let prep_login_out_pw_reset = prepare_login::<PwHasherGetter>(new_password, &salt_from_rand_value, password_reset_out.derived_alg).unwrap();
 
 		//try to decrypt the master key
-		let _ = done_login::<SecretKey, SignKey>(
+		let login_out_pw_reset = done_login::<SecretKey, SignKey>(
 			&prep_login_out_pw_reset.master_key_encryption_key, //the value comes from prepare login
 			&password_reset_out.encrypted_master_key,
 			&password_reset_out.encrypted_private_key,
@@ -422,6 +424,23 @@ mod test
 		.unwrap();
 
 		assert_ne!(out.encrypted_master_key, password_reset_out.encrypted_master_key);
+
+		match (login_out.private_key, login_out_pw_reset.private_key) {
+			(SecretKey::Ecies(sk), SecretKey::Ecies(sk1)) => {
+				assert_eq!(sk.as_ref(), sk1.as_ref())
+			},
+			(SecretKey::Kyber(sk), SecretKey::Kyber(sk1)) => {
+				assert_eq!(sk.as_ref(), sk1.as_ref())
+			},
+			(SecretKey::EciesKyberHybrid(sk), SecretKey::EciesKyberHybrid(sk1)) => {
+				let (x, k) = sk.get_raw_keys();
+				let (x1, k1) = sk1.get_raw_keys();
+
+				assert_eq!(x, x1);
+				assert_eq!(k, k1);
+			},
+			_ => panic!("Keys not the same format"),
+		}
 	}
 
 	fn create_dummy_user_for_safety_number() -> (VerifyKey, LoginDoneOutput<SecretKey, SignKey>)
@@ -444,7 +463,7 @@ mod test
 		)
 		.unwrap();
 
-		(out.verify_key.into(), login_out)
+		(out.verify_key, login_out)
 	}
 
 	#[test]
