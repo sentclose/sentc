@@ -84,7 +84,7 @@ impl VerifyK for Ed25519VerifyK
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D)
 	{
-		hasher.update(&self.0)
+		hasher.update(self.0)
 	}
 }
 

@@ -16,7 +16,7 @@
 //! This create can be used as stand-alone version without the sentclose api
 
 #![no_std]
-#![allow(clippy::infallible_destructuring_match, clippy::tabs_in_doc_comments)]
+#![allow(clippy::infallible_destructuring_match, clippy::tabs_in_doc_comments, clippy::from_over_into)]
 
 extern crate alloc;
 

@@ -29,7 +29,7 @@ impl Pk for KyberPk
 {
 	fn sign_public_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>
 	{
-		sign_key.sign_only(&self.0)
+		sign_key.sign_only(self.0)
 	}
 
 	fn verify_public_key<V: VerifyK>(&self, verify_key: &V, sig: &V::Signature) -> Result<bool, Error>
