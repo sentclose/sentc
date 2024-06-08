@@ -98,7 +98,7 @@ fn decrypt_login_challenge(private_key: &SecretKey, challenge: &str) -> Result<S
 
 	let challenge = Base64::decode_vec(challenge).map_err(|_| SdkUtilError::DecryptingLoginChallengeFailed)?;
 
-	let decrypted = private_key.decrypt(&challenge)?;
+	let decrypted = private_key.key.decrypt(&challenge)?;
 
 	String::from_utf8(decrypted).map_err(|_| SdkUtilError::DecryptingLoginChallengeFailed)
 }
