@@ -22,7 +22,7 @@ use sentc_crypto_common::user::{
 	VerifyLoginLightOutput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_core::{DeriveMasterKeyForAuth, PwHasherGetter, SecretKey, SignKey, SymmetricKey};
 use sentc_crypto_utils::user::UserPreVerifyLogin;
 use sentc_crypto_utils::{
 	client_random_value_to_string,
@@ -138,10 +138,10 @@ fn prepare_register_device_internally(server_output: &str) -> Result<String, Sdk
 
 fn prepare_register_device_private_internally(device_identifier: &str, password: &str) -> Result<UserDeviceRegisterInput, SdkLightError>
 {
-	let out = sentc_crypto_core::user::register(password)?;
+	let out = sentc_crypto_core::user::register::<SymmetricKey, SecretKey, SignKey, PwHasherGetter>(password)?;
 
 	//encode the encrypted data to base64
-	let encrypted_master_key = Base64::encode_string(&out.master_key_info.encrypted_master_key);
+	let encrypted_master_key = Base64::encode_string(&out.encrypted_master_key);
 	let encrypted_private_key = Base64::encode_string(&out.encrypted_private_key);
 	let encrypted_sign_key = Base64::encode_string(&out.encrypted_sign_key);
 
@@ -157,7 +157,7 @@ fn prepare_register_device_private_internally(device_identifier: &str, password:
 	let master_key = MasterKey {
 		encrypted_master_key,
 		master_key_alg: out.master_key_alg.to_string(),
-		encrypted_master_key_alg: out.master_key_info.alg.to_string(),
+		encrypted_master_key_alg: out.encrypted_master_key_alg.to_string(),
 	};
 
 	let derived = KeyDerivedData {
@@ -312,6 +312,7 @@ pub(crate) mod test_fn
 
 	use sentc_crypto_common::user::{DoneLoginServerKeysOutput, DoneLoginServerOutput, PrepareLoginSaltServerOutput, VerifyLoginInput};
 	use sentc_crypto_common::ServerOutput;
+	use sentc_crypto_core::cryptomat::Pk;
 	use sentc_crypto_core::generate_salt;
 	use sentc_crypto_utils::{client_random_value_from_string, import_public_key_from_pem_with_alg};
 
@@ -321,7 +322,7 @@ pub(crate) mod test_fn
 	{
 		let public_key = import_public_key_from_pem_with_alg(public_key_in_pem, public_key_alg)?;
 
-		let encrypted_eph_key = sentc_crypto_core::crypto::encrypt_asymmetric(&public_key, challenge.as_bytes())?;
+		let encrypted_eph_key = public_key.encrypt(challenge.as_bytes())?;
 
 		Ok(Base64::encode_string(&encrypted_eph_key))
 	}
