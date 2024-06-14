@@ -234,9 +234,8 @@ mod test
 {
 	use super::*;
 	use crate::alg::sign::ed25519::SIG_LENGTH;
-	use crate::alg::sign::safety_number;
 	use crate::error::Error::DataToSignTooShort;
-	use crate::SafetyNumber;
+	use crate::user::safety_number;
 
 	#[test]
 	fn test_generate_keypair()
@@ -310,13 +309,7 @@ mod test
 	{
 		let (_sk, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
-		let number = safety_number(
-			SafetyNumber {
-				verify_key: &vk,
-				user_info: "123",
-			},
-			None,
-		);
+		let number = safety_number(&vk, "123", None, None);
 
 		assert_eq!(number.len(), 32);
 	}
@@ -327,31 +320,13 @@ mod test
 		let (_, vk) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 		let (_, vk1) = Ed25519DilithiumHybridKeyPair::generate_key_pair().unwrap();
 
-		let number = safety_number(
-			SafetyNumber {
-				verify_key: &vk,
-				user_info: "123",
-			},
-			Some(SafetyNumber {
-				verify_key: &vk1,
-				user_info: "321",
-			}),
-		);
+		let number = safety_number(&vk, "123", Some(&vk1), Some("321"));
 
 		assert_eq!(number.len(), 32);
 
 		//test the other way around
 
-		let number_2 = safety_number(
-			SafetyNumber {
-				verify_key: &vk1,
-				user_info: "321",
-			},
-			Some(SafetyNumber {
-				verify_key: &vk,
-				user_info: "123",
-			}),
-		);
+		let number_2 = safety_number(&vk1, "321", Some(&vk), Some("123"));
 
 		assert_eq!(number_2.len(), 32);
 
