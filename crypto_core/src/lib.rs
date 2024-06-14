@@ -54,11 +54,12 @@ pub use self::alg::sign::ed25519_dilithium_hybrid::{
 	ED25519_DILITHIUM_HYBRID_OUTPUT,
 };
 pub use self::alg::sign::pqc_dilithium::DILITHIUM_OUTPUT;
-pub use self::alg::sign::{SafetyNumber, SignKey, Signature, VerifyKey};
+pub use self::alg::sign::{SignKey, Signature, VerifyKey};
 pub use self::alg::sortable::SortKeys;
 pub use self::alg::sym::aes_gcm::{Aes256GcmKey, AES_GCM_OUTPUT};
 pub use self::alg::sym::SymmetricKey;
 pub use self::error::Error;
+pub use self::user::SafetyNumber;
 
 pub fn generate_salt(client_random_value: ClientRandomValue, add_str: &str) -> Vec<u8>
 {

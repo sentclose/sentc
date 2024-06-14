@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
-use crate::alg::sign;
+use sha2::{Digest, Sha256};
+
 use crate::cryptomat::{
 	CryptoAlg,
 	Pk,
@@ -16,7 +17,7 @@ use crate::cryptomat::{
 	VerifyK,
 };
 use crate::error::Error;
-use crate::{ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, HashedAuthenticationKey, SafetyNumber};
+use crate::{ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, HashedAuthenticationKey};
 
 pub struct RegisterOutPut<P: Pk, V: VerifyK>
 {
@@ -261,6 +262,12 @@ pub fn password_reset<S: SymKeyGen, H: PwHashComposer>(
 	})
 }
 
+pub struct SafetyNumber<'a, Vk: VerifyK>
+{
+	pub verify_key: &'a Vk,
+	pub user_info: &'a str,
+}
+
 /**
 Creates a safety number in byte of a given verify key and additional user information like the user id or username.
 
@@ -268,10 +275,24 @@ Creates a safety number in byte of a given verify key and additional user inform
 
 To create a combination of two identities set for user_2 another SafetyNumberUser struct.
 Make sure to keep the order of user_1 and user_2 on the other user too, otherwise the number will not be the same.
-*/
-pub fn safety_number<V: VerifyK>(user_1: SafetyNumber<V>, user_2: Option<SafetyNumber<V>>) -> Vec<u8>
+ */
+pub(crate) fn safety_number<Vk: VerifyK>(user_1: SafetyNumber<Vk>, user_2: Option<SafetyNumber<Vk>>) -> Vec<u8>
 {
-	sign::safety_number(user_1, user_2)
+	let mut hasher = Sha256::new();
+
+	user_1.verify_key.create_hash(&mut hasher);
+
+	hasher.update(user_1.user_info.as_bytes());
+
+	if let Some(u_2) = user_2 {
+		u_2.verify_key.create_hash(&mut hasher);
+
+		hasher.update(u_2.user_info.as_bytes());
+	}
+
+	let number_bytes = hasher.finalize();
+
+	number_bytes.to_vec()
 }
 
 #[cfg(test)]

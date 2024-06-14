@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 
 use crate::alg::sign::ed25519::Ed25519SignK;
 use crate::alg::sign::ed25519_dilithium_hybrid::Ed25519DilithiumHybridSignK;
@@ -23,31 +23,6 @@ pub(crate) fn split_sig_and_data(data_with_sig: &[u8], len: usize) -> Result<(&[
 	let data = &data_with_sig[len..];
 
 	Ok((sig, data))
-}
-
-pub struct SafetyNumber<'a, Vk: VerifyK>
-{
-	pub verify_key: &'a Vk,
-	pub user_info: &'a str,
-}
-
-pub(crate) fn safety_number<Vk: VerifyK>(user_1: SafetyNumber<Vk>, user_2: Option<SafetyNumber<Vk>>) -> Vec<u8>
-{
-	let mut hasher = Sha256::new();
-
-	user_1.verify_key.create_hash(&mut hasher);
-
-	hasher.update(user_1.user_info.as_bytes());
-
-	if let Some(u_2) = user_2 {
-		u_2.verify_key.create_hash(&mut hasher);
-
-		hasher.update(u_2.user_info.as_bytes());
-	}
-
-	let number_bytes = hasher.finalize();
-
-	number_bytes.to_vec()
 }
 
 macro_rules! deref_macro {
