@@ -4,14 +4,16 @@ use alloc::vec::Vec;
 use sentc_crypto_common::crypto::SignHead;
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_core::cryptomat::{CryptoAlg, SignK, VerifyK};
+use sentc_crypto_core::Signature;
 
+use crate::cryptomat::{SignKCryptoWrapper, VerifyKFromUserKeyWrapper};
 use crate::error::SdkUtilError;
 use crate::import_verify_key_from_pem_with_alg;
 use crate::keys::{SignKey, VerifyKey};
 
-impl VerifyKey
+impl VerifyKFromUserKeyWrapper for VerifyKey
 {
-	pub fn verify_with_user_key<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkUtilError>
+	fn verify_with_user_key<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkUtilError>
 	{
 		//use here the old way to get the verify key because we do not need to own the key id
 		let verify_k = import_verify_key_from_pem_with_alg(verify_key.verify_key_pem.as_str(), verify_key.verify_key_alg.as_str())?;
@@ -30,11 +32,16 @@ impl VerifyKey
 
 		Ok(encrypted_data_without_sig)
 	}
+
+	fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'a [u8], &'a [u8]), SdkUtilError>
+	{
+		Ok(Signature::split_sig_and_data(alg, data_with_sign)?)
+	}
 }
 
-impl SignKey
+impl SignKCryptoWrapper for SignKey
 {
-	pub fn sign_with_head(&self, data: &[u8]) -> Result<(SignHead, Vec<u8>), SdkUtilError>
+	fn sign_with_head(&self, data: &[u8]) -> Result<(SignHead, Vec<u8>), SdkUtilError>
 	{
 		let sig = self.key.sign(data)?;
 

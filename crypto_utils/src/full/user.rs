@@ -11,6 +11,7 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
+use crate::cryptomat::{PkWrapper, SignComposerWrapper, SignKWrapper, SkWrapper, StaticKeyComposerWrapper, VerifyKWrapper};
 use crate::error::SdkUtilError;
 use crate::http::{auth_req, non_auth_req, HttpMethod};
 use crate::user::UserPreVerifyLogin;
@@ -23,9 +24,9 @@ pub struct PrepareLoginOtpOutput
 }
 
 #[allow(clippy::large_enum_variant)]
-pub enum PreLoginOut
+pub enum PreLoginOut<Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
 {
-	Direct(UserPreVerifyLogin),
+	Direct(UserPreVerifyLogin<Sk, Pk, SiK, Vk>),
 	Otp(PrepareLoginOtpOutput),
 }
 
@@ -43,7 +44,7 @@ async fn prepare_login_start(base_url: String, auth_token: &str, user_identifier
 	Ok(res)
 }
 
-async fn done_login_internally(
+async fn done_login_internally<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
 	base_url: String,
 	auth_token: &str,
 	user_identifier: &str,
@@ -51,7 +52,18 @@ async fn done_login_internally(
 	prepare_login_res: &str,
 	mfa_token: Option<String>,
 	mfa_recovery: Option<bool>,
-) -> Result<(UserPreVerifyLogin, DoneLoginServerOutput), SdkUtilError>
+) -> Result<
+	(
+		UserPreVerifyLogin<
+			<SkC as StaticKeyComposerWrapper>::SkWrapper,
+			<SkC as StaticKeyComposerWrapper>::PkWrapper,
+			<SiKC as SignComposerWrapper>::SignKWrapper,
+			<SiKC as SignComposerWrapper>::VerifyKWrapper,
+		>,
+		DoneLoginServerOutput,
+	),
+	SdkUtilError,
+>
 {
 	let (input, auth_key, master_key) = crate::user::prepare_login(user_identifier, password, prepare_login_res)?;
 
@@ -60,7 +72,7 @@ async fn done_login_internally(
 
 	match crate::user::check_done_login(&server_out)? {
 		DoneLoginServerReturn::Direct(d) => {
-			let out = crate::user::done_login(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
+			let out = crate::user::done_login::<SkC, SiKC>(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
 
 			Ok((out, d))
 		},
@@ -84,7 +96,7 @@ async fn done_login_internally(
 
 			let d: DoneLoginServerOutput = handle_server_response(&res)?;
 
-			let out = crate::user::done_login(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
+			let out = crate::user::done_login::<SkC, SiKC>(&master_key, auth_key, user_identifier.to_string(), d.clone())?;
 
 			Ok((out, d))
 		},
@@ -94,7 +106,20 @@ async fn done_login_internally(
 /**
 Do the full login process, except of the verify login because this is different from sdk light or normal version
 */
-pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> Result<PreLoginOut, SdkUtilError>
+pub async fn login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
+	base_url: String,
+	auth_token: &str,
+	user_identifier: &str,
+	password: &str,
+) -> Result<
+	PreLoginOut<
+		<SkC as StaticKeyComposerWrapper>::SkWrapper,
+		<SkC as StaticKeyComposerWrapper>::PkWrapper,
+		<SiKC as SignComposerWrapper>::SignKWrapper,
+		<SiKC as SignComposerWrapper>::VerifyKWrapper,
+	>,
+	SdkUtilError,
+>
 {
 	let user_id_input = crate::user::prepare_login_start(user_identifier)?;
 
@@ -110,7 +135,7 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 
 	match crate::user::check_done_login(&server_out)? {
 		DoneLoginServerReturn::Direct(d) => {
-			let verify = crate::user::done_login(&master_key_encryption_key, auth_key, user_identifier.to_string(), d)?;
+			let verify = crate::user::done_login::<SkC, SiKC>(&master_key_encryption_key, auth_key, user_identifier.to_string(), d)?;
 
 			Ok(PreLoginOut::Direct(verify))
 		},
@@ -125,7 +150,7 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 	}
 }
 
-pub async fn mfa_login(
+pub async fn mfa_login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
 	base_url: String,
 	auth_token: &str,
 	master_key_encryption: &DeriveMasterKeyForAuth,
@@ -133,7 +158,15 @@ pub async fn mfa_login(
 	user_identifier: String,
 	token: String,
 	recovery: bool,
-) -> Result<UserPreVerifyLogin, SdkUtilError>
+) -> Result<
+	UserPreVerifyLogin<
+		<SkC as StaticKeyComposerWrapper>::SkWrapper,
+		<SkC as StaticKeyComposerWrapper>::PkWrapper,
+		<SiKC as SignComposerWrapper>::SignKWrapper,
+		<SiKC as SignComposerWrapper>::VerifyKWrapper,
+	>,
+	SdkUtilError,
+>
 {
 	//use this with the token of the auth app
 
@@ -148,7 +181,7 @@ pub async fn mfa_login(
 
 	let res = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
 
-	let keys = crate::user::done_validate_mfa(master_key_encryption, auth_key, user_identifier, &res)?;
+	let keys = crate::user::done_validate_mfa::<SkC, SiKC>(master_key_encryption, auth_key, user_identifier, &res)?;
 
 	Ok(keys)
 }
@@ -196,19 +229,31 @@ pub async fn get_user_devices(
 
 //__________________________________________________________________________________________________
 
-pub async fn prepare_user_fresh_jwt(
+pub async fn prepare_user_fresh_jwt<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
 	base_url: String,
 	auth_token: &str,
 	user_identifier: &str,
 	password: &str,
 	mfa_token: Option<String>,
 	mfa_recovery: Option<bool>,
-) -> Result<(String, UserPreVerifyLogin, DoneLoginServerOutput), SdkUtilError>
+) -> Result<
+	(
+		String,
+		UserPreVerifyLogin<
+			<SkC as StaticKeyComposerWrapper>::SkWrapper,
+			<SkC as StaticKeyComposerWrapper>::PkWrapper,
+			<SiKC as SignComposerWrapper>::SignKWrapper,
+			<SiKC as SignComposerWrapper>::VerifyKWrapper,
+		>,
+		DoneLoginServerOutput,
+	),
+	SdkUtilError,
+>
 {
 	//first make the prep login req to get the output
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
 
-	let (keys, done_login_out) = done_login_internally(
+	let (keys, done_login_out) = done_login_internally::<SkC, SiKC>(
 		base_url,
 		auth_token,
 		user_identifier,

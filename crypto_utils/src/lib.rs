@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::type_complexity)]
 
 extern crate alloc;
 
@@ -29,6 +30,7 @@ use serde::Deserialize;
 use crate::error::SdkUtilError;
 use crate::keys::HybridPublicKeyExportFormat;
 
+pub mod cryptomat;
 pub mod error;
 #[cfg(all(feature = "crypto_full", any(feature = "rustls", feature = "wasm")))]
 pub mod full;
@@ -62,6 +64,9 @@ pub fn handle_server_response<'de, T: Deserialize<'de>>(res: &'de str) -> Result
 		None => Err(SdkUtilError::JsonParse),
 	}
 }
+
+pub type StdDeviceKeyDataInt = user::DeviceKeyDataInt<keys::SecretKey, keys::PublicKey, keys::SignKey, keys::VerifyKey>;
+pub type StdUserPreVerifyLogin = user::UserPreVerifyLogin<keys::SecretKey, keys::PublicKey, keys::SignKey, keys::VerifyKey>;
 
 /**
 Getting the result of a simple server response.

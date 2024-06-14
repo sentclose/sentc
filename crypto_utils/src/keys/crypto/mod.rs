@@ -14,6 +14,7 @@ use sentc_crypto_common::SymKeyId;
 use sentc_crypto_core::{HmacKey as CoreHmacKey, SortKeys as CoreSortableKey};
 use serde::{Deserialize, Serialize};
 
+use crate::cryptomat::KeyToString;
 use crate::error::SdkUtilError;
 
 /**

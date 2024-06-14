@@ -21,8 +21,29 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "encryption")]
 pub use self::crypto::{HmacKey, SortableKey};
+use crate::cryptomat::{
+	KeyToString,
+	PkWrapper,
+	SignComposerWrapper,
+	SignKWrapper,
+	SignKeyPairWrapper,
+	SkWrapper,
+	StaticKeyComposerWrapper,
+	StaticKeyPairWrapper,
+	SymKeyComposerWrapper,
+	SymKeyGenWrapper,
+	SymKeyWrapper,
+	VerifyKWrapper,
+};
 use crate::error::SdkUtilError;
-use crate::{import_public_key_from_pem_with_alg, import_verify_key_from_pem_with_alg};
+use crate::{
+	export_raw_public_key_to_pem,
+	export_raw_verify_key_to_pem,
+	import_public_key_from_pem_with_alg,
+	import_sig_from_string,
+	import_verify_key_from_pem_with_alg,
+	sig_to_string,
+};
 
 macro_rules! deref_impl {
 	($st:ty, $t:ty) => {
@@ -42,9 +63,9 @@ pub(crate) use deref_impl;
 
 macro_rules! to_string_impl {
 	($st:ty,$t:ty) => {
-		impl $st
+		impl KeyToString for $st
 		{
-			pub fn to_string(self) -> Result<String, SdkUtilError>
+			fn to_string(self) -> Result<String, SdkUtilError>
 			{
 				serde_json::to_string(&Into::<$t>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
 			}
@@ -71,6 +92,28 @@ macro_rules! from_string_impl {
 }
 
 pub(crate) use from_string_impl;
+use sentc_crypto_core::cryptomat::{SignK, SignKeyComposer, SignKeyPair, SkComposer, StaticKeyPair, SymKeyComposer, SymKeyGen, VerifyK};
+
+macro_rules! wrapper_impl {
+	($trait_impl:ident, $name:ident, $inner:ident) => {
+		impl $trait_impl for $name
+		{
+			type Inner = $inner;
+
+			fn get_id(&self) -> &str
+			{
+				&self.key_id
+			}
+
+			fn get_key(&self) -> &Self::Inner
+			{
+				&self.key
+			}
+		}
+	};
+}
+
+pub(crate) use wrapper_impl;
 
 //__________________________________________________________________________________________________
 
@@ -80,6 +123,35 @@ pub struct SymmetricKey
 	pub key_id: SymKeyId,
 }
 
+impl SymKeyGenWrapper for SymmetricKey
+{
+	type SymmetricKeyWrapper = Self;
+	type KeyGen = CoreSymmetricKey;
+
+	fn from_inner(inner: <<Self as SymKeyGenWrapper>::KeyGen as SymKeyGen>::SymmetricKey, id: String) -> Self::SymmetricKeyWrapper
+	{
+		Self {
+			key_id: id,
+			key: inner,
+		}
+	}
+}
+
+impl SymKeyComposerWrapper for SymmetricKey
+{
+	type SymmetricKeyWrapper = Self;
+	type Composer = CoreSymmetricKey;
+
+	fn from_inner(inner: <<Self as SymKeyComposerWrapper>::Composer as SymKeyComposer>::SymmetricKey, id: String) -> Self::SymmetricKeyWrapper
+	{
+		Self {
+			key_id: id,
+			key: inner,
+		}
+	}
+}
+
+wrapper_impl!(SymKeyWrapper, SymmetricKey, CoreSymmetricKey);
 deref_impl!(SymmetricKey, CoreSymmetricKey);
 to_string_impl!(SymmetricKey, SymKeyFormatExport);
 from_string_impl!(SymmetricKey, SymKeyFormatExport);
@@ -164,6 +236,57 @@ pub struct SecretKey
 	pub key_id: EncryptionKeyPairId,
 }
 
+impl StaticKeyPairWrapper for SecretKey
+{
+	type PkWrapper = PublicKey;
+	type KeyGen = CoreSecretKey;
+
+	fn pk_from_inner(inner: <<Self as StaticKeyPairWrapper>::KeyGen as StaticKeyPair>::PublicKey, id: String) -> Self::PkWrapper
+	{
+		PublicKey {
+			key: inner,
+			key_id: id,
+		}
+	}
+
+	fn pk_inner_to_pem(inner: &<<Self as StaticKeyPairWrapper>::KeyGen as StaticKeyPair>::PublicKey) -> Result<String, SdkUtilError>
+	{
+		export_raw_public_key_to_pem(inner)
+	}
+}
+
+impl StaticKeyComposerWrapper for SecretKey
+{
+	type SkWrapper = Self;
+	type PkWrapper = PublicKey;
+	type InnerPk = CorePublicKey;
+	type Composer = CoreSecretKey;
+
+	fn sk_from_inner(inner: <<Self as StaticKeyComposerWrapper>::Composer as SkComposer>::SecretKey, id: String) -> Self::SkWrapper
+	{
+		Self {
+			key_id: id,
+			key: inner,
+		}
+	}
+
+	fn pk_from_pem(public_key: &str, alg: &str, id: String) -> Result<Self::PkWrapper, SdkUtilError>
+	{
+		let key = import_public_key_from_pem_with_alg(public_key, alg)?;
+
+		Ok(PublicKey {
+			key,
+			key_id: id,
+		})
+	}
+
+	fn pk_inner_from_pem(public_key: &str, alg: &str) -> Result<Self::InnerPk, SdkUtilError>
+	{
+		import_public_key_from_pem_with_alg(public_key, alg)
+	}
+}
+
+wrapper_impl!(SkWrapper, SecretKey, CoreSecretKey);
 deref_impl!(SecretKey, CoreSecretKey);
 to_string_impl!(SecretKey, SecretKeyFormatExport);
 from_string_impl!(SecretKey, SecretKeyFormatExport);
@@ -299,6 +422,7 @@ impl PublicKey
 	}
 }
 
+wrapper_impl!(PkWrapper, PublicKey, CorePublicKey);
 deref_impl!(PublicKey, CorePublicKey);
 to_string_impl!(PublicKey, PublicKeyFormatExport);
 from_string_impl!(PublicKey, PublicKeyFormatExport);
@@ -478,6 +602,58 @@ pub struct SignKey
 	pub key_id: SignKeyPairId,
 }
 
+impl SignKeyPairWrapper for SignKey
+{
+	type KeyGen = CoreSignKey;
+
+	fn vk_inner_to_pem(inner: &<<Self as SignKeyPairWrapper>::KeyGen as SignKeyPair>::VerifyKey) -> Result<String, SdkUtilError>
+	{
+		export_raw_verify_key_to_pem(inner)
+	}
+
+	fn sig_to_string(sig: <<<Self as SignKeyPairWrapper>::KeyGen as SignKeyPair>::SignKey as SignK>::Signature) -> String
+	{
+		sig_to_string(&sig)
+	}
+}
+
+impl SignComposerWrapper for SignKey
+{
+	type SignKWrapper = Self;
+	type VerifyKWrapper = VerifyKey;
+	type InnerVk = CoreVerifyKey;
+	type Composer = CoreSignKey;
+
+	fn sk_from_inner(inner: <<Self as SignComposerWrapper>::Composer as SignKeyComposer>::Key, id: String) -> Self::SignKWrapper
+	{
+		Self {
+			key_id: id,
+			key: inner,
+		}
+	}
+
+	fn vk_from_pem(public_key: &str, alg: &str, id: String) -> Result<Self::VerifyKWrapper, SdkUtilError>
+	{
+		let key = import_verify_key_from_pem_with_alg(public_key, alg)?;
+
+		Ok(VerifyKey {
+			key,
+			key_id: id,
+		})
+	}
+
+	fn vk_inner_from_pem(public_key: &str, alg: &str) -> Result<Self::InnerVk, SdkUtilError>
+	{
+		import_verify_key_from_pem_with_alg(public_key, alg)
+	}
+
+	fn sig_from_string(sig: &str, alg: &str) -> Result<<<Self as SignComposerWrapper>::InnerVk as VerifyK>::Signature, SdkUtilError>
+	{
+		import_sig_from_string(sig, alg)
+	}
+}
+
+wrapper_impl!(SignKWrapper, SignKey, CoreSignKey);
 deref_impl!(SignKey, CoreSignKey);
 to_string_impl!(SignKey, SignKeyFormatExport);
 from_string_impl!(SignKey, SignKeyFormatExport);
@@ -592,6 +768,7 @@ pub struct VerifyKey
 	pub key_id: SignKeyPairId,
 }
 
+wrapper_impl!(VerifyKWrapper, VerifyKey, CoreVerifyKey);
 deref_impl!(VerifyKey, CoreVerifyKey);
 to_string_impl!(VerifyKey, VerifyKeyFormatExport);
 from_string_impl!(VerifyKey, VerifyKeyFormatExport);
