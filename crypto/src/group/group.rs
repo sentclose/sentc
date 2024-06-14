@@ -23,7 +23,7 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
-use sentc_crypto_core::cryptomat::{CryptoAlg, SignK};
+use sentc_crypto_core::cryptomat::{CryptoAlg, SearchableKeyComposer, SignK, SortableKeyComposer};
 use sentc_crypto_core::{
 	group as core_group,
 	HmacKey as CoreHmacKey,
@@ -393,7 +393,7 @@ pub fn decrypt_group_hmac_key(group_key: &SymmetricKey, server_output: GroupHmac
 {
 	let encrypted_hmac_key = Base64::decode_vec(&server_output.encrypted_hmac_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	let key = CoreHmacKey::decrypt_key_with_master_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
+	let key = CoreHmacKey::decrypt_by_master_key(&group_key.key, &encrypted_hmac_key, &server_output.encrypted_hmac_alg)?;
 
 	Ok(HmacKey {
 		key_id: server_output.id,
@@ -405,7 +405,7 @@ pub fn decrypt_group_sortable_key(group_key: &SymmetricKey, server_output: Group
 {
 	let encrypted_key = Base64::decode_vec(&server_output.encrypted_sortable_key).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	let key = CoreSortableKey::decrypt_key_with_master_key(&group_key.key, &encrypted_key, &server_output.encrypted_sortable_alg)?;
+	let key = CoreSortableKey::decrypt_by_master_key(&group_key.key, &encrypted_key, &server_output.encrypted_sortable_alg)?;
 
 	Ok(SortableKey {
 		key_id: server_output.id,

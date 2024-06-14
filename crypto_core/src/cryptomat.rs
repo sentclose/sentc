@@ -173,6 +173,13 @@ pub trait SearchableKeyGen
 	fn generate() -> Result<Self::SearchableKey, Error>;
 }
 
+pub trait SearchableKeyComposer
+{
+	type Key: SearchableKey;
+
+	fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::Key, Error>;
+}
+
 //__________________________________________________________________________________________________
 //sortable
 
@@ -188,6 +195,13 @@ pub trait SortableKeyGen
 	type SortableKey: SortableKey;
 
 	fn generate() -> Result<Self::SortableKey, Error>;
+}
+
+pub trait SortableKeyComposer
+{
+	type Key: SortableKey;
+
+	fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::Key, Error>;
 }
 
 //__________________________________________________________________________________________________

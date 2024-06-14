@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::alg::hmac::hmac_sha256::HmacSha256Key;
-use crate::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyGen, SymKey};
+use crate::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyComposer, SearchableKeyGen, SymKey};
 use crate::Error;
 
 pub(crate) mod hmac_sha256;
@@ -27,13 +27,6 @@ impl HmacKey
 			hmac_sha256::HMAC_SHA256_OUTPUT => Ok(HmacKey::HmacSha256(bytes.try_into()?)),
 			_ => Err(Error::AlgNotFound),
 		}
-	}
-
-	pub fn decrypt_key_with_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		let key = master_key.decrypt(encrypted_key)?;
-
-		Self::from_bytes(&key, alg_str)
 	}
 
 	pub fn hmac_sha256_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
@@ -84,5 +77,17 @@ impl SearchableKeyGen for HmacKey
 	{
 		#[cfg(feature = "hmac_sha256")]
 		Ok(HmacSha256Key::generate()?.into())
+	}
+}
+
+impl SearchableKeyComposer for HmacKey
+{
+	type Key = Self;
+
+	fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::Key, Error>
+	{
+		let key = master_key.decrypt(encrypted_key)?;
+
+		Self::from_bytes(&key, alg_str)
 	}
 }

@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::alg::sortable::ope::OpeSortableKey;
-use crate::cryptomat::{CryptoAlg, SortableKey, SortableKeyGen, SymKey};
+use crate::cryptomat::{CryptoAlg, SortableKey, SortableKeyComposer, SortableKeyGen, SymKey};
 use crate::Error;
 
 pub(crate) mod ope;
@@ -27,13 +27,6 @@ impl SortKeys
 			ope::OPE_OUT => Ok(SortKeys::Ope(bytes.try_into()?)),
 			_ => Err(Error::AlgNotFound),
 		}
-	}
-
-	pub fn decrypt_key_with_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		let key = master_key.decrypt(encrypted_key)?;
-
-		Self::from_bytes(&key, alg_str)
 	}
 
 	pub fn ope_key_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
@@ -79,5 +72,17 @@ impl SortableKeyGen for SortKeys
 	{
 		#[cfg(feature = "ope_sort")]
 		Ok(OpeSortableKey::generate()?.into())
+	}
+}
+
+impl SortableKeyComposer for SortKeys
+{
+	type Key = Self;
+
+	fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::Key, Error>
+	{
+		let key = master_key.decrypt(encrypted_key)?;
+
+		Self::from_bytes(&key, alg_str)
 	}
 }
