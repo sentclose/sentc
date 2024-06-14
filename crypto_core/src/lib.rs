@@ -59,7 +59,6 @@ pub use self::alg::sortable::SortKeys;
 pub use self::alg::sym::aes_gcm::{Aes256GcmKey, AES_GCM_OUTPUT};
 pub use self::alg::sym::SymmetricKey;
 pub use self::error::Error;
-pub use self::user::SafetyNumber;
 
 pub fn generate_salt(client_random_value: ClientRandomValue, add_str: &str) -> Vec<u8>
 {

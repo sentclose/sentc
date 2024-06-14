@@ -262,12 +262,6 @@ pub fn password_reset<S: SymKeyGen, H: PwHashComposer>(
 	})
 }
 
-pub struct SafetyNumber<'a, Vk: VerifyK>
-{
-	pub verify_key: &'a Vk,
-	pub user_info: &'a str,
-}
-
 /**
 Creates a safety number in byte of a given verify key and additional user information like the user id or username.
 
@@ -276,18 +270,23 @@ Creates a safety number in byte of a given verify key and additional user inform
 To create a combination of two identities set for user_2 another SafetyNumberUser struct.
 Make sure to keep the order of user_1 and user_2 on the other user too, otherwise the number will not be the same.
  */
-pub(crate) fn safety_number<Vk: VerifyK>(user_1: SafetyNumber<Vk>, user_2: Option<SafetyNumber<Vk>>) -> Vec<u8>
+pub fn safety_number<Vk: VerifyK>(
+	user_1_verify_key: &Vk,
+	user_1_user_info: &str,
+	user_2_verify_key: Option<&Vk>,
+	user_2_user_info: Option<&str>,
+) -> Vec<u8>
 {
 	let mut hasher = Sha256::new();
 
-	user_1.verify_key.create_hash(&mut hasher);
+	user_1_verify_key.create_hash(&mut hasher);
 
-	hasher.update(user_1.user_info.as_bytes());
+	hasher.update(user_1_user_info.as_bytes());
 
-	if let Some(u_2) = user_2 {
-		u_2.verify_key.create_hash(&mut hasher);
+	if let (Some(u_2), Some(u_2_i)) = (user_2_verify_key, user_2_user_info) {
+		u_2.create_hash(&mut hasher);
 
-		hasher.update(u_2.user_info.as_bytes());
+		hasher.update(u_2_i.as_bytes());
 	}
 
 	let number_bytes = hasher.finalize();
@@ -493,35 +492,11 @@ mod test
 		let (user_1_key, _user_1) = create_dummy_user_for_safety_number();
 		let (user_2_key, _user_2) = create_dummy_user_for_safety_number();
 
-		let number = safety_number(
-			SafetyNumber {
-				verify_key: &user_1_key,
-				user_info: "abc",
-			},
-			None,
-		);
+		let number = safety_number(&user_1_key, "abc", None, None);
 
-		let number_1 = safety_number(
-			SafetyNumber {
-				verify_key: &user_1_key,
-				user_info: "abc",
-			},
-			Some(SafetyNumber {
-				verify_key: &user_2_key,
-				user_info: "abc",
-			}),
-		);
+		let number_1 = safety_number(&user_1_key, "abc", Some(&user_2_key), Some("abc"));
 
-		let number_2 = safety_number(
-			SafetyNumber {
-				verify_key: &user_2_key,
-				user_info: "abc",
-			},
-			Some(SafetyNumber {
-				verify_key: &user_1_key,
-				user_info: "abc",
-			}),
-		);
+		let number_2 = safety_number(&user_2_key, "abc", Some(&user_1_key), Some("abc"));
 
 		assert_eq!(number.len(), 32);
 		assert_eq!(number_1.len(), 32);
