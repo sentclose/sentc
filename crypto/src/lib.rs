@@ -5,7 +5,8 @@
 	clippy::tabs_in_doc_comments,
 	clippy::manual_map,
 	clippy::explicit_counter_loop,
-	clippy::manual_range_contains
+	clippy::manual_range_contains,
+	clippy::type_complexity
 )]
 
 extern crate alloc;
@@ -33,3 +34,49 @@ pub use sentc_crypto_core as sdk_core;
 pub use sentc_crypto_utils as sdk_utils;
 
 pub use self::error::{err_to_msg, SdkError};
+
+pub type StdGroup = group::Group<
+	sdk_utils::keys::SymmetricKey,
+	sdk_utils::keys::SecretKey,
+	sdk_utils::keys::SignKey,
+	sdk_core::HmacKey,
+	sdk_core::SortKeys,
+	sdk_utils::keys::SymmetricKey,
+	sdk_utils::keys::SecretKey,
+	sdk_utils::keys::SignKey,
+	sdk_utils::keys::HmacKey,
+	sdk_utils::keys::SortableKey,
+	sdk_utils::keys::PublicKey,
+	sdk_utils::keys::VerifyKey,
+>;
+
+pub type StdUser = user::User<
+	sdk_utils::keys::SymmetricKey,
+	sdk_utils::keys::SecretKey,
+	sdk_utils::keys::SignKey,
+	sdk_core::HmacKey,
+	sdk_core::SortKeys,
+	sdk_utils::keys::SymmetricKey,
+	sdk_utils::keys::SecretKey,
+	sdk_utils::keys::SignKey,
+	sdk_utils::keys::HmacKey,
+	sdk_utils::keys::SortableKey,
+	sdk_utils::keys::PublicKey,
+	sdk_utils::keys::VerifyKey,
+>;
+
+pub type StdUserDataInt = entities::user::UserDataInt<
+	sdk_utils::keys::SymmetricKey,
+	sdk_utils::keys::SecretKey,
+	sdk_utils::keys::PublicKey,
+	sdk_utils::keys::SignKey,
+	sdk_utils::keys::VerifyKey,
+>;
+
+pub type StdUserKeyDataInt = entities::user::UserKeyDataInt<
+	sdk_utils::keys::SymmetricKey,
+	sdk_utils::keys::SecretKey,
+	sdk_utils::keys::PublicKey,
+	sdk_utils::keys::SignKey,
+	sdk_utils::keys::VerifyKey,
+>;

@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerOutput};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::SymKeyId;
+use sentc_crypto_utils::cryptomat::{KeyToString, PkFromUserKeyWrapper, SkCryptoWrapper, SymKeyCrypto};
 use sentc_crypto_utils::keys::{PublicKey, SecretKey, SignKey, SymmetricKey};
 
 use crate::SdkError;

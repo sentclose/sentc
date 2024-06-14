@@ -11,25 +11,31 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::UserId;
+use sentc_crypto_utils::cryptomat::KeyToString;
+use sentc_crypto_utils::keys::{PublicKey, SecretKey, SignKey};
 use serde_json::from_str;
 
 use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport, GroupOutDataKeyExport, GroupOutDataLightExport};
 use crate::entities::keys::{SymKeyFormatExport, SymmetricKey};
-use crate::SdkError;
+use crate::{SdkError, StdGroup};
 
 pub fn prepare_create_typed(creators_public_key: &str) -> Result<CreateData, String>
 {
-	Ok(super::group::prepare_create_typed(&creators_public_key.parse()?)?)
+	let key: PublicKey = creators_public_key.parse()?;
+	Ok(StdGroup::prepare_create_typed(&key)?)
 }
 
 pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
 {
-	Ok(super::group::prepare_create(&creators_public_key.parse()?)?)
+	let key: PublicKey = creators_public_key.parse()?;
+	Ok(StdGroup::prepare_create(&key)?)
 }
 
 pub fn prepare_create_batch_typed(creators_public_key: &str) -> Result<(CreateData, String, String), String>
 {
-	let out = super::group::prepare_create_batch_typed(&creators_public_key.parse()?)?;
+	let key: PublicKey = creators_public_key.parse()?;
+
+	let out = StdGroup::prepare_create_batch_typed(&key)?;
 
 	let public_key = out.1.to_string()?;
 	let group_key = out.2.to_string()?;
@@ -39,7 +45,9 @@ pub fn prepare_create_batch_typed(creators_public_key: &str) -> Result<(CreateDa
 
 pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String, String), String>
 {
-	let out = super::group::prepare_create_batch(&creators_public_key.parse()?)?;
+	let key: PublicKey = creators_public_key.parse()?;
+
+	let out = StdGroup::prepare_create_batch(&key)?;
 
 	let public_key = out.1.to_string()?;
 	let group_key = out.2.to_string()?;
@@ -57,11 +65,14 @@ pub fn key_rotation(
 {
 	//the ids come from the storage of the current impl from the sdk, the group key id comes from get group
 
-	let sign_key = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
 
-	Ok(super::group::key_rotation(
-		&previous_group_key.parse()?,
-		&invoker_public_key.parse()?,
+	let previous_group_key: SymmetricKey = previous_group_key.parse()?;
+	let invoker_public_key: PublicKey = invoker_public_key.parse()?;
+
+	Ok(StdGroup::key_rotation(
+		&previous_group_key,
+		&invoker_public_key,
 		user_group,
 		sign_key.as_ref(),
 		starter,
@@ -89,10 +100,14 @@ pub fn done_key_rotation(
 		None
 	};
 
-	Ok(super::group::done_key_rotation(
-		&private_key.parse()?,
-		&public_key.parse()?,
-		&previous_group_key.parse()?,
+	let private_key: SecretKey = private_key.parse()?;
+	let public_key: PublicKey = public_key.parse()?;
+	let previous_group_key: SymmetricKey = previous_group_key.parse()?;
+
+	Ok(StdGroup::done_key_rotation(
+		&private_key,
+		&public_key,
+		&previous_group_key,
 		server_output,
 		verify_key.as_ref(),
 	)?)
@@ -102,7 +117,9 @@ pub fn decrypt_group_hmac_key(group_key: &str, server_key_output: &str) -> Resul
 {
 	let server_output: GroupHmacData = from_str(server_key_output).map_err(SdkError::JsonParseFailed)?;
 
-	let hmac_key = super::group::decrypt_group_hmac_key(&group_key.parse()?, server_output)?;
+	let group_key: SymmetricKey = group_key.parse()?;
+
+	let hmac_key = StdGroup::decrypt_group_hmac_key(&group_key, server_output)?;
 
 	Ok(hmac_key.to_string()?)
 }
@@ -111,7 +128,9 @@ pub fn decrypt_group_sortable_key(group_key: &str, server_key_output: &str) -> R
 {
 	let server_output: GroupSortableData = from_str(server_key_output).map_err(SdkError::JsonParseFailed)?;
 
-	let key = super::group::decrypt_group_sortable_key(&group_key.parse()?, server_output)?;
+	let group_key: SymmetricKey = group_key.parse()?;
+
+	let key = StdGroup::decrypt_group_sortable_key(&group_key, server_output)?;
 
 	Ok(key.to_string()?)
 }
@@ -120,7 +139,9 @@ pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<
 {
 	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(SdkError::JsonParseFailed)?;
 
-	let result = super::group::decrypt_group_keys(&private_key.parse()?, server_key_output)?;
+	let private_key: SecretKey = private_key.parse()?;
+
+	let result = StdGroup::decrypt_group_keys(&private_key, server_key_output)?;
 
 	Ok(result.try_into()?)
 }
@@ -182,8 +203,10 @@ pub fn prepare_group_keys_for_new_member_with_group_public_key(
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	Ok(super::group::prepare_group_keys_for_new_member_with_group_public_key(
-		&requester_public_key.parse()?,
+	let requester_public_key: PublicKey = requester_public_key.parse()?;
+
+	Ok(StdGroup::prepare_group_keys_for_new_member_with_group_public_key(
+		&requester_public_key,
 		&split_group_keys,
 		key_session,
 		rank,
@@ -209,7 +232,7 @@ pub fn prepare_group_keys_for_new_member_typed(
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	Ok(super::group::prepare_group_keys_for_new_member_typed(
+	Ok(StdGroup::prepare_group_keys_for_new_member_typed(
 		&requester_public_key_data,
 		&split_group_keys,
 		key_session,
@@ -236,7 +259,7 @@ pub fn prepare_group_keys_for_new_member(
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	Ok(super::group::prepare_group_keys_for_new_member(
+	Ok(StdGroup::prepare_group_keys_for_new_member(
 		&requester_public_key_data,
 		&split_group_keys,
 		key_session,
@@ -258,7 +281,7 @@ pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: 
 
 	let split_group_keys = prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	Ok(super::group::prepare_group_keys_for_new_member_via_session(
+	Ok(StdGroup::prepare_group_keys_for_new_member_via_session(
 		&requester_public_key_data,
 		&split_group_keys,
 	)?)

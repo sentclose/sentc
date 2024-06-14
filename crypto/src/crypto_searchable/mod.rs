@@ -7,6 +7,8 @@ pub use self::crypto_searchable_export::*;
 #[cfg(test)]
 mod test
 {
+	use sentc_crypto_utils::cryptomat::SearchableKeyWrapper;
+
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
 

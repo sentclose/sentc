@@ -7,23 +7,22 @@ use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::{FileId, FileSessionId};
 use sentc_crypto_core::cryptomat::{CryptoAlg, SymKey, SymKeyComposer, SymKeyGen};
 use sentc_crypto_core::{Signature, SymmetricKey as CoreSymmetricKey};
-use sentc_crypto_utils::keys::VerifyKey;
+use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyWrapper, VerifyKFromUserKeyWrapper};
 
 use crate::crypto::crypto::{put_head_and_encrypted_data, split_head_and_encrypted_data};
-use crate::entities::keys::{SignKey, SymmetricKey};
 use crate::util::public::handle_server_response;
-use crate::SdkError;
+use crate::{sdk_utils, SdkError};
 
 pub fn prepare_register_file(
 	master_key_id: String,
-	key: &SymmetricKey,
+	key: &impl SymKeyWrapper,
 	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
 	belongs_to_type: BelongsToType,
 	file_name: Option<String>,
 ) -> Result<(String, Option<String>), SdkError>
 {
-	let encrypted_key_alg = &key.key.get_alg_str();
+	let encrypted_key_alg = key.get_key().get_alg_str();
 
 	// this check is already done in the backend too
 	let (belongs_to_type, belongs_to_id) = match belongs_to_type {
@@ -43,7 +42,7 @@ pub fn prepare_register_file(
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None)?)
+			Some(key.encrypt_string(&f, None::<&sdk_utils::keys::SignKey>)?)
 		},
 	};
 
@@ -68,13 +67,13 @@ pub fn done_register_file(server_output: &str) -> Result<(FileId, FileSessionId)
 	Ok((out.file_id, out.session_id))
 }
 
-pub fn prepare_file_name_update(key: &SymmetricKey, file_name: Option<String>) -> Result<String, SdkError>
+pub fn prepare_file_name_update(key: &impl SymKeyWrapper, file_name: Option<String>) -> Result<String, SdkError>
 {
 	let encrypted_file_name = match file_name {
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None)?)
+			Some(key.encrypt_string(&f, None::<&sdk_utils::keys::SignKey>)?)
 		},
 	};
 
@@ -87,12 +86,20 @@ pub fn prepare_file_name_update(key: &SymmetricKey, file_name: Option<String>) -
 /**
 The first part is encrypted by the file initial key. This key id is stored in the file data and must not be in every file head
  */
-pub fn encrypt_file_part_start(key: &SymmetricKey, part: &[u8], sign_key: Option<&SignKey>) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
+pub fn encrypt_file_part_start(
+	key: &impl SymKeyWrapper,
+	part: &[u8],
+	sign_key: Option<&impl SignKWrapper>,
+) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
 {
-	encrypt_file_part(&key.key, part, sign_key)
+	encrypt_file_part(key.get_key(), part, sign_key)
 }
 
-pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: Option<&SignKey>) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
+pub fn encrypt_file_part(
+	pre_content_key: &impl SymKey,
+	part: &[u8],
+	sign_key: Option<&impl SignKWrapper>,
+) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
 {
 	/*
 	Just create a normal core key without id
@@ -122,16 +129,16 @@ pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: O
 	Ok((put_head_and_encrypted_data(&file_head, &encrypted_part)?, file_key))
 }
 
-pub fn decrypt_file_part_start(
-	key: &SymmetricKey,
+pub fn decrypt_file_part_start<VC: VerifyKFromUserKeyWrapper>(
+	key: &impl SymKeyWrapper,
 	part: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
 ) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
 {
-	decrypt_file_part(&key.key, part, verify_key)
+	decrypt_file_part::<VC>(key.get_key(), part, verify_key)
 }
 
-pub fn decrypt_file_part(
+pub fn decrypt_file_part<VC: VerifyKFromUserKeyWrapper>(
 	pre_content_key: &impl SymKey,
 	part: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
@@ -154,7 +161,7 @@ pub fn decrypt_file_part(
 					file_key.decrypt(encrypted_data_without_sig)?
 				},
 				Some(vk) => {
-					let encrypted_data_without_sig = VerifyKey::verify_with_user_key(vk, encrypted_part, h)?;
+					let encrypted_data_without_sig = VC::verify_with_user_key(vk, encrypted_part, h)?;
 					file_key.decrypt(encrypted_data_without_sig)?
 				},
 			}

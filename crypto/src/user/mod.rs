@@ -9,7 +9,6 @@ use alloc::string::String;
 
 use sentc_crypto_common::user::{DoneLoginServerOutput, DoneLoginServerReturn};
 use sentc_crypto_core::DeriveMasterKeyForAuth;
-use sentc_crypto_utils::user::UserPreVerifyLogin;
 
 use crate::SdkError;
 
@@ -17,6 +16,7 @@ pub(crate) mod user;
 #[cfg(not(feature = "rust"))]
 mod user_export;
 
+pub use self::user::User;
 #[cfg(feature = "rust")]
 pub use self::user::*;
 #[cfg(not(feature = "rust"))]
@@ -72,28 +72,6 @@ pub fn change_password(
 	)?)
 }
 
-/**
-# finalize the login process
-
-1. extract the DoneLoginInput from the server. It includes the encrypted master key, encrypted private and sign keys, in pem exported public and verify keys
-2. decrypt the master key with the encryption key from @see prepare_login
-3. import the public and verify keys to the internal format
- */
-pub fn done_login(
-	master_key_encryption: &DeriveMasterKeyForAuth,
-	auth_key: String,
-	device_identifier: String,
-	server_output: DoneLoginServerOutput,
-) -> Result<UserPreVerifyLogin, SdkError>
-{
-	Ok(sentc_crypto_utils::user::done_login(
-		master_key_encryption,
-		auth_key,
-		device_identifier,
-		server_output,
-	)?)
-}
-
 #[cfg(test)]
 pub(crate) mod test_fn
 {
@@ -115,9 +93,8 @@ pub(crate) mod test_fn
 	use super::*;
 	#[cfg(not(feature = "rust"))]
 	use crate::entities::user::UserDataExport;
-	use crate::entities::user::UserDataInt;
-	use crate::util;
 	use crate::util::server::generate_salt_from_base64_to_string;
+	use crate::{util, StdUser, StdUserDataInt};
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
@@ -225,12 +202,12 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	pub(crate) fn create_user() -> UserDataInt
+	pub(crate) fn create_user() -> StdUserDataInt
 	{
 		let username = "admin";
 		let password = "12345";
 
-		let out_string = register(username, password).unwrap();
+		let out_string = StdUser::register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.device.derived);
@@ -239,7 +216,7 @@ pub(crate) mod test_fn
 
 		let server_output = simulate_server_done_login(out);
 
-		let done_login = done_login(
+		let done_login = StdUser::done_login(
 			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
@@ -248,15 +225,14 @@ pub(crate) mod test_fn
 		.unwrap();
 
 		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &done_login.challenge);
-		let out = user::verify_login(
+
+		StdUser::verify_login(
 			&server_output,
 			done_login.user_id,
 			done_login.device_id,
 			done_login.device_keys,
 		)
-		.unwrap();
-
-		out
+		.unwrap()
 	}
 
 	#[cfg(not(feature = "rust"))]
@@ -283,14 +259,13 @@ pub(crate) mod test_fn
 		.unwrap();
 
 		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &done_login.challenge);
-		let out = verify_login(
+
+		verify_login(
 			&server_output,
 			done_login.user_id,
 			done_login.device_id,
 			done_login.device_keys,
 		)
-		.unwrap();
-
-		out
+		.unwrap()
 	}
 }

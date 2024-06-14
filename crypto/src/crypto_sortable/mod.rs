@@ -10,6 +10,7 @@ mod test
 	use core::str::FromStr;
 
 	use sentc_crypto_core::cryptomat::SortableKey as CoreSort;
+	use sentc_crypto_utils::cryptomat::SortableKeyWrapper;
 	use sentc_crypto_utils::keys::SortableKey;
 
 	use crate::group::test_fn::create_group;
