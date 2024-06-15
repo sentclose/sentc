@@ -214,9 +214,9 @@ pub trait PwHash
 
 	 */
 	fn derived_keys_from_password<M: SymKey>(
-		&self,
 		password: &[u8],
 		master_key: &M,
+		alg: Option<&str>, //when None then use default hasher. when set try to get the hasher that created the alg
 	) -> Result<
 		(
 			ClientRandomValue,
@@ -237,18 +237,9 @@ pub trait PwHash
 
 	@return: first is the master key, 2nd the auth key
 	 */
-	fn derive_keys_for_auth(&self, password: &[u8], salt_bytes: &[u8]) -> Result<(DeriveMasterKeyForAuth, DeriveAuthKeyForAuth), Error>;
+	fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8], alg: &str) -> Result<(DeriveMasterKeyForAuth, DeriveAuthKeyForAuth), Error>;
 
-	fn password_to_encrypt(&self, password: &[u8]) -> Result<(PasswordEncryptSalt, impl SymKey), Error>;
+	fn password_to_encrypt(password: &[u8]) -> Result<(PasswordEncryptSalt, impl SymKey), Error>;
 
-	fn password_to_decrypt(&self, password: &[u8], salt: &[u8]) -> Result<impl SymKey, Error>;
-}
-
-pub trait PwHashComposer
-{
-	type Hasher: PwHash;
-
-	fn get_hasher() -> Self::Hasher;
-
-	fn get_from_alg(alg: &str) -> Result<Self::Hasher, Error>;
+	fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<impl SymKey, Error>;
 }

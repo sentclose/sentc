@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
-use crate::alg::pw_hash::argon2::{Argon2PwHash, ARGON_2_OUTPUT};
-use crate::cryptomat::{PwHashComposer, SymKey};
+use crate::alg::pw_hash::argon2::ARGON_2_OUTPUT;
+use crate::cryptomat::{PwHash, SymKey};
 use crate::Error;
 
 pub(crate) mod argon2;
@@ -34,22 +34,40 @@ macro_rules! prepare_export_single_value {
 
 pub struct PwHasherGetter;
 
-impl PwHashComposer for PwHasherGetter
+impl PwHash for PwHasherGetter
 {
-	#[cfg(feature = "argon2_hash")]
-	type Hasher = Argon2PwHash;
-
-	fn get_hasher() -> Self::Hasher
+	fn derived_keys_from_password<M: SymKey>(
+		password: &[u8],
+		master_key: &M,
+		alg: Option<&str>,
+	) -> Result<(ClientRandomValue, HashedAuthenticationKey, Vec<u8>, &'static str), Error>
 	{
-		Argon2PwHash
+		if let Some(alg) = alg {
+			match alg {
+				ARGON_2_OUTPUT => argon2::derived_keys_from_password(password, master_key),
+				_ => Err(Error::AlgNotFound),
+			}
+		} else {
+			argon2::derived_keys_from_password(password, master_key)
+		}
 	}
 
-	fn get_from_alg(alg: &str) -> Result<Self::Hasher, Error>
+	fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8], alg: &str) -> Result<(DeriveMasterKeyForAuth, DeriveAuthKeyForAuth), Error>
 	{
 		match alg {
-			ARGON_2_OUTPUT => Ok(Argon2PwHash),
+			ARGON_2_OUTPUT => argon2::derive_keys_for_auth(password, salt_bytes),
 			_ => Err(Error::AlgNotFound),
 		}
+	}
+
+	fn password_to_encrypt(password: &[u8]) -> Result<(PasswordEncryptSalt, impl SymKey), Error>
+	{
+		argon2::password_to_encrypt(password)
+	}
+
+	fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<impl SymKey, Error>
+	{
+		argon2::password_to_decrypt(password, salt)
 	}
 }
 
