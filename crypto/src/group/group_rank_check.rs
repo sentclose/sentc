@@ -1,13 +1,6 @@
-#[cfg(not(feature = "rust"))]
-use alloc::string::String;
-
 use crate::SdkError;
 
-#[cfg(feature = "rust")]
 pub type VoidRes = Result<(), SdkError>;
-
-#[cfg(not(feature = "rust"))]
-pub type VoidRes = Result<(), String>;
 
 #[allow(clippy::needless_return_with_question_mark)]
 pub fn check_kick_user(user_rank: i32, admin_rank: i32) -> VoidRes
