@@ -6,7 +6,6 @@ use sentc_crypto_common::file::{BelongsToType, FileHead, FileNameUpdate, FileReg
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::{FileId, FileSessionId};
 use sentc_crypto_core::cryptomat::{CryptoAlg, SymKey, SymKeyComposer, SymKeyGen};
-use sentc_crypto_core::{Signature, SymmetricKey as CoreSymmetricKey};
 use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyWrapper, VerifyKFromUserKeyWrapper};
 
 use crate::crypto::crypto::{put_head_and_encrypted_data, split_head_and_encrypted_data};
@@ -86,25 +85,25 @@ pub fn prepare_file_name_update(key: &impl SymKeyWrapper, file_name: Option<Stri
 /**
 The first part is encrypted by the file initial key. This key id is stored in the file data and must not be in every file head
  */
-pub fn encrypt_file_part_start(
+pub fn encrypt_file_part_start<S: SymKeyGen>(
 	key: &impl SymKeyWrapper,
 	part: &[u8],
 	sign_key: Option<&impl SignKWrapper>,
-) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
+) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
 {
-	encrypt_file_part(key.get_key(), part, sign_key)
+	encrypt_file_part::<S>(key.get_key(), part, sign_key)
 }
 
-pub fn encrypt_file_part(
+pub fn encrypt_file_part<S: SymKeyGen>(
 	pre_content_key: &impl SymKey,
 	part: &[u8],
 	sign_key: Option<&impl SignKWrapper>,
-) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
+) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
 {
 	/*
 	Just create a normal core key without id
 	 */
-	let (encrypted_key, file_key) = CoreSymmetricKey::generate_symmetric_with_sym_key(pre_content_key)?;
+	let (encrypted_key, file_key) = S::generate_symmetric_with_sym_key(pre_content_key)?;
 
 	let encrypted_key_string = Base64::encode_string(&encrypted_key);
 
@@ -129,27 +128,27 @@ pub fn encrypt_file_part(
 	Ok((put_head_and_encrypted_data(&file_head, &encrypted_part)?, file_key))
 }
 
-pub fn decrypt_file_part_start<VC: VerifyKFromUserKeyWrapper>(
+pub fn decrypt_file_part_start<VC: VerifyKFromUserKeyWrapper, SC: SymKeyComposer>(
 	key: &impl SymKeyWrapper,
 	part: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
+) -> Result<(Vec<u8>, SC::SymmetricKey), SdkError>
 {
-	decrypt_file_part::<VC>(key.get_key(), part, verify_key)
+	decrypt_file_part::<VC, SC>(key.get_key(), part, verify_key)
 }
 
-pub fn decrypt_file_part<VC: VerifyKFromUserKeyWrapper>(
+pub fn decrypt_file_part<VC: VerifyKFromUserKeyWrapper, SC: SymKeyComposer>(
 	pre_content_key: &impl SymKey,
 	part: &[u8],
 	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<(Vec<u8>, CoreSymmetricKey), SdkError>
+) -> Result<(Vec<u8>, SC::SymmetricKey), SdkError>
 {
 	let (head, encrypted_part) = split_head_and_encrypted_data::<FileHead>(part)?;
 
 	//decrypt the key with the pre key
 	let encrypted_key = Base64::decode_vec(&head.key).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	let file_key = CoreSymmetricKey::decrypt_key_by_sym_key(pre_content_key, &encrypted_key, &head.sym_key_alg)?;
+	let file_key = SC::decrypt_key_by_sym_key(pre_content_key, &encrypted_key, &head.sym_key_alg)?;
 
 	let decrypted_part = match &head.sign {
 		None => file_key.decrypt(encrypted_part)?, //no sig used, go ahead
@@ -157,7 +156,7 @@ pub fn decrypt_file_part<VC: VerifyKFromUserKeyWrapper>(
 			match verify_key {
 				None => {
 					//just split the data, use the alg here
-					let (_, encrypted_data_without_sig) = Signature::split_sig_and_data(h.alg.as_str(), encrypted_part)?;
+					let (_, encrypted_data_without_sig) = VC::split_sig_and_data(h.alg.as_str(), encrypted_part)?;
 					file_key.decrypt(encrypted_data_without_sig)?
 				},
 				Some(vk) => {
