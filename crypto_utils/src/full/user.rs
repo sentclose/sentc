@@ -9,6 +9,7 @@ use sentc_crypto_common::user::{
 	UserDeviceList,
 	UserInitServerOutput,
 };
+use sentc_crypto_core::cryptomat::PwHash;
 use sentc_crypto_core::DeriveMasterKeyForAuth;
 
 use crate::cryptomat::{PkWrapper, SignComposerWrapper, SignKWrapper, SkWrapper, StaticKeyComposerWrapper, VerifyKWrapper};
@@ -44,7 +45,7 @@ async fn prepare_login_start(base_url: String, auth_token: &str, user_identifier
 	Ok(res)
 }
 
-async fn done_login_internally<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
+async fn done_login_internally<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper, PwH: PwHash>(
 	base_url: String,
 	auth_token: &str,
 	user_identifier: &str,
@@ -65,7 +66,7 @@ async fn done_login_internally<SkC: StaticKeyComposerWrapper, SiKC: SignComposer
 	SdkUtilError,
 >
 {
-	let (input, auth_key, master_key) = crate::user::prepare_login(user_identifier, password, prepare_login_res)?;
+	let (input, auth_key, master_key) = crate::user::prepare_login::<PwH>(user_identifier, password, prepare_login_res)?;
 
 	let url = base_url.clone() + "/api/v1/done_login";
 	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(input)).await?;
@@ -106,7 +107,7 @@ async fn done_login_internally<SkC: StaticKeyComposerWrapper, SiKC: SignComposer
 /**
 Do the full login process, except of the verify login because this is different from sdk light or normal version
 */
-pub async fn login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
+pub async fn login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper, PwH: PwHash>(
 	base_url: String,
 	auth_token: &str,
 	user_identifier: &str,
@@ -128,7 +129,7 @@ pub async fn login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
 	let res = non_auth_req(HttpMethod::POST, &url, auth_token, Some(user_id_input)).await?;
 
 	//prepare the login, the auth key is already in the right json format for the server
-	let (input, auth_key, master_key_encryption_key) = crate::user::prepare_login(user_identifier, password, &res)?;
+	let (input, auth_key, master_key_encryption_key) = crate::user::prepare_login::<PwH>(user_identifier, password, &res)?;
 
 	let url = base_url + "/api/v1/done_login";
 	let server_out = non_auth_req(HttpMethod::POST, &url, auth_token, Some(input)).await?;
@@ -229,7 +230,7 @@ pub async fn get_user_devices(
 
 //__________________________________________________________________________________________________
 
-pub async fn prepare_user_fresh_jwt<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
+pub async fn prepare_user_fresh_jwt<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper, PwH: PwHash>(
 	base_url: String,
 	auth_token: &str,
 	user_identifier: &str,
@@ -253,7 +254,7 @@ pub async fn prepare_user_fresh_jwt<SkC: StaticKeyComposerWrapper, SiKC: SignCom
 	//first make the prep login req to get the output
 	let prep_login_out = prepare_login_start(base_url.clone(), auth_token, user_identifier).await?;
 
-	let (keys, done_login_out) = done_login_internally::<SkC, SiKC>(
+	let (keys, done_login_out) = done_login_internally::<SkC, SiKC, PwH>(
 		base_url,
 		auth_token,
 		user_identifier,
@@ -280,7 +281,7 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 	handle_general_server_response(&res)
 }
 
-pub async fn done_change_password(
+pub async fn done_change_password<PwH: PwHash>(
 	base_url: String,
 	auth_token: &str,
 	old_password: &str,
@@ -290,7 +291,7 @@ pub async fn done_change_password(
 	done_login_out: DoneLoginServerOutput,
 ) -> Result<(), SdkUtilError>
 {
-	let change_pw_input = crate::user::change_password(old_password, new_password, pre_login_out, done_login_out)?;
+	let change_pw_input = crate::user::change_password::<PwH>(old_password, new_password, pre_login_out, done_login_out)?;
 
 	let url = base_url + "/api/v1/user/update_pw";
 
