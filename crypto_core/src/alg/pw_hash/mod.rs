@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
 use crate::alg::pw_hash::argon2::ARGON_2_OUTPUT;
-use crate::cryptomat::{CryptoAlg, PwHash, PwPrepareExport, SymKey};
-use crate::{cryptomat, Error};
+use crate::cryptomat::{ClientRandomValueComposer, CryptoAlg, PwHash, PwPrepareExport, SymKey};
+use crate::{crypto_alg_str_impl, cryptomat, Error};
 
 pub(crate) mod argon2;
 
@@ -82,15 +82,7 @@ pub enum ClientRandomValue
 	Argon2([u8; 16]),
 }
 
-impl CryptoAlg for ClientRandomValue
-{
-	fn get_alg_str(&self) -> &'static str
-	{
-		match self {
-			Self::Argon2(_) => ARGON_2_OUTPUT,
-		}
-	}
-}
+crypto_alg_str_impl!(ClientRandomValue, ARGON_2_OUTPUT);
 
 prepare_export!(ClientRandomValue);
 prepare_export_single_value!(ClientRandomValue);
@@ -101,6 +93,23 @@ impl cryptomat::ClientRandomValue for ClientRandomValue
 	{
 		match self {
 			ClientRandomValue::Argon2(v) => argon2::generate_salt(v, add_str),
+		}
+	}
+}
+
+impl ClientRandomValueComposer for ClientRandomValue
+{
+	type Value = Self;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>
+	{
+		match alg {
+			ARGON_2_OUTPUT => {
+				let v = vec.try_into().map_err(|_| Error::KeyDecryptFailed)?;
+
+				Ok(Self::Argon2(v))
+			},
+			_ => Err(Error::AlgNotFound),
 		}
 	}
 }

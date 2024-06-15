@@ -261,6 +261,13 @@ pub trait ClientRandomValue: CryptoAlg + PwPrepareExport
 	fn generate_salt(self, add_str: &str) -> Vec<u8>;
 }
 
+pub trait ClientRandomValueComposer
+{
+	type Value: ClientRandomValue;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>;
+}
+
 pub trait HashedAuthenticationKey: PwPrepareExport {}
 
 pub trait DeriveMasterKeyForAuth: PwPrepareExport
