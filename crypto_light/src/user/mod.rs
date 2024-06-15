@@ -199,7 +199,7 @@ fn prepare_login_start_internally(user_identifier: &str) -> Result<String, SdkLi
  */
 pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::prepare_login(
+	Ok(sentc_crypto_utils::user::prepare_login::<PwHasherGetter>(
 		user_identifier,
 		password,
 		server_output,
@@ -294,7 +294,7 @@ pub fn change_password(
 	server_output_done_login: DoneLoginServerOutput,
 ) -> Result<String, SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::change_password(
+	Ok(sentc_crypto_utils::user::change_password::<PwHasherGetter>(
 		old_pw,
 		new_pw,
 		server_output_prep_login,

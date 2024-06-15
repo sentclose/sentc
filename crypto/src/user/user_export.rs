@@ -78,6 +78,11 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 	Ok(super::user::prepare_login_start(user_id)?)
 }
 
+pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkError>
+{
+	StdUser::prepare_login(user_identifier, password, server_output)
+}
+
 pub fn done_login(
 	master_key_encryption: &DeriveMasterKeyForAuth,
 	auth_key: String,
@@ -129,6 +134,16 @@ pub fn prepare_user_identifier_update(user_identifier: String) -> Result<String,
 pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, String>
 {
 	Ok(super::user::prepare_refresh_jwt(refresh_token)?)
+}
+
+pub fn change_password(
+	old_pw: &str,
+	new_pw: &str,
+	server_output_prep_login: &str,
+	server_output_done_login: DoneLoginServerOutput,
+) -> Result<String, SdkError>
+{
+	StdUser::change_password(old_pw, new_pw, server_output_prep_login, server_output_done_login)
 }
 
 pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
@@ -188,7 +203,6 @@ mod test
 
 	use super::*;
 	use crate::user::test_fn::{create_user_export, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
-	use crate::user::{change_password, prepare_login};
 
 	#[test]
 	fn test_register()

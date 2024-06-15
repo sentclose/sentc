@@ -7,8 +7,7 @@
 
 use alloc::string::String;
 
-use sentc_crypto_common::user::{DoneLoginServerOutput, DoneLoginServerReturn};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_common::user::DoneLoginServerReturn;
 
 use crate::SdkError;
 
@@ -22,21 +21,6 @@ pub use self::user::*;
 #[cfg(not(feature = "rust"))]
 pub use self::user_export::*;
 
-/**
-# Starts the login process
-
-1. Get the auth key and the master key encryption key from the password.
-2. Send the auth key to the server to get the DoneLoginInput back
- */
-pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkError>
-{
-	Ok(sentc_crypto_utils::user::prepare_login(
-		user_identifier,
-		password,
-		server_output,
-	)?)
-}
-
 pub fn check_done_login(server_output: &str) -> Result<DoneLoginServerReturn, SdkError>
 {
 	Ok(sentc_crypto_utils::user::check_done_login(server_output)?)
@@ -48,27 +32,6 @@ pub fn prepare_validate_mfa(auth_key: String, device_identifier: String, token: 
 		auth_key,
 		device_identifier,
 		token,
-	)?)
-}
-
-/**
-Make the prepare and done login req.
-
-- prep login to get the salt
-- done login to get the encrypted master key, because this key is never stored on the device
- */
-pub fn change_password(
-	old_pw: &str,
-	new_pw: &str,
-	server_output_prep_login: &str,
-	server_output_done_login: DoneLoginServerOutput,
-) -> Result<String, SdkError>
-{
-	Ok(sentc_crypto_utils::user::change_password(
-		old_pw,
-		new_pw,
-		server_output_prep_login,
-		server_output_done_login,
 	)?)
 }
 
@@ -212,7 +175,7 @@ pub(crate) mod test_fn
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.device.derived);
 
-		let (_input, auth_key, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
+		let (_input, auth_key, master_key_encryption_key) = StdUser::prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 

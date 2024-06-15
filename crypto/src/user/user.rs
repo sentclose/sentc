@@ -234,6 +234,21 @@ where
 	//______________________________________________________________________________________________
 
 	/**
+	# Starts the login process
+
+	1. Get the auth key and the master key encryption key from the password.
+	2. Send the auth key to the server to get the DoneLoginInput back
+	 */
+	pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkError>
+	{
+		Ok(sentc_crypto_utils::user::prepare_login::<PwH>(
+			user_identifier,
+			password,
+			server_output,
+		)?)
+	}
+
+	/**
 	# finalize the login process
 
 	1. extract the DoneLoginInput from the server. It includes the encrypted master key, encrypted private and sign keys, in pem exported public and verify keys
@@ -368,6 +383,27 @@ where
 			exported_public_key: keys.exported_public_key,
 			exported_verify_key,
 		})
+	}
+
+	/**
+	Make the prepare and done login req.
+
+	- prep login to get the salt
+	- done login to get the encrypted master key, because this key is never stored on the device
+	 */
+	pub fn change_password(
+		old_pw: &str,
+		new_pw: &str,
+		server_output_prep_login: &str,
+		server_output_done_login: DoneLoginServerOutput,
+	) -> Result<String, SdkError>
+	{
+		Ok(sentc_crypto_utils::user::change_password::<PwH>(
+			old_pw,
+			new_pw,
+			server_output_prep_login,
+			server_output_done_login,
+		)?)
 	}
 
 	pub fn reset_password(
@@ -551,7 +587,6 @@ mod test
 
 	use super::*;
 	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
-	use crate::user::{change_password, prepare_login};
 	use crate::StdUser;
 
 	#[test]
@@ -586,7 +621,7 @@ mod test
 		let server_output = simulate_server_prepare_login(&out.device.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, auth_key, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
+		let (_, auth_key, master_key_encryption_key) = StdUser::prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
@@ -624,7 +659,7 @@ mod test
 		let prep_server_output = simulate_server_prepare_login(&out_new.device.derived);
 		let done_server_output = simulate_server_done_login(out_new);
 
-		let pw_change_out = change_password(password, new_password, &prep_server_output, done_server_output).unwrap();
+		let pw_change_out = StdUser::change_password(password, new_password, &prep_server_output, done_server_output).unwrap();
 
 		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_str()).unwrap();
 
@@ -647,7 +682,7 @@ mod test
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.device.derived);
-		let (_, auth_key, master_key_encryption_key) = prepare_login("hello", "1234", server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = StdUser::prepare_login("hello", "1234", server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
@@ -713,7 +748,7 @@ mod test
 		let out_new_device = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&input.derived);
-		let (_, auth_key, master_key_encryption_key) = prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = StdUser::prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
 
 		let new_device_register_data = to_string(&RegisterData {
 			device: input,

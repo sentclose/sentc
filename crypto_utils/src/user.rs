@@ -17,8 +17,8 @@ use sentc_crypto_common::user::{
 	VerifyLoginInput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::cryptomat::Sk;
-use sentc_crypto_core::{DeriveMasterKeyForAuth, PwHasherGetter};
+use sentc_crypto_core::cryptomat::{PwHash, Sk};
+use sentc_crypto_core::DeriveMasterKeyForAuth;
 use serde::{Deserialize, Serialize};
 
 use crate::cryptomat::{PkWrapper, SignComposerWrapper, SignKWrapper, SkWrapper, StaticKeyComposerWrapper, VerifyKWrapper};
@@ -115,12 +115,16 @@ pub fn prepare_login_start(user_identifier: &str) -> Result<String, SdkUtilError
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkUtilError>
+pub fn prepare_login<H: PwHash>(
+	user_identifier: &str,
+	password: &str,
+	server_output: &str,
+) -> Result<(String, String, DeriveMasterKeyForAuth), SdkUtilError>
 {
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
 	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
-	let result = sentc_crypto_core::user::prepare_login::<PwHasherGetter>(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
+	let result = sentc_crypto_core::user::prepare_login::<H>(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
 	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
@@ -293,7 +297,7 @@ Make the prepare and done login req.
 - prep login to get the salt
 - done login to get the encrypted master key, because this key is never stored on the device
  */
-pub fn change_password(
+pub fn change_password<H: PwHash>(
 	old_pw: &str,
 	new_pw: &str,
 	server_output_prep_login: &str,
@@ -311,7 +315,7 @@ pub fn change_password(
 	.map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 
-	let output = sentc_crypto_core::user::change_password::<PwHasherGetter>(
+	let output = sentc_crypto_core::user::change_password::<H>(
 		old_pw,
 		new_pw,
 		&old_salt,
