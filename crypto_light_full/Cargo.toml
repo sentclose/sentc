@@ -19,13 +19,14 @@ include = [
 ]
 
 [dependencies]
-sentc-crypto-common = {workspace=true}
-sentc-crypto-light = {workspace=true}
-sentc-crypto-utils = {workspace=true, features = ["crypto_full"]}
+sentc-crypto-common = { workspace = true }
+sentc-crypto-light = { workspace = true }
+sentc-crypto-utils = { workspace = true, features = ["crypto_full"] }
+sentc-crypto-core = { workspace = true }
 
 # json handling
-serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+serde_json = { version = "1.0.81", default-features = false, features = ["alloc"] }
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 
 [features]
 default = ["sentc-crypto-light/default", "rustls"]

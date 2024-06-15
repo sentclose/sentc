@@ -1,8 +1,9 @@
 use alloc::string::String;
 
-use sentc_crypto_utils::handle_general_server_response;
+use sentc_crypto_core::PwHasherGetter;
 use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
-use sentc_crypto_utils::user::UserPreVerifyLogin;
+use sentc_crypto_utils::keys::{SecretKey, SignKey};
+use sentc_crypto_utils::{handle_general_server_response, StdUserPreVerifyLogin};
 
 #[cfg(not(feature = "rust"))]
 mod non_rust;
@@ -96,7 +97,7 @@ pub async fn register_device(base_url: String, auth_token: &str, jwt: &str, serv
 //__________________________________________________________________________________________________
 //Login
 
-async fn verify_login(base_url: String, auth_token: &str, pre_verify: UserPreVerifyLogin) -> LoginRes
+async fn verify_login(base_url: String, auth_token: &str, pre_verify: StdUserPreVerifyLogin) -> LoginRes
 {
 	let url = base_url + "/api/v1/verify_login_light";
 	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(pre_verify.challenge)).await?;
@@ -113,7 +114,8 @@ async fn verify_login(base_url: String, auth_token: &str, pre_verify: UserPreVer
 
 pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> PreLoginRes
 {
-	let pre_login = sentc_crypto_utils::full::user::login(base_url.clone(), auth_token, user_identifier, password).await?;
+	let pre_login =
+		sentc_crypto_utils::full::user::login::<SecretKey, SignKey, PwHasherGetter>(base_url.clone(), auth_token, user_identifier, password).await?;
 
 	match pre_login {
 		sentc_crypto_utils::full::user::PreLoginOut::Direct(d) => {
@@ -166,7 +168,7 @@ pub async fn mfa_login(
 		&master_key_encryption.try_into()?
 	};
 
-	let keys = sentc_crypto_utils::full::user::mfa_login(
+	let keys = sentc_crypto_utils::full::user::mfa_login::<SecretKey, SignKey>(
 		base_url.clone(),
 		auth_token,
 		master_key_encryption,
@@ -204,7 +206,7 @@ pub async fn get_fresh_jwt(
 	mfa_recovery: Option<bool>,
 ) -> Res
 {
-	let (_, keys, _) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
+	let (_, keys, _) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt::<SecretKey, SignKey, PwHasherGetter>(
 		base_url.clone(),
 		auth_token,
 		user_identifier,
@@ -231,7 +233,7 @@ pub async fn change_password(
 	mfa_recovery: Option<bool>,
 ) -> VoidRes
 {
-	let (prep_login_out, keys, done_login_out) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt(
+	let (prep_login_out, keys, done_login_out) = sentc_crypto_utils::full::user::prepare_user_fresh_jwt::<SecretKey, SignKey, PwHasherGetter>(
 		base_url.clone(),
 		auth_token,
 		user_identifier,
@@ -243,16 +245,18 @@ pub async fn change_password(
 
 	let keys = verify_login(base_url.clone(), auth_token, keys).await?;
 
-	Ok(sentc_crypto_utils::full::user::done_change_password(
-		base_url,
-		auth_token,
-		old_password,
-		new_password,
-		&keys.jwt,
-		&prep_login_out,
-		done_login_out,
+	Ok(
+		sentc_crypto_utils::full::user::done_change_password::<PwHasherGetter>(
+			base_url,
+			auth_token,
+			old_password,
+			new_password,
+			&keys.jwt,
+			&prep_login_out,
+			done_login_out,
+		)
+		.await?,
 	)
-	.await?)
 }
 
 /**
