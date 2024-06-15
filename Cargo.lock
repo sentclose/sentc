@@ -1252,6 +1252,7 @@ name = "sentc-crypto-light-full"
 version = "0.12.0"
 dependencies = [
  "sentc-crypto-common",
+ "sentc-crypto-core",
  "sentc-crypto-light",
  "sentc-crypto-utils",
  "serde",
