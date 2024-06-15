@@ -63,6 +63,7 @@ pub type StdUser = user::User<
 	sdk_utils::keys::SortableKey,
 	sdk_utils::keys::PublicKey,
 	sdk_utils::keys::VerifyKey,
+	sdk_core::PwHasherGetter,
 >;
 
 pub type StdUserDataInt = entities::user::UserDataInt<

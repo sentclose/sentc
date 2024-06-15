@@ -21,8 +21,8 @@ use sentc_crypto_common::user::{
 	VerifyLoginOutput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::cryptomat::{Pk, SearchableKeyGen, SignKeyComposer, SortableKeyGen, StaticKeyPair};
-use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth, PwHasherGetter};
+use sentc_crypto_core::cryptomat::{Pk, PwHash, SearchableKeyGen, SignKeyComposer, SortableKeyGen, StaticKeyPair};
+use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth};
 use sentc_crypto_utils::cryptomat::{
 	PkFromUserKeyWrapper,
 	SearchableKeyComposerWrapper,
@@ -47,7 +47,7 @@ use crate::group::Group;
 use crate::util::public::handle_server_response;
 use crate::SdkError;
 
-pub struct User<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC>
+pub struct User<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC, PwH>
 {
 	_sgen: PhantomData<SGen>,
 	_st_gen: PhantomData<StGen>,
@@ -61,10 +61,11 @@ pub struct User<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, Search
 	_sort_c: PhantomData<SortC>,
 	_pc: PhantomData<PC>,
 	_vc: PhantomData<VC>,
+	_pw: PhantomData<PwH>,
 }
 
-impl<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC>
-	User<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC>
+impl<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC, PwH>
+	User<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC, PwH>
 where
 	SGen: SymKeyGenWrapper,
 	StGen: StaticKeyPairWrapper,
@@ -78,6 +79,7 @@ where
 	SortC: SortableKeyComposerWrapper,
 	PC: PkFromUserKeyWrapper,
 	VC: VerifyKFromUserKeyWrapper,
+	PwH: PwHash,
 {
 	pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
 	{
@@ -125,7 +127,7 @@ where
 		SdkError,
 	>
 	{
-		let out = core_user::register::<SGen::KeyGen, StGen::KeyGen, SignGen::KeyGen, PwHasherGetter>(password)?;
+		let out = core_user::register::<SGen::KeyGen, StGen::KeyGen, SignGen::KeyGen, PwH>(password)?;
 
 		//transform the register output into json
 
@@ -374,7 +376,7 @@ where
 		decrypted_sign_key: &impl SignKWrapper,
 	) -> Result<String, SdkError>
 	{
-		let out = core_user::password_reset::<SGen::KeyGen, PwHasherGetter>(
+		let out = core_user::password_reset::<SGen::KeyGen, PwH>(
 			new_password,
 			decrypted_private_key.get_key(),
 			decrypted_sign_key.get_key(),
