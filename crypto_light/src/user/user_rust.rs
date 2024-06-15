@@ -3,7 +3,7 @@ use alloc::string::String;
 use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::{DeviceId, UserId};
 use sentc_crypto_core::DeriveMasterKeyForAuth;
-use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
+use sentc_crypto_utils::{StdDeviceKeyDataInt, StdUserPreVerifyLogin};
 
 use crate::error::SdkLightError;
 use crate::user::{
@@ -73,12 +73,13 @@ pub fn done_validate_mfa(
 	auth_key: String,
 	device_identifier: String,
 	server_output: &str,
-) -> Result<UserPreVerifyLogin, SdkLightError>
+) -> Result<StdUserPreVerifyLogin, SdkLightError>
 {
 	done_validate_mfa_internally(master_key_encryption, auth_key, device_identifier, server_output)
 }
 
-pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataInt, SdkLightError>
+pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: StdDeviceKeyDataInt)
+	-> Result<UserDataInt, SdkLightError>
 {
 	verify_login_internally(server_output, user_id, device_id, device_keys)
 }

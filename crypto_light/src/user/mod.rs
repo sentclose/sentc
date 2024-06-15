@@ -23,13 +23,14 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::{DeviceId, UserId};
 use sentc_crypto_core::{DeriveMasterKeyForAuth, PwHasherGetter, SecretKey, SignKey, SymmetricKey};
-use sentc_crypto_utils::user::UserPreVerifyLogin;
 use sentc_crypto_utils::{
 	client_random_value_to_string,
 	export_raw_public_key_to_pem,
 	export_raw_verify_key_to_pem,
 	handle_server_response,
 	hashed_authentication_key_to_string,
+	StdDeviceKeyDataInt,
+	StdUserPreVerifyLogin,
 };
 
 #[cfg(not(feature = "rust"))]
@@ -65,7 +66,7 @@ pub use self::user_rust::{
 	verify_login,
 };
 use crate::error::SdkLightError;
-use crate::{DeviceKeyDataInt, UserDataInt};
+use crate::{sdk_utils, UserDataInt};
 
 fn generate_user_register_data_internally() -> Result<(String, String), SdkLightError>
 {
@@ -224,14 +225,12 @@ fn done_validate_mfa_internally(
 	auth_key: String,
 	device_identifier: String,
 	server_output: &str,
-) -> Result<UserPreVerifyLogin, SdkLightError>
+) -> Result<StdUserPreVerifyLogin, SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::done_validate_mfa(
-		master_key_encryption,
-		auth_key,
-		device_identifier,
-		server_output,
-	)?)
+	Ok(sentc_crypto_utils::user::done_validate_mfa::<
+		sdk_utils::keys::SecretKey,
+		sdk_utils::keys::SignKey,
+	>(master_key_encryption, auth_key, device_identifier, server_output)?)
 }
 
 /**
@@ -246,21 +245,19 @@ pub fn done_login(
 	auth_key: String,
 	device_identifier: String,
 	server_output: DoneLoginServerOutput,
-) -> Result<UserPreVerifyLogin, SdkLightError>
+) -> Result<StdUserPreVerifyLogin, SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::done_login(
-		master_key_encryption,
-		auth_key,
-		device_identifier,
-		server_output,
-	)?)
+	Ok(sentc_crypto_utils::user::done_login::<
+		sdk_utils::keys::SecretKey,
+		sdk_utils::keys::SignKey,
+	>(master_key_encryption, auth_key, device_identifier, server_output)?)
 }
 
 fn verify_login_internally(
 	server_output: &str,
 	user_id: UserId,
 	device_id: DeviceId,
-	device_keys: DeviceKeyDataInt,
+	device_keys: StdDeviceKeyDataInt,
 ) -> Result<UserDataInt, SdkLightError>
 {
 	let server_output: VerifyLoginLightOutput = handle_server_response(server_output)?;
