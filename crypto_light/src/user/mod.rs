@@ -325,7 +325,7 @@ pub(crate) mod test_fn
 
 	fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Vec<u8>
 	{
-		let client_random_value = client_random_value_from_string(client_random_value, alg).unwrap();
+		let client_random_value = client_random_value_from_string::<sentc_crypto_core::ClientRandomValue>(client_random_value, alg).unwrap();
 
 		client_random_value.generate_salt(add_str)
 	}

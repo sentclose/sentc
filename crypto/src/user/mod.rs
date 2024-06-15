@@ -52,6 +52,7 @@ pub(crate) mod test_fn
 		VerifyLoginOutput,
 	};
 	use sentc_crypto_common::ServerOutput;
+	use sentc_crypto_core::ClientRandomValue;
 
 	use super::*;
 	#[cfg(not(feature = "rust"))]
@@ -63,7 +64,8 @@ pub(crate) mod test_fn
 	{
 		//and now try to log in
 		//normally the salt gets calc by the api
-		let salt_string = generate_salt_from_base64_to_string(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
+		let salt_string =
+			generate_salt_from_base64_to_string::<ClientRandomValue>(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
 
 		ServerOutput {
 			status: true,

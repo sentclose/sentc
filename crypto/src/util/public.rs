@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use sentc_crypto_common::user::{UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
 #[cfg(not(feature = "rust"))]
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
-use sentc_crypto_core::cryptomat::ClientRandomValue;
+use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer};
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use sentc_crypto_utils::client_random_value_from_string;
 use serde::Deserialize;
@@ -25,9 +25,9 @@ pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
 	Ok(sentc_crypto_utils::handle_general_server_response(res)?)
 }
 
-pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Result<Vec<u8>, SdkError>
+pub fn generate_salt_from_base64<C: ClientRandomValueComposer>(client_random_value: &str, alg: &str, add_str: &str) -> Result<Vec<u8>, SdkError>
 {
-	let client_random_value = client_random_value_from_string(client_random_value, alg)?;
+	let client_random_value = client_random_value_from_string::<C>(client_random_value, alg)?;
 
 	Ok(client_random_value.generate_salt(add_str))
 }

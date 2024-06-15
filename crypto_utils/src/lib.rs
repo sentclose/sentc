@@ -10,12 +10,11 @@ use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
-use sentc_crypto_core::cryptomat::{ClientRandomValue, DeriveAuthKeyForAuth, HashedAuthenticationKey};
+use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer, DeriveAuthKeyForAuth, HashedAuthenticationKey};
 use sentc_crypto_core::{
 	PublicKey,
 	Signature,
 	VerifyKey,
-	ARGON_2_OUTPUT,
 	DILITHIUM_OUTPUT,
 	ECIES_KYBER_HYBRID_OUTPUT,
 	ECIES_OUTPUT,
@@ -173,20 +172,11 @@ pub fn sig_to_string(sig: &Signature) -> String
 	}
 }
 
-pub fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<sentc_crypto_core::ClientRandomValue, SdkUtilError>
+pub fn client_random_value_from_string<C: ClientRandomValueComposer>(client_random_value: &str, alg: &str) -> Result<C::Value, SdkUtilError>
 {
+	let v = Base64::decode_vec(client_random_value).map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
 	//normally not needed only when the client needs to create the rand value, e.g- for key update.
-	match alg {
-		ARGON_2_OUTPUT => {
-			let v = Base64::decode_vec(client_random_value).map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
-			let v = v
-				.try_into()
-				.map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
-
-			Ok(sentc_crypto_core::ClientRandomValue::Argon2(v))
-		},
-		_ => Err(SdkUtilError::AlgNotFound),
-	}
+	Ok(C::from_bytes(v, alg)?)
 }
 
 pub fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<PublicKey, SdkUtilError>

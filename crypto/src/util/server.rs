@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_core::cryptomat::{DeriveAuthKeyForAuth, Pk};
+use sentc_crypto_core::cryptomat::{ClientRandomValueComposer, DeriveAuthKeyForAuth, Pk};
 use sentc_crypto_utils::import_public_key_from_pem_with_alg;
 
 use crate::util::public::generate_salt_from_base64;
@@ -14,9 +14,13 @@ from a base64 encoded client random value
 
 returns the salt as base64 encoded
  */
-pub fn generate_salt_from_base64_to_string(client_random_value: &str, alg: &str, add_str: &str) -> Result<String, SdkError>
+pub fn generate_salt_from_base64_to_string<C: ClientRandomValueComposer>(
+	client_random_value: &str,
+	alg: &str,
+	add_str: &str,
+) -> Result<String, SdkError>
 {
-	let salt = generate_salt_from_base64(client_random_value, alg, add_str)?;
+	let salt = generate_salt_from_base64::<C>(client_random_value, alg, add_str)?;
 
 	Ok(Base64::encode_string(&salt))
 }
