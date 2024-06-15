@@ -17,8 +17,7 @@ use sentc_crypto_common::user::{
 	VerifyLoginInput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::cryptomat::{PwHash, Sk};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_core::cryptomat::{DeriveMasterKeyForAuth, PwHash, Sk};
 use serde::{Deserialize, Serialize};
 
 use crate::cryptomat::{PkWrapper, SignComposerWrapper, SignKWrapper, SkWrapper, StaticKeyComposerWrapper, VerifyKWrapper};
@@ -115,11 +114,7 @@ pub fn prepare_login_start(user_identifier: &str) -> Result<String, SdkUtilError
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-pub fn prepare_login<H: PwHash>(
-	user_identifier: &str,
-	password: &str,
-	server_output: &str,
-) -> Result<(String, String, DeriveMasterKeyForAuth), SdkUtilError>
+pub fn prepare_login<H: PwHash>(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, H::DMK), SdkUtilError>
 {
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
@@ -163,7 +158,7 @@ pub fn prepare_validate_mfa(auth_key: String, device_identifier: String, token: 
 If the user enables mfa, do the done login here
 */
 pub fn done_validate_mfa<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
-	master_key_encryption: &DeriveMasterKeyForAuth,
+	master_key_encryption: &impl DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
 	server_output: &str,
@@ -190,7 +185,7 @@ pub fn done_validate_mfa<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrappe
 3. import the public and verify keys to the internal format
  */
 pub fn done_login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
-	master_key_encryption: &DeriveMasterKeyForAuth,
+	master_key_encryption: &impl DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
 	server_output: DoneLoginServerOutput,
@@ -224,7 +219,7 @@ pub fn done_login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
 }
 
 fn done_login_internally_with_device_out<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
-	master_key_encryption: &DeriveMasterKeyForAuth,
+	master_key_encryption: &impl DeriveMasterKeyForAuth,
 	server_output: &DoneLoginServerKeysOutput,
 ) -> Result<
 	DeviceKeyDataInt<

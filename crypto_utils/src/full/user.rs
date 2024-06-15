@@ -9,8 +9,7 @@ use sentc_crypto_common::user::{
 	UserDeviceList,
 	UserInitServerOutput,
 };
-use sentc_crypto_core::cryptomat::PwHash;
-use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_core::cryptomat::{DeriveMasterKeyForAuth, PwHash};
 
 use crate::cryptomat::{PkWrapper, SignComposerWrapper, SignKWrapper, SkWrapper, StaticKeyComposerWrapper, VerifyKWrapper};
 use crate::error::SdkUtilError;
@@ -18,17 +17,17 @@ use crate::http::{auth_req, non_auth_req, HttpMethod};
 use crate::user::UserPreVerifyLogin;
 use crate::{handle_general_server_response, handle_server_response};
 
-pub struct PrepareLoginOtpOutput
+pub struct PrepareLoginOtpOutput<DMK: DeriveMasterKeyForAuth>
 {
-	pub master_key: DeriveMasterKeyForAuth,
+	pub master_key: DMK,
 	pub auth_key: String,
 }
 
 #[allow(clippy::large_enum_variant)]
-pub enum PreLoginOut<Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
+pub enum PreLoginOut<Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper, DMK: DeriveMasterKeyForAuth>
 {
 	Direct(UserPreVerifyLogin<Sk, Pk, SiK, Vk>),
-	Otp(PrepareLoginOtpOutput),
+	Otp(PrepareLoginOtpOutput<DMK>),
 }
 
 //__________________________________________________________________________________________________
@@ -118,6 +117,7 @@ pub async fn login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper, PwH
 		<SkC as StaticKeyComposerWrapper>::PkWrapper,
 		<SiKC as SignComposerWrapper>::SignKWrapper,
 		<SiKC as SignComposerWrapper>::VerifyKWrapper,
+		PwH::DMK,
 	>,
 	SdkUtilError,
 >
@@ -154,7 +154,7 @@ pub async fn login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper, PwH
 pub async fn mfa_login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
 	base_url: String,
 	auth_token: &str,
-	master_key_encryption: &DeriveMasterKeyForAuth,
+	master_key_encryption: &impl DeriveMasterKeyForAuth,
 	auth_key: String,
 	user_identifier: String,
 	token: String,

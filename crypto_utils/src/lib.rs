@@ -10,10 +10,8 @@ use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
+use sentc_crypto_core::cryptomat::{ClientRandomValue, DeriveAuthKeyForAuth, HashedAuthenticationKey};
 use sentc_crypto_core::{
-	ClientRandomValue,
-	DeriveAuthKeyForAuth,
-	HashedAuthenticationKey,
 	PublicKey,
 	Signature,
 	VerifyKey,
@@ -78,14 +76,14 @@ pub fn handle_general_server_response(res: &str) -> Result<(), SdkUtilError>
 	Ok(())
 }
 
-pub fn client_random_value_to_string(client_random_value: &ClientRandomValue) -> String
+pub fn client_random_value_to_string(client_random_value: &impl ClientRandomValue) -> String
 {
 	let out = client_random_value.prepare_export();
 
 	Base64::encode_string(out)
 }
 
-pub fn hashed_authentication_key_to_string(hashed_authentication_key_bytes: &HashedAuthenticationKey) -> String
+pub fn hashed_authentication_key_to_string(hashed_authentication_key_bytes: &impl HashedAuthenticationKey) -> String
 {
 	let out = hashed_authentication_key_bytes.prepare_export();
 
@@ -121,7 +119,7 @@ pub fn export_raw_public_key_to_pem(key: &PublicKey) -> Result<String, SdkUtilEr
 	}
 }
 
-pub fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &DeriveAuthKeyForAuth) -> String
+pub fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &impl DeriveAuthKeyForAuth) -> String
 {
 	let out = derive_auth_key_for_auth.prepare_export();
 
@@ -175,7 +173,7 @@ pub fn sig_to_string(sig: &Signature) -> String
 	}
 }
 
-pub fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<ClientRandomValue, SdkUtilError>
+pub fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<sentc_crypto_core::ClientRandomValue, SdkUtilError>
 {
 	//normally not needed only when the client needs to create the rand value, e.g- for key update.
 	match alg {
@@ -185,7 +183,7 @@ pub fn client_random_value_from_string(client_random_value: &str, alg: &str) -> 
 				.try_into()
 				.map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
 
-			Ok(ClientRandomValue::Argon2(v))
+			Ok(sentc_crypto_core::ClientRandomValue::Argon2(v))
 		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}

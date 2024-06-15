@@ -309,8 +309,7 @@ pub(crate) mod test_fn
 
 	use sentc_crypto_common::user::{DoneLoginServerKeysOutput, DoneLoginServerOutput, PrepareLoginSaltServerOutput, VerifyLoginInput};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_core::cryptomat::Pk;
-	use sentc_crypto_core::generate_salt;
+	use sentc_crypto_core::cryptomat::{ClientRandomValue, Pk};
 	use sentc_crypto_utils::{client_random_value_from_string, import_public_key_from_pem_with_alg};
 
 	use super::*;
@@ -328,7 +327,7 @@ pub(crate) mod test_fn
 	{
 		let client_random_value = client_random_value_from_string(client_random_value, alg).unwrap();
 
-		generate_salt(client_random_value, add_str)
+		client_random_value.generate_salt(add_str)
 	}
 
 	fn generate_salt_from_base64_to_string(client_random_value: &str, alg: &str, add_str: &str) -> String

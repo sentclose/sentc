@@ -21,8 +21,8 @@ use sentc_crypto_common::user::{
 	VerifyLoginOutput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::cryptomat::{Pk, PwHash, SearchableKeyGen, SignKeyComposer, SortableKeyGen, StaticKeyPair};
-use sentc_crypto_core::{user as core_user, DeriveMasterKeyForAuth};
+use sentc_crypto_core::cryptomat::{DeriveMasterKeyForAuth, Pk, PwHash, SearchableKeyGen, SignKeyComposer, SortableKeyGen, StaticKeyPair};
+use sentc_crypto_core::user as core_user;
 use sentc_crypto_utils::cryptomat::{
 	PkFromUserKeyWrapper,
 	SearchableKeyComposerWrapper,
@@ -239,7 +239,7 @@ where
 	1. Get the auth key and the master key encryption key from the password.
 	2. Send the auth key to the server to get the DoneLoginInput back
 	 */
-	pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkError>
+	pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, PwH::DMK), SdkError>
 	{
 		Ok(sentc_crypto_utils::user::prepare_login::<PwH>(
 			user_identifier,
@@ -256,7 +256,7 @@ where
 	3. import the public and verify keys to the internal format
 	 */
 	pub fn done_login(
-		master_key_encryption: &DeriveMasterKeyForAuth,
+		master_key_encryption: &impl DeriveMasterKeyForAuth,
 		auth_key: String,
 		device_identifier: String,
 		server_output: DoneLoginServerOutput,
@@ -271,7 +271,7 @@ where
 	}
 
 	pub fn done_validate_mfa(
-		master_key_encryption: &DeriveMasterKeyForAuth,
+		master_key_encryption: &impl DeriveMasterKeyForAuth,
 		auth_key: String,
 		device_identifier: String,
 		server_output: &str,

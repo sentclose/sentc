@@ -101,13 +101,9 @@ pub fn done_validate_mfa(
 ) -> Result<StdUserPreVerifyLogin, SdkError>
 {
 	let master_key_encryption: MasterKeyFormat = master_key_encryption.parse()?;
+	let master_key_encryption: DeriveMasterKeyForAuth = master_key_encryption.try_into()?;
 
-	StdUser::done_validate_mfa(
-		&master_key_encryption.try_into()?,
-		auth_key,
-		device_identifier,
-		server_output,
-	)
+	StdUser::done_validate_mfa(&master_key_encryption, auth_key, device_identifier, server_output)
 }
 
 pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: StdDeviceKeyDataInt) -> Result<UserDataExport, String>

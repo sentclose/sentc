@@ -26,8 +26,6 @@ mod error;
 pub mod group;
 pub mod user;
 
-use alloc::vec::Vec;
-
 use rand_core::{CryptoRng, OsRng, RngCore};
 
 pub use self::alg::asym::ecies::{EciesKeyPair, EciesPk, EciesSk, ECIES_OUTPUT};
@@ -59,11 +57,6 @@ pub use self::alg::sortable::SortKeys;
 pub use self::alg::sym::aes_gcm::{Aes256GcmKey, AES_GCM_OUTPUT};
 pub use self::alg::sym::SymmetricKey;
 pub use self::error::Error;
-
-pub fn generate_salt(client_random_value: ClientRandomValue, add_str: &str) -> Vec<u8>
-{
-	client_random_value.generate_salt(add_str)
-}
 
 fn get_rand() -> impl CryptoRng + RngCore
 {

@@ -1,8 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_core::cryptomat::Pk;
-use sentc_crypto_core::{DeriveAuthKeyForAuth, HashedAuthenticationKey};
+use sentc_crypto_core::cryptomat::{DeriveAuthKeyForAuth, Pk};
 use sentc_crypto_utils::import_public_key_from_pem_with_alg;
 
 use crate::util::public::generate_salt_from_base64;
@@ -34,7 +33,13 @@ pub fn get_auth_keys_from_base64(
 	client_auth_key: &str,
 	server_hashed_auth_key: &str,
 	alg: &str,
-) -> Result<(HashedAuthenticationKey, HashedAuthenticationKey), SdkError>
+) -> Result<
+	(
+		sentc_crypto_core::HashedAuthenticationKey,
+		sentc_crypto_core::HashedAuthenticationKey,
+	),
+	SdkError,
+>
 {
 	let client_auth_key = derive_auth_key_from_base64(client_auth_key, alg)?;
 	let server_hashed_auth_key = hashed_authentication_key_from_base64(server_hashed_auth_key, alg)?;
@@ -65,27 +70,27 @@ pub fn encrypt_login_verify_challenge(public_key_in_pem: &str, public_key_alg: &
 	Ok(Base64::encode_string(&encrypted_eph_key))
 }
 
-pub(crate) fn derive_auth_key_from_base64(auth_key: &str, alg: &str) -> Result<DeriveAuthKeyForAuth, SdkError>
+pub(crate) fn derive_auth_key_from_base64(auth_key: &str, alg: &str) -> Result<sentc_crypto_core::DeriveAuthKeyForAuth, SdkError>
 {
 	match alg {
 		sentc_crypto_core::ARGON_2_OUTPUT => {
 			let v = Base64::decode_vec(auth_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
 			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
 
-			Ok(DeriveAuthKeyForAuth::Argon2(v))
+			Ok(sentc_crypto_core::DeriveAuthKeyForAuth::Argon2(v))
 		},
 		_ => Err(SdkError::AlgNotFound),
 	}
 }
 
-pub(crate) fn hashed_authentication_key_from_base64(hashed_key: &str, alg: &str) -> Result<HashedAuthenticationKey, SdkError>
+pub(crate) fn hashed_authentication_key_from_base64(hashed_key: &str, alg: &str) -> Result<sentc_crypto_core::HashedAuthenticationKey, SdkError>
 {
 	match alg {
 		sentc_crypto_core::ARGON_2_OUTPUT => {
 			let v = Base64::decode_vec(hashed_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
 			let v = v.try_into().map_err(|_| SdkError::DecodeHashedAuthKey)?;
 
-			Ok(HashedAuthenticationKey::Argon2(v))
+			Ok(sentc_crypto_core::HashedAuthenticationKey::Argon2(v))
 		},
 		_ => Err(SdkError::AlgNotFound),
 	}
