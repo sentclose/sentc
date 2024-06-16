@@ -1,6 +1,6 @@
 use alloc::string::{String, ToString};
 
-use sentc_crypto::group;
+use sentc_crypto::{group, util_req_full};
 use sentc_crypto_common::group as common_group;
 use wasm_bindgen::prelude::*;
 
@@ -303,16 +303,14 @@ pub async fn group_create_group(
 	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::group::create(
+	Ok(util_req_full::group::create(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
 		creators_public_key.as_str(),
 		group_as_member.as_deref(),
 	)
-	.await?;
-
-	Ok(out)
+	.await?)
 }
 
 #[wasm_bindgen]
@@ -326,7 +324,7 @@ pub async fn group_create_child_group(
 	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::group::create_child_group(
+	Ok(util_req_full::group::create_child_group(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -335,9 +333,7 @@ pub async fn group_create_child_group(
 		parent_public_key.as_str(),
 		group_as_member.as_deref(),
 	)
-	.await?;
-
-	Ok(out)
+	.await?)
 }
 
 #[wasm_bindgen]
@@ -351,7 +347,7 @@ pub async fn group_create_connected_group(
 	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::group::create_connected_group(
+	Ok(util_req_full::group::create_connected_group(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -360,9 +356,7 @@ pub async fn group_create_connected_group(
 		&parent_public_key,
 		group_as_member.as_deref(),
 	)
-	.await?;
-
-	Ok(out)
+	.await?)
 }
 
 //__________________________________________________________________________________________________
@@ -388,7 +382,7 @@ Call the group route with the last fetched key time and the last fetched key id.
 #[wasm_bindgen]
 pub fn group_extract_group_keys(server_output: &str) -> Result<JsValue, JsValue>
 {
-	let out = group::get_group_keys_from_server_output(server_output)?;
+	let out = group::get_group_keys_from_server_output(server_output).map_err(Into::<String>::into)?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
 }
@@ -396,13 +390,15 @@ pub fn group_extract_group_keys(server_output: &str) -> Result<JsValue, JsValue>
 #[wasm_bindgen]
 pub fn group_extract_group_key(server_output: &str) -> Result<GroupOutDataKeys, JsValue>
 {
-	Ok(group::get_group_key_from_server_output(server_output)?.into())
+	Ok(group::get_group_key_from_server_output(server_output)
+		.map_err(Into::<String>::into)?
+		.into())
 }
 
 #[wasm_bindgen]
 pub fn group_decrypt_key(private_key: &str, server_key_data: &str) -> Result<GroupKeyData, JsValue>
 {
-	let out = sentc_crypto_full::group::decrypt_key(server_key_data, private_key)?;
+	let out = group::decrypt_group_keys(server_key_data, private_key)?;
 
 	Ok(out.into())
 }
@@ -436,13 +432,16 @@ pub fn group_prepare_keys_for_new_member(
 	admin_rank: i32,
 ) -> Result<String, JsValue>
 {
-	group::check_make_invite_req(admin_rank)?;
+	group::check_make_invite_req(admin_rank).map_err(Into::<String>::into)?;
 
 	let key_session = key_count > 50;
 
-	let input = group::prepare_group_keys_for_new_member(user_public_key, group_keys, key_session, rank)?;
-
-	Ok(input)
+	Ok(group::prepare_group_keys_for_new_member(
+		user_public_key,
+		group_keys,
+		key_session,
+		rank,
+	)?)
 }
 
 #[wasm_bindgen]
@@ -463,7 +462,7 @@ pub async fn group_invite_user(
 	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::group::invite_user(
+	let out = util_req_full::group::invite_user(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -481,10 +480,7 @@ pub async fn group_invite_user(
 	)
 	.await?;
 
-	match out {
-		Some(id) => Ok(id),
-		None => Ok(String::from("")),
-	}
+	Ok(out.unwrap_or_default())
 }
 
 #[wasm_bindgen]
@@ -500,7 +496,7 @@ pub async fn group_invite_user_session(
 	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::invite_user_session(
+	Ok(util_req_full::group::invite_user_session(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -511,9 +507,7 @@ pub async fn group_invite_user_session(
 		group_keys.as_str(),
 		group_as_member.as_deref(),
 	)
-	.await?;
-
-	Ok(())
+	.await?)
 }
 
 //__________________________________________________________________________________________________
@@ -534,7 +528,7 @@ pub async fn group_accept_join_req(
 	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::group::accept_join_req(
+	let out = util_req_full::group::accept_join_req(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -549,10 +543,7 @@ pub async fn group_accept_join_req(
 	)
 	.await?;
 
-	match out {
-		Some(id) => Ok(id),
-		None => Ok(String::from("")),
-	}
+	Ok(out.unwrap_or_default())
 }
 
 #[wasm_bindgen]
@@ -567,7 +558,7 @@ pub async fn group_join_user_session(
 	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::join_user_session(
+	Ok(util_req_full::group::join_user_session(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -577,9 +568,7 @@ pub async fn group_join_user_session(
 		group_keys.as_str(),
 		group_as_member.as_deref(),
 	)
-	.await?;
-
-	Ok(())
+	.await?)
 }
 
 //__________________________________________________________________________________________________
@@ -588,9 +577,13 @@ pub async fn group_join_user_session(
 #[wasm_bindgen]
 pub fn group_prepare_key_rotation(pre_group_key: &str, public_key: &str, sign_key: Option<String>, starter: String) -> Result<String, JsValue>
 {
-	let out = group::key_rotation(pre_group_key, public_key, false, sign_key.as_deref(), starter)?;
-
-	Ok(out)
+	Ok(group::key_rotation(
+		pre_group_key,
+		public_key,
+		false,
+		sign_key.as_deref(),
+		starter,
+	)?)
 }
 
 /**
@@ -607,7 +600,7 @@ pub async fn group_pre_done_key_rotation(
 	group_as_member: Option<String>,
 ) -> Result<JsValue, JsValue>
 {
-	let out = sentc_crypto_full::group::prepare_done_key_rotation(
+	let out = util_req_full::group::prepare_done_key_rotation(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -642,7 +635,7 @@ pub async fn group_finish_key_rotation(
 	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_full::group::done_key_rotation(
+	Ok(util_req_full::group::done_key_rotation(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -655,9 +648,7 @@ pub async fn group_finish_key_rotation(
 		verify_key.as_deref(),
 		group_as_member.as_deref(),
 	)
-	.await?;
-
-	Ok(())
+	.await?)
 }
 
 //__________________________________________________________________________________________________
@@ -666,9 +657,7 @@ pub async fn group_finish_key_rotation(
 #[wasm_bindgen]
 pub fn group_prepare_update_rank(user_id: &str, rank: i32, admin_rank: i32) -> Result<String, JsValue>
 {
-	let input = group::prepare_change_rank(user_id, rank, admin_rank)?;
-
-	Ok(input)
+	Ok(group::prepare_change_rank(user_id, rank, admin_rank)?)
 }
 
 //__________________________________________________________________________________________________

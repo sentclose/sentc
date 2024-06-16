@@ -2713,191 +2713,6 @@ fn wire_decrypt_sym_key_by_private_key_impl(
 		},
 	)
 }
-fn wire_generate_and_register_sym_key_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	jwt: impl Wire2Api<String> + UnwindSafe,
-	master_key: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, KeyGenOutput, _>(
-		WrapInfo {
-			debug_name: "generate_and_register_sym_key",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_jwt = jwt.wire2api();
-			let api_master_key = master_key.wire2api();
-			move |task_callback| generate_and_register_sym_key(api_base_url, api_auth_token, api_jwt, api_master_key)
-		},
-	)
-}
-fn wire_generate_and_register_sym_key_by_public_key_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	jwt: impl Wire2Api<String> + UnwindSafe,
-	public_key: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, KeyGenOutput, _>(
-		WrapInfo {
-			debug_name: "generate_and_register_sym_key_by_public_key",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_jwt = jwt.wire2api();
-			let api_public_key = public_key.wire2api();
-			move |task_callback| generate_and_register_sym_key_by_public_key(api_base_url, api_auth_token, api_jwt, api_public_key)
-		},
-	)
-}
-fn wire_get_sym_key_by_id_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	key_id: impl Wire2Api<String> + UnwindSafe,
-	master_key: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, String, _>(
-		WrapInfo {
-			debug_name: "get_sym_key_by_id",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_key_id = key_id.wire2api();
-			let api_master_key = master_key.wire2api();
-			move |task_callback| get_sym_key_by_id(api_base_url, api_auth_token, api_key_id, api_master_key)
-		},
-	)
-}
-fn wire_get_sym_key_by_id_by_private_key_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	key_id: impl Wire2Api<String> + UnwindSafe,
-	private_key: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, String, _>(
-		WrapInfo {
-			debug_name: "get_sym_key_by_id_by_private_key",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_key_id = key_id.wire2api();
-			let api_private_key = private_key.wire2api();
-			move |task_callback| get_sym_key_by_id_by_private_key(api_base_url, api_auth_token, api_key_id, api_private_key)
-		},
-	)
-}
-fn wire_done_fetch_sym_key_impl(
-	port_: MessagePort,
-	master_key: impl Wire2Api<String> + UnwindSafe,
-	server_out: impl Wire2Api<String> + UnwindSafe,
-	non_registered: impl Wire2Api<bool> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, String, _>(
-		WrapInfo {
-			debug_name: "done_fetch_sym_key",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_master_key = master_key.wire2api();
-			let api_server_out = server_out.wire2api();
-			let api_non_registered = non_registered.wire2api();
-			move |task_callback| done_fetch_sym_key(api_master_key, api_server_out, api_non_registered)
-		},
-	)
-}
-fn wire_done_fetch_sym_key_by_private_key_impl(
-	port_: MessagePort,
-	private_key: impl Wire2Api<String> + UnwindSafe,
-	server_out: impl Wire2Api<String> + UnwindSafe,
-	non_registered: impl Wire2Api<bool> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, String, _>(
-		WrapInfo {
-			debug_name: "done_fetch_sym_key_by_private_key",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_private_key = private_key.wire2api();
-			let api_server_out = server_out.wire2api();
-			let api_non_registered = non_registered.wire2api();
-			move |task_callback| done_fetch_sym_key_by_private_key(api_private_key, api_server_out, api_non_registered)
-		},
-	)
-}
-fn wire_get_keys_for_master_key_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	master_key_id: impl Wire2Api<String> + UnwindSafe,
-	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
-	last_key_id: impl Wire2Api<String> + UnwindSafe,
-	master_key: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, KeysToMasterKeyFetch, _>(
-		WrapInfo {
-			debug_name: "get_keys_for_master_key",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_master_key_id = master_key_id.wire2api();
-			let api_last_fetched_time = last_fetched_time.wire2api();
-			let api_last_key_id = last_key_id.wire2api();
-			let api_master_key = master_key.wire2api();
-			move |task_callback| {
-				get_keys_for_master_key(
-					api_base_url,
-					api_auth_token,
-					api_master_key_id,
-					api_last_fetched_time,
-					api_last_key_id,
-					api_master_key,
-				)
-			}
-		},
-	)
-}
-fn wire_delete_sym_key_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	jwt: impl Wire2Api<String> + UnwindSafe,
-	key_id: impl Wire2Api<String> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, (), _>(
-		WrapInfo {
-			debug_name: "delete_sym_key",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_jwt = jwt.wire2api();
-			let api_key_id = key_id.wire2api();
-			move |task_callback| delete_sym_key(api_base_url, api_auth_token, api_jwt, api_key_id)
-		},
-	)
-}
 fn wire_create_searchable_raw_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
@@ -3009,50 +2824,6 @@ fn wire_sortable_encrypt_string_impl(port_: MessagePort, key: impl Wire2Api<Stri
 			let api_key = key.wire2api();
 			let api_data = data.wire2api();
 			move |task_callback| sortable_encrypt_string(api_key, api_data)
-		},
-	)
-}
-fn wire_content_fetch_for_group_impl(
-	port_: MessagePort,
-	base_url: impl Wire2Api<String> + UnwindSafe,
-	auth_token: impl Wire2Api<String> + UnwindSafe,
-	jwt: impl Wire2Api<String> + UnwindSafe,
-	group_id: impl Wire2Api<String> + UnwindSafe,
-	group_as_member: impl Wire2Api<Option<String>> + UnwindSafe,
-	cat_id: impl Wire2Api<String> + UnwindSafe,
-	last_fetched_time: impl Wire2Api<String> + UnwindSafe,
-	last_fetched_group_id: impl Wire2Api<String> + UnwindSafe,
-	limit: impl Wire2Api<ContentFetchLimit> + UnwindSafe,
-) {
-	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, Vec<ListContentItem>, _>(
-		WrapInfo {
-			debug_name: "content_fetch_for_group",
-			port: Some(port_),
-			mode: FfiCallMode::Normal,
-		},
-		move || {
-			let api_base_url = base_url.wire2api();
-			let api_auth_token = auth_token.wire2api();
-			let api_jwt = jwt.wire2api();
-			let api_group_id = group_id.wire2api();
-			let api_group_as_member = group_as_member.wire2api();
-			let api_cat_id = cat_id.wire2api();
-			let api_last_fetched_time = last_fetched_time.wire2api();
-			let api_last_fetched_group_id = last_fetched_group_id.wire2api();
-			let api_limit = limit.wire2api();
-			move |task_callback| {
-				content_fetch_for_group(
-					api_base_url,
-					api_auth_token,
-					api_jwt,
-					api_group_id,
-					api_group_as_member,
-					api_cat_id,
-					api_last_fetched_time,
-					api_last_fetched_group_id,
-					api_limit,
-				)
-			}
 		},
 	)
 }
@@ -3474,17 +3245,6 @@ impl Wire2Api<bool> for bool {
 	}
 }
 
-impl Wire2Api<ContentFetchLimit> for i32 {
-	fn wire2api(self) -> ContentFetchLimit {
-		match self {
-			0 => ContentFetchLimit::Small,
-			1 => ContentFetchLimit::Medium,
-			2 => ContentFetchLimit::Large,
-			3 => ContentFetchLimit::XLarge,
-			_ => unreachable!("Invalid variant for ContentFetchLimit: {}", self),
-		}
-	}
-}
 impl Wire2Api<i32> for i32 {
 	fn wire2api(self) -> i32 {
 		self
@@ -3872,18 +3632,6 @@ impl rust2dart::IntoIntoDart<GroupUserListItem> for GroupUserListItem {
 	}
 }
 
-impl support::IntoDart for KeyGenOutput {
-	fn into_dart(self) -> support::DartAbi {
-		vec![self.key.into_into_dart().into_dart(), self.key_id.into_into_dart().into_dart()].into_dart()
-	}
-}
-impl support::IntoDartExceptPrimitive for KeyGenOutput {}
-impl rust2dart::IntoIntoDart<KeyGenOutput> for KeyGenOutput {
-	fn into_into_dart(self) -> Self {
-		self
-	}
-}
-
 impl support::IntoDart for KeyRotationGetOut {
 	fn into_dart(self) -> support::DartAbi {
 		vec![
@@ -3926,45 +3674,6 @@ impl support::IntoDart for KeyRotationInput {
 }
 impl support::IntoDartExceptPrimitive for KeyRotationInput {}
 impl rust2dart::IntoIntoDart<KeyRotationInput> for KeyRotationInput {
-	fn into_into_dart(self) -> Self {
-		self
-	}
-}
-
-impl support::IntoDart for KeysToMasterKeyFetch {
-	fn into_dart(self) -> support::DartAbi {
-		vec![
-			self.last_fetched_time.into_into_dart().into_dart(),
-			self.last_key_id.into_into_dart().into_dart(),
-			self.keys.into_into_dart().into_dart(),
-		]
-		.into_dart()
-	}
-}
-impl support::IntoDartExceptPrimitive for KeysToMasterKeyFetch {}
-impl rust2dart::IntoIntoDart<KeysToMasterKeyFetch> for KeysToMasterKeyFetch {
-	fn into_into_dart(self) -> Self {
-		self
-	}
-}
-
-impl support::IntoDart for ListContentItem {
-	fn into_dart(self) -> support::DartAbi {
-		vec![
-			self.id.into_into_dart().into_dart(),
-			self.item.into_into_dart().into_dart(),
-			self.belongs_to_group.into_dart(),
-			self.belongs_to_user.into_dart(),
-			self.creator.into_into_dart().into_dart(),
-			self.time.into_into_dart().into_dart(),
-			self.category.into_dart(),
-			self.access_from_group.into_dart(),
-		]
-		.into_dart()
-	}
-}
-impl support::IntoDartExceptPrimitive for ListContentItem {}
-impl rust2dart::IntoIntoDart<ListContentItem> for ListContentItem {
 	fn into_into_dart(self) -> Self {
 		self
 	}

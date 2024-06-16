@@ -1319,97 +1319,6 @@ pub extern "C" fn wire_decrypt_sym_key_by_private_key(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_generate_and_register_sym_key(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	jwt: *mut wire_uint_8_list,
-	master_key: *mut wire_uint_8_list,
-) {
-	wire_generate_and_register_sym_key_impl(port_, base_url, auth_token, jwt, master_key)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_generate_and_register_sym_key_by_public_key(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	jwt: *mut wire_uint_8_list,
-	public_key: *mut wire_uint_8_list,
-) {
-	wire_generate_and_register_sym_key_by_public_key_impl(port_, base_url, auth_token, jwt, public_key)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_get_sym_key_by_id(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	key_id: *mut wire_uint_8_list,
-	master_key: *mut wire_uint_8_list,
-) {
-	wire_get_sym_key_by_id_impl(port_, base_url, auth_token, key_id, master_key)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_get_sym_key_by_id_by_private_key(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	key_id: *mut wire_uint_8_list,
-	private_key: *mut wire_uint_8_list,
-) {
-	wire_get_sym_key_by_id_by_private_key_impl(port_, base_url, auth_token, key_id, private_key)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_done_fetch_sym_key(port_: i64, master_key: *mut wire_uint_8_list, server_out: *mut wire_uint_8_list, non_registered: bool) {
-	wire_done_fetch_sym_key_impl(port_, master_key, server_out, non_registered)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_done_fetch_sym_key_by_private_key(
-	port_: i64,
-	private_key: *mut wire_uint_8_list,
-	server_out: *mut wire_uint_8_list,
-	non_registered: bool,
-) {
-	wire_done_fetch_sym_key_by_private_key_impl(port_, private_key, server_out, non_registered)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_get_keys_for_master_key(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	master_key_id: *mut wire_uint_8_list,
-	last_fetched_time: *mut wire_uint_8_list,
-	last_key_id: *mut wire_uint_8_list,
-	master_key: *mut wire_uint_8_list,
-) {
-	wire_get_keys_for_master_key_impl(
-		port_,
-		base_url,
-		auth_token,
-		master_key_id,
-		last_fetched_time,
-		last_key_id,
-		master_key,
-	)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_delete_sym_key(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	jwt: *mut wire_uint_8_list,
-	key_id: *mut wire_uint_8_list,
-) {
-	wire_delete_sym_key_impl(port_, base_url, auth_token, jwt, key_id)
-}
-
-#[no_mangle]
 pub extern "C" fn wire_create_searchable_raw(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list, full: bool, limit: *mut u32) {
 	wire_create_searchable_raw_impl(port_, key, data, full, limit)
 }
@@ -1442,33 +1351,6 @@ pub extern "C" fn wire_sortable_encrypt_raw_string(port_: i64, key: *mut wire_ui
 #[no_mangle]
 pub extern "C" fn wire_sortable_encrypt_string(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list) {
 	wire_sortable_encrypt_string_impl(port_, key, data)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_content_fetch_for_group(
-	port_: i64,
-	base_url: *mut wire_uint_8_list,
-	auth_token: *mut wire_uint_8_list,
-	jwt: *mut wire_uint_8_list,
-	group_id: *mut wire_uint_8_list,
-	group_as_member: *mut wire_uint_8_list,
-	cat_id: *mut wire_uint_8_list,
-	last_fetched_time: *mut wire_uint_8_list,
-	last_fetched_group_id: *mut wire_uint_8_list,
-	limit: i32,
-) {
-	wire_content_fetch_for_group_impl(
-		port_,
-		base_url,
-		auth_token,
-		jwt,
-		group_id,
-		group_as_member,
-		cat_id,
-		last_fetched_time,
-		last_fetched_group_id,
-		limit,
-	)
 }
 
 #[no_mangle]

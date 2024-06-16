@@ -59,7 +59,7 @@ impl From<sentc_crypto_common::user::Claims> for Claims
 #[wasm_bindgen]
 pub fn decode_jwt(jwt: &str) -> Result<Claims, JsValue>
 {
-	let claims = sentc_crypto_full::decode_jwt(jwt)?;
+	let claims = sentc_crypto::util_req_full::decode_jwt(jwt)?;
 
 	Ok(claims.into())
 }
