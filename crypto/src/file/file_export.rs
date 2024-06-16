@@ -47,7 +47,6 @@ pub fn prepare_file_name_update(key: &str, file_name: Option<String>) -> Result<
 pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let sign_key = prepare_sign_key(sign_key)?;
-
 	let key: SymmetricKey = key.parse()?;
 
 	let (encrypted_part, file_key) = StdFileEncryptor::encrypt_file_part_start(&key, part, sign_key.as_ref())?;
@@ -60,7 +59,6 @@ pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: Option<&str>) -
 pub fn encrypt_file_part(pre_content_key: &str, part: &[u8], sign_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let sign_key = prepare_sign_key(sign_key)?;
-
 	let key = import_core_sym_key(pre_content_key)?;
 
 	let (encrypted_part, file_key) = StdFileEncryptor::encrypt_file_part(&key, part, sign_key.as_ref())?;
@@ -75,10 +73,7 @@ pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: Option<&str>)
 	let verify_key = prepare_verify_key(verify_key)?;
 	let key: SymmetricKey = key.parse()?;
 
-	let (decrypted, next_key) = match verify_key {
-		None => StdFileEncryptor::decrypt_file_part_start(&key, part, None)?,
-		Some(k) => StdFileEncryptor::decrypt_file_part_start(&key, part, Some(&k))?,
-	};
+	let (decrypted, next_key) = StdFileEncryptor::decrypt_file_part_start(&key, part, verify_key.as_ref())?;
 
 	let exported_file_key = export_core_sym_key_to_string(next_key)?;
 
@@ -88,13 +83,9 @@ pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: Option<&str>)
 pub fn decrypt_file_part(pre_content_key: &str, part: &[u8], verify_key: Option<&str>) -> Result<(Vec<u8>, String), String>
 {
 	let verify_key = prepare_verify_key(verify_key)?;
-
 	let key = import_core_sym_key(pre_content_key)?;
 
-	let (decrypted, next_key) = match verify_key {
-		None => StdFileEncryptor::decrypt_file_part(&key, part, None)?,
-		Some(k) => StdFileEncryptor::decrypt_file_part(&key, part, Some(&k))?,
-	};
+	let (decrypted, next_key) = StdFileEncryptor::decrypt_file_part(&key, part, verify_key.as_ref())?;
 
 	let exported_file_key = export_core_sym_key_to_string(next_key)?;
 
