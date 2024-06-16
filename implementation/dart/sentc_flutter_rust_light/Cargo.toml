@@ -17,10 +17,9 @@ name = "sentc_light_flutter"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
-sentc-crypto-common = {workspace=true}
+sentc-crypto-common = { workspace = true }
 
-sentc-crypto-light= {workspace=true, features = ["default"]}
-sentc-crypto-light-full={workspace=true, features = ["default","rustls"]}
+sentc-crypto-light = { workspace = true, features = ["default", "full_rustls"] }
 
 tokio = { version = "1.20.4", features = ["rt-multi-thread"] }
 

@@ -1,6 +1,7 @@
 use std::future::Future;
 
 use once_cell::sync::OnceCell;
+use sentc_crypto_light::util_req_full;
 use tokio::runtime::Runtime;
 
 static RUNTIME: OnceCell<Runtime> = OnceCell::new();
@@ -50,7 +51,7 @@ impl From<sentc_crypto_common::user::Claims> for Claims
 
 pub fn decode_jwt(jwt: String) -> Result<Claims>
 {
-	let claims = sentc_crypto_light_full::decode_jwt(&jwt)?;
+	let claims = util_req_full::decode_jwt(&jwt)?;
 
 	Ok(claims.into())
 }
@@ -122,9 +123,9 @@ pub struct PrepareLoginOtpOutput
 	pub auth_key: String,
 }
 
-impl From<sentc_crypto_light_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
+impl From<util_req_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
 {
-	fn from(value: sentc_crypto_light_full::user::PrepareLoginOtpOutput) -> Self
+	fn from(value: util_req_full::user::PrepareLoginOtpOutput) -> Self
 	{
 		Self {
 			master_key: value.master_key,
@@ -141,18 +142,18 @@ pub struct UserLoginOut
 	pub mfa: Option<PrepareLoginOtpOutput>,
 }
 
-impl From<sentc_crypto_light_full::user::PreLoginOut> for UserLoginOut
+impl From<util_req_full::user::PreLoginOut> for UserLoginOut
 {
-	fn from(value: sentc_crypto_light_full::user::PreLoginOut) -> Self
+	fn from(value: util_req_full::user::PreLoginOut) -> Self
 	{
 		match value {
-			sentc_crypto_light_full::user::PreLoginOut::Direct(d) => {
+			util_req_full::user::PreLoginOut::Direct(d) => {
 				Self {
 					mfa: None,
 					user_data: Some(d.into()),
 				}
 			},
-			sentc_crypto_light_full::user::PreLoginOut::Otp(d) => {
+			util_req_full::user::PreLoginOut::Otp(d) => {
 				Self {
 					user_data: None,
 					mfa: Some(d.into()),
@@ -169,7 +170,7 @@ impl From<sentc_crypto_light_full::user::PreLoginOut> for UserLoginOut
  */
 pub fn check_user_identifier_available(base_url: String, auth_token: String, user_identifier: String) -> Result<bool>
 {
-	let out = rt(sentc_crypto_light_full::user::check_user_identifier_available(
+	let out = rt(util_req_full::user::check_user_identifier_available(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -221,7 +222,7 @@ No checking about spamming and just return the user id.
  */
 pub fn register(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String>
 {
-	let data = rt(sentc_crypto_light_full::user::register(
+	let data = rt(util_req_full::user::register(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -233,7 +234,7 @@ pub fn register(base_url: String, auth_token: String, user_identifier: String, p
 
 pub fn register_device_start(base_url: String, auth_token: String, device_identifier: String, password: String) -> Result<String>
 {
-	let out = rt(sentc_crypto_light_full::user::register_device_start(
+	let out = rt(util_req_full::user::register_device_start(
 		base_url,
 		auth_token.as_str(),
 		device_identifier.as_str(),
@@ -250,7 +251,7 @@ pub fn done_register_device_start(server_output: String) -> Result<()>
 
 pub fn register_device(base_url: String, auth_token: String, jwt: String, server_output: String) -> Result<()>
 {
-	rt(sentc_crypto_light_full::user::register_device(
+	rt(util_req_full::user::register_device(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -269,7 +270,7 @@ The other backend can validate the jwt
  */
 pub fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserLoginOut>
 {
-	let data = rt(sentc_crypto_light_full::user::login(
+	let data = rt(util_req_full::user::login(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -289,7 +290,7 @@ pub fn mfa_login(
 	recovery: bool,
 ) -> Result<UserDataExport>
 {
-	let data = rt(sentc_crypto_light_full::user::mfa_login(
+	let data = rt(util_req_full::user::mfa_login(
 		base_url,
 		&auth_token,
 		&master_key_encryption,
@@ -311,7 +312,7 @@ pub fn get_fresh_jwt(
 	mfa_recovery: Option<bool>,
 ) -> Result<String>
 {
-	rt(sentc_crypto_light_full::user::get_fresh_jwt(
+	rt(util_req_full::user::get_fresh_jwt(
 		base_url,
 		&auth_token,
 		&user_identifier,
@@ -332,7 +333,7 @@ pub struct UserInitServerOutput
 
 pub fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String>
 {
-	rt(sentc_crypto_light_full::user::refresh_jwt(
+	rt(util_req_full::user::refresh_jwt(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -342,7 +343,7 @@ pub fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_to
 
 pub fn init_user(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<UserInitServerOutput>
 {
-	let out = rt(sentc_crypto_light_full::user::init_user(
+	let out = rt(util_req_full::user::init_user(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -389,7 +390,7 @@ pub fn get_user_devices(
 	last_fetched_id: String,
 ) -> Result<Vec<UserDeviceList>>
 {
-	let out = rt(sentc_crypto_light_full::user::get_user_devices(
+	let out = rt(util_req_full::user::get_user_devices(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -412,7 +413,7 @@ pub fn change_password(
 	mfa_recovery: Option<bool>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::user::change_password(
+	rt(util_req_full::user::change_password(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -425,16 +426,12 @@ pub fn change_password(
 
 pub fn delete_user(base_url: String, auth_token: String, fresh_jwt: String) -> Result<()>
 {
-	rt(sentc_crypto_light_full::user::delete(
-		base_url,
-		auth_token.as_str(),
-		&fresh_jwt,
-	))
+	rt(util_req_full::user::delete(base_url, auth_token.as_str(), &fresh_jwt))
 }
 
 pub fn delete_device(base_url: String, auth_token: String, fresh_jwt: String, device_id: String) -> Result<()>
 {
-	rt(sentc_crypto_light_full::user::delete_device(
+	rt(util_req_full::user::delete_device(
 		base_url,
 		auth_token.as_str(),
 		&fresh_jwt,
@@ -444,7 +441,7 @@ pub fn delete_device(base_url: String, auth_token: String, fresh_jwt: String, de
 
 pub fn update_user(base_url: String, auth_token: String, jwt: String, user_identifier: String) -> Result<()>
 {
-	rt(sentc_crypto_light_full::user::update(
+	rt(util_req_full::user::update(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -500,18 +497,14 @@ impl From<sentc_crypto_common::user::OtpRecoveryKeysOutput> for OtpRecoveryKeysO
 
 pub fn register_raw_otp(base_url: String, auth_token: String, jwt: String) -> Result<OtpRegister>
 {
-	let out = rt(sentc_crypto_light_full::user::register_raw_otp(
-		base_url,
-		&auth_token,
-		&jwt,
-	))?;
+	let out = rt(util_req_full::user::register_raw_otp(base_url, &auth_token, &jwt))?;
 
 	Ok(out.into())
 }
 
 pub fn register_otp(base_url: String, auth_token: String, jwt: String, issuer: String, audience: String) -> Result<OtpRegisterUrl>
 {
-	let (url, recover) = rt(sentc_crypto_light_full::user::register_otp(
+	let (url, recover) = rt(util_req_full::user::register_otp(
 		base_url,
 		&auth_token,
 		&issuer,
@@ -527,29 +520,21 @@ pub fn register_otp(base_url: String, auth_token: String, jwt: String, issuer: S
 
 pub fn get_otp_recover_keys(base_url: String, auth_token: String, jwt: String) -> Result<OtpRecoveryKeysOutput>
 {
-	let out = rt(sentc_crypto_light_full::user::get_otp_recover_keys(
-		base_url,
-		&auth_token,
-		&jwt,
-	))?;
+	let out = rt(util_req_full::user::get_otp_recover_keys(base_url, &auth_token, &jwt))?;
 
 	Ok(out.into())
 }
 
 pub fn reset_raw_otp(base_url: String, auth_token: String, jwt: String) -> Result<OtpRegister>
 {
-	let out = rt(sentc_crypto_light_full::user::reset_raw_otp(
-		base_url,
-		&auth_token,
-		&jwt,
-	))?;
+	let out = rt(util_req_full::user::reset_raw_otp(base_url, &auth_token, &jwt))?;
 
 	Ok(out.into())
 }
 
 pub fn reset_otp(base_url: String, auth_token: String, jwt: String, issuer: String, audience: String) -> Result<OtpRegisterUrl>
 {
-	let (url, recover) = rt(sentc_crypto_light_full::user::reset_otp(
+	let (url, recover) = rt(util_req_full::user::reset_otp(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -565,11 +550,7 @@ pub fn reset_otp(base_url: String, auth_token: String, jwt: String, issuer: Stri
 
 pub fn disable_otp(base_url: String, auth_token: String, jwt: String) -> Result<()>
 {
-	rt(sentc_crypto_light_full::user::disable_otp(
-		base_url,
-		&auth_token,
-		&jwt,
-	))
+	rt(util_req_full::user::disable_otp(base_url, &auth_token, &jwt))
 }
 
 //==================================================================================================
@@ -630,7 +611,7 @@ Only the default values are send to the server, no extra data. If extra data is 
  */
 pub fn group_create_group(base_url: String, auth_token: String, jwt: String, group_as_member: Option<String>) -> Result<String>
 {
-	rt(sentc_crypto_light_full::group::create(
+	rt(util_req_full::group::create(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -647,7 +628,7 @@ pub fn group_create_child_group(
 	group_as_member: Option<String>,
 ) -> Result<String>
 {
-	rt(sentc_crypto_light_full::group::create_child_group(
+	rt(util_req_full::group::create_child_group(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -666,7 +647,7 @@ pub fn group_create_connected_group(
 	group_as_member: Option<String>,
 ) -> Result<String>
 {
-	rt(sentc_crypto_light_full::group::create_connected_group(
+	rt(util_req_full::group::create_connected_group(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -698,7 +679,7 @@ pub fn group_get_group_data(
 	group_as_member: Option<String>,
 ) -> Result<GroupOutDataLightExport>
 {
-	let out = rt(sentc_crypto_light_full::group::get_group_light(
+	let out = rt(util_req_full::group::get_group_light(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -787,7 +768,7 @@ pub fn group_get_member(
 	group_as_member: Option<String>,
 ) -> Result<Vec<GroupUserListItem>>
 {
-	let out = rt(sentc_crypto_light_full::group::get_member(
+	let out = rt(util_req_full::group::get_member(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -802,7 +783,7 @@ pub fn group_get_member(
 
 pub fn group_get_group_updates(base_url: String, auth_token: String, jwt: String, id: String, group_as_member: Option<String>) -> Result<i32>
 {
-	rt(sentc_crypto_light_full::group::get_group_updates(
+	rt(util_req_full::group::get_group_updates(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -821,7 +802,7 @@ pub fn group_get_all_first_level_children(
 	group_as_member: Option<String>,
 ) -> Result<Vec<GroupChildrenList>>
 {
-	let out = rt(sentc_crypto_light_full::group::get_all_first_level_children(
+	let out = rt(util_req_full::group::get_all_first_level_children(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -843,7 +824,7 @@ pub fn group_get_groups_for_user(
 	group_id: Option<String>,
 ) -> Result<Vec<ListGroups>>
 {
-	let out = rt(sentc_crypto_light_full::group::get_groups_for_user(
+	let out = rt(util_req_full::group::get_groups_for_user(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -872,7 +853,7 @@ pub fn group_invite_user(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::invite_user(
+	rt(util_req_full::group::invite_user(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -896,7 +877,7 @@ pub fn group_get_invites_for_user(
 	group_as_member: Option<String>,
 ) -> Result<Vec<GroupInviteReqList>>
 {
-	let out = rt(sentc_crypto_light_full::group::get_invites_for_user(
+	let out = rt(util_req_full::group::get_invites_for_user(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -918,7 +899,7 @@ pub fn group_accept_invite(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::accept_invite(
+	rt(util_req_full::group::accept_invite(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -937,7 +918,7 @@ pub fn group_reject_invite(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::reject_invite(
+	rt(util_req_full::group::reject_invite(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -979,7 +960,7 @@ pub fn group_get_sent_join_req_user(
 	group_as_member: Option<String>,
 ) -> Result<Vec<GroupInviteReqList>>
 {
-	let out = rt(sentc_crypto_light_full::group::get_sent_join_req(
+	let out = rt(util_req_full::group::get_sent_join_req(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1005,7 +986,7 @@ pub fn group_get_sent_join_req(
 	group_as_member: Option<String>,
 ) -> Result<Vec<GroupInviteReqList>>
 {
-	let out = rt(sentc_crypto_light_full::group::get_sent_join_req(
+	let out = rt(util_req_full::group::get_sent_join_req(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1027,7 +1008,7 @@ pub fn group_delete_sent_join_req_user(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::delete_sent_join_req(
+	rt(util_req_full::group::delete_sent_join_req(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -1048,7 +1029,7 @@ pub fn group_delete_sent_join_req(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::delete_sent_join_req(
+	rt(util_req_full::group::delete_sent_join_req(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -1064,7 +1045,7 @@ pub fn group_join_req(base_url: String, auth_token: String, jwt: String, id: Str
 {
 	let group_id = if group_id.is_empty() { None } else { Some(group_id.as_str()) };
 
-	rt(sentc_crypto_light_full::group::join_req(
+	rt(util_req_full::group::join_req(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1086,7 +1067,7 @@ pub fn group_get_join_reqs(
 	group_as_member: Option<String>,
 ) -> Result<Vec<GroupJoinReqList>>
 {
-	let out = rt(sentc_crypto_light_full::group::get_join_reqs(
+	let out = rt(util_req_full::group::get_join_reqs(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1110,7 +1091,7 @@ pub fn group_reject_join_req(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::reject_join_req(
+	rt(util_req_full::group::reject_join_req(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1133,7 +1114,7 @@ pub fn group_accept_join_req(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::accept_join_req(
+	rt(util_req_full::group::accept_join_req(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1154,7 +1135,7 @@ pub fn group_stop_group_invites(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::stop_group_invites(
+	rt(util_req_full::group::stop_group_invites(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1168,7 +1149,7 @@ pub fn group_stop_group_invites(
 
 pub fn leave_group(base_url: String, auth_token: String, jwt: String, id: String, group_as_member: Option<String>) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::leave_group(
+	rt(util_req_full::group::leave_group(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1197,7 +1178,7 @@ pub fn group_update_rank(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::update_rank(
+	rt(util_req_full::group::update_rank(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1219,7 +1200,7 @@ pub fn group_kick_user(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::kick_user(
+	rt(util_req_full::group::kick_user(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -1241,7 +1222,7 @@ pub fn group_delete_group(
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
-	rt(sentc_crypto_light_full::group::delete_group(
+	rt(util_req_full::group::delete_group(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
