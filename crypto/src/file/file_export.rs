@@ -2,12 +2,11 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::file::BelongsToType;
-use sentc_crypto_core::SymmetricKey as CoreSymKey;
-use sentc_crypto_utils::keys::{SignKey, SymmetricKey, VerifyKey};
+use sentc_crypto_utils::keys::SymmetricKey;
 
 use crate::crypto::{prepare_sign_key, prepare_verify_key};
 use crate::util::{export_core_sym_key_to_string, import_core_sym_key};
-use crate::SdkError;
+use crate::{SdkError, StdFileEncryptor};
 
 pub fn prepare_register_file(
 	master_key_id: String,
@@ -51,10 +50,7 @@ pub fn encrypt_file_part_start(key: &str, part: &[u8], sign_key: Option<&str>) -
 
 	let key: SymmetricKey = key.parse()?;
 
-	let (encrypted_part, file_key) = match sign_key {
-		None => super::file::encrypt_file_part_start::<CoreSymKey>(&key, part, None::<&SignKey>)?,
-		Some(k) => super::file::encrypt_file_part_start::<CoreSymKey>(&key, part, Some(&k))?,
-	};
+	let (encrypted_part, file_key) = StdFileEncryptor::encrypt_file_part_start(&key, part, sign_key.as_ref())?;
 
 	let exported_file_key = export_core_sym_key_to_string(file_key)?;
 
@@ -67,10 +63,7 @@ pub fn encrypt_file_part(pre_content_key: &str, part: &[u8], sign_key: Option<&s
 
 	let key = import_core_sym_key(pre_content_key)?;
 
-	let (encrypted_part, file_key) = match sign_key {
-		None => super::file::encrypt_file_part::<CoreSymKey>(&key, part, None::<&SignKey>)?,
-		Some(k) => super::file::encrypt_file_part::<CoreSymKey>(&key, part, Some(&k))?,
-	};
+	let (encrypted_part, file_key) = StdFileEncryptor::encrypt_file_part(&key, part, sign_key.as_ref())?;
 
 	let exported_file_key = export_core_sym_key_to_string(file_key)?;
 
@@ -83,8 +76,8 @@ pub fn decrypt_file_part_start(key: &str, part: &[u8], verify_key: Option<&str>)
 	let key: SymmetricKey = key.parse()?;
 
 	let (decrypted, next_key) = match verify_key {
-		None => super::file::decrypt_file_part_start::<VerifyKey, CoreSymKey>(&key, part, None)?,
-		Some(k) => super::file::decrypt_file_part_start::<VerifyKey, CoreSymKey>(&key, part, Some(&k))?,
+		None => StdFileEncryptor::decrypt_file_part_start(&key, part, None)?,
+		Some(k) => StdFileEncryptor::decrypt_file_part_start(&key, part, Some(&k))?,
 	};
 
 	let exported_file_key = export_core_sym_key_to_string(next_key)?;
@@ -99,8 +92,8 @@ pub fn decrypt_file_part(pre_content_key: &str, part: &[u8], verify_key: Option<
 	let key = import_core_sym_key(pre_content_key)?;
 
 	let (decrypted, next_key) = match verify_key {
-		None => super::file::decrypt_file_part::<VerifyKey, CoreSymKey>(&key, part, None)?,
-		Some(k) => super::file::decrypt_file_part::<VerifyKey, CoreSymKey>(&key, part, Some(&k))?,
+		None => StdFileEncryptor::decrypt_file_part(&key, part, None)?,
+		Some(k) => StdFileEncryptor::decrypt_file_part(&key, part, Some(&k))?,
 	};
 
 	let exported_file_key = export_core_sym_key_to_string(next_key)?;

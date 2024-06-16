@@ -1,5 +1,6 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::file::{BelongsToType, FileHead, FileNameUpdate, FileRegisterInput, FileRegisterOutput};
@@ -83,90 +84,100 @@ pub fn prepare_file_name_update(key: &impl SymKeyWrapper, file_name: Option<Stri
 	.map_err(|_e| SdkError::JsonToStringFailed)
 }
 
-/**
-The first part is encrypted by the file initial key. This key id is stored in the file data and must not be in every file head
- */
-pub fn encrypt_file_part_start<S: SymKeyGen>(
-	key: &impl SymKeyWrapper,
-	part: &[u8],
-	sign_key: Option<&impl SignKWrapper>,
-) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
+pub struct FileEncryptor<S, SC, VC>
 {
-	encrypt_file_part::<S>(key.get_key(), part, sign_key)
+	_s: PhantomData<S>,
+	_sc: PhantomData<SC>,
+	_vc: PhantomData<VC>,
 }
 
-pub fn encrypt_file_part<S: SymKeyGen>(
-	pre_content_key: &impl SymKey,
-	part: &[u8],
-	sign_key: Option<&impl SignKWrapper>,
-) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
+impl<S: SymKeyGen, SC: SymKeyComposer, VC: VerifyKFromUserKeyWrapper> FileEncryptor<S, SC, VC>
 {
-	/*
-	Just create a normal core key without id
+	/**
+	The first part is encrypted by the file initial key. This key id is stored in the file data and must not be in every file head
 	 */
-	let (encrypted_key, file_key) = S::generate_symmetric_with_sym_key(pre_content_key)?;
+	pub fn encrypt_file_part_start(
+		key: &impl SymKeyWrapper,
+		part: &[u8],
+		sign_key: Option<&impl SignKWrapper>,
+	) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
+	{
+		Self::encrypt_file_part(key.get_key(), part, sign_key)
+	}
 
-	let encrypted_key_string = Base64::encode_string(&encrypted_key);
+	pub fn encrypt_file_part(
+		pre_content_key: &impl SymKey,
+		part: &[u8],
+		sign_key: Option<&impl SignKWrapper>,
+	) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
+	{
+		/*
+		Just create a normal core key without id
+		 */
+		let (encrypted_key, file_key) = S::generate_symmetric_with_sym_key(pre_content_key)?;
 
-	let mut encrypted_part = file_key.encrypt(part)?;
+		let encrypted_key_string = Base64::encode_string(&encrypted_key);
 
-	//sign the data
-	let sign = if let Some(sk) = sign_key {
-		let (sign_head, data_with_sign) = sk.sign_with_head(&encrypted_part)?;
-		encrypted_part = data_with_sign;
-		Some(sign_head)
-	} else {
-		None
-	};
+		let mut encrypted_part = file_key.encrypt(part)?;
 
-	//set here the file key (encrypted by the content key which is the key of the previous part or the initial file key
-	let file_head = FileHead {
-		key: encrypted_key_string,
-		sign,
-		sym_key_alg: file_key.get_alg_str().to_string(),
-	};
+		//sign the data
+		let sign = if let Some(sk) = sign_key {
+			let (sign_head, data_with_sign) = sk.sign_with_head(&encrypted_part)?;
+			encrypted_part = data_with_sign;
+			Some(sign_head)
+		} else {
+			None
+		};
 
-	Ok((put_head_and_encrypted_data(&file_head, &encrypted_part)?, file_key))
-}
+		//set here the file key (encrypted by the content key which is the key of the previous part or the initial file key
+		let file_head = FileHead {
+			key: encrypted_key_string,
+			sign,
+			sym_key_alg: file_key.get_alg_str().to_string(),
+		};
 
-pub fn decrypt_file_part_start<VC: VerifyKFromUserKeyWrapper, SC: SymKeyComposer>(
-	key: &impl SymKeyWrapper,
-	part: &[u8],
-	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<(Vec<u8>, SC::SymmetricKey), SdkError>
-{
-	decrypt_file_part::<VC, SC>(key.get_key(), part, verify_key)
-}
+		Ok((put_head_and_encrypted_data(&file_head, &encrypted_part)?, file_key))
+	}
 
-pub fn decrypt_file_part<VC: VerifyKFromUserKeyWrapper, SC: SymKeyComposer>(
-	pre_content_key: &impl SymKey,
-	part: &[u8],
-	verify_key: Option<&UserVerifyKeyData>,
-) -> Result<(Vec<u8>, SC::SymmetricKey), SdkError>
-{
-	let (head, encrypted_part) = split_head_and_encrypted_data::<FileHead>(part)?;
+	pub fn decrypt_file_part_start(
+		key: &impl SymKeyWrapper,
+		part: &[u8],
+		verify_key: Option<&UserVerifyKeyData>,
+	) -> Result<(Vec<u8>, SC::SymmetricKey), SdkError>
+	{
+		Self::decrypt_file_part(key.get_key(), part, verify_key)
+	}
 
-	//decrypt the key with the pre key
-	let encrypted_key = Base64::decode_vec(&head.key).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
+	pub fn decrypt_file_part(
+		pre_content_key: &impl SymKey,
+		part: &[u8],
+		verify_key: Option<&UserVerifyKeyData>,
+	) -> Result<(Vec<u8>, SC::SymmetricKey), SdkError>
+	{
+		let (head, encrypted_part) = split_head_and_encrypted_data::<FileHead>(part)?;
 
-	let file_key = SC::decrypt_key_by_sym_key(pre_content_key, &encrypted_key, &head.sym_key_alg)?;
+		//decrypt the key with the pre key
+		let encrypted_key = Base64::decode_vec(&head.key).map_err(|_| SdkError::DecodeEncryptedDataFailed)?;
 
-	let decrypted_part = match &head.sign {
-		None => file_key.decrypt(encrypted_part)?, //no sig used, go ahead
-		Some(h) => {
-			match verify_key {
-				None => {
-					//just split the data, use the alg here
-					let (_, encrypted_data_without_sig) = VC::split_sig_and_data(h.alg.as_str(), encrypted_part)?;
-					file_key.decrypt(encrypted_data_without_sig)?
-				},
-				Some(vk) => {
-					let encrypted_data_without_sig = VC::verify_with_user_key(vk, encrypted_part, h)?;
-					file_key.decrypt(encrypted_data_without_sig)?
-				},
-			}
-		},
-	};
+		let file_key = SC::decrypt_key_by_sym_key(pre_content_key, &encrypted_key, &head.sym_key_alg)?;
 
-	Ok((decrypted_part, file_key))
+		let decrypted_part = match &head.sign {
+			None => file_key.decrypt(encrypted_part)?, //no sig used, go ahead
+			Some(h) => {
+				match verify_key {
+					None => {
+						//just split the data, use the alg here
+						let (_, encrypted_data_without_sig) = VC::split_sig_and_data(h.alg.as_str(), encrypted_part)?;
+						file_key.decrypt(encrypted_data_without_sig)?
+					},
+					Some(vk) => {
+						let encrypted_data_without_sig = VC::verify_with_user_key(vk, encrypted_part, h)?;
+						file_key.decrypt(encrypted_data_without_sig)?
+					},
+				}
+			},
+		};
+
+		Ok((decrypted_part, file_key))
+	}
 }
