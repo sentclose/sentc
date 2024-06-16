@@ -7,6 +7,7 @@ homepage.workspace = true
 authors.workspace = true
 documentation.workspace = true
 repository.workspace = true
+rust-version.workspace = true
 
 description = "The main implementation of the sentc sdk."
 
@@ -35,3 +36,6 @@ rust = []
 
 server = []
 server_test = []
+
+full_rustls = ["sentc-crypto-utils/crypto_full", "sentc-crypto-utils/rustls"]
+full_wasm = ["sentc-crypto-utils/crypto_full", "sentc-crypto-utils/wasm"]

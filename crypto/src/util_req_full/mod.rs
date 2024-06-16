@@ -1,19 +1,18 @@
-#![no_std]
-#![allow(clippy::too_many_arguments)]
-
-extern crate alloc;
-
 use sentc_crypto_common::user::Claims;
-
-pub mod content;
-pub mod crypto;
 
 pub mod file;
 pub mod group;
 pub mod user;
 
+enum SessionKind
+{
+	Invite,
+	Join,
+	UserGroup,
+}
+
 #[cfg(feature = "rust")]
-pub(crate) type JwtRes = Result<Claims, sentc_crypto::SdkError>;
+pub(crate) type JwtRes = Result<Claims, crate::SdkError>;
 
 #[cfg(not(feature = "rust"))]
 pub(crate) type JwtRes = Result<Claims, alloc::string::String>;

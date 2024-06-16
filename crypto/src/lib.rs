@@ -21,6 +21,9 @@ pub mod group;
 pub mod user;
 pub mod util;
 
+#[cfg(any(feature = "full_rustls", feature = "full_wasm"))]
+pub mod util_req_full;
+
 /**
 For server testing export every common
 because using common from path via submodule resolve in version conflicts when using it in tests
@@ -80,4 +83,18 @@ pub type StdUserKeyDataInt = entities::user::UserKeyDataInt<
 	sdk_utils::keys::PublicKey,
 	sdk_utils::keys::SignKey,
 	sdk_utils::keys::VerifyKey,
+>;
+
+pub type StdKeyGenerator = crypto::KeyGenerator<sdk_utils::keys::SymmetricKey, sdk_utils::keys::SymmetricKey, sdk_utils::keys::PublicKey>;
+
+pub type StdFileEncryptor = file::FileEncryptor<sdk_core::SymmetricKey, sdk_core::SymmetricKey, sdk_utils::keys::VerifyKey>;
+
+#[cfg(any(feature = "full_rustls", feature = "full_wasm"))]
+pub type StdPreLoginOut = util_req_full::user::PreLoginOut<
+	sdk_utils::keys::SymmetricKey,
+	sdk_utils::keys::SecretKey,
+	sdk_utils::keys::PublicKey,
+	sdk_utils::keys::SignKey,
+	sdk_utils::keys::VerifyKey,
+	sdk_core::DeriveMasterKeyForAuth,
 >;
