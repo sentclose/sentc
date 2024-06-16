@@ -1,6 +1,7 @@
 pub(crate) mod crypto;
 #[cfg(not(feature = "rust"))]
 mod crypto_export;
+pub(crate) mod mimic_keys;
 
 #[cfg(feature = "rust")]
 pub use self::crypto::*;

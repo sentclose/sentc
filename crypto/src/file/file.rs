@@ -9,8 +9,9 @@ use sentc_crypto_core::cryptomat::{CryptoAlg, SymKey, SymKeyComposer, SymKeyGen}
 use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyWrapper, VerifyKFromUserKeyWrapper};
 
 use crate::crypto::crypto::{put_head_and_encrypted_data, split_head_and_encrypted_data};
+use crate::crypto::mimic_keys::FakeSignKeyWrapper;
 use crate::util::public::handle_server_response;
-use crate::{sdk_utils, SdkError};
+use crate::SdkError;
 
 pub fn prepare_register_file(
 	master_key_id: String,
@@ -41,7 +42,7 @@ pub fn prepare_register_file(
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None::<&sdk_utils::keys::SignKey>)?)
+			Some(key.encrypt_string(&f, None::<&FakeSignKeyWrapper>)?)
 		},
 	};
 
@@ -72,7 +73,7 @@ pub fn prepare_file_name_update(key: &impl SymKeyWrapper, file_name: Option<Stri
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None::<&sdk_utils::keys::SignKey>)?)
+			Some(key.encrypt_string(&f, None::<&FakeSignKeyWrapper>)?)
 		},
 	};
 
