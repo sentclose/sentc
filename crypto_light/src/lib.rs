@@ -5,6 +5,8 @@ extern crate alloc;
 pub mod error;
 pub mod group;
 pub mod user;
+#[cfg(any(feature = "full_rustls", feature = "full_wasm"))]
+pub mod util_req_full;
 
 use alloc::string::String;
 

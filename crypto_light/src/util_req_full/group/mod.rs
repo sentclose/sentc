@@ -17,7 +17,6 @@ use sentc_crypto_common::group::{
 	GroupUserListItem,
 	ListGroups,
 };
-use sentc_crypto_light::error::SdkLightError;
 use sentc_crypto_utils::http::{make_req, HttpMethod};
 use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
@@ -25,6 +24,7 @@ use sentc_crypto_utils::{handle_general_server_response, handle_server_response}
 pub(crate) use self::non_rust::{ChildrenRes, DataRes, GroupListRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
 #[cfg(feature = "rust")]
 pub(crate) use self::rust::{ChildrenRes, DataRes, GroupListRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
+use crate::error::SdkLightError;
 
 #[inline(never)]
 async fn create_group(
@@ -116,7 +116,7 @@ pub async fn get_group_light(base_url: String, auth_token: &str, jwt: &str, id: 
 	)
 	.await?;
 
-	let out = sentc_crypto_light::group::get_group_light_data(&res)?;
+	let out = crate::group::get_group_light_data(&res)?;
 
 	Ok(out)
 }
@@ -454,7 +454,7 @@ pub async fn update_rank(
 {
 	let url = base_url + "/api/v1/group/" + group_id + "/change_rank";
 
-	let input = sentc_crypto_light::group::prepare_change_rank(user_id, rank, admin_rank)?;
+	let input = crate::group::prepare_change_rank(user_id, rank, admin_rank)?;
 
 	let res = make_req(
 		HttpMethod::PUT,

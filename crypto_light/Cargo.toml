@@ -19,20 +19,23 @@ include = [
 ]
 
 [dependencies]
-sentc-crypto-common = {workspace=true}
-sentc-crypto-core = {workspace=true}
-sentc-crypto-utils = {workspace=true}
+sentc-crypto-common = { workspace = true }
+sentc-crypto-core = { workspace = true }
+sentc-crypto-utils = { workspace = true }
 
 # json handling
-serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"]}
+serde_json = { version = "1.0.81", default-features = false, features = ["alloc"] }
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 
 # key and data export
-base64ct = {version = "1.0.1", default-features = false, features = ["alloc"]}  # must use this version because it is not comp. with password_hash from argon2
-pem-rfc7468 = {version = "0.3.1", features = ["alloc"]}
+base64ct = { version = "1.0.1", default-features = false, features = ["alloc"] }  # must use this version because it is not comp. with password_hash from argon2
+pem-rfc7468 = { version = "0.3.1", features = ["alloc"] }
 
 [features]
 default = []
 rust = []
 
 server_test = []
+
+full_rustls = ["sentc-crypto-utils/crypto_full", "sentc-crypto-utils/rustls"]
+full_wasm = ["sentc-crypto-utils/crypto_full", "sentc-crypto-utils/wasm"]

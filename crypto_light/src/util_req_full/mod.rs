@@ -1,14 +1,10 @@
-#![no_std]
-
 pub mod group;
 pub mod user;
-
-extern crate alloc;
 
 use sentc_crypto_common::user::Claims;
 
 #[cfg(feature = "rust")]
-pub(crate) type JwtRes = Result<Claims, sentc_crypto_light::error::SdkLightError>;
+pub(crate) type JwtRes = Result<Claims, crate::error::SdkLightError>;
 
 #[cfg(not(feature = "rust"))]
 pub(crate) type JwtRes = Result<Claims, alloc::string::String>;

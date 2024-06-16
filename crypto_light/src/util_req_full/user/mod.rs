@@ -44,25 +44,25 @@ pub use self::rust::{PreLoginOut, PrepareLoginOtpOutput};
 //Register
 pub async fn check_user_identifier_available(base_url: String, auth_token: &str, user_identifier: &str) -> BoolRes
 {
-	let server_input = sentc_crypto_light::user::prepare_check_user_identifier_available(user_identifier)?;
+	let server_input = crate::user::prepare_check_user_identifier_available(user_identifier)?;
 
 	let url = base_url + "/api/v1/exists";
 
 	let res = non_auth_req(HttpMethod::POST, &url, auth_token, Some(server_input)).await?;
-	let out = sentc_crypto_light::user::done_check_user_identifier_available(&res)?;
+	let out = crate::user::done_check_user_identifier_available(&res)?;
 
 	Ok(out)
 }
 
 pub async fn register(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> Res
 {
-	let register_input = sentc_crypto_light::user::register(user_identifier, password)?;
+	let register_input = crate::user::register(user_identifier, password)?;
 
 	let url = base_url + "/api/v1/register_light";
 
 	let res = non_auth_req(HttpMethod::POST, &url, auth_token, Some(register_input)).await?;
 
-	let out = sentc_crypto_light::user::done_register(&res)?;
+	let out = crate::user::done_register(&res)?;
 
 	Ok(out)
 }
@@ -71,12 +71,12 @@ pub async fn register_device_start(base_url: String, auth_token: &str, device_id
 {
 	let url = base_url + "/api/v1/user/prepare_register_device";
 
-	let input = sentc_crypto_light::user::register(device_identifier, password)?;
+	let input = crate::user::register(device_identifier, password)?;
 
 	let res = non_auth_req(HttpMethod::POST, &url, auth_token, Some(input)).await?;
 
 	//check the server output
-	sentc_crypto_light::user::done_register_device_start(&res)?;
+	crate::user::done_register_device_start(&res)?;
 
 	Ok(res)
 }
@@ -85,7 +85,7 @@ pub async fn register_device(base_url: String, auth_token: &str, jwt: &str, serv
 {
 	let url = base_url + "/api/v1/user/done_register_device_light";
 
-	let input = sentc_crypto_light::user::prepare_register_device(server_output)?;
+	let input = crate::user::prepare_register_device(server_output)?;
 
 	let res = auth_req(HttpMethod::PUT, &url, auth_token, Some(input), jwt).await?;
 
@@ -102,7 +102,7 @@ async fn verify_login(base_url: String, auth_token: &str, pre_verify: StdUserPre
 	let url = base_url + "/api/v1/verify_login_light";
 	let server_out = non_auth_req(HttpMethod::POST, url.as_str(), auth_token, Some(pre_verify.challenge)).await?;
 
-	let keys = sentc_crypto_light::user::verify_login(
+	let keys = crate::user::verify_login(
 		&server_out,
 		pre_verify.user_id,
 		pre_verify.device_id,
@@ -154,7 +154,7 @@ pub async fn mfa_login(
 	base_url: String,
 	auth_token: &str,
 	#[cfg(not(feature = "rust"))] master_key_encryption: &str,
-	#[cfg(feature = "rust")] master_key_encryption: &sentc_crypto_light::sdk_core::DeriveMasterKeyForAuth,
+	#[cfg(feature = "rust")] master_key_encryption: &crate::sdk_core::DeriveMasterKeyForAuth,
 	auth_key: String,
 	user_identifier: String,
 	token: String,
@@ -268,7 +268,7 @@ pub async fn reset_password(base_url: String, auth_token: &str, user_identifier:
 {
 	let url = base_url + "/api/v1/user/reset_pw_light";
 
-	let input = sentc_crypto_light::user::register(user_identifier, new_password)?;
+	let input = crate::user::register(user_identifier, new_password)?;
 
 	let res = non_auth_req(HttpMethod::PUT, url.as_str(), auth_token, Some(input)).await?;
 

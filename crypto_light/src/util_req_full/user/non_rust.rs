@@ -2,7 +2,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::user::{OtpRecoveryKeysOutput, OtpRegister, UserDeviceList, UserInitServerOutput};
-use sentc_crypto_light::UserDataExport;
+
+use crate::UserDataExport;
 
 pub struct PrepareLoginOtpOutput
 {
