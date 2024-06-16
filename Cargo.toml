@@ -5,7 +5,6 @@ members = [
     "crypto_core",
     "crypto_utils",
     "crypto_light",
-    "crypto_light_full",
     "implementation/js/sentc_wasm",
     "implementation/js/sentc_wasm_light",
     "implementation/dart/sentc_flutter_rust",
@@ -30,7 +29,6 @@ sentc-crypto-core = { version = "0.12.0", path = "crypto_core" }
 sentc-crypto-utils = { version = "0.12.0", path = "crypto_utils" }
 sentc-crypto = { version = "0.12.0", path = "crypto", default-features = false }
 sentc-crypto-light = { version = "0.12.0", path = "crypto_light", default-features = false }
-sentc-crypto-light-full = { version = "0.12.0", path = "crypto_light_full", default-features = false }
 
 [profile.dev]
 # Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.
