@@ -124,6 +124,23 @@ prepare_export_single_value!(HashedAuthenticationKey);
 
 impl cryptomat::HashedAuthenticationKey for HashedAuthenticationKey {}
 
+impl cryptomat::HashedAuthenticationKeyComposer for HashedAuthenticationKey
+{
+	type Value = Self;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>
+	{
+		match alg {
+			ARGON_2_OUTPUT => {
+				let v = vec.try_into().map_err(|_| Error::KeyDecryptFailed)?;
+
+				Ok(Self::Argon2(v))
+			},
+			_ => Err(Error::AlgNotFound),
+		}
+	}
+}
+
 pub enum DeriveMasterKeyForAuth
 {
 	Argon2([u8; 32]),
@@ -158,6 +175,23 @@ impl cryptomat::DeriveAuthKeyForAuth for DeriveAuthKeyForAuth
 	{
 		match self {
 			DeriveAuthKeyForAuth::Argon2(k) => argon2::get_hashed_auth_key(k),
+		}
+	}
+}
+
+impl cryptomat::DeriveAuthKeyForAuthComposer for DeriveAuthKeyForAuth
+{
+	type Value = Self;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>
+	{
+		match alg {
+			ARGON_2_OUTPUT => {
+				let v = vec.try_into().map_err(|_| Error::KeyDecryptFailed)?;
+
+				Ok(Self::Argon2(v))
+			},
+			_ => Err(Error::AlgNotFound),
 		}
 	}
 }

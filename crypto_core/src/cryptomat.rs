@@ -270,6 +270,13 @@ pub trait ClientRandomValueComposer
 
 pub trait HashedAuthenticationKey: PwPrepareExport {}
 
+pub trait HashedAuthenticationKeyComposer
+{
+	type Value: HashedAuthenticationKey;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>;
+}
+
 pub trait DeriveMasterKeyForAuth: PwPrepareExport
 {
 	fn get_master_key(&self, encrypted_master_key: &[u8]) -> Result<impl SymKey, Error>;
@@ -280,6 +287,13 @@ pub trait DeriveAuthKeyForAuth: PwPrepareExport
 	type HAK: HashedAuthenticationKey;
 
 	fn hash_auth_key(&self) -> Result<Self::HAK, Error>;
+}
+
+pub trait DeriveAuthKeyForAuthComposer
+{
+	type Value: DeriveAuthKeyForAuth;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>;
 }
 
 pub trait PasswordEncryptSalt: PwPrepareExport {}
