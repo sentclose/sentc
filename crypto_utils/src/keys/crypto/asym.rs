@@ -14,6 +14,8 @@ use crate::keys::{PublicKey, SecretKey, VerifyKey};
 
 impl PkFromUserKeyWrapper for PublicKey
 {
+	type Pk = Self;
+
 	fn encrypt_raw_with_user_key(
 		reply_public_key: &UserPublicKeyData,
 		data: &[u8],
@@ -62,6 +64,11 @@ impl PkFromUserKeyWrapper for PublicKey
 		let encrypted = Self::encrypt_with_user_key(reply_public_key, data.as_bytes(), sign_key)?;
 
 		Ok(Base64::encode_string(&encrypted))
+	}
+
+	fn from_user_key(reply_public_key: &UserPublicKeyData) -> Result<Self::Pk, SdkUtilError>
+	{
+		Self::try_from(reply_public_key)
 	}
 }
 

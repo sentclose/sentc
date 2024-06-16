@@ -8,7 +8,7 @@ use sentc_crypto_common::crypto::{EncryptedHead, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_core::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyComposer, SortableKey, SortableKeyComposer};
 
-use crate::cryptomat::{KeyToString, SignKWrapper};
+use crate::cryptomat::{KeyToString, PkWrapper, SignKWrapper};
 use crate::error::SdkUtilError;
 
 //searchable
@@ -131,6 +131,8 @@ pub trait SkCryptoWrapper
 
 pub trait PkFromUserKeyWrapper
 {
+	type Pk: PkWrapper;
+
 	fn encrypt_raw_with_user_key(
 		reply_public_key: &UserPublicKeyData,
 		data: &[u8],
@@ -148,6 +150,8 @@ pub trait PkFromUserKeyWrapper
 		data: &str,
 		sign_key: Option<&impl SignKWrapper>,
 	) -> Result<String, SdkUtilError>;
+
+	fn from_user_key(reply_public_key: &UserPublicKeyData) -> Result<Self::Pk, SdkUtilError>;
 }
 
 //__________________________________________________________________________________________________
