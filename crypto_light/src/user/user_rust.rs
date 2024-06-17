@@ -20,7 +20,7 @@ use crate::user::{
 	register_internally,
 	verify_login_internally,
 };
-use crate::{StdDeviceKeyDataInt, UserDataInt};
+use crate::{StdDeviceKeyDataInt, StdUserPreVerifyLogin, UserDataInt};
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkLightError>
 {

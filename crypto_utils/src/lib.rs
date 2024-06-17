@@ -4,13 +4,12 @@
 extern crate alloc;
 
 use alloc::string::String;
-use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
 use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer, DeriveAuthKeyForAuth, HashedAuthenticationKey};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::error::SdkUtilError;
 
@@ -112,11 +111,11 @@ pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a
 }
 
 #[cfg(feature = "encryption")]
-pub fn put_head_and_encrypted_data<T: Serialize>(head: &T, encrypted: &[u8]) -> Result<Vec<u8>, SdkUtilError>
+pub fn put_head_and_encrypted_data<T: serde::Serialize>(head: &T, encrypted: &[u8]) -> Result<alloc::vec::Vec<u8>, SdkUtilError>
 {
 	let head = serde_json::to_string(head).map_err(|_| SdkUtilError::JsonToStringFailed)?;
 
-	let mut out = Vec::with_capacity(head.len() + 1 + encrypted.len());
+	let mut out = alloc::vec::Vec::with_capacity(head.len() + 1 + encrypted.len());
 
 	out.extend_from_slice(head.as_bytes());
 	out.extend_from_slice(&[0u8]);
