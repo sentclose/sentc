@@ -1,13 +1,13 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput, GroupSortableData};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
+use sentc_crypto_utils::cryptomat::{PkWrapper, SkWrapper, SymKeyWrapper};
 pub use sentc_crypto_utils::group::*;
 use serde::{Deserialize, Serialize};
 
-use crate::entities::keys::{PublicKey, SecretKey, SymmetricKey};
 use crate::SdkError;
 
 pub struct GroupOutData
@@ -26,11 +26,11 @@ pub struct GroupOutData
 	pub is_connected_group: bool,
 }
 
-pub struct GroupKeyData
+pub struct GroupKeyData<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper>
 {
-	pub group_key: SymmetricKey,
-	pub private_group_key: SecretKey,
-	pub public_group_key: PublicKey,
+	pub group_key: S,
+	pub private_group_key: Sk,
+	pub public_group_key: Pk,
 	pub exported_public_key: UserPublicKeyData,
 	pub time: u128,
 }
@@ -167,13 +167,13 @@ pub struct GroupKeyDataExport
 	pub group_key_id: SymKeyId,
 }
 
-impl TryFrom<GroupKeyData> for GroupKeyDataExport
+impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper> TryFrom<GroupKeyData<S, Sk, Pk>> for GroupKeyDataExport
 {
 	type Error = SdkError;
 
-	fn try_from(value: GroupKeyData) -> Result<Self, Self::Error>
+	fn try_from(value: GroupKeyData<S, Sk, Pk>) -> Result<Self, Self::Error>
 	{
-		let group_key_id = value.group_key.key_id.clone();
+		let group_key_id = value.group_key.get_id().to_string();
 
 		Ok(Self {
 			private_group_key: value.private_group_key.to_string()?,

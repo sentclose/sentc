@@ -1,5 +1,6 @@
 use alloc::string::String;
 
+use sentc_crypto_light::util_req_full;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
@@ -59,7 +60,7 @@ impl From<sentc_crypto_common::user::Claims> for Claims
 #[wasm_bindgen]
 pub fn decode_jwt(jwt: &str) -> Result<Claims, JsValue>
 {
-	let claims = sentc_crypto_light_full::decode_jwt(jwt)?;
+	let claims = util_req_full::decode_jwt(jwt)?;
 
 	Ok(claims.into())
 }

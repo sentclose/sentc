@@ -2,6 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use js_sys::Uint8Array;
+use sentc_crypto::util_req_full;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -105,7 +106,7 @@ pub async fn file_download_and_decrypt_file_part_start(
 	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult, JsValue>
 {
-	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part_start(
+	let (file, next_file_key) = util_req_full::file::download_and_decrypt_file_part_start(
 		base_url,
 		url_prefix,
 		auth_token.as_str(),
@@ -132,7 +133,7 @@ pub async fn file_download_and_decrypt_file_part(
 	verify_key_data: Option<String>,
 ) -> Result<FileDownloadResult, JsValue>
 {
-	let (file, next_file_key) = sentc_crypto_full::file::download_and_decrypt_file_part(
+	let (file, next_file_key) = util_req_full::file::download_and_decrypt_file_part(
 		base_url,
 		url_prefix,
 		auth_token.as_str(),
@@ -166,7 +167,7 @@ pub async fn file_register_file(
 	group_as_member: Option<String>,
 ) -> Result<FileRegisterOutput, JsValue>
 {
-	let (file_id, session_id, encrypted_file_name) = sentc_crypto_full::file::register_file(
+	let (file_id, session_id, encrypted_file_name) = util_req_full::file::register_file(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -238,7 +239,7 @@ pub async fn file_upload_part_start(
 	part: Vec<u8>,
 ) -> Result<String, JsValue>
 {
-	Ok(sentc_crypto_full::file::upload_part_start(
+	Ok(util_req_full::file::upload_part_start(
 		base_url,
 		url_prefix,
 		auth_token.as_str(),
@@ -267,7 +268,7 @@ pub async fn file_upload_part(
 	part: Vec<u8>,
 ) -> Result<String, JsValue>
 {
-	Ok(sentc_crypto_full::file::upload_part(
+	Ok(util_req_full::file::upload_part(
 		base_url,
 		url_prefix,
 		auth_token.as_str(),

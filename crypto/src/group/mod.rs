@@ -1,19 +1,20 @@
 pub(crate) mod group;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod group_export;
 mod group_rank_check;
 
-#[cfg(feature = "rust")]
+pub use self::group::Group;
+#[cfg(not(feature = "export"))]
 pub use self::group::*;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::group_export::*;
 pub use self::group_rank_check::*;
 
 #[cfg(test)]
 pub(crate) mod test_fn
 {
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	use alloc::string::String;
 	use alloc::string::ToString;
 	use alloc::vec;
@@ -21,24 +22,25 @@ pub(crate) mod test_fn
 
 	use sentc_crypto_common::group::{CreateData, GroupHmacData, GroupKeyServerOutput, GroupServerData, GroupSortableData, GroupUserAccessBy};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_utils::keys::{HmacKey, SortableKey};
+	use sentc_crypto_utils::keys::{HmacKey, PublicKey, SecretKey, SortableKey, SymmetricKey};
 
 	use super::*;
 	use crate::entities::group::{GroupKeyData, GroupOutData};
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport};
+	use crate::{StdGroup, StdUserKeyDataInt};
 
 	pub(crate) fn create_group(
-		user: &crate::entities::user::UserKeyDataInt,
+		user: &StdUserKeyDataInt,
 	) -> (
 		GroupOutData,
-		Vec<GroupKeyData>,
+		Vec<GroupKeyData<SymmetricKey, SecretKey, PublicKey>>,
 		GroupServerData,
 		Vec<HmacKey>,
 		Vec<SortableKey>,
 	)
 	{
-		let group = group::prepare_create(&user.public_key).unwrap();
+		let group = StdGroup::prepare_create(&user.public_key).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
@@ -100,19 +102,19 @@ pub(crate) mod test_fn
 		let group_keys: Vec<_> = out
 			.keys
 			.into_iter()
-			.map(|k| group::decrypt_group_keys(&user.private_key, k).unwrap())
+			.map(|k| StdGroup::decrypt_group_keys(&user.private_key, k).unwrap())
 			.collect();
 
 		let hmac_keys = out
 			.hmac_keys
 			.into_iter()
-			.map(|k| group::decrypt_group_hmac_key(&group_keys[0].group_key, k).unwrap())
+			.map(|k| StdGroup::decrypt_group_hmac_key(&group_keys[0].group_key, k).unwrap())
 			.collect();
 
 		let sortable_keys = out
 			.sortable_keys
 			.into_iter()
-			.map(|k| group::decrypt_group_sortable_key(&group_keys[0].group_key, k).unwrap())
+			.map(|k| StdGroup::decrypt_group_sortable_key(&group_keys[0].group_key, k).unwrap())
 			.collect();
 
 		(
@@ -137,7 +139,7 @@ pub(crate) mod test_fn
 		)
 	}
 
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	pub(crate) fn create_group_export(
 		user: &crate::entities::user::UserKeyDataExport,
 	) -> (

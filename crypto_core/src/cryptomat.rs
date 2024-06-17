@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use hmac::digest::Digest;
 
-use crate::{ClientRandomValue, DeriveAuthKeyForAuth, DeriveMasterKeyForAuth, Error, HashedAuthenticationKey, PasswordEncryptSalt};
+use crate::Error;
 
 pub trait CryptoAlg
 {
@@ -209,18 +209,25 @@ pub trait SortableKeyComposer
 
 pub trait PwHash
 {
+	type CRV: ClientRandomValue;
+	type HAK: HashedAuthenticationKey;
+	type DMK: DeriveMasterKeyForAuth;
+	type DAK: DeriveAuthKeyForAuth;
+	type PWS: PasswordEncryptSalt;
+
 	/**
 	# Prepare registration
 
 	 */
+	#[allow(clippy::type_complexity)]
 	fn derived_keys_from_password<M: SymKey>(
-		&self,
 		password: &[u8],
 		master_key: &M,
+		alg: Option<&str>, //when None then use default hasher. when set try to get the hasher that created the alg
 	) -> Result<
 		(
-			ClientRandomValue,
-			HashedAuthenticationKey,
+			Self::CRV,
+			Self::HAK,
 			Vec<u8>,      //encrypted master key
 			&'static str, //describe how the master key is encrypted
 		),
@@ -237,18 +244,56 @@ pub trait PwHash
 
 	@return: first is the master key, 2nd the auth key
 	 */
-	fn derive_keys_for_auth(&self, password: &[u8], salt_bytes: &[u8]) -> Result<(DeriveMasterKeyForAuth, DeriveAuthKeyForAuth), Error>;
+	fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8], alg: &str) -> Result<(Self::DMK, Self::DAK), Error>;
 
-	fn password_to_encrypt(&self, password: &[u8]) -> Result<(PasswordEncryptSalt, impl SymKey), Error>;
+	fn password_to_encrypt(password: &[u8]) -> Result<(Self::PWS, impl SymKey), Error>;
 
-	fn password_to_decrypt(&self, password: &[u8], salt: &[u8]) -> Result<impl SymKey, Error>;
+	fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<impl SymKey, Error>;
 }
 
-pub trait PwHashComposer
+pub trait PwPrepareExport
 {
-	type Hasher: PwHash;
-
-	fn get_hasher() -> Self::Hasher;
-
-	fn get_from_alg(alg: &str) -> Result<Self::Hasher, Error>;
+	fn prepare_export(&self) -> &[u8];
 }
+
+pub trait ClientRandomValue: CryptoAlg + PwPrepareExport
+{
+	fn generate_salt(self, add_str: &str) -> Vec<u8>;
+}
+
+pub trait ClientRandomValueComposer
+{
+	type Value: ClientRandomValue;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>;
+}
+
+pub trait HashedAuthenticationKey: PwPrepareExport {}
+
+pub trait HashedAuthenticationKeyComposer
+{
+	type Value: HashedAuthenticationKey;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>;
+}
+
+pub trait DeriveMasterKeyForAuth: PwPrepareExport
+{
+	fn get_master_key(&self, encrypted_master_key: &[u8]) -> Result<impl SymKey, Error>;
+}
+
+pub trait DeriveAuthKeyForAuth: PwPrepareExport
+{
+	type HAK: HashedAuthenticationKey;
+
+	fn hash_auth_key(&self) -> Result<Self::HAK, Error>;
+}
+
+pub trait DeriveAuthKeyForAuthComposer
+{
+	type Value: DeriveAuthKeyForAuth;
+
+	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>;
+}
+
+pub trait PasswordEncryptSalt: PwPrepareExport {}

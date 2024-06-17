@@ -1,11 +1,11 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::user::{UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
-use sentc_crypto_core::generate_salt;
+use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer};
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use sentc_crypto_utils::client_random_value_from_string;
 use serde::Deserialize;
@@ -25,11 +25,11 @@ pub fn handle_general_server_response(res: &str) -> Result<(), SdkError>
 	Ok(sentc_crypto_utils::handle_general_server_response(res)?)
 }
 
-pub fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Result<Vec<u8>, SdkError>
+pub fn generate_salt_from_base64<C: ClientRandomValueComposer>(client_random_value: &str, alg: &str, add_str: &str) -> Result<Vec<u8>, SdkError>
 {
-	let client_random_value = client_random_value_from_string(client_random_value, alg)?;
+	let client_random_value = client_random_value_from_string::<C>(client_random_value, alg)?;
 
-	Ok(generate_salt(client_random_value, add_str))
+	Ok(client_random_value.generate_salt(add_str))
 }
 
 pub fn import_public_key_from_string_into_format(public_key: &str) -> Result<UserPublicKeyData, SdkError>
@@ -60,7 +60,7 @@ pub fn import_verify_key_from_string_into_format(verify_key: &str) -> Result<Use
 	Ok(verify_key)
 }
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<(String, EncryptionKeyPairId, Option<SignKeyPairId>), String>
 {
 	let public_key = import_public_key_from_string_into_format(public_key)?;
@@ -74,7 +74,7 @@ pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Res
 	))
 }
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub fn import_verify_key_from_string_into_export_string(verify_key: &str) -> Result<(String, SignKeyPairId), String>
 {
 	let public_key = import_verify_key_from_string_into_format(verify_key)?;

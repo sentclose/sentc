@@ -1,7 +1,7 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 #[allow(clippy::module_inception)]
 mod user;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 mod user_rust;
 
 use alloc::string::{String, ToString};
@@ -23,16 +23,17 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::{DeviceId, UserId};
 use sentc_crypto_core::{DeriveMasterKeyForAuth, PwHasherGetter, SecretKey, SignKey, SymmetricKey};
-use sentc_crypto_utils::user::UserPreVerifyLogin;
 use sentc_crypto_utils::{
 	client_random_value_to_string,
 	export_raw_public_key_to_pem,
 	export_raw_verify_key_to_pem,
 	handle_server_response,
 	hashed_authentication_key_to_string,
+	StdDeviceKeyDataInt,
+	StdUserPreVerifyLogin,
 };
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::user::{
 	done_check_user_identifier_available,
 	done_register,
@@ -48,7 +49,7 @@ pub use self::user::{
 	register_typed,
 	verify_login,
 };
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub use self::user_rust::{
 	done_check_user_identifier_available,
 	done_register,
@@ -65,7 +66,7 @@ pub use self::user_rust::{
 	verify_login,
 };
 use crate::error::SdkLightError;
-use crate::{DeviceKeyDataInt, UserDataInt};
+use crate::{sdk_utils, UserDataInt};
 
 fn generate_user_register_data_internally() -> Result<(String, String), SdkLightError>
 {
@@ -198,7 +199,7 @@ fn prepare_login_start_internally(user_identifier: &str) -> Result<String, SdkLi
  */
 pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::prepare_login(
+	Ok(sentc_crypto_utils::user::prepare_login::<PwHasherGetter>(
 		user_identifier,
 		password,
 		server_output,
@@ -224,14 +225,12 @@ fn done_validate_mfa_internally(
 	auth_key: String,
 	device_identifier: String,
 	server_output: &str,
-) -> Result<UserPreVerifyLogin, SdkLightError>
+) -> Result<StdUserPreVerifyLogin, SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::done_validate_mfa(
-		master_key_encryption,
-		auth_key,
-		device_identifier,
-		server_output,
-	)?)
+	Ok(sentc_crypto_utils::user::done_validate_mfa::<
+		sdk_utils::keys::SecretKey,
+		sdk_utils::keys::SignKey,
+	>(master_key_encryption, auth_key, device_identifier, server_output)?)
 }
 
 /**
@@ -246,21 +245,19 @@ pub fn done_login(
 	auth_key: String,
 	device_identifier: String,
 	server_output: DoneLoginServerOutput,
-) -> Result<UserPreVerifyLogin, SdkLightError>
+) -> Result<StdUserPreVerifyLogin, SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::done_login(
-		master_key_encryption,
-		auth_key,
-		device_identifier,
-		server_output,
-	)?)
+	Ok(sentc_crypto_utils::user::done_login::<
+		sdk_utils::keys::SecretKey,
+		sdk_utils::keys::SignKey,
+	>(master_key_encryption, auth_key, device_identifier, server_output)?)
 }
 
 fn verify_login_internally(
 	server_output: &str,
 	user_id: UserId,
 	device_id: DeviceId,
-	device_keys: DeviceKeyDataInt,
+	device_keys: StdDeviceKeyDataInt,
 ) -> Result<UserDataInt, SdkLightError>
 {
 	let server_output: VerifyLoginLightOutput = handle_server_response(server_output)?;
@@ -297,7 +294,7 @@ pub fn change_password(
 	server_output_done_login: DoneLoginServerOutput,
 ) -> Result<String, SdkLightError>
 {
-	Ok(sentc_crypto_utils::user::change_password(
+	Ok(sentc_crypto_utils::user::change_password::<PwHasherGetter>(
 		old_pw,
 		new_pw,
 		server_output_prep_login,
@@ -312,8 +309,7 @@ pub(crate) mod test_fn
 
 	use sentc_crypto_common::user::{DoneLoginServerKeysOutput, DoneLoginServerOutput, PrepareLoginSaltServerOutput, VerifyLoginInput};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_core::cryptomat::Pk;
-	use sentc_crypto_core::generate_salt;
+	use sentc_crypto_core::cryptomat::{ClientRandomValue, Pk};
 	use sentc_crypto_utils::{client_random_value_from_string, import_public_key_from_pem_with_alg};
 
 	use super::*;
@@ -329,9 +325,9 @@ pub(crate) mod test_fn
 
 	fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Vec<u8>
 	{
-		let client_random_value = client_random_value_from_string(client_random_value, alg).unwrap();
+		let client_random_value = client_random_value_from_string::<sentc_crypto_core::ClientRandomValue>(client_random_value, alg).unwrap();
 
-		generate_salt(client_random_value, add_str)
+		client_random_value.generate_salt(add_str)
 	}
 
 	fn generate_salt_from_base64_to_string(client_random_value: &str, alg: &str, add_str: &str) -> String

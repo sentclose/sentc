@@ -1,6 +1,6 @@
 use alloc::string::{String, ToString};
 
-use sentc_crypto::user;
+use sentc_crypto::{user, util_req_full};
 use wasm_bindgen::prelude::*;
 
 use crate::group;
@@ -147,9 +147,9 @@ pub struct PrepareLoginOtpOutput
 	auth_key: String,
 }
 
-impl From<sentc_crypto_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
+impl From<util_req_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
 {
-	fn from(value: sentc_crypto_full::user::PrepareLoginOtpOutput) -> Self
+	fn from(value: util_req_full::user::PrepareLoginOtpOutput) -> Self
 	{
 		Self {
 			master_key: value.master_key,
@@ -166,18 +166,18 @@ pub struct UserLoginOut
 	mfa: Option<PrepareLoginOtpOutput>,
 }
 
-impl From<sentc_crypto_full::user::PreLoginOut> for UserLoginOut
+impl From<util_req_full::user::PreLoginOutExport> for UserLoginOut
 {
-	fn from(value: sentc_crypto_full::user::PreLoginOut) -> Self
+	fn from(value: util_req_full::user::PreLoginOutExport) -> Self
 	{
 		match value {
-			sentc_crypto_full::user::PreLoginOut::Direct(d) => {
+			util_req_full::user::PreLoginOutExport::Direct(d) => {
 				Self {
 					mfa: None,
 					user_data: Some(d.into()),
 				}
 			},
-			sentc_crypto_full::user::PreLoginOut::Otp(d) => {
+			util_req_full::user::PreLoginOutExport::Otp(d) => {
 				Self {
 					user_data: None,
 					mfa: Some(d.into()),
@@ -497,9 +497,7 @@ but without making a request
 #[wasm_bindgen]
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, JsValue>
 {
-	let out = user::prepare_check_user_identifier_available(user_identifier)?;
-
-	Ok(out)
+	Ok(user::prepare_check_user_identifier_available(user_identifier)?)
 }
 
 /**
@@ -510,9 +508,7 @@ but without making a request
 #[wasm_bindgen]
 pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, JsValue>
 {
-	let out = user::done_check_user_identifier_available(server_output)?;
-
-	Ok(out)
+	Ok(user::done_check_user_identifier_available(server_output)?)
 }
 
 #[wasm_bindgen]
@@ -547,9 +543,7 @@ Returns the new user id
 #[wasm_bindgen]
 pub fn done_register(server_output: &str) -> Result<String, JsValue>
 {
-	let out = user::done_register(server_output)?;
-
-	Ok(out)
+	Ok(user::done_register(server_output)?)
 }
 
 /**
@@ -561,15 +555,7 @@ No checking about spamming and just return the user id.
 #[wasm_bindgen]
 pub async fn register(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::user::register(
-		base_url,
-		auth_token.as_str(),
-		user_identifier.as_str(),
-		password.as_str(),
-	)
-	.await?;
-
-	Ok(out)
+	Ok(util_req_full::user::register(base_url, &auth_token, &user_identifier, &password).await?)
 }
 
 #[wasm_bindgen]
@@ -587,15 +573,7 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), JsValue>
 #[wasm_bindgen]
 pub async fn register_device_start(base_url: String, auth_token: String, device_identifier: String, password: String) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::user::register_device_start(
-		base_url,
-		auth_token.as_str(),
-		device_identifier.as_str(),
-		password.as_str(),
-	)
-	.await?;
-
-	Ok(out)
+	Ok(util_req_full::user::register_device_start(base_url, &auth_token, &device_identifier, &password).await?)
 }
 
 #[wasm_bindgen]
@@ -663,7 +641,7 @@ pub async fn register_device(
 	user_keys: String,
 ) -> Result<RegisterDeviceData, JsValue>
 {
-	let (out, exported_public_key) = sentc_crypto_full::user::register_device(
+	let (out, exported_public_key) = util_req_full::user::register_device(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -673,10 +651,7 @@ pub async fn register_device(
 	)
 	.await?;
 
-	let session_id = match out {
-		Some(id) => id,
-		None => String::from(""),
-	};
+	let session_id = out.unwrap_or_default();
 
 	Ok(RegisterDeviceData {
 		session_id,
@@ -694,7 +669,7 @@ pub async fn user_device_key_session_upload(
 	group_keys: String,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_full::user::device_key_session(
+	Ok(util_req_full::user::device_key_session(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -702,9 +677,7 @@ pub async fn user_device_key_session_upload(
 		user_public_key.as_str(),
 		group_keys.as_str(),
 	)
-	.await?;
-
-	Ok(())
+	.await?)
 }
 
 /**
@@ -719,7 +692,7 @@ The other backend can validate the jwt
 #[wasm_bindgen]
 pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserLoginOut, JsValue>
 {
-	let data = sentc_crypto_full::user::login(
+	let data = util_req_full::user::login(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -741,7 +714,7 @@ pub async fn mfa_login(
 	recovery: bool,
 ) -> Result<UserData, JsValue>
 {
-	let data = sentc_crypto_full::user::mfa_login(
+	let data = util_req_full::user::mfa_login(
 		base_url,
 		&auth_token,
 		&master_key_encryption,
@@ -773,7 +746,7 @@ pub async fn get_fresh_jwt(
 	mfa_recovery: Option<bool>,
 ) -> Result<String, JsValue>
 {
-	Ok(sentc_crypto_full::user::get_fresh_jwt(
+	Ok(util_req_full::user::get_fresh_jwt(
 		base_url,
 		&auth_token,
 		&user_identifier,
@@ -787,7 +760,7 @@ pub async fn get_fresh_jwt(
 #[wasm_bindgen]
 pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::user::refresh_jwt(base_url, auth_token.as_str(), jwt.as_str(), refresh_token).await?;
+	let out = util_req_full::user::refresh_jwt(base_url, auth_token.as_str(), jwt.as_str(), refresh_token).await?;
 
 	Ok(out)
 }
@@ -795,7 +768,7 @@ pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refr
 #[wasm_bindgen]
 pub async fn init_user(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<UserInitServerOutput, JsValue>
 {
-	let out = sentc_crypto_full::user::init_user(base_url, auth_token.as_str(), jwt.as_str(), refresh_token).await?;
+	let out = util_req_full::user::init_user(base_url, auth_token.as_str(), jwt.as_str(), refresh_token).await?;
 
 	Ok(UserInitServerOutput {
 		jwt: out.jwt,
@@ -813,7 +786,7 @@ pub async fn reset_password(
 	decrypted_sign_key: String,
 ) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_full::user::reset_password(
+	Ok(util_req_full::user::reset_password(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -835,7 +808,7 @@ pub async fn change_password(
 	mfa_recovery: Option<bool>,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_full::user::change_password(
+	Ok(util_req_full::user::change_password(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -844,21 +817,19 @@ pub async fn change_password(
 		mfa_token,
 		mfa_recovery,
 	)
-	.await?;
-
-	Ok(())
+	.await?)
 }
 
 #[wasm_bindgen]
 pub async fn delete_user(base_url: String, auth_token: String, fresh_jwt: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_full::user::delete(base_url, auth_token.as_str(), &fresh_jwt).await?)
+	Ok(util_req_full::user::delete(base_url, auth_token.as_str(), &fresh_jwt).await?)
 }
 
 #[wasm_bindgen]
 pub async fn delete_device(base_url: String, auth_token: String, fresh_jwt: String, device_id: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_full::user::delete_device(base_url, auth_token.as_str(), &fresh_jwt, device_id.as_str()).await?)
+	Ok(util_req_full::user::delete_device(base_url, auth_token.as_str(), &fresh_jwt, device_id.as_str()).await?)
 }
 
 #[wasm_bindgen]
@@ -898,22 +869,13 @@ pub async fn user_key_rotation(
 	pre_user_key: String,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_full::user::key_rotation(
-		base_url,
-		auth_token.as_str(),
-		jwt.as_str(),
-		public_device_key.as_str(),
-		pre_user_key.as_str(),
-	)
-	.await?;
-
-	Ok(out)
+	Ok(util_req_full::user::key_rotation(base_url, &auth_token, &jwt, &public_device_key, &pre_user_key).await?)
 }
 
 #[wasm_bindgen]
 pub async fn user_pre_done_key_rotation(base_url: String, auth_token: String, jwt: String) -> Result<JsValue, JsValue>
 {
-	let out = sentc_crypto_full::user::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str()).await?;
+	let out = util_req_full::user::prepare_done_key_rotation(base_url, auth_token.as_str(), jwt.as_str()).await?;
 
 	Ok(JsValue::from_serde(&out).unwrap())
 }
@@ -937,7 +899,7 @@ pub async fn user_finish_key_rotation(
 	private_key: String,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_full::user::done_key_rotation(
+	Ok(util_req_full::user::done_key_rotation(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -946,9 +908,7 @@ pub async fn user_finish_key_rotation(
 		public_key.as_str(),
 		private_key.as_str(),
 	)
-	.await?;
-
-	Ok(())
+	.await?)
 }
 
 #[wasm_bindgen]

@@ -4,10 +4,62 @@ use alloc::vec::Vec;
 
 use base64ct::{Base64UrlUnpadded, Encoding};
 use sentc_crypto_common::content_searchable::SearchableCreateOutput;
-use sentc_crypto_core::cryptomat::{CryptoAlg, SearchableKey};
+use sentc_crypto_core::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyComposer};
+use sentc_crypto_core::HmacKey as CoreHmacKey;
 
+use crate::cryptomat::{SearchableKeyComposerWrapper, SearchableKeyWrapper};
 use crate::error::SdkUtilError;
 use crate::keys::HmacKey;
+
+impl SearchableKeyComposerWrapper for HmacKey
+{
+	type SearchableKeyWrapper = Self;
+	type Composer = CoreHmacKey;
+
+	fn from_inner(inner: <<Self as SearchableKeyComposerWrapper>::Composer as SearchableKeyComposer>::Key, id: String) -> Self::SearchableKeyWrapper
+	{
+		Self {
+			key: inner,
+			key_id: id,
+		}
+	}
+}
+
+impl SearchableKeyWrapper for HmacKey
+{
+	type Inner = CoreHmacKey;
+
+	fn get_id(&self) -> &str
+	{
+		&self.key_id
+	}
+
+	fn get_key(&self) -> &Self::Inner
+	{
+		&self.key
+	}
+
+	fn create_searchable_raw(&self, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, SdkUtilError>
+	{
+		self.hash_full_internally(data, full, limit)
+	}
+
+	fn create_searchable(&self, data: &str, full: bool, limit: Option<usize>) -> Result<SearchableCreateOutput, SdkUtilError>
+	{
+		let hashes = self.hash_full_internally(data, full, limit)?;
+
+		Ok(SearchableCreateOutput {
+			hashes,
+			alg: self.get_alg_str().to_string(),
+			key_id: self.key_id.to_string(),
+		})
+	}
+
+	fn search(&self, data: &str) -> Result<String, SdkUtilError>
+	{
+		self.hash_value_internally(data.as_bytes())
+	}
+}
 
 impl HmacKey
 {
@@ -64,26 +116,5 @@ impl HmacKey
 		}
 
 		Ok(hashed)
-	}
-
-	pub fn create_searchable_raw(&self, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, SdkUtilError>
-	{
-		self.hash_full_internally(data, full, limit)
-	}
-
-	pub fn create_searchable(&self, data: &str, full: bool, limit: Option<usize>) -> Result<SearchableCreateOutput, SdkUtilError>
-	{
-		let hashes = self.hash_full_internally(data, full, limit)?;
-
-		Ok(SearchableCreateOutput {
-			hashes,
-			alg: self.get_alg_str().to_string(),
-			key_id: self.key_id.to_string(),
-		})
-	}
-
-	pub fn search(&self, data: &str) -> Result<String, SdkUtilError>
-	{
-		self.hash_value_internally(data.as_bytes())
 	}
 }

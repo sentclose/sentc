@@ -2,8 +2,9 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::group::{GroupChildrenList, GroupInviteReqList, GroupJoinReqList, GroupUserListItem, ListGroups};
-use sentc_crypto_light::error::SdkLightError;
 use sentc_crypto_utils::group::GroupOutDataLight;
+
+use crate::error::SdkLightError;
 
 pub type Res = Result<String, SdkLightError>;
 pub type VoidRes = Result<(), SdkLightError>;

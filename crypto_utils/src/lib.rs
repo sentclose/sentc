@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::type_complexity)]
 
 extern crate alloc;
 
@@ -9,14 +10,11 @@ use base64ct::{Base64, Encoding};
 use pem_rfc7468::LineEnding;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
+use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer, DeriveAuthKeyForAuth, HashedAuthenticationKey};
 use sentc_crypto_core::{
-	ClientRandomValue,
-	DeriveAuthKeyForAuth,
-	HashedAuthenticationKey,
 	PublicKey,
 	Signature,
 	VerifyKey,
-	ARGON_2_OUTPUT,
 	DILITHIUM_OUTPUT,
 	ECIES_KYBER_HYBRID_OUTPUT,
 	ECIES_OUTPUT,
@@ -29,6 +27,7 @@ use serde::Deserialize;
 use crate::error::SdkUtilError;
 use crate::keys::HybridPublicKeyExportFormat;
 
+pub mod cryptomat;
 pub mod error;
 #[cfg(all(feature = "crypto_full", any(feature = "rustls", feature = "wasm")))]
 pub mod full;
@@ -63,6 +62,9 @@ pub fn handle_server_response<'de, T: Deserialize<'de>>(res: &'de str) -> Result
 	}
 }
 
+pub type StdDeviceKeyDataInt = user::DeviceKeyDataInt<keys::SecretKey, keys::PublicKey, keys::SignKey, keys::VerifyKey>;
+pub type StdUserPreVerifyLogin = user::UserPreVerifyLogin<keys::SecretKey, keys::PublicKey, keys::SignKey, keys::VerifyKey>;
+
 /**
 Getting the result of a simple server response.
  */
@@ -73,14 +75,14 @@ pub fn handle_general_server_response(res: &str) -> Result<(), SdkUtilError>
 	Ok(())
 }
 
-pub fn client_random_value_to_string(client_random_value: &ClientRandomValue) -> String
+pub fn client_random_value_to_string(client_random_value: &impl ClientRandomValue) -> String
 {
 	let out = client_random_value.prepare_export();
 
 	Base64::encode_string(out)
 }
 
-pub fn hashed_authentication_key_to_string(hashed_authentication_key_bytes: &HashedAuthenticationKey) -> String
+pub fn hashed_authentication_key_to_string(hashed_authentication_key_bytes: &impl HashedAuthenticationKey) -> String
 {
 	let out = hashed_authentication_key_bytes.prepare_export();
 
@@ -116,7 +118,7 @@ pub fn export_raw_public_key_to_pem(key: &PublicKey) -> Result<String, SdkUtilEr
 	}
 }
 
-pub fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &DeriveAuthKeyForAuth) -> String
+pub fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &impl DeriveAuthKeyForAuth) -> String
 {
 	let out = derive_auth_key_for_auth.prepare_export();
 
@@ -170,20 +172,11 @@ pub fn sig_to_string(sig: &Signature) -> String
 	}
 }
 
-pub fn client_random_value_from_string(client_random_value: &str, alg: &str) -> Result<ClientRandomValue, SdkUtilError>
+pub fn client_random_value_from_string<C: ClientRandomValueComposer>(client_random_value: &str, alg: &str) -> Result<C::Value, SdkUtilError>
 {
+	let v = Base64::decode_vec(client_random_value).map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
 	//normally not needed only when the client needs to create the rand value, e.g- for key update.
-	match alg {
-		ARGON_2_OUTPUT => {
-			let v = Base64::decode_vec(client_random_value).map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
-			let v = v
-				.try_into()
-				.map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
-
-			Ok(ClientRandomValue::Argon2(v))
-		},
-		_ => Err(SdkUtilError::AlgNotFound),
-	}
+	Ok(C::from_bytes(v, alg)?)
 }
 
 pub fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<PublicKey, SdkUtilError>

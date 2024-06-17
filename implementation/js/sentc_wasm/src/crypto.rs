@@ -1,4 +1,4 @@
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto::crypto;
@@ -245,89 +245,6 @@ pub fn decrypt_sym_key_by_private_key(private_key: &str, encrypted_symmetric_key
 }
 
 //__________________________________________________________________________________________________
-
-#[wasm_bindgen]
-pub async fn generate_and_register_sym_key(base_url: String, auth_token: String, jwt: String, master_key: String) -> Result<KeyGenOutput, JsValue>
-{
-	let (key_id, key) = sentc_crypto_full::crypto::register_sym_key(base_url, auth_token.as_str(), jwt.as_str(), master_key.as_str()).await?;
-
-	Ok(KeyGenOutput {
-		key,
-		key_id,
-	})
-}
-
-#[wasm_bindgen]
-pub async fn generate_and_register_sym_key_by_public_key(
-	base_url: String,
-	auth_token: String,
-	jwt: String,
-	public_key: String,
-) -> Result<KeyGenOutput, JsValue>
-{
-	let (key_id, key) =
-		sentc_crypto_full::crypto::register_key_by_public_key(base_url, auth_token.as_str(), jwt.as_str(), public_key.as_str()).await?;
-
-	Ok(KeyGenOutput {
-		key,
-		key_id,
-	})
-}
-
-#[wasm_bindgen]
-pub fn done_fetch_sym_key(master_key: &str, server_out: &str, non_registered: bool) -> Result<String, JsValue>
-{
-	Ok(crypto::done_fetch_sym_key(master_key, server_out, non_registered)?)
-}
-
-#[wasm_bindgen]
-pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str, non_registered: bool) -> Result<String, JsValue>
-{
-	Ok(crypto::done_fetch_sym_key_by_private_key(
-		private_key,
-		server_out,
-		non_registered,
-	)?)
-}
-
-#[wasm_bindgen]
-pub struct KeysToMasterKeyFetch
-{
-	last_fetched_time: u128,
-	last_key_id: String,
-	keys: Vec<String>,
-}
-
-#[wasm_bindgen]
-impl KeysToMasterKeyFetch
-{
-	pub fn get_keys(&self) -> JsValue
-	{
-		JsValue::from_serde(&self.keys).unwrap()
-	}
-
-	pub fn get_last_fetched_time(&self) -> String
-	{
-		self.last_fetched_time.to_string()
-	}
-
-	pub fn get_last_key_id(&self) -> String
-	{
-		self.last_key_id.clone()
-	}
-}
-
-#[wasm_bindgen]
-pub fn done_fetch_sym_keys(master_key: &str, server_out: &str) -> Result<KeysToMasterKeyFetch, JsValue>
-{
-	let (keys, last_fetched_time, last_key_id) = crypto::done_fetch_sym_keys(master_key, server_out)?;
-
-	Ok(KeysToMasterKeyFetch {
-		last_fetched_time,
-		last_key_id,
-		keys,
-	})
-}
 
 //__________________________________________________________________________________________________
 //searchable crypto

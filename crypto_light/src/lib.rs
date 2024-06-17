@@ -5,13 +5,16 @@ extern crate alloc;
 pub mod error;
 pub mod group;
 pub mod user;
+#[cfg(any(feature = "full_rustls", feature = "full_wasm"))]
+pub mod util_req_full;
 
 use alloc::string::String;
 
 #[cfg(feature = "server_test")]
 pub use sentc_crypto_common as sdk_common;
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_utils::user::DeviceKeyDataInt;
+use sentc_crypto_utils::cryptomat::KeyToString;
+use sentc_crypto_utils::StdDeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
 pub use {sentc_crypto_core as sdk_core, sentc_crypto_utils as sdk_utils};
 
@@ -24,7 +27,7 @@ pub struct UserDataInt
 	pub user_id: UserId,
 	pub device_id: DeviceId,
 
-	pub device_keys: DeviceKeyDataInt,
+	pub device_keys: StdDeviceKeyDataInt,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -64,11 +67,11 @@ pub struct DeviceKeyDataExport
 	pub exported_verify_key: String,
 }
 
-impl TryFrom<DeviceKeyDataInt> for DeviceKeyDataExport
+impl TryFrom<StdDeviceKeyDataInt> for DeviceKeyDataExport
 {
 	type Error = SdkLightError;
 
-	fn try_from(value: DeviceKeyDataInt) -> Result<Self, Self::Error>
+	fn try_from(value: StdDeviceKeyDataInt) -> Result<Self, Self::Error>
 	{
 		Ok(Self {
 			private_key: value.private_key.to_string()?,

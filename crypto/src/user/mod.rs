@@ -7,35 +7,19 @@
 
 use alloc::string::String;
 
-use sentc_crypto_common::user::{DoneLoginServerOutput, DoneLoginServerReturn};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
-use sentc_crypto_utils::user::UserPreVerifyLogin;
+use sentc_crypto_common::user::DoneLoginServerReturn;
 
 use crate::SdkError;
 
 pub(crate) mod user;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod user_export;
 
-#[cfg(feature = "rust")]
+pub use self::user::User;
+#[cfg(not(feature = "export"))]
 pub use self::user::*;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::user_export::*;
-
-/**
-# Starts the login process
-
-1. Get the auth key and the master key encryption key from the password.
-2. Send the auth key to the server to get the DoneLoginInput back
- */
-pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkError>
-{
-	Ok(sentc_crypto_utils::user::prepare_login(
-		user_identifier,
-		password,
-		server_output,
-	)?)
-}
 
 pub fn check_done_login(server_output: &str) -> Result<DoneLoginServerReturn, SdkError>
 {
@@ -48,49 +32,6 @@ pub fn prepare_validate_mfa(auth_key: String, device_identifier: String, token: 
 		auth_key,
 		device_identifier,
 		token,
-	)?)
-}
-
-/**
-Make the prepare and done login req.
-
-- prep login to get the salt
-- done login to get the encrypted master key, because this key is never stored on the device
- */
-pub fn change_password(
-	old_pw: &str,
-	new_pw: &str,
-	server_output_prep_login: &str,
-	server_output_done_login: DoneLoginServerOutput,
-) -> Result<String, SdkError>
-{
-	Ok(sentc_crypto_utils::user::change_password(
-		old_pw,
-		new_pw,
-		server_output_prep_login,
-		server_output_done_login,
-	)?)
-}
-
-/**
-# finalize the login process
-
-1. extract the DoneLoginInput from the server. It includes the encrypted master key, encrypted private and sign keys, in pem exported public and verify keys
-2. decrypt the master key with the encryption key from @see prepare_login
-3. import the public and verify keys to the internal format
- */
-pub fn done_login(
-	master_key_encryption: &DeriveMasterKeyForAuth,
-	auth_key: String,
-	device_identifier: String,
-	server_output: DoneLoginServerOutput,
-) -> Result<UserPreVerifyLogin, SdkError>
-{
-	Ok(sentc_crypto_utils::user::done_login(
-		master_key_encryption,
-		auth_key,
-		device_identifier,
-		server_output,
 	)?)
 }
 
@@ -111,19 +52,21 @@ pub(crate) mod test_fn
 		VerifyLoginOutput,
 	};
 	use sentc_crypto_common::ServerOutput;
+	use sentc_crypto_core::ClientRandomValue;
+	use sentc_crypto_utils::keys::SecretKey;
 
 	use super::*;
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	use crate::entities::user::UserDataExport;
-	use crate::entities::user::UserDataInt;
-	use crate::util;
 	use crate::util::server::generate_salt_from_base64_to_string;
+	use crate::{util, StdUser, StdUserDataInt};
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
 		//and now try to log in
 		//normally the salt gets calc by the api
-		let salt_string = generate_salt_from_base64_to_string(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
+		let salt_string =
+			generate_salt_from_base64_to_string::<ClientRandomValue>(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
 
 		ServerOutput {
 			status: true,
@@ -144,7 +87,7 @@ pub(crate) mod test_fn
 			device, ..
 		} = data;
 
-		let challenge = util::server::encrypt_login_verify_challenge(
+		let challenge = util::server::encrypt_login_verify_challenge::<SecretKey>(
 			&device.derived.public_key,
 			&device.derived.keypair_encrypt_alg,
 			"abcd",
@@ -225,21 +168,21 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	pub(crate) fn create_user() -> UserDataInt
+	pub(crate) fn create_user() -> StdUserDataInt
 	{
 		let username = "admin";
 		let password = "12345";
 
-		let out_string = register(username, password).unwrap();
+		let out_string = StdUser::register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.device.derived);
 
-		let (_input, auth_key, master_key_encryption_key) = prepare_login(username, password, &server_output).unwrap();
+		let (_input, auth_key, master_key_encryption_key) = StdUser::prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
-		let done_login = done_login(
+		let done_login = StdUser::done_login(
 			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
@@ -248,18 +191,17 @@ pub(crate) mod test_fn
 		.unwrap();
 
 		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &done_login.challenge);
-		let out = user::verify_login(
+
+		StdUser::verify_login(
 			&server_output,
 			done_login.user_id,
 			done_login.device_id,
 			done_login.device_keys,
 		)
-		.unwrap();
-
-		out
+		.unwrap()
 	}
 
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	pub(crate) fn create_user_export() -> UserDataExport
 	{
 		let username = "admin";
@@ -283,14 +225,13 @@ pub(crate) mod test_fn
 		.unwrap();
 
 		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &done_login.challenge);
-		let out = verify_login(
+
+		verify_login(
 			&server_output,
 			done_login.user_id,
 			done_login.device_id,
 			done_login.device_keys,
 		)
-		.unwrap();
-
-		out
+		.unwrap()
 	}
 }

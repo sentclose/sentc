@@ -1,10 +1,10 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use sentc_crypto_common::group::GroupHmacData;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, SymKeyId, UserId};
-use sentc_crypto_utils::keys::{PublicKey, SecretKey, SignKey, SymmetricKey, VerifyKey};
+use sentc_crypto_utils::cryptomat::{PkWrapper, SignKWrapper, SkWrapper, SymKeyWrapper, VerifyKWrapper};
 pub use sentc_crypto_utils::user::DeviceKeyDataExport;
 use sentc_crypto_utils::user::DeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
@@ -12,27 +12,27 @@ use serde::{Deserialize, Serialize};
 use crate::entities::group::GroupOutDataHmacKeyExport;
 use crate::SdkError;
 
-pub struct UserKeyDataInt
+pub struct UserKeyDataInt<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
 {
-	pub group_key: SymmetricKey,
-	pub private_key: SecretKey,
-	pub public_key: PublicKey,
+	pub group_key: S,
+	pub private_key: Sk,
+	pub public_key: Pk,
 	pub time: u128,
-	pub sign_key: SignKey,
-	pub verify_key: VerifyKey,
+	pub sign_key: SiK,
+	pub verify_key: Vk,
 	pub exported_public_key: UserPublicKeyData,
 	pub exported_verify_key: UserVerifyKeyData,
 }
 
-pub struct UserDataInt
+pub struct UserDataInt<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
 {
 	pub jwt: String,
 	pub refresh_token: String,
 	pub user_id: UserId,
 	pub device_id: DeviceId,
 
-	pub user_keys: Vec<UserKeyDataInt>,
-	pub device_keys: DeviceKeyDataInt,
+	pub user_keys: Vec<UserKeyDataInt<S, Sk, Pk, SiK, Vk>>,
+	pub device_keys: DeviceKeyDataInt<Sk, Pk, SiK, Vk>,
 	pub hmac_keys: Vec<GroupHmacData>,
 }
 
@@ -54,13 +54,14 @@ pub struct UserKeyDataExport
 	pub exported_verify_key: String,
 }
 
-impl TryFrom<UserKeyDataInt> for UserKeyDataExport
+impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper> TryFrom<UserKeyDataInt<S, Sk, Pk, SiK, Vk>>
+	for UserKeyDataExport
 {
 	type Error = SdkError;
 
-	fn try_from(value: UserKeyDataInt) -> Result<Self, Self::Error>
+	fn try_from(value: UserKeyDataInt<S, Sk, Pk, SiK, Vk>) -> Result<Self, Self::Error>
 	{
-		let group_key_id = value.group_key.key_id.clone();
+		let group_key_id = value.group_key.get_id().to_string();
 
 		Ok(Self {
 			private_key: value.private_key.to_string()?,
@@ -97,11 +98,12 @@ pub struct UserDataExport
 	pub hmac_keys: Vec<GroupOutDataHmacKeyExport>,
 }
 
-impl TryFrom<UserDataInt> for UserDataExport
+impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper> TryFrom<UserDataInt<S, Sk, Pk, SiK, Vk>>
+	for UserDataExport
 {
 	type Error = SdkError;
 
-	fn try_from(value: UserDataInt) -> Result<Self, Self::Error>
+	fn try_from(value: UserDataInt<S, Sk, Pk, SiK, Vk>) -> Result<Self, Self::Error>
 	{
 		Ok(Self {
 			user_keys: value

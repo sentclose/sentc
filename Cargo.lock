@@ -1224,17 +1224,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sentc-crypto-full"
-version = "0.12.0"
-dependencies = [
- "sentc-crypto",
- "sentc-crypto-common",
- "sentc-crypto-utils",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "sentc-crypto-light"
 version = "0.12.0"
 dependencies = [
@@ -1242,17 +1231,6 @@ dependencies = [
  "pem-rfc7468",
  "sentc-crypto-common",
  "sentc-crypto-core",
- "sentc-crypto-utils",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "sentc-crypto-light-full"
-version = "0.12.0"
-dependencies = [
- "sentc-crypto-common",
- "sentc-crypto-light",
  "sentc-crypto-utils",
  "serde",
  "serde_json",
@@ -1283,7 +1261,6 @@ dependencies = [
  "once_cell",
  "sentc-crypto",
  "sentc-crypto-common",
- "sentc-crypto-full",
  "tokio",
 ]
 
@@ -1295,7 +1272,6 @@ dependencies = [
  "once_cell",
  "sentc-crypto-common",
  "sentc-crypto-light",
- "sentc-crypto-light-full",
  "tokio",
 ]
 
@@ -1307,7 +1283,6 @@ dependencies = [
  "js-sys",
  "sentc-crypto",
  "sentc-crypto-common",
- "sentc-crypto-full",
  "serde",
  "sha2 0.10.8",
  "wasm-bindgen",
@@ -1322,7 +1297,6 @@ dependencies = [
  "js-sys",
  "sentc-crypto-common",
  "sentc-crypto-light",
- "sentc-crypto-light-full",
  "serde",
  "sha2 0.10.8",
  "wasm-bindgen",

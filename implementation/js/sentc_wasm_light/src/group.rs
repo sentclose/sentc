@@ -1,5 +1,6 @@
 use alloc::string::{String, ToString};
 
+use sentc_crypto_light::util_req_full;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -86,7 +87,7 @@ Only the default values are send to the server, no extra data. If extra data is 
 #[wasm_bindgen]
 pub async fn group_create_group(base_url: String, auth_token: String, jwt: String, group_as_member: Option<String>) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_light_full::group::create(
+	let out = util_req_full::group::create(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -107,7 +108,7 @@ pub async fn group_create_child_group(
 	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_light_full::group::create_child_group(
+	let out = util_req_full::group::create_child_group(
 		base_url,
 		auth_token.as_str(),
 		jwt.as_str(),
@@ -130,7 +131,7 @@ pub async fn group_create_connected_group(
 	group_as_member: Option<String>,
 ) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_light_full::group::create_connected_group(
+	let out = util_req_full::group::create_connected_group(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -175,7 +176,7 @@ pub async fn group_invite_user(
 	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_light_full::group::invite_user(
+	util_req_full::group::invite_user(
 		base_url,
 		&auth_token,
 		&jwt,
@@ -207,7 +208,7 @@ pub async fn group_accept_join_req(
 	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_light_full::group::accept_join_req(
+	util_req_full::group::accept_join_req(
 		base_url,
 		&auth_token,
 		&jwt,

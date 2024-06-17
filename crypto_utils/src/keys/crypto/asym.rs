@@ -7,16 +7,19 @@ use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_core::cryptomat::{Pk, Sk};
 use sentc_crypto_core::Signature;
 
+use crate::cryptomat::{PkFromUserKeyWrapper, SignKWrapper, SkCryptoWrapper, VerifyKFromUserKeyWrapper};
 use crate::error::SdkUtilError;
 use crate::keys::crypto::{put_head_and_encrypted_data, split_head_and_encrypted_data};
-use crate::keys::{PublicKey, SecretKey, SignKey, VerifyKey};
+use crate::keys::{PublicKey, SecretKey, VerifyKey};
 
-impl PublicKey
+impl PkFromUserKeyWrapper for PublicKey
 {
-	pub fn encrypt_raw_with_user_key(
+	type Pk = Self;
+
+	fn encrypt_raw_with_user_key(
 		reply_public_key: &UserPublicKeyData,
 		data: &[u8],
-		sign_key: Option<&SignKey>,
+		sign_key: Option<&impl SignKWrapper>,
 	) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
 	{
 		let public_key = Self::try_from(reply_public_key)?;
@@ -44,25 +47,34 @@ impl PublicKey
 		}
 	}
 
-	pub fn encrypt_with_user_key(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&SignKey>) -> Result<Vec<u8>, SdkUtilError>
+	fn encrypt_with_user_key(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&impl SignKWrapper>)
+		-> Result<Vec<u8>, SdkUtilError>
 	{
 		let (head, data) = Self::encrypt_raw_with_user_key(reply_public_key, data, sign_key)?;
 
 		put_head_and_encrypted_data(&head, &data)
 	}
 
-	pub fn encrypt_string_with_user_key(reply_public_key: &UserPublicKeyData, data: &str, sign_key: Option<&SignKey>)
-		-> Result<String, SdkUtilError>
+	fn encrypt_string_with_user_key(
+		reply_public_key: &UserPublicKeyData,
+		data: &str,
+		sign_key: Option<&impl SignKWrapper>,
+	) -> Result<String, SdkUtilError>
 	{
 		let encrypted = Self::encrypt_with_user_key(reply_public_key, data.as_bytes(), sign_key)?;
 
 		Ok(Base64::encode_string(&encrypted))
 	}
+
+	fn from_user_key(reply_public_key: &UserPublicKeyData) -> Result<Self::Pk, SdkUtilError>
+	{
+		Self::try_from(reply_public_key)
+	}
 }
 
-impl SecretKey
+impl SkCryptoWrapper for SecretKey
 {
-	pub fn decrypt_raw(&self, encrypted_data: &[u8], head: &EncryptedHead, verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
+	fn decrypt_raw(&self, encrypted_data: &[u8], head: &EncryptedHead, verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
 	{
 		match &head.sign {
 			None => Ok(self.key.decrypt(encrypted_data)?),
@@ -81,14 +93,14 @@ impl SecretKey
 		}
 	}
 
-	pub fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
+	fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
 	{
 		let (head, encrypted_data) = split_head_and_encrypted_data(encrypted_data_with_head)?;
 
 		self.decrypt_raw(encrypted_data, &head, verify_key)
 	}
 
-	pub fn decrypt_string(&self, encrypted_data_with_head: &str, verify_key: Option<&UserVerifyKeyData>) -> Result<String, SdkUtilError>
+	fn decrypt_string(&self, encrypted_data_with_head: &str, verify_key: Option<&UserVerifyKeyData>) -> Result<String, SdkUtilError>
 	{
 		let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkUtilError::DecodeEncryptedDataFailed)?;
 		let decrypted = self.decrypt(&encrypted, verify_key)?;

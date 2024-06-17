@@ -1,16 +1,20 @@
-#![no_std]
+use sentc_crypto_common::user::Claims;
 
+pub mod file;
 pub mod group;
 pub mod user;
 
-extern crate alloc;
+enum SessionKind
+{
+	Invite,
+	Join,
+	UserGroup,
+}
 
-use sentc_crypto_common::user::Claims;
+#[cfg(not(feature = "export"))]
+pub(crate) type JwtRes = Result<Claims, crate::SdkError>;
 
-#[cfg(feature = "rust")]
-pub(crate) type JwtRes = Result<Claims, sentc_crypto_light::error::SdkLightError>;
-
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub(crate) type JwtRes = Result<Claims, alloc::string::String>;
 
 #[allow(clippy::needless_question_mark)]

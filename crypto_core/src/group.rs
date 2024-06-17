@@ -333,8 +333,9 @@ mod test
 	use core::str::from_utf8;
 
 	use super::*;
+	use crate::cryptomat::ClientRandomValue;
 	use crate::user::{done_login, prepare_login, register, LoginDoneOutput};
-	use crate::{generate_salt, HmacKey, PwHasherGetter, SecretKey, SignKey, SortKeys, SymmetricKey};
+	use crate::{HmacKey, PwHasherGetter, SecretKey, SignKey, SortKeys, SymmetricKey};
 
 	fn create_dummy_user() -> (impl Pk, LoginDoneOutput<SecretKey, SignKey>)
 	{
@@ -345,7 +346,7 @@ mod test
 
 		//and now try to log in
 		//normally the salt gets calc by the api
-		let salt_from_rand_value = generate_salt(register_out.client_random_value, "");
+		let salt_from_rand_value = register_out.client_random_value.generate_salt("");
 
 		let prep_login_out = prepare_login::<PwHasherGetter>(password, &salt_from_rand_value, register_out.derived_alg).unwrap();
 

@@ -6,7 +6,7 @@ use sentc_crypto_utils::handle_server_response;
 
 use crate::error::SdkLightError;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub fn get_group_light_data(server_output: &str) -> Result<sentc_crypto_utils::group::GroupOutDataLightExport, String>
 {
 	let out = get_group_light_data_internally(server_output)?;
@@ -14,7 +14,7 @@ pub fn get_group_light_data(server_output: &str) -> Result<sentc_crypto_utils::g
 	Ok(out.into())
 }
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub fn get_group_light_data(server_output: &str) -> Result<GroupOutDataLight, SdkLightError>
 {
 	get_group_light_data_internally(server_output)
@@ -40,13 +40,13 @@ fn get_group_light_data_internally(server_output: &str) -> Result<GroupOutDataLi
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, String>
 {
 	Ok(prepare_change_rank_internally(user_id, new_rank, admin_rank)?)
 }
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub fn prepare_change_rank(user_id: &str, new_rank: i32, admin_rank: i32) -> Result<String, SdkLightError>
 {
 	prepare_change_rank_internally(user_id, new_rank, admin_rank)

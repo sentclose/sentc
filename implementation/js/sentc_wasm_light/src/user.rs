@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use sentc_crypto_common::{DeviceId, UserId};
+use sentc_crypto_light::util_req_full;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -135,9 +136,9 @@ pub struct PrepareLoginOtpOutput
 	auth_key: String,
 }
 
-impl From<sentc_crypto_light_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
+impl From<util_req_full::user::PrepareLoginOtpOutput> for PrepareLoginOtpOutput
 {
-	fn from(value: sentc_crypto_light_full::user::PrepareLoginOtpOutput) -> Self
+	fn from(value: util_req_full::user::PrepareLoginOtpOutput) -> Self
 	{
 		Self {
 			master_key: value.master_key,
@@ -154,18 +155,18 @@ pub struct UserLoginOut
 	mfa: Option<PrepareLoginOtpOutput>,
 }
 
-impl From<sentc_crypto_light_full::user::PreLoginOut> for UserLoginOut
+impl From<util_req_full::user::PreLoginOut> for UserLoginOut
 {
-	fn from(value: sentc_crypto_light_full::user::PreLoginOut) -> Self
+	fn from(value: util_req_full::user::PreLoginOut) -> Self
 	{
 		match value {
-			sentc_crypto_light_full::user::PreLoginOut::Direct(d) => {
+			util_req_full::user::PreLoginOut::Direct(d) => {
 				Self {
 					mfa: None,
 					user_data: Some(d.into()),
 				}
 			},
-			sentc_crypto_light_full::user::PreLoginOut::Otp(d) => {
+			util_req_full::user::PreLoginOut::Otp(d) => {
 				Self {
 					user_data: None,
 					mfa: Some(d.into()),
@@ -344,7 +345,7 @@ No checking about spamming and just return the user id.
 #[wasm_bindgen]
 pub async fn register(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_light_full::user::register(base_url, &auth_token, &user_identifier, &password).await?;
+	let out = util_req_full::user::register(base_url, &auth_token, &user_identifier, &password).await?;
 
 	Ok(out)
 }
@@ -358,7 +359,7 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), JsValue>
 #[wasm_bindgen]
 pub async fn register_device_start(base_url: String, auth_token: String, device_identifier: String, password: String) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_light_full::user::register_device_start(base_url, &auth_token, &device_identifier, &password).await?;
+	let out = util_req_full::user::register_device_start(base_url, &auth_token, &device_identifier, &password).await?;
 
 	Ok(out)
 }
@@ -366,7 +367,7 @@ pub async fn register_device_start(base_url: String, auth_token: String, device_
 #[wasm_bindgen]
 pub async fn register_device(base_url: String, auth_token: String, jwt: String, server_output: String) -> Result<(), JsValue>
 {
-	sentc_crypto_light_full::user::register_device(base_url, &auth_token, &jwt, &server_output).await?;
+	util_req_full::user::register_device(base_url, &auth_token, &jwt, &server_output).await?;
 
 	Ok(())
 }
@@ -383,7 +384,7 @@ The other backend can validate the jwt
 #[wasm_bindgen]
 pub async fn login(base_url: String, auth_token: String, user_identifier: String, password: String) -> Result<UserLoginOut, JsValue>
 {
-	let data = sentc_crypto_light_full::user::login(
+	let data = util_req_full::user::login(
 		base_url,
 		auth_token.as_str(),
 		user_identifier.as_str(),
@@ -405,7 +406,7 @@ pub async fn mfa_login(
 	recovery: bool,
 ) -> Result<UserDataExport, JsValue>
 {
-	let data = sentc_crypto_light_full::user::mfa_login(
+	let data = util_req_full::user::mfa_login(
 		base_url,
 		&auth_token,
 		&master_key_encryption,
@@ -429,7 +430,7 @@ pub async fn get_fresh_jwt(
 	mfa_recovery: Option<bool>,
 ) -> Result<String, JsValue>
 {
-	Ok(sentc_crypto_light_full::user::get_fresh_jwt(
+	Ok(util_req_full::user::get_fresh_jwt(
 		base_url,
 		&auth_token,
 		&user_identifier,
@@ -443,7 +444,7 @@ pub async fn get_fresh_jwt(
 #[wasm_bindgen]
 pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<String, JsValue>
 {
-	let out = sentc_crypto_light_full::user::refresh_jwt(base_url, &auth_token, &jwt, refresh_token).await?;
+	let out = util_req_full::user::refresh_jwt(base_url, &auth_token, &jwt, refresh_token).await?;
 
 	Ok(out)
 }
@@ -451,7 +452,7 @@ pub async fn refresh_jwt(base_url: String, auth_token: String, jwt: String, refr
 #[wasm_bindgen]
 pub async fn init_user(base_url: String, auth_token: String, jwt: String, refresh_token: String) -> Result<UserInitServerOutput, JsValue>
 {
-	let out = sentc_crypto_light_full::user::init_user(base_url, &auth_token, &jwt, refresh_token).await?;
+	let out = util_req_full::user::init_user(base_url, &auth_token, &jwt, refresh_token).await?;
 
 	Ok(UserInitServerOutput {
 		jwt: out.jwt,
@@ -472,7 +473,7 @@ pub async fn change_password(
 	mfa_recovery: Option<bool>,
 ) -> Result<(), JsValue>
 {
-	sentc_crypto_light_full::user::change_password(
+	util_req_full::user::change_password(
 		base_url,
 		&auth_token,
 		&user_identifier,
@@ -489,13 +490,13 @@ pub async fn change_password(
 #[wasm_bindgen]
 pub async fn delete_user(base_url: String, auth_token: String, fresh_jwt: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_light_full::user::delete(base_url, &auth_token, &fresh_jwt).await?)
+	Ok(util_req_full::user::delete(base_url, &auth_token, &fresh_jwt).await?)
 }
 
 #[wasm_bindgen]
 pub async fn delete_device(base_url: String, auth_token: String, fresh_jwt: String, device_id: String) -> Result<(), JsValue>
 {
-	Ok(sentc_crypto_light_full::user::delete_device(base_url, &auth_token, &fresh_jwt, &device_id).await?)
+	Ok(util_req_full::user::delete_device(base_url, &auth_token, &fresh_jwt, &device_id).await?)
 }
 
 #[wasm_bindgen]

@@ -17,20 +17,12 @@ use sentc_crypto_common::user::{
 	VerifyLoginInput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::cryptomat::Sk;
-use sentc_crypto_core::{DeriveMasterKeyForAuth, PwHasherGetter};
+use sentc_crypto_core::cryptomat::{DeriveMasterKeyForAuth, PwHash, Sk};
 use serde::{Deserialize, Serialize};
 
+use crate::cryptomat::{PkWrapper, SignComposerWrapper, SignKWrapper, SkWrapper, StaticKeyComposerWrapper, VerifyKWrapper};
 use crate::error::SdkUtilError;
-use crate::keys::{PublicKey, SecretKey, SignKey, VerifyKey};
-use crate::{
-	client_random_value_to_string,
-	derive_auth_key_for_auth_to_string,
-	handle_server_response,
-	hashed_authentication_key_to_string,
-	import_public_key_from_pem_with_alg,
-	import_verify_key_from_pem_with_alg,
-};
+use crate::{client_random_value_to_string, derive_auth_key_for_auth_to_string, handle_server_response, hashed_authentication_key_to_string};
 
 /**
 # key storage structure for the rust feature
@@ -40,12 +32,12 @@ It can be used with other rust programs.
 The different to the internally DoneLoginOutput ist that,
 the KeyFormat is sued for each where, were the key id is saved too
  */
-pub struct DeviceKeyDataInt
+pub struct DeviceKeyDataInt<Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
 {
-	pub private_key: SecretKey,
-	pub sign_key: SignKey,
-	pub public_key: PublicKey,
-	pub verify_key: VerifyKey,
+	pub private_key: Sk,
+	pub sign_key: SiK,
+	pub public_key: Pk,
+	pub verify_key: Vk,
 	pub exported_public_key: UserPublicKeyData,
 	pub exported_verify_key: UserVerifyKeyData,
 }
@@ -61,11 +53,11 @@ pub struct DeviceKeyDataExport
 	pub exported_verify_key: String,
 }
 
-impl TryFrom<DeviceKeyDataInt> for DeviceKeyDataExport
+impl<Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper> TryFrom<DeviceKeyDataInt<Sk, Pk, SiK, Vk>> for DeviceKeyDataExport
 {
 	type Error = SdkUtilError;
 
-	fn try_from(value: DeviceKeyDataInt) -> Result<Self, Self::Error>
+	fn try_from(value: DeviceKeyDataInt<Sk, Pk, SiK, Vk>) -> Result<Self, Self::Error>
 	{
 		Ok(Self {
 			private_key: value.private_key.to_string()?,
@@ -84,21 +76,21 @@ impl TryFrom<DeviceKeyDataInt> for DeviceKeyDataExport
 	}
 }
 
-pub struct UserPreVerifyLogin
+pub struct UserPreVerifyLogin<Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
 {
 	pub challenge: String,
-	pub device_keys: DeviceKeyDataInt,
+	pub device_keys: DeviceKeyDataInt<Sk, Pk, SiK, Vk>,
 	pub user_id: UserId,
 	pub device_id: DeviceId,
 }
 
-fn decrypt_login_challenge(private_key: &SecretKey, challenge: &str) -> Result<String, SdkUtilError>
+fn decrypt_login_challenge(private_key: &impl SkWrapper, challenge: &str) -> Result<String, SdkUtilError>
 {
 	//moved to util crate because this must be done for light and normal sdk
 
 	let challenge = Base64::decode_vec(challenge).map_err(|_| SdkUtilError::DecryptingLoginChallengeFailed)?;
 
-	let decrypted = private_key.key.decrypt(&challenge)?;
+	let decrypted = private_key.get_key().decrypt(&challenge)?;
 
 	String::from_utf8(decrypted).map_err(|_| SdkUtilError::DecryptingLoginChallengeFailed)
 }
@@ -122,12 +114,12 @@ pub fn prepare_login_start(user_identifier: &str) -> Result<String, SdkUtilError
 1. Get the auth key and the master key encryption key from the password.
 2. Send the auth key to the server to get the DoneLoginInput back
  */
-pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkUtilError>
+pub fn prepare_login<H: PwHash>(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, H::DMK), SdkUtilError>
 {
 	let server_output: PrepareLoginSaltServerOutput = handle_server_response(server_output)?;
 
 	let salt = Base64::decode_vec(server_output.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
-	let result = sentc_crypto_core::user::prepare_login::<PwHasherGetter>(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
+	let result = sentc_crypto_core::user::prepare_login::<H>(password, &salt, server_output.derived_encryption_key_alg.as_str())?;
 
 	//for the server
 	let auth_key = derive_auth_key_for_auth_to_string(&result.auth_key);
@@ -165,16 +157,24 @@ pub fn prepare_validate_mfa(auth_key: String, device_identifier: String, token: 
 /**
 If the user enables mfa, do the done login here
 */
-pub fn done_validate_mfa(
-	master_key_encryption: &DeriveMasterKeyForAuth,
+pub fn done_validate_mfa<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
+	master_key_encryption: &impl DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
 	server_output: &str,
-) -> Result<UserPreVerifyLogin, SdkUtilError>
+) -> Result<
+	UserPreVerifyLogin<
+		<SkC as StaticKeyComposerWrapper>::SkWrapper,
+		<SkC as StaticKeyComposerWrapper>::PkWrapper,
+		<SiKC as SignComposerWrapper>::SignKWrapper,
+		<SiKC as SignComposerWrapper>::VerifyKWrapper,
+	>,
+	SdkUtilError,
+>
 {
 	let server_output: DoneLoginServerOutput = handle_server_response(server_output)?;
 
-	done_login(master_key_encryption, auth_key, device_identifier, server_output)
+	done_login::<SkC, SiKC>(master_key_encryption, auth_key, device_identifier, server_output)
 }
 
 /**
@@ -184,16 +184,24 @@ pub fn done_validate_mfa(
 2. decrypt the master key with the encryption key from @see prepare_login
 3. import the public and verify keys to the internal format
  */
-pub fn done_login(
-	master_key_encryption: &DeriveMasterKeyForAuth,
+pub fn done_login<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
+	master_key_encryption: &impl DeriveMasterKeyForAuth,
 	auth_key: String,
 	device_identifier: String,
 	server_output: DoneLoginServerOutput,
-) -> Result<UserPreVerifyLogin, SdkUtilError>
+) -> Result<
+	UserPreVerifyLogin<
+		<SkC as StaticKeyComposerWrapper>::SkWrapper,
+		<SkC as StaticKeyComposerWrapper>::PkWrapper,
+		<SiKC as SignComposerWrapper>::SignKWrapper,
+		<SiKC as SignComposerWrapper>::VerifyKWrapper,
+	>,
+	SdkUtilError,
+>
 {
 	let device_data = server_output.device_keys;
 
-	let device_keys = done_login_internally_with_device_out(master_key_encryption, &device_data)?;
+	let device_keys = done_login_internally_with_device_out::<SkC, SiKC>(master_key_encryption, &device_data)?;
 
 	let challenge = decrypt_login_challenge(&device_keys.private_key, &server_output.challenge)?;
 
@@ -210,16 +218,24 @@ pub fn done_login(
 	})
 }
 
-fn done_login_internally_with_device_out(
-	master_key_encryption: &DeriveMasterKeyForAuth,
+fn done_login_internally_with_device_out<SkC: StaticKeyComposerWrapper, SiKC: SignComposerWrapper>(
+	master_key_encryption: &impl DeriveMasterKeyForAuth,
 	server_output: &DoneLoginServerKeysOutput,
-) -> Result<DeviceKeyDataInt, SdkUtilError>
+) -> Result<
+	DeviceKeyDataInt<
+		<SkC as StaticKeyComposerWrapper>::SkWrapper,
+		<SkC as StaticKeyComposerWrapper>::PkWrapper,
+		<SiKC as SignComposerWrapper>::SignKWrapper,
+		<SiKC as SignComposerWrapper>::VerifyKWrapper,
+	>,
+	SdkUtilError,
+>
 {
 	let encrypted_master_key = Base64::decode_vec(server_output.encrypted_master_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let encrypted_private_key = Base64::decode_vec(server_output.encrypted_private_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let encrypted_sign_key = Base64::decode_vec(server_output.encrypted_sign_key.as_str()).map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 
-	let out = sentc_crypto_core::user::done_login::<sentc_crypto_core::SecretKey, sentc_crypto_core::SignKey>(
+	let out = sentc_crypto_core::user::done_login::<SkC::Composer, SiKC::Composer>(
 		master_key_encryption,
 		&encrypted_master_key,
 		&encrypted_private_key,
@@ -229,15 +245,21 @@ fn done_login_internally_with_device_out(
 	)?;
 
 	//now prepare the public and verify key for use
-	let public_key = import_public_key_from_pem_with_alg(
-		server_output.public_key_string.as_str(),
-		server_output.keypair_encrypt_alg.as_str(),
+	let public_key = SkC::pk_from_pem(
+		&server_output.public_key_string,
+		&server_output.keypair_encrypt_alg,
+		server_output.keypair_encrypt_id.clone(),
 	)?;
 
-	let verify_key = import_verify_key_from_pem_with_alg(
-		server_output.verify_key_string.as_str(),
-		server_output.keypair_sign_alg.as_str(),
+	let verify_key = SiKC::vk_from_pem(
+		&server_output.verify_key_string,
+		&server_output.keypair_sign_alg,
+		server_output.keypair_sign_id.clone(),
 	)?;
+
+	let private_key = SkC::sk_from_inner(out.private_key, server_output.keypair_encrypt_id.clone());
+
+	let sign_key = SiKC::sk_from_inner(out.sign_key, server_output.keypair_sign_id.clone());
 
 	//export this too, so the user can verify the own data
 	let exported_public_key = UserPublicKeyData {
@@ -255,22 +277,10 @@ fn done_login_internally_with_device_out(
 	};
 
 	Ok(DeviceKeyDataInt {
-		private_key: SecretKey {
-			key_id: server_output.keypair_encrypt_id.clone(),
-			key: out.private_key,
-		},
-		sign_key: SignKey {
-			key_id: server_output.keypair_sign_id.clone(),
-			key: out.sign_key,
-		},
-		public_key: PublicKey {
-			key_id: server_output.keypair_encrypt_id.clone(),
-			key: public_key,
-		},
-		verify_key: VerifyKey {
-			key_id: server_output.keypair_sign_id.clone(),
-			key: verify_key,
-		},
+		private_key,
+		sign_key,
+		public_key,
+		verify_key,
 		exported_public_key,
 		exported_verify_key,
 	})
@@ -282,7 +292,7 @@ Make the prepare and done login req.
 - prep login to get the salt
 - done login to get the encrypted master key, because this key is never stored on the device
  */
-pub fn change_password(
+pub fn change_password<H: PwHash>(
 	old_pw: &str,
 	new_pw: &str,
 	server_output_prep_login: &str,
@@ -300,7 +310,7 @@ pub fn change_password(
 	.map_err(|_| SdkUtilError::DerivedKeyWrongFormat)?;
 	let old_salt = Base64::decode_vec(server_output_prep_login.salt_string.as_str()).map_err(|_| SdkUtilError::DecodeSaltFailed)?;
 
-	let output = sentc_crypto_core::user::change_password::<PwHasherGetter>(
+	let output = sentc_crypto_core::user::change_password::<H>(
 		old_pw,
 		new_pw,
 		&old_salt,

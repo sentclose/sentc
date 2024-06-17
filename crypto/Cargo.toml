@@ -7,6 +7,7 @@ homepage.workspace = true
 authors.workspace = true
 documentation.workspace = true
 repository.workspace = true
+rust-version.workspace = true
 
 description = "The main implementation of the sentc sdk."
 
@@ -30,8 +31,10 @@ serde_json = { version = "1.0.81", default-features = false, features = ["alloc"
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 
 [features]
-default = []
-rust = []
+export = []
 
 server = []
 server_test = []
+
+full_rustls = ["sentc-crypto-utils/crypto_full", "sentc-crypto-utils/rustls"]
+full_wasm = ["sentc-crypto-utils/crypto_full", "sentc-crypto-utils/wasm"]

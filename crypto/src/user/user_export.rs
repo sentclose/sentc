@@ -1,15 +1,16 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_common::user::{RegisterData, UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::user::{DoneLoginServerOutput, RegisterData, UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_utils::keys::MasterKeyFormat;
-use sentc_crypto_utils::user::{DeviceKeyDataInt, UserPreVerifyLogin};
+use sentc_crypto_core::DeriveMasterKeyForAuth;
+use sentc_crypto_utils::keys::{MasterKeyFormat, SecretKey, SignKey};
+use sentc_crypto_utils::{StdDeviceKeyDataInt, StdUserPreVerifyLogin};
 use serde_json::from_str;
 
 use crate::entities::keys::{SymKeyFormatExport, SymmetricKey};
 use crate::entities::user::{UserDataExport, UserKeyDataExport};
-use crate::{group, SdkError};
+use crate::{group, SdkError, StdUser};
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, String>
 {
@@ -28,12 +29,12 @@ pub fn generate_user_register_data() -> Result<(String, String), String>
 
 pub fn register_typed(user_identifier: &str, password: &str) -> Result<RegisterData, String>
 {
-	Ok(super::user::register_typed(user_identifier, password)?)
+	Ok(StdUser::register_typed(user_identifier, password)?)
 }
 
 pub fn register(user_identifier: &str, password: &str) -> Result<String, String>
 {
-	Ok(super::user::register(user_identifier, password)?)
+	Ok(StdUser::register(user_identifier, password)?)
 }
 
 pub fn done_register(server_output: &str) -> Result<UserId, String>
@@ -43,10 +44,7 @@ pub fn done_register(server_output: &str) -> Result<UserId, String>
 
 pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, String>
 {
-	Ok(super::user::prepare_register_device_start(
-		device_identifier,
-		password,
-	)?)
+	Ok(StdUser::prepare_register_device_start(device_identifier, password)?)
 }
 
 pub fn done_register_device_start(server_output: &str) -> Result<(), String>
@@ -65,7 +63,7 @@ pub fn prepare_register_device(server_output: &str, user_keys: &str, key_session
 
 	let split_group_keys = group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
-	let (input, exported_public_key) = super::user::prepare_register_device(server_output, &split_group_keys, key_session)?;
+	let (input, exported_public_key) = StdUser::prepare_register_device(server_output, &split_group_keys, key_session)?;
 
 	Ok((
 		input,
@@ -80,33 +78,46 @@ pub fn prepare_login_start(user_id: &str) -> Result<String, String>
 	Ok(super::user::prepare_login_start(user_id)?)
 }
 
+pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, DeriveMasterKeyForAuth), SdkError>
+{
+	StdUser::prepare_login(user_identifier, password, server_output)
+}
+
+pub fn done_login(
+	master_key_encryption: &DeriveMasterKeyForAuth,
+	auth_key: String,
+	device_identifier: String,
+	server_output: DoneLoginServerOutput,
+) -> Result<StdUserPreVerifyLogin, SdkError>
+{
+	StdUser::done_login(master_key_encryption, auth_key, device_identifier, server_output)
+}
+
 pub fn done_validate_mfa(
 	master_key_encryption: &str,
 	auth_key: String,
 	device_identifier: String,
 	server_output: &str,
-) -> Result<UserPreVerifyLogin, SdkError>
+) -> Result<StdUserPreVerifyLogin, SdkError>
 {
 	let master_key_encryption: MasterKeyFormat = master_key_encryption.parse()?;
+	let master_key_encryption: DeriveMasterKeyForAuth = master_key_encryption.try_into()?;
 
-	super::user::done_validate_mfa(
-		&master_key_encryption.try_into()?,
-		auth_key,
-		device_identifier,
-		server_output,
-	)
+	StdUser::done_validate_mfa(&master_key_encryption, auth_key, device_identifier, server_output)
 }
 
-pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: DeviceKeyDataInt) -> Result<UserDataExport, String>
+pub fn verify_login(server_output: &str, user_id: UserId, device_id: DeviceId, device_keys: StdDeviceKeyDataInt) -> Result<UserDataExport, String>
 {
-	let out = super::user::verify_login(server_output, user_id, device_id, device_keys)?;
+	let out = StdUser::verify_login(server_output, user_id, device_id, device_keys)?;
 
 	Ok(out.try_into()?)
 }
 
 pub fn done_key_fetch(private_key: &str, server_output: &str) -> Result<UserKeyDataExport, String>
 {
-	let key = super::user::done_key_fetch(&private_key.parse()?, server_output)?;
+	let private_key: SecretKey = private_key.parse()?;
+
+	let key = StdUser::done_key_fetch(&private_key, server_output)?;
 
 	Ok(key.try_into()?)
 }
@@ -121,12 +132,25 @@ pub fn prepare_refresh_jwt(refresh_token: String) -> Result<String, String>
 	Ok(super::user::prepare_refresh_jwt(refresh_token)?)
 }
 
+pub fn change_password(
+	old_pw: &str,
+	new_pw: &str,
+	server_output_prep_login: &str,
+	server_output_done_login: DoneLoginServerOutput,
+) -> Result<String, SdkError>
+{
+	StdUser::change_password(old_pw, new_pw, server_output_prep_login, server_output_done_login)
+}
+
 pub fn reset_password(new_password: &str, decrypted_private_key: &str, decrypted_sign_key: &str) -> Result<String, String>
 {
-	Ok(super::user::reset_password(
+	let decrypted_private_key: SecretKey = decrypted_private_key.parse()?;
+	let decrypted_sign_key: SignKey = decrypted_sign_key.parse()?;
+
+	Ok(StdUser::reset_password(
 		new_password,
-		&decrypted_private_key.parse()?,
-		&decrypted_sign_key.parse()?,
+		&decrypted_private_key,
+		&decrypted_sign_key,
 	)?)
 }
 
@@ -138,7 +162,7 @@ pub fn create_safety_number(verify_key_1: &str, user_id_1: &str, verify_key_2: O
 		None => None,
 	};
 
-	Ok(super::user::create_safety_number(
+	Ok(StdUser::create_safety_number(
 		&verify_key_1,
 		user_id_1,
 		verify_key_2.as_ref(),
@@ -151,7 +175,7 @@ pub fn verify_user_public_key(verify_key: &str, public_key: &str) -> Result<bool
 	let verify_key = UserVerifyKeyData::from_string(verify_key).map_err(SdkError::JsonParseFailed)?;
 	let public_key = UserPublicKeyData::from_string(public_key).map_err(SdkError::JsonParseFailed)?;
 
-	Ok(super::user::verify_user_public_key(&verify_key, &public_key)?)
+	Ok(StdUser::verify_user_public_key(&verify_key, &public_key)?)
 }
 
 #[cfg(test)]
@@ -175,7 +199,6 @@ mod test
 
 	use super::*;
 	use crate::user::test_fn::{create_user_export, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
-	use crate::user::{change_password, done_login, prepare_login};
 
 	#[test]
 	fn test_register()
@@ -214,7 +237,7 @@ mod test
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let done_login = done_login(
+		let done_login = StdUser::done_login(
 			&master_key_encryption_key, //the value comes from prepare login
 			auth_key,
 			username.to_string(),
@@ -275,7 +298,7 @@ mod test
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let done_login_out = done_login(
+		let done_login_out = StdUser::done_login(
 			&master_key_encryption_key, //the value comes from prepare login
 			auth_key,
 			"hello".to_string(),
@@ -366,7 +389,7 @@ mod test
 
 		let server_output = simulate_server_done_login(from_str(&new_device_register_data).unwrap());
 
-		let new_device_data = done_login(
+		let new_device_data = StdUser::done_login(
 			&master_key_encryption_key,
 			auth_key,
 			device_id.to_string(),
