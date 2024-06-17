@@ -1,11 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod group_export;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use group_export::*;
 use sentc_crypto_common::group::{
 	GroupAcceptJoinReqServerOutput,
@@ -442,14 +442,14 @@ where
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type DataRes = Result<crate::entities::group::GroupOutDataExport, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type DataRes = Result<crate::entities::group::GroupOutData, SdkError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type DataLightRes = Result<crate::entities::group::GroupOutDataLightExport, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub type DataLightRes = Result<sentc_crypto_utils::group::GroupOutDataLight, SdkError>;
 
 pub async fn get_group(base_url: String, auth_token: &str, jwt: &str, id: &str, group_as_member: Option<&str>) -> DataRes
@@ -472,10 +472,10 @@ pub async fn get_group_light(base_url: String, auth_token: &str, jwt: &str, id: 
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type KeyFetchRes = crate::entities::group::GroupOutDataKeyExport;
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type KeyFetchRes = sentc_crypto_common::group::GroupKeyServerOutput;
 
 pub async fn get_group_keys(
@@ -737,10 +737,10 @@ pub async fn leave_group(base_url: String, auth_token: &str, jwt: &str, group_id
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub(super) type KeyRotationRes = Result<Vec<KeyRotationGetOut>, String>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct KeyRotationGetOut
 {
@@ -754,7 +754,7 @@ pub struct KeyRotationGetOut
 	pub signed_by_user_sign_key_alg: Option<String>,
 }
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub(super) type KeyRotationRes = Result<Vec<KeyRotationInput>, SdkError>;
 
 /**
@@ -782,7 +782,7 @@ pub async fn prepare_done_key_rotation(
 
 	// prepare the keys for done_key_rotation.
 	// call for each key the done key rotation fn with the key id and the server output
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	let out = {
 		let mut out_vec = Vec::with_capacity(out.len());
 
@@ -926,10 +926,10 @@ pub async fn delete_group(
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type UserPublicKeyRes = Result<(String, sentc_crypto_common::EncryptionKeyPairId), String>;
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type UserPublicKeyRes = Result<UserPublicKeyData, SdkError>;
 
 pub async fn get_public_key_data(base_url: String, auth_token: &str, group_id: &str) -> UserPublicKeyRes
@@ -938,12 +938,12 @@ pub async fn get_public_key_data(base_url: String, auth_token: &str, group_id: &
 
 	let res = make_req(HttpMethod::GET, &url, auth_token, None, None, None).await?;
 
-	#[cfg(feature = "rust")]
+	#[cfg(not(feature = "export"))]
 	{
 		crate::util::public::import_public_key_from_string_into_format(&res)
 	}
 
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	{
 		let public_data = crate::util::public::import_public_key_from_string_into_export_string(&res)?;
 		Ok((public_data.0, public_data.1))

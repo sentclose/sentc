@@ -19,7 +19,7 @@ crate-type = ["staticlib", "cdylib"]
 [dependencies]
 sentc-crypto-common = { workspace = true }
 
-sentc-crypto-light = { workspace = true, features = ["default", "full_rustls"] }
+sentc-crypto-light = { workspace = true, features = ["export", "full_rustls"] }
 
 tokio = { version = "1.20.4", features = ["rt-multi-thread"] }
 

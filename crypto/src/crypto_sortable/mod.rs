@@ -1,7 +1,7 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod crypto_sortable_export;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use crypto_sortable_export::*;
 
 #[cfg(test)]

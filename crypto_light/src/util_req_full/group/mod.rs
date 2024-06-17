@@ -1,6 +1,6 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod non_rust;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 mod rust;
 
 use alloc::string::String;
@@ -20,9 +20,9 @@ use sentc_crypto_common::group::{
 use sentc_crypto_utils::http::{make_req, HttpMethod};
 use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub(crate) use self::non_rust::{ChildrenRes, DataRes, GroupListRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub(crate) use self::rust::{ChildrenRes, DataRes, GroupListRes, InviteListRes, JoinReqListRes, MemberRes, Res, UserUpdateCheckRes, VoidRes};
 use crate::error::SdkLightError;
 

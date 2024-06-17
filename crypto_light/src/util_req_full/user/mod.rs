@@ -5,12 +5,12 @@ use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
 use sentc_crypto_utils::keys::{SecretKey, SignKey};
 use sentc_crypto_utils::{handle_general_server_response, StdUserPreVerifyLogin};
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod non_rust;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 mod rust;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub(crate) use self::non_rust::{
 	BoolRes,
 	DeviceListRes,
@@ -23,9 +23,9 @@ pub(crate) use self::non_rust::{
 	Res,
 	VoidRes,
 };
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::non_rust::{PreLoginOut, PrepareLoginOtpOutput};
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub(crate) use self::rust::{
 	BoolRes,
 	DeviceListRes,
@@ -38,7 +38,7 @@ pub(crate) use self::rust::{
 	Res,
 	VoidRes,
 };
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub use self::rust::{PreLoginOut, PrepareLoginOtpOutput};
 
 //Register
@@ -129,7 +129,7 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 
 			//export the data needed for this fn
 
-			#[cfg(not(feature = "rust"))]
+			#[cfg(feature = "export")]
 			{
 				let master_key: sentc_crypto_utils::keys::MasterKeyFormat = d.master_key.into();
 
@@ -139,7 +139,7 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 				}))
 			}
 
-			#[cfg(feature = "rust")]
+			#[cfg(not(feature = "export"))]
 			{
 				Ok(PreLoginOut::Otp(PrepareLoginOtpOutput {
 					master_key: d.master_key,
@@ -153,15 +153,15 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 pub async fn mfa_login(
 	base_url: String,
 	auth_token: &str,
-	#[cfg(not(feature = "rust"))] master_key_encryption: &str,
-	#[cfg(feature = "rust")] master_key_encryption: &crate::sdk_core::DeriveMasterKeyForAuth,
+	#[cfg(feature = "export")] master_key_encryption: &str,
+	#[cfg(not(feature = "export"))] master_key_encryption: &crate::sdk_core::DeriveMasterKeyForAuth,
 	auth_key: String,
 	user_identifier: String,
 	token: String,
 	recovery: bool,
 ) -> LoginRes
 {
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	let master_key_encryption: sentc_crypto_core::DeriveMasterKeyForAuth = {
 		let master_key_encryption: sentc_crypto_utils::keys::MasterKeyFormat = master_key_encryption.parse()?;
 

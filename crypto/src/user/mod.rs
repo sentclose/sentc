@@ -12,13 +12,13 @@ use sentc_crypto_common::user::DoneLoginServerReturn;
 use crate::SdkError;
 
 pub(crate) mod user;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod user_export;
 
 pub use self::user::User;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub use self::user::*;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::user_export::*;
 
 pub fn check_done_login(server_output: &str) -> Result<DoneLoginServerReturn, SdkError>
@@ -53,9 +53,10 @@ pub(crate) mod test_fn
 	};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::ClientRandomValue;
+	use sentc_crypto_utils::keys::SecretKey;
 
 	use super::*;
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	use crate::entities::user::UserDataExport;
 	use crate::util::server::generate_salt_from_base64_to_string;
 	use crate::{util, StdUser, StdUserDataInt};
@@ -86,7 +87,7 @@ pub(crate) mod test_fn
 			device, ..
 		} = data;
 
-		let challenge = util::server::encrypt_login_verify_challenge(
+		let challenge = util::server::encrypt_login_verify_challenge::<SecretKey>(
 			&device.derived.public_key,
 			&device.derived.keypair_encrypt_alg,
 			"abcd",
@@ -200,7 +201,7 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	pub(crate) fn create_user_export() -> UserDataExport
 	{
 		let username = "admin";

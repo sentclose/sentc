@@ -1,20 +1,20 @@
 pub(crate) mod group;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod group_export;
 mod group_rank_check;
 
 pub use self::group::Group;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub use self::group::*;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::group_export::*;
 pub use self::group_rank_check::*;
 
 #[cfg(test)]
 pub(crate) mod test_fn
 {
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	use alloc::string::String;
 	use alloc::string::ToString;
 	use alloc::vec;
@@ -26,7 +26,7 @@ pub(crate) mod test_fn
 
 	use super::*;
 	use crate::entities::group::{GroupKeyData, GroupOutData};
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport};
 	use crate::{StdGroup, StdUserKeyDataInt};
 
@@ -139,7 +139,7 @@ pub(crate) mod test_fn
 		)
 	}
 
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	pub(crate) fn create_group_export(
 		user: &crate::entities::user::UserKeyDataExport,
 	) -> (

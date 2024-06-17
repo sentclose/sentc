@@ -18,7 +18,7 @@ crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 # own crypto lib
-sentc-crypto = { workspace = true, features = ["default", "full_rustls"] }
+sentc-crypto = { workspace = true, features = ["export", "full_rustls"] }
 
 sentc-crypto-common = { workspace = true }
 

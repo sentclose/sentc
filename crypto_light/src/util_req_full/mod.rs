@@ -3,10 +3,10 @@ pub mod user;
 
 use sentc_crypto_common::user::Claims;
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub(crate) type JwtRes = Result<Claims, crate::error::SdkLightError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub(crate) type JwtRes = Result<Claims, alloc::string::String>;
 
 #[allow(clippy::needless_question_mark)]

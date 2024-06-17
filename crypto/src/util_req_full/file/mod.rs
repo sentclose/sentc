@@ -1,10 +1,10 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod file_export;
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use file_export::*;
 use sentc_crypto_common::file::{FileData, FilePartListItem};
 use sentc_crypto_common::user::UserVerifyKeyData;
@@ -127,9 +127,9 @@ impl<S: SymKeyGen, SC: SymKeyComposer, VC: VerifyKFromUserKeyWrapper> FileEncryp
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type FileRes = Result<FileData, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type FileRes = Result<FileData, SdkError>;
 
 pub async fn download_file_meta(
@@ -153,9 +153,9 @@ pub async fn download_file_meta(
 	Ok(file_data)
 }
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type FilePartRes = Result<Vec<FilePartListItem>, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type FilePartRes = Result<Vec<FilePartListItem>, SdkError>;
 
 pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &str, last_sequence: &str) -> FilePartRes
@@ -169,9 +169,9 @@ pub async fn download_part_list(base_url: String, auth_token: &str, file_id: &st
 	Ok(file_parts)
 }
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type FileRegRes = Result<(String, String, Option<String>), String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type FileRegRes = Result<(String, String, Option<String>), SdkError>;
 
 #[allow(clippy::too_many_arguments)]
@@ -180,12 +180,12 @@ pub async fn register_file(
 	auth_token: &str,
 	jwt: &str,
 	master_key_id: String,
-	#[cfg(not(feature = "rust"))] content_key: &str,
-	#[cfg(feature = "rust")] content_key: &impl SymKeyWrapper,
+	#[cfg(feature = "export")] content_key: &str,
+	#[cfg(not(feature = "export"))] content_key: &impl SymKeyWrapper,
 	encrypted_content_key: String,
 	belongs_to_id: Option<String>,
-	#[cfg(not(feature = "rust"))] belongs_to_type: &str,
-	#[cfg(feature = "rust")] belongs_to_type: sentc_crypto_common::file::BelongsToType,
+	#[cfg(feature = "export")] belongs_to_type: &str,
+	#[cfg(not(feature = "export"))] belongs_to_type: sentc_crypto_common::file::BelongsToType,
 	file_name: Option<String>,
 	group_id: Option<&str>,
 	group_as_member: Option<&str>,
@@ -220,9 +220,9 @@ pub async fn register_file(
 	Ok((file_id, session_id, encrypted_file_name))
 }
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type VoidRes = Result<(), String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type VoidRes = Result<(), SdkError>;
 
 pub async fn update_file_name(
@@ -230,8 +230,8 @@ pub async fn update_file_name(
 	auth_token: &str,
 	jwt: &str,
 	file_id: &str,
-	#[cfg(not(feature = "rust"))] content_key: &str,
-	#[cfg(feature = "rust")] content_key: &impl SymKeyWrapper,
+	#[cfg(feature = "export")] content_key: &str,
+	#[cfg(not(feature = "export"))] content_key: &impl SymKeyWrapper,
 	file_name: Option<String>,
 ) -> VoidRes
 {

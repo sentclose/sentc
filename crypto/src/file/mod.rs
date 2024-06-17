@@ -1,9 +1,9 @@
 pub(crate) mod file;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod file_export;
 
 pub use self::file::FileEncryptor;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub use self::file::*;
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::file_export::*;

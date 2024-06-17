@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # own crypto lib
-sentc-crypto = { workspace = true, features = ["default", "full_wasm"] }
+sentc-crypto = { workspace = true, features = ["export", "full_wasm"] }
 
 sentc-crypto-common = { workspace = true }
 

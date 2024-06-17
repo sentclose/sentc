@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sentc-crypto-common = { workspace = true }
-sentc-crypto-light = { workspace = true, features = ["default", "full_wasm"] }
+sentc-crypto-light = { workspace = true, features = ["export", "full_wasm"] }
 
 # must be js feature for wasm
 getrandom = { version = "0.2", features = ["js"] }

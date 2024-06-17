@@ -1,7 +1,7 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 #[allow(clippy::module_inception)]
 mod user;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 mod user_rust;
 
 use alloc::string::{String, ToString};
@@ -33,7 +33,7 @@ use sentc_crypto_utils::{
 	StdUserPreVerifyLogin,
 };
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::user::{
 	done_check_user_identifier_available,
 	done_register,
@@ -49,7 +49,7 @@ pub use self::user::{
 	register_typed,
 	verify_login,
 };
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub use self::user_rust::{
 	done_check_user_identifier_available,
 	done_register,

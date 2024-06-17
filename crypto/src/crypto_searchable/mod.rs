@@ -1,7 +1,7 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod crypto_searchable_export;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use self::crypto_searchable_export::*;
 
 #[cfg(test)]

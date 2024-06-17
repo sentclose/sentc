@@ -1,9 +1,9 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::user::{UserPublicKeyData, UserPublicKeyDataServerOutput, UserVerifyKeyData, UserVerifyKeyDataServerOutput};
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
 use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer};
 pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
@@ -60,7 +60,7 @@ pub fn import_verify_key_from_string_into_format(verify_key: &str) -> Result<Use
 	Ok(verify_key)
 }
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Result<(String, EncryptionKeyPairId, Option<SignKeyPairId>), String>
 {
 	let public_key = import_public_key_from_string_into_format(public_key)?;
@@ -74,7 +74,7 @@ pub fn import_public_key_from_string_into_export_string(public_key: &str) -> Res
 	))
 }
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub fn import_verify_key_from_string_into_export_string(verify_key: &str) -> Result<(String, SignKeyPairId), String>
 {
 	let public_key = import_verify_key_from_string_into_format(verify_key)?;

@@ -11,10 +11,10 @@ enum SessionKind
 	UserGroup,
 }
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 pub(crate) type JwtRes = Result<Claims, crate::SdkError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub(crate) type JwtRes = Result<Claims, alloc::string::String>;
 
 #[allow(clippy::needless_question_mark)]

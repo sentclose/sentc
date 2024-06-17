@@ -32,8 +32,7 @@ base64ct = { version = "1.0.1", default-features = false, features = ["alloc"] }
 pem-rfc7468 = { version = "0.3.1", features = ["alloc"] }
 
 [features]
-default = []
-rust = []
+export = []
 
 server_test = []
 

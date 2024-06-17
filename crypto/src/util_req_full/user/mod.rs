@@ -1,4 +1,4 @@
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 mod user_export;
 
 use alloc::string::String;
@@ -27,7 +27,7 @@ use sentc_crypto_utils::cryptomat::{
 use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
 use sentc_crypto_utils::user::UserPreVerifyLogin;
 use sentc_crypto_utils::{handle_general_server_response, handle_server_response};
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 pub use user_export::*;
 
 use crate::entities::user::{UserDataInt, UserKeyDataInt};
@@ -358,9 +358,9 @@ where
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type BoolRes = Result<bool, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type BoolRes = Result<bool, SdkError>;
 
 pub async fn check_user_identifier_available(base_url: String, auth_token: &str, user_identifier: &str) -> BoolRes
@@ -377,19 +377,19 @@ pub async fn check_user_identifier_available(base_url: String, auth_token: &str,
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type Res = Result<String, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type Res = Result<String, SdkError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type InitRes = Result<UserInitServerOutput, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type InitRes = Result<UserInitServerOutput, SdkError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type DeviceListRes = Result<Vec<UserDeviceList>, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type DeviceListRes = Result<Vec<UserDeviceList>, SdkError>;
 
 pub async fn refresh_jwt(base_url: String, auth_token: &str, jwt: &str, refresh_token: String) -> Res
@@ -409,10 +409,10 @@ pub async fn get_user_devices(base_url: String, auth_token: &str, jwt: &str, las
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type VoidRes = Result<(), String>;
 
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type VoidRes = Result<(), SdkError>;
 
 pub async fn delete(base_url: String, auth_token: &str, fresh_jwt: &str) -> VoidRes
@@ -440,19 +440,19 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, user_identifi
 
 //__________________________________________________________________________________________________
 //Otp
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type RegisterRawOtpRes = Result<OtpRegister, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type RegisterRawOtpRes = Result<OtpRegister, SdkError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type RegisterOtpRes = Result<(String, Vec<String>), String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type RegisterOtpRes = Result<(String, Vec<String>), SdkError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type OtpRecoveryKeyRes = Result<OtpRecoveryKeysOutput, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type OtpRecoveryKeyRes = Result<OtpRecoveryKeysOutput, SdkError>;
 
 pub async fn register_raw_otp(base_url: String, auth_token: &str, fresh_jwt: &str) -> RegisterRawOtpRes
@@ -487,7 +487,7 @@ pub async fn disable_otp(base_url: String, auth_token: &str, fresh_jwt: &str) ->
 
 //__________________________________________________________________________________________________
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type UserPublicKeyRes = Result<
 	(
 		String,
@@ -496,12 +496,12 @@ type UserPublicKeyRes = Result<
 	),
 	String,
 >;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type UserPublicKeyRes = Result<UserPublicKeyData, SdkError>;
 
-#[cfg(not(feature = "rust"))]
+#[cfg(feature = "export")]
 type UserVerifyKeyRes = Result<String, String>;
-#[cfg(feature = "rust")]
+#[cfg(not(feature = "export"))]
 type UserVerifyKeyRes = Result<UserVerifyKeyData, SdkError>;
 
 pub async fn fetch_user_public_key(base_url: String, auth_token: &str, user_id: &str) -> UserPublicKeyRes
@@ -510,10 +510,10 @@ pub async fn fetch_user_public_key(base_url: String, auth_token: &str, user_id: 
 
 	let res = non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
-	#[cfg(feature = "rust")]
+	#[cfg(not(feature = "export"))]
 	let public_data = crate::util::public::import_public_key_from_string_into_format(res.as_str())?;
 
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	let public_data = crate::util::public::import_public_key_from_string_into_export_string(res.as_str())?;
 
 	Ok(public_data)
@@ -525,10 +525,10 @@ pub async fn fetch_user_verify_key_by_id(base_url: String, auth_token: &str, use
 
 	let res = non_auth_req(HttpMethod::GET, url.as_str(), auth_token, None).await?;
 
-	#[cfg(feature = "rust")]
+	#[cfg(not(feature = "export"))]
 	let public_data = crate::util::public::import_verify_key_from_string_into_format(res.as_str())?;
 
-	#[cfg(not(feature = "rust"))]
+	#[cfg(feature = "export")]
 	let (public_data, _) = crate::util::public::import_verify_key_from_string_into_export_string(res.as_str())?;
 
 	Ok(public_data)
