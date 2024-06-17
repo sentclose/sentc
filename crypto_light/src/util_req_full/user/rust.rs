@@ -8,7 +8,7 @@ use crate::UserDataInt;
 
 pub struct PrepareLoginOtpOutput
 {
-	pub master_key: crate::sdk_core::DeriveMasterKeyForAuth,
+	pub master_key: sentc_crypto_std_keys::core::DeriveMasterKeyForAuth,
 	pub auth_key: String,
 }
 

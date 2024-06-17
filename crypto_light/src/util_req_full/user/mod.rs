@@ -1,9 +1,11 @@
 use alloc::string::String;
 
-use sentc_crypto_core::PwHasherGetter;
+use sentc_crypto_std_keys::core::PwHasherGetter;
+use sentc_crypto_std_keys::util::{SecretKey, SignKey};
+use sentc_crypto_utils::handle_general_server_response;
 use sentc_crypto_utils::http::{auth_req, non_auth_req, HttpMethod};
-use sentc_crypto_utils::keys::{SecretKey, SignKey};
-use sentc_crypto_utils::{handle_general_server_response, StdUserPreVerifyLogin};
+
+use crate::StdUserPreVerifyLogin;
 
 #[cfg(feature = "export")]
 mod non_rust;
@@ -131,7 +133,7 @@ pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, pa
 
 			#[cfg(feature = "export")]
 			{
-				let master_key: sentc_crypto_utils::keys::MasterKeyFormat = d.master_key.into();
+				let master_key: sentc_crypto_std_keys::util::MasterKeyFormat = d.master_key.into();
 
 				Ok(PreLoginOut::Otp(PrepareLoginOtpOutput {
 					master_key: master_key.to_string()?,
@@ -154,7 +156,7 @@ pub async fn mfa_login(
 	base_url: String,
 	auth_token: &str,
 	#[cfg(feature = "export")] master_key_encryption: &str,
-	#[cfg(not(feature = "export"))] master_key_encryption: &crate::sdk_core::DeriveMasterKeyForAuth,
+	#[cfg(not(feature = "export"))] master_key_encryption: &sentc_crypto_std_keys::core::DeriveMasterKeyForAuth,
 	auth_key: String,
 	user_identifier: String,
 	token: String,
@@ -162,8 +164,8 @@ pub async fn mfa_login(
 ) -> LoginRes
 {
 	#[cfg(feature = "export")]
-	let master_key_encryption: sentc_crypto_core::DeriveMasterKeyForAuth = {
-		let master_key_encryption: sentc_crypto_utils::keys::MasterKeyFormat = master_key_encryption.parse()?;
+	let master_key_encryption: sentc_crypto_std_keys::core::DeriveMasterKeyForAuth = {
+		let master_key_encryption: sentc_crypto_std_keys::util::MasterKeyFormat = master_key_encryption.parse()?;
 
 		master_key_encryption.try_into()?
 	};

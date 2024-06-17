@@ -38,63 +38,74 @@ pub use sentc_crypto_utils as sdk_utils;
 
 pub use self::error::{err_to_msg, SdkError};
 
+#[cfg(feature = "export")]
 pub type StdGroup = group::Group<
-	sdk_utils::keys::SymmetricKey,
-	sdk_utils::keys::SecretKey,
-	sdk_utils::keys::SignKey,
-	sdk_core::HmacKey,
-	sdk_core::SortKeys,
-	sdk_utils::keys::SymmetricKey,
-	sdk_utils::keys::SecretKey,
-	sdk_utils::keys::SignKey,
-	sdk_utils::keys::HmacKey,
-	sdk_utils::keys::SortableKey,
-	sdk_utils::keys::PublicKey,
-	sdk_utils::keys::VerifyKey,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::core::HmacKey,
+	sentc_crypto_std_keys::core::SortKeys,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::util::HmacKey,
+	sentc_crypto_std_keys::util::SortableKey,
+	sentc_crypto_std_keys::util::PublicKey,
+	sentc_crypto_std_keys::util::VerifyKey,
 >;
 
+#[cfg(feature = "export")]
 pub type StdUser = user::User<
-	sdk_utils::keys::SymmetricKey,
-	sdk_utils::keys::SecretKey,
-	sdk_utils::keys::SignKey,
-	sdk_core::HmacKey,
-	sdk_core::SortKeys,
-	sdk_utils::keys::SymmetricKey,
-	sdk_utils::keys::SecretKey,
-	sdk_utils::keys::SignKey,
-	sdk_utils::keys::HmacKey,
-	sdk_utils::keys::SortableKey,
-	sdk_utils::keys::PublicKey,
-	sdk_utils::keys::VerifyKey,
-	sdk_core::PwHasherGetter,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::core::HmacKey,
+	sentc_crypto_std_keys::core::SortKeys,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::util::HmacKey,
+	sentc_crypto_std_keys::util::SortableKey,
+	sentc_crypto_std_keys::util::PublicKey,
+	sentc_crypto_std_keys::util::VerifyKey,
+	sentc_crypto_std_keys::core::PwHasherGetter,
 >;
 
+#[cfg(feature = "export")]
 pub type StdUserDataInt = entities::user::UserDataInt<
-	sdk_utils::keys::SymmetricKey,
-	sdk_utils::keys::SecretKey,
-	sdk_utils::keys::PublicKey,
-	sdk_utils::keys::SignKey,
-	sdk_utils::keys::VerifyKey,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::PublicKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::util::VerifyKey,
 >;
 
+#[cfg(feature = "export")]
 pub type StdUserKeyDataInt = entities::user::UserKeyDataInt<
-	sdk_utils::keys::SymmetricKey,
-	sdk_utils::keys::SecretKey,
-	sdk_utils::keys::PublicKey,
-	sdk_utils::keys::SignKey,
-	sdk_utils::keys::VerifyKey,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::PublicKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::util::VerifyKey,
 >;
 
-pub type StdKeyGenerator = crypto::KeyGenerator<sdk_utils::keys::SymmetricKey, sdk_utils::keys::SymmetricKey, sdk_utils::keys::PublicKey>;
+#[cfg(feature = "export")]
+pub type StdKeyGenerator = crypto::KeyGenerator<
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::PublicKey,
+>;
 
-pub type StdFileEncryptor = file::FileEncryptor<sdk_core::SymmetricKey, sdk_core::SymmetricKey, sdk_utils::keys::VerifyKey>;
+#[cfg(feature = "export")]
+pub type StdFileEncryptor =
+	file::FileEncryptor<sentc_crypto_std_keys::core::SymmetricKey, sentc_crypto_std_keys::core::SymmetricKey, sentc_crypto_std_keys::util::VerifyKey>;
 
-#[cfg(any(feature = "full_rustls", feature = "full_wasm"))]
+#[cfg(all(feature = "export", any(feature = "full_rustls", feature = "full_wasm")))]
 pub type StdPreLoginOut = util_req_full::user::PreLoginOut<
-	sdk_utils::keys::SymmetricKey,
-	sdk_utils::keys::SecretKey,
-	sdk_utils::keys::PublicKey,
-	sdk_utils::keys::SignKey,
-	sdk_utils::keys::VerifyKey,
-	sdk_core::DeriveMasterKeyForAuth,
+	sentc_crypto_std_keys::util::SymmetricKey,
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::PublicKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::util::VerifyKey,
+	sentc_crypto_std_keys::core::DeriveMasterKeyForAuth,
 >;

@@ -22,13 +22,28 @@ pub(crate) mod test_fn
 
 	use sentc_crypto_common::group::{CreateData, GroupHmacData, GroupKeyServerOutput, GroupServerData, GroupSortableData, GroupUserAccessBy};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_utils::keys::{HmacKey, PublicKey, SecretKey, SortableKey, SymmetricKey};
+	use sentc_crypto_std_keys::util::{HmacKey, PublicKey, SecretKey, SortableKey, SymmetricKey};
 
 	use super::*;
 	use crate::entities::group::{GroupKeyData, GroupOutData};
 	#[cfg(feature = "export")]
 	use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport};
-	use crate::{StdGroup, StdUserKeyDataInt};
+	use crate::user::test_fn::StdUserKeyDataInt;
+
+	pub type StdGroup = Group<
+		SymmetricKey,
+		SecretKey,
+		sentc_crypto_std_keys::util::SignKey,
+		sentc_crypto_std_keys::core::HmacKey,
+		sentc_crypto_std_keys::core::SortKeys,
+		SymmetricKey,
+		SecretKey,
+		sentc_crypto_std_keys::util::SignKey,
+		HmacKey,
+		SortableKey,
+		PublicKey,
+		sentc_crypto_std_keys::util::VerifyKey,
+	>;
 
 	pub(crate) fn create_group(
 		user: &StdUserKeyDataInt,

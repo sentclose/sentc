@@ -2,8 +2,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use sentc_crypto_common::content_searchable::SearchableCreateOutput;
+use sentc_crypto_std_keys::util::HmacKey;
 use sentc_crypto_utils::cryptomat::SearchableKeyWrapper;
-use sentc_crypto_utils::keys::HmacKey;
 
 pub fn create_searchable_raw(key: &str, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, String>
 {

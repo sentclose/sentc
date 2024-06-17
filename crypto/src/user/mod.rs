@@ -52,14 +52,47 @@ pub(crate) mod test_fn
 		VerifyLoginOutput,
 	};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_core::ClientRandomValue;
-	use sentc_crypto_utils::keys::SecretKey;
+	use sentc_crypto_std_keys::core::ClientRandomValue;
+	use sentc_crypto_std_keys::util::SecretKey;
 
 	use super::*;
 	#[cfg(feature = "export")]
 	use crate::entities::user::UserDataExport;
+	use crate::entities::user::{UserDataInt, UserKeyDataInt};
+	use crate::util;
 	use crate::util::server::generate_salt_from_base64_to_string;
-	use crate::{util, StdUser, StdUserDataInt};
+
+	pub type StdUser = User<
+		sentc_crypto_std_keys::util::SymmetricKey,
+		SecretKey,
+		sentc_crypto_std_keys::util::SignKey,
+		sentc_crypto_std_keys::core::HmacKey,
+		sentc_crypto_std_keys::core::SortKeys,
+		sentc_crypto_std_keys::util::SymmetricKey,
+		SecretKey,
+		sentc_crypto_std_keys::util::SignKey,
+		sentc_crypto_std_keys::util::HmacKey,
+		sentc_crypto_std_keys::util::SortableKey,
+		sentc_crypto_std_keys::util::PublicKey,
+		sentc_crypto_std_keys::util::VerifyKey,
+		sentc_crypto_std_keys::core::PwHasherGetter,
+	>;
+
+	pub type StdUserDataInt = UserDataInt<
+		sentc_crypto_std_keys::util::SymmetricKey,
+		SecretKey,
+		sentc_crypto_std_keys::util::PublicKey,
+		sentc_crypto_std_keys::util::SignKey,
+		sentc_crypto_std_keys::util::VerifyKey,
+	>;
+
+	pub type StdUserKeyDataInt = UserKeyDataInt<
+		sentc_crypto_std_keys::util::SymmetricKey,
+		SecretKey,
+		sentc_crypto_std_keys::util::PublicKey,
+		sentc_crypto_std_keys::util::SignKey,
+		sentc_crypto_std_keys::util::VerifyKey,
+	>;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{

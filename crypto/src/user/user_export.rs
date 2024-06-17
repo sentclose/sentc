@@ -3,14 +3,16 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::user::{DoneLoginServerOutput, RegisterData, UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
-use sentc_crypto_utils::keys::{MasterKeyFormat, SecretKey, SignKey};
-use sentc_crypto_utils::{StdDeviceKeyDataInt, StdUserPreVerifyLogin};
+use sentc_crypto_std_keys::core::DeriveMasterKeyForAuth;
+use sentc_crypto_std_keys::util::{MasterKeyFormat, PublicKey, SecretKey, SignKey, SymKeyFormatExport, SymmetricKey, VerifyKey};
+use sentc_crypto_utils::user;
 use serde_json::from_str;
 
-use crate::entities::keys::{SymKeyFormatExport, SymmetricKey};
 use crate::entities::user::{UserDataExport, UserKeyDataExport};
 use crate::{group, SdkError, StdUser};
+
+pub type StdDeviceKeyDataInt = user::DeviceKeyDataInt<SecretKey, PublicKey, SignKey, VerifyKey>;
+pub type StdUserPreVerifyLogin = user::UserPreVerifyLogin<SecretKey, PublicKey, SignKey, VerifyKey>;
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, String>
 {

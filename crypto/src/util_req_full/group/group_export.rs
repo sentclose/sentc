@@ -3,7 +3,7 @@
 use alloc::string::String;
 
 use sentc_crypto_common::UserId;
-use sentc_crypto_utils::keys::{PublicKey, SignKey, SymmetricKey};
+use sentc_crypto_std_keys::util::{PublicKey, SignKey, SymmetricKey};
 
 use crate::group::{get_done_key_rotation_server_input, prepare_prepare_group_keys_for_new_member};
 use crate::StdGroup;

@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use hmac::digest::Digest;
+use sha2::digest::Digest;
 
 use crate::Error;
 

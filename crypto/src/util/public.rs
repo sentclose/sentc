@@ -6,7 +6,6 @@ use sentc_crypto_common::user::{UserPublicKeyData, UserPublicKeyDataServerOutput
 #[cfg(feature = "export")]
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId};
 use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer};
-pub use sentc_crypto_core::{HashedAuthenticationKey, ARGON_2_OUTPUT};
 use sentc_crypto_utils::client_random_value_from_string;
 use serde::Deserialize;
 

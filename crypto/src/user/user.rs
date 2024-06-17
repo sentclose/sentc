@@ -586,8 +586,7 @@ mod test
 	use serde_json::to_string;
 
 	use super::*;
-	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login};
-	use crate::StdUser;
+	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login, StdUser};
 
 	#[test]
 	fn test_register()

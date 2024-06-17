@@ -18,9 +18,7 @@ This can not only be used internally, to get the used key_id
  */
 pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &[u8]), SdkError>
 {
-	Ok(sentc_crypto_utils::keys::split_head_and_encrypted_data(
-		data_with_head,
-	)?)
+	Ok(sentc_crypto_utils::split_head_and_encrypted_data(data_with_head)?)
 }
 
 /**
@@ -172,8 +170,8 @@ impl<SGen: SymKeyGenWrapper, SC: SymKeyComposerWrapper, P: PkFromUserKeyWrapper>
 #[cfg(test)]
 mod test
 {
+	use sentc_crypto_std_keys::util::{PublicKey, SignKey, SymmetricKey};
 	use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SkCryptoWrapper, SymKeyCrypto};
-	use sentc_crypto_utils::keys::{PublicKey, SignKey, SymmetricKey};
 
 	use super::*;
 	use crate::group::test_fn::create_group;

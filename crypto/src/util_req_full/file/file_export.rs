@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sentc_crypto_utils::keys::SymmetricKey;
+use sentc_crypto_std_keys::util::SymmetricKey;
 
 use crate::crypto::{prepare_sign_key, prepare_verify_key};
 use crate::util::{export_core_sym_key_to_string, import_core_sym_key};
