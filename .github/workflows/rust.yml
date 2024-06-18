@@ -26,7 +26,7 @@ jobs:
           key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Core tests
-        run: cargo test --package crypto_core_tests test
+        run: cargo test --package sentc-crypto-core test
 
   crypto-default:
     runs-on: ubuntu-latest
