@@ -684,12 +684,11 @@ mod test
 	};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::cryptomat::Pk;
-	use sentc_crypto_utils::keys::SignKey;
+	use sentc_crypto_std_keys::util::SignKey;
 
 	use super::*;
-	use crate::group::test_fn::create_group;
+	use crate::group::test_fn::{create_group, StdGroup};
 	use crate::user::test_fn::create_user;
-	use crate::StdGroup;
 
 	#[test]
 	fn test_create_group()

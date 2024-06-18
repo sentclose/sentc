@@ -1202,7 +1202,7 @@ pub fn group_get_group_key(
 
 pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result<GroupKeyData>
 {
-	let out = sentc_crypto::group::decrypt_group_keys(server_key_data.as_str(), private_key.as_str())?;
+	let out = sentc_crypto::group::decrypt_group_keys(&private_key, &server_key_data)?;
 
 	Ok(out.into())
 }
@@ -2203,6 +2203,18 @@ pub fn decrypt_sym_key(master_key: String, encrypted_symmetric_key_info: String)
 pub fn decrypt_sym_key_by_private_key(private_key: String, encrypted_symmetric_key_info: String) -> Result<String>
 {
 	sentc_crypto::crypto::decrypt_sym_key_by_private_key(&private_key, &encrypted_symmetric_key_info)
+}
+
+//__________________________________________________________________________________________________
+
+pub fn done_fetch_sym_key(master_key: String, server_out: String, non_registered: bool) -> Result<String>
+{
+	sentc_crypto::crypto::done_fetch_sym_key(&master_key, &server_out, non_registered)
+}
+
+pub fn done_fetch_sym_key_by_private_key(private_key: String, server_out: String, non_registered: bool) -> Result<String>
+{
+	sentc_crypto::crypto::done_fetch_sym_key_by_private_key(&private_key, &server_out, non_registered)
 }
 
 //__________________________________________________________________________________________________

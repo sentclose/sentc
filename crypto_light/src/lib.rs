@@ -14,11 +14,23 @@ use alloc::string::String;
 pub use sentc_crypto_common as sdk_common;
 use sentc_crypto_common::{DeviceId, UserId};
 use sentc_crypto_utils::cryptomat::KeyToString;
-use sentc_crypto_utils::StdDeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
 pub use {sentc_crypto_core as sdk_core, sentc_crypto_utils as sdk_utils};
 
 use crate::error::SdkLightError;
+
+pub type StdDeviceKeyDataInt = sentc_crypto_utils::user::DeviceKeyDataInt<
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::PublicKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::util::VerifyKey,
+>;
+pub type StdUserPreVerifyLogin = sentc_crypto_utils::user::UserPreVerifyLogin<
+	sentc_crypto_std_keys::util::SecretKey,
+	sentc_crypto_std_keys::util::PublicKey,
+	sentc_crypto_std_keys::util::SignKey,
+	sentc_crypto_std_keys::util::VerifyKey,
+>;
 
 pub struct UserDataInt
 {

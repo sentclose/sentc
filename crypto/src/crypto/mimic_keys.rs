@@ -10,7 +10,7 @@ use sentc_crypto_utils::error::SdkUtilError;
 
 use crate::SdkError;
 
-pub(crate) struct FakeSig;
+pub struct FakeSig;
 
 impl CryptoAlg for FakeSig
 {
@@ -31,7 +31,7 @@ impl Into<Vec<u8>> for FakeSig
 
 impl Sig for FakeSig {}
 
-pub(crate) struct FakeSignKey;
+pub struct FakeSignKey;
 
 impl CryptoAlg for FakeSignKey
 {
@@ -61,7 +61,7 @@ impl SignK for FakeSignKey
 	}
 }
 
-pub(crate) struct FakeSignKeyWrapper;
+pub struct FakeSignKeyWrapper;
 
 impl FromStr for FakeSignKeyWrapper
 {

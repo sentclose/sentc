@@ -2,8 +2,7 @@ use alloc::string::String;
 
 use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::DeriveMasterKeyForAuth;
-use sentc_crypto_utils::{StdDeviceKeyDataInt, StdUserPreVerifyLogin};
+use sentc_crypto_std_keys::core::DeriveMasterKeyForAuth;
 
 use crate::error::SdkLightError;
 use crate::user::{
@@ -21,7 +20,7 @@ use crate::user::{
 	register_internally,
 	verify_login_internally,
 };
-use crate::UserDataInt;
+use crate::{StdDeviceKeyDataInt, StdUserPreVerifyLogin, UserDataInt};
 
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkLightError>
 {

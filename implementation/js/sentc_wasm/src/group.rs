@@ -398,7 +398,7 @@ pub fn group_extract_group_key(server_output: &str) -> Result<GroupOutDataKeys, 
 #[wasm_bindgen]
 pub fn group_decrypt_key(private_key: &str, server_key_data: &str) -> Result<GroupKeyData, JsValue>
 {
-	let out = group::decrypt_group_keys(server_key_data, private_key)?;
+	let out = group::decrypt_group_keys(private_key, server_key_data)?;
 
 	Ok(out.into())
 }

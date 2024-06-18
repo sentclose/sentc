@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use hmac::digest::Digest;
+use sha2::digest::Digest;
 
 use crate::Error;
 
@@ -270,13 +270,6 @@ pub trait ClientRandomValueComposer
 
 pub trait HashedAuthenticationKey: PwPrepareExport {}
 
-pub trait HashedAuthenticationKeyComposer
-{
-	type Value: HashedAuthenticationKey;
-
-	fn from_bytes(vec: Vec<u8>, alg: &str) -> Result<Self::Value, Error>;
-}
-
 pub trait DeriveMasterKeyForAuth: PwPrepareExport
 {
 	fn get_master_key(&self, encrypted_master_key: &[u8]) -> Result<impl SymKey, Error>;
@@ -284,9 +277,7 @@ pub trait DeriveMasterKeyForAuth: PwPrepareExport
 
 pub trait DeriveAuthKeyForAuth: PwPrepareExport
 {
-	type HAK: HashedAuthenticationKey;
-
-	fn hash_auth_key(&self) -> Result<Self::HAK, Error>;
+	fn hash_auth_key(&self) -> Result<Vec<u8>, Error>;
 }
 
 pub trait DeriveAuthKeyForAuthComposer

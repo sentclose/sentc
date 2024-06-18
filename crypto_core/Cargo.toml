@@ -16,42 +16,14 @@ include = [
 ]
 
 [dependencies]
-aes-gcm = "0.9.4"
-# pre here because we must use rand_core version 0.6.3 under the hood but the actual version of x25519-dalek uses version 0.5
-curve25519-dalek = { version = "3.2.0", default-features = false, features = ["u64_backend", "alloc"] }
-x25519-dalek = { version = "2.0.0-pre.1", default-features = false, features = ["u64_backend"] }
-ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
 rand_core = { version = "0.6.3", default-features = false, features = ["getrandom"] }
 sha2 = { version = "0.10.2", default-features = false }
-hkdf = { version = "0.12.3", default-features = false }
-hmac = "0.12.1"
-argon2 = "0.3"
-ope = "0.1.1"
-pqc_kyber_edit = { version = "0.7.1", features = ["90s-fixslice"] }
-pqc_dilithium_edit = { version = "0.2.0", features = ["mode3", "aes", "random_signing"] }
+
+[dev-dependencies]
+sentc-crypto-std-keys.workspace = true
 
 [features]
-default = ["aes", "ecies_kyber_hybrid", "ed25519_dilithium_hybrid", "hmac_sha256", "ope_sort", "argon2_hash", "default_env"]
-
-# symmetric encryption
-aes = []
-
-# asymmetric encryption
-ecies = []
-ecies_kyber_hybrid = []
-
-# sign
-ed25519 = []
-ed25519_dilithium_hybrid = []
-
-# searchable
-hmac_sha256 = []
-
-# sortable
-ope_sort = []
-
-#pw hash
-argon2_hash = []
+default = ["default_env"]
 
 # Descibe the used env for the crng
 default_env = []

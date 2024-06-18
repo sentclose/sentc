@@ -26,7 +26,25 @@ jobs:
           key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Core tests
-        run: cargo test --package sentc-crypto-core --lib test
+        run: cargo test --package sentc-crypto-core test
+
+  std-keys-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Std keys tests
+        run: cargo test --package sentc-crypto-std-keys --lib test --features=full
 
   crypto-default:
     runs-on: ubuntu-latest
@@ -44,7 +62,7 @@ jobs:
           key: ${{ runner.os }}-cargo-crypto_default-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Crypto default tests
-        run: cargo test --package sentc-crypto --lib test --features=server
+        run: cargo test --package sentc-crypto --lib test --features=server,export
 
   crypto-rust:
     runs-on: ubuntu-latest
@@ -62,7 +80,7 @@ jobs:
           key: ${{ runner.os }}-cargo-crypto_rust-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Crypto rust tests
-        run: cargo test --package sentc-crypto --lib test --features=rust,server
+        run: cargo test --package sentc-crypto --lib test --features=server
 
   crypto-light-default:
     runs-on: ubuntu-latest
@@ -80,7 +98,7 @@ jobs:
           key: ${{ runner.os }}-cargo-crypto_rust-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Crypto light default tests
-        run: cargo test --package sentc-crypto-light --lib test
+        run: cargo test --package sentc-crypto-light --lib test --features=export
 
   crypto-light-rust:
     runs-on: ubuntu-latest
@@ -98,4 +116,4 @@ jobs:
           key: ${{ runner.os }}-cargo-crypto_rust-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Crypto light rust tests
-        run: cargo test --package sentc-crypto-light --lib test --features=rust
+        run: cargo test --package sentc-crypto-light --lib test

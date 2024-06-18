@@ -11,26 +11,25 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_common::UserId;
+use sentc_crypto_std_keys::util::{PublicKey, SecretKey, SignKey, SymKeyFormatExport, SymmetricKey};
 use sentc_crypto_utils::cryptomat::KeyToString;
-use sentc_crypto_utils::keys::{PublicKey, SecretKey, SignKey};
 use serde_json::from_str;
 
 use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport, GroupOutDataKeyExport, GroupOutDataLightExport};
-use crate::entities::keys::{SymKeyFormatExport, SymmetricKey};
 use crate::{SdkError, StdGroup};
 
 macro_rules! prepare_prepare_group_keys_for_new_member {
 	($requester_public_key_data:expr,$group_keys:expr,|$uk:ident,$split_group_keys:ident|$scope:block) => {{
 		let $uk = sentc_crypto_common::user::UserPublicKeyData::from_string($requester_public_key_data).map_err($crate::SdkError::JsonParseFailed)?;
 
-		let group_keys: alloc::vec::Vec<$crate::entities::keys::SymKeyFormatExport> =
+		let group_keys: alloc::vec::Vec<sentc_crypto_std_keys::util::SymKeyFormatExport> =
 			serde_json::from_str($group_keys).map_err($crate::SdkError::JsonParseFailed)?;
 
 		//split group key and id
 		let saved_keys = group_keys
 			.iter()
 			.map(|k| k.try_into())
-			.collect::<Result<alloc::vec::Vec<$crate::entities::keys::SymmetricKey>, _>>()?;
+			.collect::<Result<alloc::vec::Vec<sentc_crypto_std_keys::util::SymmetricKey>, _>>()?;
 
 		let $split_group_keys = $crate::group::prepare_group_keys_for_new_member_with_ref(&saved_keys);
 
@@ -342,7 +341,7 @@ mod test
 	};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::cryptomat::Pk;
-	use sentc_crypto_utils::keys::PublicKey;
+	use sentc_crypto_std_keys::util::PublicKey;
 	use serde_json::to_string;
 
 	use super::*;

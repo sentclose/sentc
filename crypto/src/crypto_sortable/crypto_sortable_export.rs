@@ -2,8 +2,8 @@ use alloc::string::String;
 
 use sentc_crypto_common::content_sortable::SortableEncryptOutput;
 use sentc_crypto_core::cryptomat::SortableKey as CoreSort;
+use sentc_crypto_std_keys::util::SortableKey;
 use sentc_crypto_utils::cryptomat::SortableKeyWrapper;
-use sentc_crypto_utils::keys::SortableKey;
 
 use crate::SdkError;
 

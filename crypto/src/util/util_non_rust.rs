@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_core::SymmetricKey;
+use sentc_crypto_std_keys::core::SymmetricKey;
 use sentc_crypto_utils::error::SdkUtilError;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};

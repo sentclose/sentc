@@ -1,8 +1,8 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use sentc_crypto_std_keys::util::{SecretKey, SignKey, SymKeyFormatExport, SymmetricKey};
 use sentc_crypto_utils::cryptomat::{PkWrapper, SignKWrapper, SkWrapper, SymKeyWrapper, VerifyKWrapper};
-use sentc_crypto_utils::keys::{SecretKey, SignKey, SymKeyFormatExport, SymmetricKey};
 use serde_json::from_str;
 
 use crate::entities::user::{UserDataExport, UserKeyDataExport};
@@ -94,16 +94,16 @@ pub enum PreLoginOutExport
 }
 
 impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
-	TryFrom<super::PreLoginOut<S, Sk, Pk, SiK, Vk, sentc_crypto_core::DeriveMasterKeyForAuth>> for PreLoginOutExport
+	TryFrom<super::PreLoginOut<S, Sk, Pk, SiK, Vk, sentc_crypto_std_keys::core::DeriveMasterKeyForAuth>> for PreLoginOutExport
 {
 	type Error = SdkError;
 
-	fn try_from(value: super::PreLoginOut<S, Sk, Pk, SiK, Vk, sentc_crypto_core::DeriveMasterKeyForAuth>) -> Result<Self, Self::Error>
+	fn try_from(value: super::PreLoginOut<S, Sk, Pk, SiK, Vk, sentc_crypto_std_keys::core::DeriveMasterKeyForAuth>) -> Result<Self, Self::Error>
 	{
 		match value {
 			super::PreLoginOut::Direct(d) => Ok(Self::Direct(d.try_into()?)),
 			super::PreLoginOut::Otp(d) => {
-				let master_key: sentc_crypto_utils::keys::MasterKeyFormat = d.master_key.into();
+				let master_key: sentc_crypto_std_keys::util::MasterKeyFormat = d.master_key.into();
 
 				Ok(Self::Otp(PrepareLoginOtpOutput {
 					master_key: master_key.to_string()?,
@@ -131,8 +131,8 @@ pub async fn mfa_login(
 	recovery: bool,
 ) -> Result<UserDataExport, String>
 {
-	let master_key_encryption: sentc_crypto_utils::keys::MasterKeyFormat = master_key_encryption.parse()?;
-	let master_key_encryption: sentc_crypto_core::DeriveMasterKeyForAuth = master_key_encryption.try_into()?;
+	let master_key_encryption: sentc_crypto_std_keys::util::MasterKeyFormat = master_key_encryption.parse()?;
+	let master_key_encryption: sentc_crypto_std_keys::core::DeriveMasterKeyForAuth = master_key_encryption.try_into()?;
 
 	let out = StdUser::mfa_login(
 		base_url,

@@ -22,16 +22,9 @@ use sentc_crypto_common::user::{
 	VerifyLoginLightOutput,
 };
 use sentc_crypto_common::{DeviceId, UserId};
-use sentc_crypto_core::{DeriveMasterKeyForAuth, PwHasherGetter, SecretKey, SignKey, SymmetricKey};
-use sentc_crypto_utils::{
-	client_random_value_to_string,
-	export_raw_public_key_to_pem,
-	export_raw_verify_key_to_pem,
-	handle_server_response,
-	hashed_authentication_key_to_string,
-	StdDeviceKeyDataInt,
-	StdUserPreVerifyLogin,
-};
+use sentc_crypto_std_keys::core::{DeriveMasterKeyForAuth, PwHasherGetter, SecretKey, SignKey, SymmetricKey};
+use sentc_crypto_std_keys::util::export::{export_raw_public_key_to_pem, export_raw_verify_key_to_pem};
+use sentc_crypto_utils::{client_random_value_to_string, handle_server_response, hashed_authentication_key_to_string};
 
 #[cfg(feature = "export")]
 pub use self::user::{
@@ -66,7 +59,7 @@ pub use self::user_rust::{
 	verify_login,
 };
 use crate::error::SdkLightError;
-use crate::{sdk_utils, UserDataInt};
+use crate::{StdDeviceKeyDataInt, StdUserPreVerifyLogin, UserDataInt};
 
 fn generate_user_register_data_internally() -> Result<(String, String), SdkLightError>
 {
@@ -228,8 +221,8 @@ fn done_validate_mfa_internally(
 ) -> Result<StdUserPreVerifyLogin, SdkLightError>
 {
 	Ok(sentc_crypto_utils::user::done_validate_mfa::<
-		sdk_utils::keys::SecretKey,
-		sdk_utils::keys::SignKey,
+		sentc_crypto_std_keys::util::SecretKey,
+		sentc_crypto_std_keys::util::SignKey,
 	>(master_key_encryption, auth_key, device_identifier, server_output)?)
 }
 
@@ -248,8 +241,8 @@ pub fn done_login(
 ) -> Result<StdUserPreVerifyLogin, SdkLightError>
 {
 	Ok(sentc_crypto_utils::user::done_login::<
-		sdk_utils::keys::SecretKey,
-		sdk_utils::keys::SignKey,
+		sentc_crypto_std_keys::util::SecretKey,
+		sentc_crypto_std_keys::util::SignKey,
 	>(master_key_encryption, auth_key, device_identifier, server_output)?)
 }
 
@@ -310,7 +303,8 @@ pub(crate) mod test_fn
 	use sentc_crypto_common::user::{DoneLoginServerKeysOutput, DoneLoginServerOutput, PrepareLoginSaltServerOutput, VerifyLoginInput};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::cryptomat::{ClientRandomValue, Pk};
-	use sentc_crypto_utils::{client_random_value_from_string, import_public_key_from_pem_with_alg};
+	use sentc_crypto_std_keys::util::export::import_public_key_from_pem_with_alg;
+	use sentc_crypto_utils::client_random_value_from_string;
 
 	use super::*;
 
@@ -325,7 +319,8 @@ pub(crate) mod test_fn
 
 	fn generate_salt_from_base64(client_random_value: &str, alg: &str, add_str: &str) -> Vec<u8>
 	{
-		let client_random_value = client_random_value_from_string::<sentc_crypto_core::ClientRandomValue>(client_random_value, alg).unwrap();
+		let client_random_value =
+			client_random_value_from_string::<sentc_crypto_std_keys::core::ClientRandomValue>(client_random_value, alg).unwrap();
 
 		client_random_value.generate_salt(add_str)
 	}

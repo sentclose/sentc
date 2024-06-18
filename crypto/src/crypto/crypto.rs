@@ -9,6 +9,7 @@ use sentc_crypto_core::cryptomat::{CryptoAlg, SymKeyComposer, SymKeyGen};
 use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, PkWrapper, SkWrapper, SymKeyComposerWrapper, SymKeyGenWrapper, SymKeyWrapper};
 use serde::{Deserialize, Serialize};
 
+use crate::util::public::handle_server_response;
 use crate::SdkError;
 
 /**
@@ -18,9 +19,7 @@ This can not only be used internally, to get the used key_id
  */
 pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &[u8]), SdkError>
 {
-	Ok(sentc_crypto_utils::keys::split_head_and_encrypted_data(
-		data_with_head,
-	)?)
+	Ok(sentc_crypto_utils::split_head_and_encrypted_data(data_with_head)?)
 }
 
 /**
@@ -71,6 +70,42 @@ pub struct KeyGenerator<SGen, SC, P>
 
 impl<SGen: SymKeyGenWrapper, SC: SymKeyComposerWrapper, P: PkFromUserKeyWrapper> KeyGenerator<SGen, SC, P>
 {
+	/**
+	# Get the key from server fetch
+
+	Decrypted the server output with the master key
+	 */
+	pub fn done_fetch_sym_key(master_key: &impl SymKeyWrapper, server_out: &str, non_registered: bool) -> Result<SC::SymmetricKeyWrapper, SdkError>
+	{
+		let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+			GeneratedSymKeyHeadServerOutput::from_string(server_out)?
+		} else {
+			handle_server_response(server_out)?
+		};
+
+		Self::decrypt_sym_key(master_key, &out)
+	}
+
+	/**
+	# Get the key from server fetch
+
+	decrypt it with the private key
+	 */
+	pub fn done_fetch_sym_key_by_private_key(
+		private_key: &impl SkWrapper,
+		server_out: &str,
+		non_registered: bool,
+	) -> Result<SC::SymmetricKeyWrapper, SdkError>
+	{
+		let out: GeneratedSymKeyHeadServerOutput = if non_registered {
+			GeneratedSymKeyHeadServerOutput::from_string(server_out)?
+		} else {
+			handle_server_response(server_out)?
+		};
+
+		Self::decrypt_sym_key_by_private_key(private_key, &out)
+	}
+
 	/**
 	# Get a symmetric key which was encrypted by a master key
 
@@ -172,8 +207,8 @@ impl<SGen: SymKeyGenWrapper, SC: SymKeyComposerWrapper, P: PkFromUserKeyWrapper>
 #[cfg(test)]
 mod test
 {
+	use sentc_crypto_std_keys::util::{PublicKey, SignKey, SymmetricKey};
 	use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SkCryptoWrapper, SymKeyCrypto};
-	use sentc_crypto_utils::keys::{PublicKey, SignKey, SymmetricKey};
 
 	use super::*;
 	use crate::group::test_fn::create_group;

@@ -22,6 +22,7 @@ include = [
 sentc-crypto-common = { workspace = true }
 sentc-crypto-core = { workspace = true }
 sentc-crypto-utils = { workspace = true }
+sentc-crypto-std-keys = { workspace = true, features = ["wrapper"] }
 
 # json handling
 serde_json = { version = "1.0.81", default-features = false, features = ["alloc"] }

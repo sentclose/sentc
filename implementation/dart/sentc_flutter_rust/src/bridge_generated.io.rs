@@ -1319,6 +1319,21 @@ pub extern "C" fn wire_decrypt_sym_key_by_private_key(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_done_fetch_sym_key(port_: i64, master_key: *mut wire_uint_8_list, server_out: *mut wire_uint_8_list, non_registered: bool) {
+	wire_done_fetch_sym_key_impl(port_, master_key, server_out, non_registered)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_done_fetch_sym_key_by_private_key(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	server_out: *mut wire_uint_8_list,
+	non_registered: bool,
+) {
+	wire_done_fetch_sym_key_by_private_key_impl(port_, private_key, server_out, non_registered)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_create_searchable_raw(port_: i64, key: *mut wire_uint_8_list, data: *mut wire_uint_8_list, full: bool, limit: *mut u32) {
 	wire_create_searchable_raw_impl(port_, key, data, full, limit)
 }
