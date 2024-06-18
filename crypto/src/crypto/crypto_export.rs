@@ -243,6 +243,24 @@ pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify
 
 //__________________________________________________________________________________________________
 
+pub fn done_fetch_sym_key(master_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
+{
+	let master_key: SymmetricKey = master_key.parse()?;
+
+	let out = StdKeyGenerator::done_fetch_sym_key(&master_key, server_out, non_registered)?;
+
+	Ok(out.to_string()?)
+}
+
+pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str, non_registered: bool) -> Result<String, String>
+{
+	let private_key: SecretKey = private_key.parse()?;
+
+	let out = StdKeyGenerator::done_fetch_sym_key_by_private_key(&private_key, server_out, non_registered)?;
+
+	Ok(out.to_string()?)
+}
+
 pub fn decrypt_sym_key(master_key: &str, encrypted_symmetric_key_info: &str) -> Result<String, String>
 {
 	let master_key: SymmetricKey = master_key.parse()?;
