@@ -35,7 +35,8 @@ serde = { version = "1.0", default-features = false, features = ["derive", "allo
 sentc-crypto-std-keys = { workspace = true, features = ["full"] }
 
 [features]
-export = ["sentc-crypto-std-keys"]
+export = ["std_keys"]
+std_keys = ["sentc-crypto-std-keys"]
 
 server = []
 server_test = []
