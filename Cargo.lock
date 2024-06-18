@@ -1185,7 +1185,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1208,7 +1208,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "rand_core 0.6.4",
  "sentc-crypto-std-keys",
@@ -1217,7 +1217,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1231,7 +1231,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-std-keys"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1256,7 +1256,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "base64ct",
  "js-sys",
@@ -1273,7 +1273,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "flutter_rust_bridge",
  "once_cell",
@@ -1284,7 +1284,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter_rust_light"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "flutter_rust_bridge",
  "once_cell",
@@ -1295,7 +1295,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_wasm"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "getrandom",
  "js-sys",
@@ -1309,7 +1309,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_wasm_light"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "getrandom",
  "js-sys",
