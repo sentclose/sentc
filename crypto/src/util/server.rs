@@ -1,13 +1,8 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use sentc_crypto_core::cryptomat::{
-	ClientRandomValueComposer,
-	DeriveAuthKeyForAuth,
-	DeriveAuthKeyForAuthComposer,
-	HashedAuthenticationKeyComposer,
-	Pk,
-};
+use sentc_crypto_core::cryptomat::{ClientRandomValueComposer, DeriveAuthKeyForAuth, DeriveAuthKeyForAuthComposer, Pk};
 use sentc_crypto_utils::cryptomat::StaticKeyComposerWrapper;
 
 use crate::util::public::generate_salt_from_base64;
@@ -31,36 +26,23 @@ pub fn generate_salt_from_base64_to_string<C: ClientRandomValueComposer>(
 	Ok(Base64::encode_string(&salt))
 }
 
-/**
-# Get the client and server hashed auth keys in the internal format
-
-1. hash the client auth key (which comes from the client to the server)
-2. import both hashed auth keys into the internal format and return them to compare them
-
-This is used on the server in done login
- */
-pub fn get_auth_keys_from_base64<DAK: DeriveAuthKeyForAuthComposer, HAK: HashedAuthenticationKeyComposer>(
-	client_auth_key: &str,
-	server_hashed_auth_key: &str,
-	alg: &str,
-) -> Result<
-	(
-		HAK::Value,
-		<<DAK as DeriveAuthKeyForAuthComposer>::Value as DeriveAuthKeyForAuth>::HAK,
-	),
-	SdkError,
->
+pub fn get_auth_keys_from_base64<DAK: DeriveAuthKeyForAuthComposer>(client_auth_key: &str, alg: &str) -> Result<Vec<u8>, SdkError>
 {
 	let v_c = Base64::decode_vec(client_auth_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
-	let v_s = Base64::decode_vec(server_hashed_auth_key).map_err(|_| SdkError::DecodeHashedAuthKey)?;
 
 	let client_auth_key = DAK::from_bytes(v_c, alg)?;
-	let server_hashed_auth_key = HAK::from_bytes(v_s, alg)?;
 
 	//hash the client key
-	let hashed_client_key = client_auth_key.hash_auth_key()?;
 
-	Ok((server_hashed_auth_key, hashed_client_key))
+	Ok(client_auth_key.hash_auth_key()?)
+}
+
+/**
+Use it for the server hashed auth key (from register) and when the client auth key was hashed extern and sent to the server
+*/
+pub fn get_hashed_auth_key_from_string(hashed_auth_key: &str) -> Result<Vec<u8>, SdkError>
+{
+	Base64::decode_vec(hashed_auth_key).map_err(|_| SdkError::DecodeHashedAuthKey)
 }
 
 pub fn encrypt_ephemeral_group_key_with_public_key<P: StaticKeyComposerWrapper>(

@@ -83,11 +83,11 @@ pub(crate) fn password_to_decrypt(password: &[u8], salt: &[u8]) -> Result<impl S
 
 and keep only the first 16 bytes. This is used for registration and done login on the server.
 */
-pub(super) fn get_hashed_auth_key(derived_authentication_key_bytes: &[u8]) -> Result<HashedAuthenticationKey, Error>
+pub(super) fn get_hashed_auth_key(derived_authentication_key_bytes: &[u8]) -> Result<Vec<u8>, Error>
 {
 	let hashed_authentication_key_16bytes = hash_auth_key(derived_authentication_key_bytes)?;
 
-	Ok(HashedAuthenticationKey::Argon2(hashed_authentication_key_16bytes))
+	Ok(hashed_authentication_key_16bytes.to_vec())
 }
 
 /**
