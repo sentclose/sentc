@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "crypto",
     "crypto_core",
-    "crypto_core_tests",
     "crypto_utils",
     "crypto_light",
     "implementation/js/sentc_wasm",
