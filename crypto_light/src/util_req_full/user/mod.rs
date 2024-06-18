@@ -164,16 +164,16 @@ pub async fn mfa_login(
 ) -> LoginRes
 {
 	#[cfg(feature = "export")]
-	let master_key_encryption: sentc_crypto_std_keys::core::DeriveMasterKeyForAuth = {
+	let master_key_encryption: &sentc_crypto_std_keys::core::DeriveMasterKeyForAuth = {
 		let master_key_encryption: sentc_crypto_std_keys::util::MasterKeyFormat = master_key_encryption.parse()?;
 
-		master_key_encryption.try_into()?
+		&master_key_encryption.try_into()?
 	};
 
 	let keys = sentc_crypto_utils::full::user::mfa_login::<SecretKey, SignKey>(
 		base_url.clone(),
 		auth_token,
-		&master_key_encryption,
+		master_key_encryption,
 		auth_key,
 		user_identifier,
 		token,

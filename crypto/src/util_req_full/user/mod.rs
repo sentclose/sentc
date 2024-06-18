@@ -502,7 +502,7 @@ type UserPublicKeyRes = Result<UserPublicKeyData, SdkError>;
 #[cfg(feature = "export")]
 type UserVerifyKeyRes = Result<String, String>;
 #[cfg(not(feature = "export"))]
-type UserVerifyKeyRes = Result<UserVerifyKeyData, SdkError>;
+type UserVerifyKeyRes = Result<sentc_crypto_common::user::UserVerifyKeyData, SdkError>;
 
 pub async fn fetch_user_public_key(base_url: String, auth_token: &str, user_id: &str) -> UserPublicKeyRes
 {
