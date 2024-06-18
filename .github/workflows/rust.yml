@@ -28,6 +28,24 @@ jobs:
       - name: Core tests
         run: cargo test --package sentc-crypto-core test
 
+  std-keys-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Std keys tests
+        run: cargo test --package sentc-crypto-std-keys --lib test --features=full
+
   crypto-default:
     runs-on: ubuntu-latest
     steps:
