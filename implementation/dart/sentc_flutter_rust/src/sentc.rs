@@ -2206,6 +2206,22 @@ pub fn decrypt_sym_key_by_private_key(private_key: String, encrypted_symmetric_k
 }
 
 //__________________________________________________________________________________________________
+
+pub fn done_fetch_sym_key(master_key: &str, server_out: &str, non_registered: bool) -> Result<String>
+{
+	Ok(sentc_crypto::crypto::done_fetch_sym_key(master_key, server_out, non_registered)?)
+}
+
+pub fn done_fetch_sym_key_by_private_key(private_key: &str, server_out: &str, non_registered: bool) -> Result<String>
+{
+	Ok(sentc_crypto::crypto::done_fetch_sym_key_by_private_key(
+		private_key,
+		server_out,
+		non_registered,
+	)?)
+}
+
+//__________________________________________________________________________________________________
 //searchable crypto
 
 #[repr(C)]
