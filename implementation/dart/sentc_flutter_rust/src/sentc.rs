@@ -1202,7 +1202,7 @@ pub fn group_get_group_key(
 
 pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result<GroupKeyData>
 {
-	let out = sentc_crypto::group::decrypt_group_keys(server_key_data.as_str(), private_key.as_str())?;
+	let out = sentc_crypto::group::decrypt_group_keys(&private_key, &server_key_data)?;
 
 	Ok(out.into())
 }
