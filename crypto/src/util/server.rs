@@ -8,6 +8,24 @@ use sentc_crypto_utils::cryptomat::StaticKeyComposerWrapper;
 use crate::util::public::generate_salt_from_base64;
 use crate::SdkError;
 
+#[macro_export]
+macro_rules! traverse_keys {
+	// Base case: No more types to try, return an error
+	($method:ident, ($($arg:expr),*), []) => {
+		Err($crate::SdkError::AlgNotFound)
+	};
+	 // Recursive case: Try the first type, if it fails with AlgNotFound, try the next types
+	($method:ident, ($($arg:expr),*), [$first:ty $(, $rest:ty)*]) => {
+		match $method::<$first>($($arg),*) {
+            Ok(val) => Ok(val),
+            Err(err) => match err {
+               $crate::SdkError::Util($crate::sdk_utils::error::SdkUtilError::AlgNotFound) | $crate::SdkError::AlgNotFound => traverse_keys!($method, ($($arg),*), [$($rest),*]),
+                _ => Err(err),
+            }
+        }
+	};
+}
+
 /**
 # Generates a salt
 
