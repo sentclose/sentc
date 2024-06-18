@@ -2713,6 +2713,46 @@ fn wire_decrypt_sym_key_by_private_key_impl(
 		},
 	)
 }
+fn wire_done_fetch_sym_key_impl(
+	port_: MessagePort,
+	master_key: impl Wire2Api<String> + UnwindSafe,
+	server_out: impl Wire2Api<String> + UnwindSafe,
+	non_registered: impl Wire2Api<bool> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, String, _>(
+		WrapInfo {
+			debug_name: "done_fetch_sym_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_master_key = master_key.wire2api();
+			let api_server_out = server_out.wire2api();
+			let api_non_registered = non_registered.wire2api();
+			move |task_callback| done_fetch_sym_key(api_master_key, api_server_out, api_non_registered)
+		},
+	)
+}
+fn wire_done_fetch_sym_key_by_private_key_impl(
+	port_: MessagePort,
+	private_key: impl Wire2Api<String> + UnwindSafe,
+	server_out: impl Wire2Api<String> + UnwindSafe,
+	non_registered: impl Wire2Api<bool> + UnwindSafe,
+) {
+	FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, String, _>(
+		WrapInfo {
+			debug_name: "done_fetch_sym_key_by_private_key",
+			port: Some(port_),
+			mode: FfiCallMode::Normal,
+		},
+		move || {
+			let api_private_key = private_key.wire2api();
+			let api_server_out = server_out.wire2api();
+			let api_non_registered = non_registered.wire2api();
+			move |task_callback| done_fetch_sym_key_by_private_key(api_private_key, api_server_out, api_non_registered)
+		},
+	)
+}
 fn wire_create_searchable_raw_impl(
 	port_: MessagePort,
 	key: impl Wire2Api<String> + UnwindSafe,
