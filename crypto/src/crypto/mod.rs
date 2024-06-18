@@ -1,7 +1,7 @@
 pub(crate) mod crypto;
 #[cfg(feature = "export")]
 mod crypto_export;
-pub(crate) mod mimic_keys;
+pub mod mimic_keys;
 
 pub use self::crypto::KeyGenerator;
 #[cfg(not(feature = "export"))]
