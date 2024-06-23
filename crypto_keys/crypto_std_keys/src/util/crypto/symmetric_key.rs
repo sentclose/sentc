@@ -7,7 +7,6 @@ use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_core::cryptomat::SymKey;
 use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyCrypto, VerifyKFromUserKeyWrapper};
 use sentc_crypto_utils::error::SdkUtilError;
-use sentc_crypto_utils::{put_head_and_encrypted_data, split_head_and_encrypted_data};
 
 use crate::core::Signature;
 use crate::util::{SymmetricKey, VerifyKey};
@@ -46,34 +45,6 @@ impl SymKeyCrypto for SymmetricKey
 		let data_to_decrypt = Self::prepare_decrypt(encrypted_data, head, verify_key)?;
 
 		Ok(self.key.decrypt_with_aad(data_to_decrypt, aad)?)
-	}
-
-	fn encrypt(&self, data: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>
-	{
-		let (head, encrypted) = self.encrypt_raw(data, sign_key)?;
-
-		put_head_and_encrypted_data(&head, &encrypted)
-	}
-
-	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>
-	{
-		let (head, encrypted) = self.encrypt_raw_with_aad(data, aad, sign_key)?;
-
-		put_head_and_encrypted_data(&head, &encrypted)
-	}
-
-	fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
-	{
-		let (head, encrypted_data) = split_head_and_encrypted_data(encrypted_data_with_head)?;
-
-		self.decrypt_raw(encrypted_data, &head, verify_key)
-	}
-
-	fn decrypt_with_aad(&self, encrypted_data_with_head: &[u8], aad: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
-	{
-		let (head, encrypted_data) = split_head_and_encrypted_data(encrypted_data_with_head)?;
-
-		self.decrypt_raw_with_aad(encrypted_data, aad, &head, verify_key)
 	}
 
 	fn encrypt_string(&self, data: &str, sign_key: Option<&impl SignKWrapper>) -> Result<String, SdkUtilError>

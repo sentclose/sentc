@@ -7,7 +7,6 @@ use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_core::cryptomat::{Pk, Sk};
 use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SignKWrapper, SkCryptoWrapper, VerifyKFromUserKeyWrapper};
 use sentc_crypto_utils::error::SdkUtilError;
-use sentc_crypto_utils::{put_head_and_encrypted_data, split_head_and_encrypted_data};
 
 use crate::core::Signature;
 use crate::util::{PublicKey, SecretKey, VerifyKey};
@@ -47,14 +46,6 @@ impl PkFromUserKeyWrapper for PublicKey
 		}
 	}
 
-	fn encrypt_with_user_key(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&impl SignKWrapper>)
-		-> Result<Vec<u8>, SdkUtilError>
-	{
-		let (head, data) = Self::encrypt_raw_with_user_key(reply_public_key, data, sign_key)?;
-
-		put_head_and_encrypted_data(&head, &data)
-	}
-
 	fn encrypt_string_with_user_key(
 		reply_public_key: &UserPublicKeyData,
 		data: &str,
@@ -91,13 +82,6 @@ impl SkCryptoWrapper for SecretKey
 				}
 			},
 		}
-	}
-
-	fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
-	{
-		let (head, encrypted_data) = split_head_and_encrypted_data(encrypted_data_with_head)?;
-
-		self.decrypt_raw(encrypted_data, &head, verify_key)
 	}
 
 	fn decrypt_string(&self, encrypted_data_with_head: &str, verify_key: Option<&UserVerifyKeyData>) -> Result<String, SdkUtilError>
