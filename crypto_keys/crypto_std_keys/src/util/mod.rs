@@ -28,6 +28,7 @@ use sentc_crypto_utils::cryptomat::{
 use sentc_crypto_utils::error::SdkUtilError;
 #[cfg(feature = "full")]
 pub use sentc_crypto_utils::split_head_and_encrypted_data;
+use sentc_crypto_utils::{from_string_impl, to_string_impl, wrapper_impl};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "full")]
@@ -39,6 +40,7 @@ use crate::core::{
 	SymmetricKey as CoreSymmetricKey,
 	VerifyKey as CoreVerifyKey,
 };
+use crate::util::export::{export_raw_verify_key_to_pem, sig_to_string};
 
 macro_rules! deref_impl {
 	($st:ty, $t:ty) => {
@@ -55,61 +57,6 @@ macro_rules! deref_impl {
 }
 
 pub(crate) use deref_impl;
-
-macro_rules! to_string_impl {
-	($st:ty,$t:ty) => {
-		impl KeyToString for $st
-		{
-			fn to_string(self) -> Result<String, SdkUtilError>
-			{
-				serde_json::to_string(&Into::<$t>::into(self)).map_err(|_e| SdkUtilError::JsonToStringFailed)
-			}
-		}
-	};
-}
-
-pub(crate) use to_string_impl;
-
-macro_rules! from_string_impl {
-	($st:ty,$t:ty) => {
-		impl FromStr for $st
-		{
-			type Err = SdkUtilError;
-
-			fn from_str(s: &str) -> Result<Self, Self::Err>
-			{
-				let key: $t = serde_json::from_str(s).map_err(|_| SdkUtilError::ImportKeyFailed)?;
-
-				key.try_into()
-			}
-		}
-	};
-}
-
-pub(crate) use from_string_impl;
-
-macro_rules! wrapper_impl {
-	($trait_impl:ident, $name:ident, $inner:ident) => {
-		impl $trait_impl for $name
-		{
-			type Inner = $inner;
-
-			fn get_id(&self) -> &str
-			{
-				&self.key_id
-			}
-
-			fn get_key(&self) -> &Self::Inner
-			{
-				&self.key
-			}
-		}
-	};
-}
-
-pub(crate) use wrapper_impl;
-
-use crate::util::export::{export_raw_verify_key_to_pem, sig_to_string};
 
 //__________________________________________________________________________________________________
 

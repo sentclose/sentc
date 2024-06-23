@@ -21,6 +21,71 @@ use sentc_crypto_core::cryptomat::{
 
 use crate::error::SdkUtilError;
 
+#[macro_export]
+macro_rules! wrapper_impl {
+	($trait_impl:ident, $name:ident, $inner:ident) => {
+		impl $trait_impl for $name
+		{
+			type Inner = $inner;
+
+			fn get_id(&self) -> &str
+			{
+				&self.key_id
+			}
+
+			fn get_key(&self) -> &Self::Inner
+			{
+				&self.key
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! to_string_impl {
+	($st:ty,$t:ty) => {
+		impl KeyToString for $st
+		{
+			fn to_string(self) -> Result<String, $crate::error::SdkUtilError>
+			{
+				serde_json::to_string(&Into::<$t>::into(self)).map_err(|_e| $crate::error::SdkUtilError::JsonToStringFailed)
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! to_string_try_impl {
+	($st:ty,$t:ty) => {
+		impl KeyToString for $st
+		{
+			fn to_string(self) -> Result<String, $crate::error::SdkUtilError>
+			{
+				serde_json::to_string(&TryInto::<$t>::try_into(self)?).map_err(|_e| $crate::error::SdkUtilError::JsonToStringFailed)
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! from_string_impl {
+	($st:ty,$t:ty) => {
+		impl FromStr for $st
+		{
+			type Err = $crate::error::SdkUtilError;
+
+			fn from_str(s: &str) -> Result<Self, Self::Err>
+			{
+				let key: $t = serde_json::from_str(s).map_err(|_| $crate::error::SdkUtilError::ImportKeyFailed)?;
+
+				key.try_into()
+			}
+		}
+	};
+}
+
+//__________________________________________________________________________________________________
+
 macro_rules! wrapper_trait {
 	($name:ident, $inner:ident) => {
 		pub trait $name: FromStr + KeyToString

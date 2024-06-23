@@ -12,6 +12,7 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::SymKeyId;
 use sentc_crypto_utils::cryptomat::KeyToString;
 use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::{from_string_impl, to_string_impl};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{HmacKey as CoreHmacKey, SortKeys as CoreSortableKey};
@@ -26,8 +27,8 @@ pub struct HmacKey
 }
 
 super::deref_impl!(HmacKey, CoreHmacKey);
-super::to_string_impl!(HmacKey, HmacFormatExport);
-super::from_string_impl!(HmacKey, HmacFormatExport);
+to_string_impl!(HmacKey, HmacFormatExport);
+from_string_impl!(HmacKey, HmacFormatExport);
 
 #[derive(Serialize, Deserialize)]
 pub enum HmacFormatExport
