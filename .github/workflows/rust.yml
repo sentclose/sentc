@@ -46,6 +46,27 @@ jobs:
       - name: Std keys tests
         run: cargo test --package sentc-crypto-std-keys --lib test --features=full
 
+  fips-keys-test:
+    runs-on: ubuntu-latest
+    env:
+      OPENSSL_DIR: /opt/openssl
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            ${{ env.OPENSSL_DIR }}
+          key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Fips keys tests
+        run: cargo test --package sentc-crypto-fips-keys test --features=full,sdk
+
   crypto-default:
     runs-on: ubuntu-latest
     steps:
