@@ -1,18 +1,12 @@
-use alloc::vec::Vec;
-
-use aes_gcm::aead::generic_array::GenericArray;
-use aes_gcm::aead::{Aead, NewAead, Payload};
-use aes_gcm::{Aes256Gcm, Key};
-use rand_core::{CryptoRng, RngCore};
-use sentc_crypto_core::cryptomat::{Pk, SymKey, SymKeyGen};
+use openssl::rand::rand_bytes;
+use openssl::symm::{decrypt_aead, encrypt_aead, Cipher};
+use sentc_crypto_core::cryptomat::{Pk, SymKey, SymKeyComposer, SymKeyGen};
 use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
-use crate::core::sym::SymmetricKey;
-use crate::get_rand;
+pub const FIPS_OPENSSL_AES_GCM: &str = "FIPS_OPENSSL_AES_GCM-256";
 
+const AES_MAC_LENGTH: usize = 16;
 const AES_IV_LENGTH: usize = 12;
-
-pub const AES_GCM_OUTPUT: &str = "AES-GCM-256";
 
 pub(crate) type AesKey = [u8; 32];
 
@@ -29,15 +23,7 @@ impl Aes256GcmKey
 try_from_bytes_single_value!(Aes256GcmKey);
 try_from_bytes_owned_single_value!(Aes256GcmKey);
 as_ref_bytes_single_value!(Aes256GcmKey);
-crypto_alg_str_impl!(Aes256GcmKey, AES_GCM_OUTPUT);
-
-impl Into<SymmetricKey> for Aes256GcmKey
-{
-	fn into(self) -> SymmetricKey
-	{
-		SymmetricKey::Aes(self)
-	}
-}
+crypto_alg_str_impl!(Aes256GcmKey, FIPS_OPENSSL_AES_GCM);
 
 impl SymKey for Aes256GcmKey
 {
@@ -53,7 +39,7 @@ impl SymKey for Aes256GcmKey
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		encrypt_internally(&self.0, data, None, &mut get_rand())
+		encrypt_internally(&self.0, data, None)
 	}
 
 	fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
@@ -63,7 +49,7 @@ impl SymKey for Aes256GcmKey
 
 	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
 	{
-		encrypt_internally(&self.0, data, Some(aad), &mut get_rand())
+		encrypt_internally(&self.0, data, Some(aad))
 	}
 
 	fn decrypt_with_aad(&self, ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>, Error>
@@ -78,94 +64,87 @@ impl SymKeyGen for Aes256GcmKey
 
 	fn generate() -> Result<Self::SymmetricKey, Error>
 	{
-		let key = generate_key_internally(&mut get_rand())?;
+		let key = raw_generate()?;
 
 		Ok(Aes256GcmKey(key))
 	}
 }
 
-pub fn raw_encrypt(key: &AesKey, data: &[u8]) -> Result<Vec<u8>, Error>
+impl SymKeyComposer for Aes256GcmKey
 {
-	encrypt_internally(key, data, None, &mut get_rand())
+	type SymmetricKey = Self;
+
+	fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
+	{
+		if alg_str != FIPS_OPENSSL_AES_GCM {
+			return Err(Error::AlgNotFound);
+		}
+
+		Self::try_from(bytes)
+	}
 }
 
-pub fn raw_decrypt(key: &AesKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>
+//__________________________________________________________________________________________________
+
+pub fn raw_encrypt(key: &[u8], data: &[u8]) -> Result<Vec<u8>, Error>
+{
+	encrypt_internally(key, data, None)
+}
+
+pub fn raw_decrypt(key: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>, Error>
 {
 	decrypt_internally(key, ciphertext, None)
 }
 
 pub fn raw_generate() -> Result<AesKey, Error>
 {
-	generate_key_internally(&mut get_rand())
-}
-
-//__________________________________________________________________________________________________
-//internally function
-
-fn generate_key_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<[u8; 32], Error>
-{
 	let mut key = [0u8; 32]; //aes 256
 
-	rng.try_fill_bytes(&mut key)
-		.map_err(|_| Error::KeyCreationFailed)?;
-
+	rand_bytes(&mut key).map_err(|_| Error::KeyCreationFailed)?;
 	Ok(key)
 }
 
-fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], aad: Option<&[u8]>, rng: &mut R) -> Result<Vec<u8>, Error>
+fn encrypt_internally(key: &[u8], data: &[u8], aad: Option<&[u8]>) -> Result<Vec<u8>, Error>
 {
-	let key = Key::from_slice(key);
-	let aead = Aes256Gcm::new(key);
-
 	//IV
 	let mut nonce = [0u8; AES_IV_LENGTH];
-	rng.try_fill_bytes(&mut nonce)
-		.map_err(|_| Error::EncryptionFailedRng)?;
-	let nonce = GenericArray::from_slice(&nonce);
+	rand_bytes(&mut nonce).map_err(|_| Error::EncryptionFailedRng)?;
 
-	let plaintext = if let Some(a) = aad {
-		Payload {
-			aad: a,
-			msg: data,
-		}
-	} else {
-		Payload::from(data)
-	};
+	let mut tag = [0u8; AES_MAC_LENGTH];
 
-	let ciphertext = aead
-		.encrypt(nonce, plaintext)
-		.map_err(|_| Error::EncryptionFailed)?;
+	let ciphertext = encrypt_aead(
+		Cipher::aes_256_gcm(),
+		key,
+		Some(&nonce),
+		aad.unwrap_or_default(),
+		data,
+		&mut tag,
+	)
+	.map_err(|_| Error::EncryptionFailed)?;
 
-	//put the IV in front of the ciphertext
-	let mut output = Vec::with_capacity(AES_IV_LENGTH + ciphertext.len());
-	output.extend_from_slice(nonce);
+	let mut output = Vec::with_capacity(AES_IV_LENGTH + AES_MAC_LENGTH + ciphertext.len());
+	output.extend_from_slice(&nonce);
+	output.extend_from_slice(&tag);
 	output.extend_from_slice(&ciphertext);
 
 	Ok(output)
 }
 
-fn decrypt_internally(key: &AesKey, ciphertext: &[u8], aad: Option<&[u8]>) -> Result<Vec<u8>, Error>
+fn decrypt_internally(key: &[u8], ciphertext: &[u8], aad: Option<&[u8]>) -> Result<Vec<u8>, Error>
 {
-	let key = Key::from_slice(key);
-	let aead = Aes256Gcm::new(key);
+	let nonce = &ciphertext[..AES_IV_LENGTH];
+	let tag = &ciphertext[AES_IV_LENGTH..AES_MAC_LENGTH];
+	let encrypted = &ciphertext[(AES_IV_LENGTH + AES_MAC_LENGTH)..];
 
-	let nonce = GenericArray::from_slice(&ciphertext[..AES_IV_LENGTH]);
-	let encrypted = &ciphertext[AES_IV_LENGTH..];
-
-	let encrypted = if let Some(a) = aad {
-		Payload {
-			aad: a,
-			msg: encrypted,
-		}
-	} else {
-		Payload::from(encrypted)
-	};
-
-	let decrypted = aead
-		.decrypt(nonce, encrypted)
-		.map_err(|_| Error::DecryptionFailed)?;
-
-	Ok(decrypted)
+	decrypt_aead(
+		Cipher::aes_256_gcm(),
+		key,
+		Some(nonce),
+		aad.unwrap_or_default(),
+		encrypted,
+		tag,
+	)
+	.map_err(|_| Error::DecryptionFailed)
 }
 
 #[cfg(test)]
@@ -180,12 +159,16 @@ mod test
 	#[test]
 	fn test_key_generated()
 	{
+		openssl::provider::Provider::load(None, "fips").unwrap();
+
 		let _output = Aes256GcmKey::generate().unwrap();
 	}
 
 	#[test]
 	fn test_plain_encrypt_decrypt()
 	{
+		openssl::provider::Provider::load(None, "fips").unwrap();
+
 		let text = "Hello world üöäéèßê°";
 
 		let output = Aes256GcmKey::generate().unwrap();
@@ -204,6 +187,8 @@ mod test
 	#[test]
 	fn test_not_decrypt_with_wrong_key()
 	{
+		openssl::provider::Provider::load(None, "fips").unwrap();
+
 		let text = "Hello world üöäéèßê°";
 
 		let output1 = Aes256GcmKey::generate().unwrap();
@@ -219,6 +204,8 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_with_payload()
 	{
+		openssl::provider::Provider::load(None, "fips").unwrap();
+
 		let text = "Hello world üöäéèßê°";
 		let payload = b"payload1234567891011121314151617";
 
@@ -238,6 +225,8 @@ mod test
 	#[test]
 	fn test_encrypt_decrypt_with_wrong_payload()
 	{
+		openssl::provider::Provider::load(None, "fips").unwrap();
+
 		let text = "Hello world üöäéèßê°";
 		let payload = b"payload1234567891011121314151617";
 		let payload2 = b"payload1234567891011121314151618";

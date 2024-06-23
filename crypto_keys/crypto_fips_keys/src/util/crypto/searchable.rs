@@ -1,11 +1,9 @@
-use alloc::string::String;
-
 use base64ct::{Base64UrlUnpadded, Encoding};
 use sentc_crypto_core::cryptomat::{SearchableKey, SearchableKeyComposer};
 use sentc_crypto_utils::cryptomat::{SearchableKeyComposerWrapper, SearchableKeyWrapper};
 use sentc_crypto_utils::error::SdkUtilError;
 
-use crate::core::HmacKey as CoreHmacKey;
+use crate::core::hmac::HmacKey as CoreHmacKey;
 use crate::util::HmacKey;
 
 impl SearchableKeyComposerWrapper for HmacKey

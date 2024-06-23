@@ -1,4 +1,5 @@
 use alloc::string::{String, ToString};
+use alloc::vec;
 use alloc::vec::Vec;
 use core::str::FromStr;
 
@@ -10,6 +11,7 @@ use sentc_crypto_core::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyCompos
 
 use crate::cryptomat::{KeyToString, PkWrapper, SignKWrapper};
 use crate::error::SdkUtilError;
+use crate::{put_head_and_encrypted_data, split_head_and_encrypted_data};
 
 //searchable
 
@@ -21,11 +23,71 @@ pub trait SearchableKeyWrapper: FromStr + KeyToString
 
 	fn get_key(&self) -> &Self::Inner;
 
-	fn create_searchable_raw(&self, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, SdkUtilError>;
+	fn create_searchable_raw(&self, data: &str, full: bool, limit: Option<usize>) -> Result<Vec<String>, SdkUtilError>
+	{
+		if data.is_empty() {
+			return Err(SdkUtilError::SearchableEncryptionDataNotFound);
+		}
 
-	fn create_searchable(&self, data: &str, full: bool, limit: Option<usize>) -> Result<SearchableCreateOutput, SdkUtilError>;
+		if full {
+			//create only one hash for 1:1 lookup. good for situations where the item should not be searched but checked
+			let hash = self.search_bytes(data.as_bytes())?;
 
-	fn search(&self, data: &str) -> Result<String, SdkUtilError>;
+			return Ok(vec![hash]);
+		}
+
+		//how many bytes should be hashed
+		let limit_length = if let Some(l) = limit {
+			if l > data.len() {
+				data.len()
+			} else {
+				l
+			}
+		} else {
+			data.len()
+		};
+
+		if limit_length > 200 {
+			return Err(SdkUtilError::SearchableEncryptionDataTooLong);
+		}
+
+		let mut word_to_hash = Vec::with_capacity(limit_length);
+		let mut hashed = Vec::with_capacity(limit_length);
+
+		for (i, datum) in data.bytes().enumerate() {
+			//make sure we not iterate over the limit when limit is set
+			if i > limit_length {
+				break;
+			}
+
+			//hash each char or byte of the string.
+			//hash the next byte as a combination of the previous and the actual
+			//like: word hello -> 1st hash('h'), 2nd hash('he'), 3rd hash('hel'), ...
+			word_to_hash.push(datum);
+
+			hashed.push(self.search_bytes(&word_to_hash)?);
+		}
+
+		Ok(hashed)
+	}
+
+	fn create_searchable(&self, data: &str, full: bool, limit: Option<usize>) -> Result<SearchableCreateOutput, SdkUtilError>
+	{
+		let hashes = self.create_searchable_raw(data, full, limit)?;
+
+		Ok(SearchableCreateOutput {
+			hashes,
+			alg: self.get_key().get_alg_str().to_string(),
+			key_id: self.get_id().to_string(),
+		})
+	}
+
+	fn search(&self, data: &str) -> Result<String, SdkUtilError>
+	{
+		self.search_bytes(data.as_bytes())
+	}
+
+	fn search_bytes(&self, data: &[u8]) -> Result<String, SdkUtilError>;
 }
 
 pub trait SearchableKeyComposerWrapper
@@ -96,13 +158,33 @@ pub trait SymKeyCrypto
 		verify_key: Option<&UserVerifyKeyData>,
 	) -> Result<Vec<u8>, SdkUtilError>;
 
-	fn encrypt(&self, data: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>;
+	fn encrypt(&self, data: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>
+	{
+		let (head, encrypted) = self.encrypt_raw(data, sign_key)?;
 
-	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>;
+		put_head_and_encrypted_data(&head, &encrypted)
+	}
 
-	fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>;
+	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>
+	{
+		let (head, encrypted) = self.encrypt_raw_with_aad(data, aad, sign_key)?;
 
-	fn decrypt_with_aad(&self, encrypted_data_with_head: &[u8], aad: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>;
+		put_head_and_encrypted_data(&head, &encrypted)
+	}
+
+	fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
+	{
+		let (head, encrypted_data) = split_head_and_encrypted_data(encrypted_data_with_head)?;
+
+		self.decrypt_raw(encrypted_data, &head, verify_key)
+	}
+
+	fn decrypt_with_aad(&self, encrypted_data_with_head: &[u8], aad: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
+	{
+		let (head, encrypted_data) = split_head_and_encrypted_data(encrypted_data_with_head)?;
+
+		self.decrypt_raw_with_aad(encrypted_data, aad, &head, verify_key)
+	}
 
 	fn encrypt_string(&self, data: &str, sign_key: Option<&impl SignKWrapper>) -> Result<String, SdkUtilError>;
 
@@ -124,7 +206,12 @@ pub trait SkCryptoWrapper
 {
 	fn decrypt_raw(&self, encrypted_data: &[u8], head: &EncryptedHead, verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>;
 
-	fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>;
+	fn decrypt(&self, encrypted_data_with_head: &[u8], verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
+	{
+		let (head, encrypted_data) = split_head_and_encrypted_data(encrypted_data_with_head)?;
+
+		self.decrypt_raw(encrypted_data, &head, verify_key)
+	}
 
 	fn decrypt_string(&self, encrypted_data_with_head: &str, verify_key: Option<&UserVerifyKeyData>) -> Result<String, SdkUtilError>;
 }
@@ -139,11 +226,13 @@ pub trait PkFromUserKeyWrapper
 		sign_key: Option<&impl SignKWrapper>,
 	) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>;
 
-	fn encrypt_with_user_key(
-		reply_public_key: &UserPublicKeyData,
-		data: &[u8],
-		sign_key: Option<&impl SignKWrapper>,
-	) -> Result<Vec<u8>, SdkUtilError>;
+	fn encrypt_with_user_key(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&impl SignKWrapper>)
+		-> Result<Vec<u8>, SdkUtilError>
+	{
+		let (head, data) = Self::encrypt_raw_with_user_key(reply_public_key, data, sign_key)?;
+
+		put_head_and_encrypted_data(&head, &data)
+	}
 
 	fn encrypt_string_with_user_key(
 		reply_public_key: &UserPublicKeyData,

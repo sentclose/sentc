@@ -157,7 +157,7 @@ pub trait Sig: CryptoAlg + Into<Vec<u8>>
 //__________________________________________________________________________________________________
 //searchable
 
-pub trait SearchableKey: CryptoAlg + AsRef<[u8]>
+pub trait SearchableKey: CryptoAlg
 {
 	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>;
 
@@ -183,7 +183,7 @@ pub trait SearchableKeyComposer
 //__________________________________________________________________________________________________
 //sortable
 
-pub trait SortableKey: CryptoAlg + AsRef<[u8]>
+pub trait SortableKey: CryptoAlg
 {
 	fn encrypt_key_with_master_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>;
 
@@ -288,3 +288,82 @@ pub trait DeriveAuthKeyForAuthComposer
 }
 
 pub trait PasswordEncryptSalt: PwPrepareExport {}
+
+//__________________________________________________________________________________________________
+
+#[macro_export]
+macro_rules! crypto_alg_str_impl {
+	($st:ty,$alg:ident) => {
+		impl $crate::cryptomat::CryptoAlg for $st
+		{
+			fn get_alg_str(&self) -> &'static str
+			{
+				$alg
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! try_from_bytes_single_value {
+	($st:ty) => {
+		impl<'a> TryFrom<&'a [u8]> for $st
+		{
+			type Error = $crate::Error;
+
+			fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
+			{
+				Ok(Self(
+					value
+						.try_into()
+						.map_err(|_| $crate::Error::KeyDecryptFailed)?,
+				))
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! try_from_bytes_owned_single_value {
+	($st:ty) => {
+		impl TryFrom<Vec<u8>> for $st
+		{
+			type Error = $crate::Error;
+
+			fn try_from(value: Vec<u8>) -> Result<Self, Self::Error>
+			{
+				Ok(Self(
+					value
+						.try_into()
+						.map_err(|_| $crate::Error::KeyDecryptFailed)?,
+				))
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! as_ref_bytes_single_value {
+	($st:ty) => {
+		impl AsRef<[u8]> for $st
+		{
+			fn as_ref(&self) -> &[u8]
+			{
+				&self.0
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! into_bytes_single_value {
+	($st:ty) => {
+		impl Into<Vec<u8>> for $st
+		{
+			fn into(self) -> Vec<u8>
+			{
+				Vec::from(self.0)
+			}
+		}
+	};
+}

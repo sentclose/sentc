@@ -1,0 +1,41 @@
+[package]
+name = "sentc-crypto-fips-keys"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+include = [
+    "Cargo.toml",
+    "../LICENSE",
+    "src/**/*",
+]
+
+[dependencies]
+sentc-crypto-core.workspace = true
+sentc-crypto-utils = { workspace = true, optional = true }
+sentc-crypto-common = { workspace = true, optional = true }
+sentc-crypto = { workspace = true, optional = true }
+
+openssl = { version = "0.10.64", default-features = false }
+
+digest = "0.10.7"
+
+base64ct = { version = "1.0.1", default-features = false, features = ["alloc"], optional = true }
+pem-rfc7468 = { version = "0.3.1", features = ["alloc"], optional = true }
+serde = { version = "1.0.137", features = ["derive"], optional = true }
+serde_json = { version = "1.0.81", default-features = false, features = ["alloc"], optional = true }
+
+[dev-dependencies]
+sentc-crypto = { workspace = true, features = ["server"] }
+
+[features]
+wrapper = ["sentc-crypto-utils", "sentc-crypto-common", "serde", "serde_json", "pem-rfc7468"]
+full = ["wrapper", "sentc-crypto-utils/encryption", "base64ct"]
+
+sdk = ["sentc-crypto"]
+sdk_full = ["sdk", "sentc-crypto/full_rustls"]

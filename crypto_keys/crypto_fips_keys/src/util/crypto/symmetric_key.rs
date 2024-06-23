@@ -1,14 +1,10 @@
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
-
-use base64ct::{Base64, Encoding};
+use openssl::base64::{decode_block, encode_block};
 use sentc_crypto_common::crypto::EncryptedHead;
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_core::cryptomat::SymKey;
 use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyCrypto, VerifyKFromUserKeyWrapper};
 use sentc_crypto_utils::error::SdkUtilError;
 
-use crate::core::Signature;
 use crate::util::{SymmetricKey, VerifyKey};
 
 impl SymKeyCrypto for SymmetricKey
@@ -51,19 +47,19 @@ impl SymKeyCrypto for SymmetricKey
 	{
 		let encrypted = self.encrypt(data.as_bytes(), sign_key)?;
 
-		Ok(Base64::encode_string(&encrypted))
+		Ok(encode_block(&encrypted))
 	}
 
 	fn encrypt_string_with_aad(&self, data: &str, aad: &str, sign_key: Option<&impl SignKWrapper>) -> Result<String, SdkUtilError>
 	{
 		let encrypted = self.encrypt_with_aad(data.as_bytes(), aad.as_bytes(), sign_key)?;
 
-		Ok(Base64::encode_string(&encrypted))
+		Ok(encode_block(&encrypted))
 	}
 
 	fn decrypt_string(&self, encrypted_data_with_head: &str, verify_key: Option<&UserVerifyKeyData>) -> Result<String, SdkUtilError>
 	{
-		let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkUtilError::DecodeEncryptedDataFailed)?;
+		let encrypted = decode_block(encrypted_data_with_head).map_err(|_| SdkUtilError::DecodeEncryptedDataFailed)?;
 
 		let decrypted = self.decrypt(&encrypted, verify_key)?;
 
@@ -77,7 +73,7 @@ impl SymKeyCrypto for SymmetricKey
 		verify_key: Option<&UserVerifyKeyData>,
 	) -> Result<String, SdkUtilError>
 	{
-		let encrypted = Base64::decode_vec(encrypted_data_with_head).map_err(|_| SdkUtilError::DecodeEncryptedDataFailed)?;
+		let encrypted = decode_block(encrypted_data_with_head).map_err(|_| SdkUtilError::DecodeEncryptedDataFailed)?;
 
 		let decrypted = self.decrypt_with_aad(&encrypted, aad.as_bytes(), verify_key)?;
 
@@ -94,7 +90,7 @@ impl SymmetricKey
 			Some(h) => {
 				match verify_key {
 					None => {
-						let (_, encrypted_data_without_sig) = Signature::split_sig_and_data(&h.alg, encrypted_data)?;
+						let (_, encrypted_data_without_sig) = VerifyKey::split_sig_and_data(&h.alg, encrypted_data)?;
 						Ok(encrypted_data_without_sig)
 					},
 					Some(vk) => Ok(VerifyKey::verify_with_user_key(vk, encrypted_data, h)?),
