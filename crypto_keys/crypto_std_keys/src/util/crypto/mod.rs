@@ -10,7 +10,6 @@ use core::str::FromStr;
 
 use base64ct::{Base64, Encoding};
 use sentc_crypto_common::SymKeyId;
-use sentc_crypto_utils::cryptomat::KeyToString;
 use sentc_crypto_utils::error::SdkUtilError;
 use sentc_crypto_utils::{from_string_impl, to_string_impl};
 use serde::{Deserialize, Serialize};
@@ -87,8 +86,8 @@ pub struct SortableKey
 }
 
 super::deref_impl!(SortableKey, CoreSortableKey);
-super::to_string_impl!(SortableKey, SortableFormatExport);
-super::from_string_impl!(SortableKey, SortableFormatExport);
+to_string_impl!(SortableKey, SortableFormatExport);
+from_string_impl!(SortableKey, SortableFormatExport);
 
 #[derive(Serialize, Deserialize)]
 pub enum SortableFormatExport

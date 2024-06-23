@@ -12,7 +12,6 @@ use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::cryptomat::{SignK, SignKeyComposer, SignKeyPair, SkComposer, StaticKeyPair, SymKeyComposer, SymKeyGen, VerifyK};
 use sentc_crypto_utils::cryptomat::{
-	KeyToString,
 	PkWrapper,
 	SignComposerWrapper,
 	SignKWrapper,

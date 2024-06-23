@@ -44,7 +44,7 @@ macro_rules! wrapper_impl {
 #[macro_export]
 macro_rules! to_string_impl {
 	($st:ty,$t:ty) => {
-		impl KeyToString for $st
+		impl $crate::cryptomat::KeyToString for $st
 		{
 			fn to_string(self) -> Result<String, $crate::error::SdkUtilError>
 			{
@@ -57,7 +57,7 @@ macro_rules! to_string_impl {
 #[macro_export]
 macro_rules! to_string_try_impl {
 	($st:ty,$t:ty) => {
-		impl KeyToString for $st
+		impl $crate::cryptomat::KeyToString for $st
 		{
 			fn to_string(self) -> Result<String, $crate::error::SdkUtilError>
 			{
