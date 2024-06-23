@@ -48,8 +48,6 @@ jobs:
 
   fips-keys-test:
     runs-on: ubuntu-latest
-    env:
-      OPENSSL_DIR: /opt/openssl
     steps:
       - uses: actions/checkout@v3
 
@@ -61,10 +59,44 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-            ${{ env.OPENSSL_DIR }}
           key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libssl-dev
+
+      - name: Install FIPS-compliant OpenSSL
+        run: |
+          # Clone the OpenSSL repository with FIPS support
+          git clone https://github.com/openssl/openssl.git
+          cd openssl
+          
+          # Checkout the specific version/tag/branch with FIPS support
+          git checkout OpenSSL_1_1_1-stable
+          
+          # Configure and build OpenSSL with FIPS support
+          ./config enable-fips
+          make
+          sudo make install
+          
+          # Set up FIPS module configuration
+          echo "openssl_conf = openssl_init" > /usr/local/ssl/openssl.cnf
+          echo "[openssl_init]" >> /usr/local/ssl/openssl.cnf
+          echo "ssl_conf = ssl_sect" >> /usr/local/ssl/openssl.cnf
+          echo "[ssl_sect]" >> /usr/local/ssl/openssl.cnf
+          echo "system_default = crypto_policy" >> /usr/local/ssl/openssl.cnf
+          echo "[crypto_policy]" >> /usr/local/ssl/openssl.cnf
+          echo "include = /usr/local/ssl/fipsmodule.cnf" >> /usr/local/ssl/openssl.cnf
+          
+          # Enable FIPS mode
+          export OPENSSL_FIPS=1
+          export OPENSSL_CONF=/usr/local/ssl/openssl.cnf
+
       - name: Fips keys tests
+        env:
+          OPENSSL_FIPS: 1
+          OPENSSL_CONF: /usr/local/ssl/openssl.cnf
         run: cargo test --package sentc-crypto-fips-keys test --features=full,sdk
 
   crypto-default:
