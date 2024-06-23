@@ -1,3 +1,4 @@
+#[cfg(feature = "encryption")]
 mod crypto;
 
 use alloc::string::String;
