@@ -62,42 +62,31 @@ jobs:
           key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libssl-dev
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
 
-      - name: Install FIPS-compliant OpenSSL
+      - name: Install OpenSSL 3.3
         run: |
-          # Clone the OpenSSL repository with FIPS support
-          git clone https://github.com/openssl/openssl.git
-          cd openssl
-          
-          # Checkout the specific version/tag/branch with FIPS support
-          git checkout OpenSSL_1_1_1-stable
-          
-          # Configure and build OpenSSL with FIPS support
-          ./config enable-fips
+          wget https://www.openssl.org/source/openssl-3.3.0.tar.gz
+          tar -xzf openssl-3.3.0.tar.gz
+          cd openssl-3.3.0
+          ./config fips
           make
           sudo make install
-          
-          # Set up FIPS module configuration
-          echo "openssl_conf = openssl_init" > /usr/local/ssl/openssl.cnf
-          echo "[openssl_init]" >> /usr/local/ssl/openssl.cnf
-          echo "ssl_conf = ssl_sect" >> /usr/local/ssl/openssl.cnf
-          echo "[ssl_sect]" >> /usr/local/ssl/openssl.cnf
-          echo "system_default = crypto_policy" >> /usr/local/ssl/openssl.cnf
-          echo "[crypto_policy]" >> /usr/local/ssl/openssl.cnf
-          echo "include = /usr/local/ssl/fipsmodule.cnf" >> /usr/local/ssl/openssl.cnf
-          
-          # Enable FIPS mode
-          export OPENSSL_FIPS=1
-          export OPENSSL_CONF=/usr/local/ssl/openssl.cnf
+
+      - name: Set OpenSSL environment variables
+        run: |
+          echo "/usr/local/lib64" | sudo tee /etc/ld.so.conf.d/openssl.conf
+          sudo ldconfig
+          export OPENSSL_DIR=/usr/local/ssl
+          export OPENSSL_LIB_DIR=/usr/local/lib64
+          export OPENSSL_INCLUDE_DIR=/usr/local/include
+
+      - name: Verify OpenSSL version
+        run: |
+          openssl version -a
 
       - name: Fips keys tests
-        env:
-          OPENSSL_FIPS: 1
-          OPENSSL_CONF: /usr/local/ssl/openssl.cnf
-        run: cargo test --package sentc-crypto-fips-keys test --features=full,sdk
+        run: cargo test --package sentc-crypto-fips-keys --lib test --features=full
 
   crypto-default:
     runs-on: ubuntu-latest
