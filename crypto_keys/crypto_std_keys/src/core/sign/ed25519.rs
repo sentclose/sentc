@@ -3,18 +3,18 @@ use alloc::vec::Vec;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
 use hmac::digest::Digest;
 use rand_core::{CryptoRng, RngCore};
-use sentc_crypto_core::cryptomat::{CryptoAlg, Sig, SignK, SignKeyPair, SymKey, VerifyK};
-use sentc_crypto_core::Error;
-
-use crate::core::sign::{SignKey, VerifyKey};
-use crate::{
+use sentc_crypto_core::cryptomat::{Sig, SignK, SignKeyPair, SymKey, VerifyK};
+use sentc_crypto_core::{
 	as_ref_bytes_single_value,
 	crypto_alg_str_impl,
-	get_rand,
 	into_bytes_single_value,
 	try_from_bytes_owned_single_value,
 	try_from_bytes_single_value,
+	Error,
 };
+
+use crate::core::sign::{SignKey, VerifyKey};
+use crate::get_rand;
 
 pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;

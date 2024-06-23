@@ -1,14 +1,13 @@
 use alloc::vec::Vec;
 
 use hmac::{Hmac, Mac};
-use sentc_crypto_core::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyGen, SymKey};
-use sentc_crypto_core::Error;
+use sentc_crypto_core::cryptomat::{SearchableKey, SearchableKeyGen, SymKey};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 use sha2::Sha256;
 
 use crate::core::hmac::HmacKey;
 use crate::core::sym;
 use crate::core::sym::aes_gcm::AesKey;
-use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value};
 
 pub const HMAC_SHA256_OUTPUT: &str = "HMAC-SHA256";
 

@@ -4,11 +4,11 @@ use aes_gcm::aead::generic_array::GenericArray;
 use aes_gcm::aead::{Aead, NewAead, Payload};
 use aes_gcm::{Aes256Gcm, Key};
 use rand_core::{CryptoRng, RngCore};
-use sentc_crypto_core::cryptomat::{CryptoAlg, Pk, SymKey, SymKeyGen};
-use sentc_crypto_core::Error;
+use sentc_crypto_core::cryptomat::{Pk, SymKey, SymKeyGen};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 use crate::core::sym::SymmetricKey;
-use crate::{as_ref_bytes_single_value, crypto_alg_str_impl, get_rand, try_from_bytes_owned_single_value, try_from_bytes_single_value};
+use crate::get_rand;
 
 const AES_IV_LENGTH: usize = 12;
 
