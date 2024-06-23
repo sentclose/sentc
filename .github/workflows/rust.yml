@@ -64,22 +64,37 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
 
-      - name: Install OpenSSL 3.3
+      - name: Cache OpenSSL build
+        id: openssl-cache
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/openssl-3.3-fips
+          key: openssl-3.3-fips-${{ runner.os }}-${{ hashFiles('openssl-3.3.0.tar.gz') }}
+          restore-keys: |
+            openssl-3.3-fips-${{ runner.os }}-
+
+      - name: Download OpenSSL 3.3
+        if: steps.openssl-cache.outputs.cache-hit != 'true'
         run: |
-          wget https://www.openssl.org/source/openssl-3.3.0.tar.gz
+          curl -O https://www.openssl.org/source/openssl-3.3.0.tar.gz
           tar -xzf openssl-3.3.0.tar.gz
           cd openssl-3.3.0
-          ./config fips
+
+      - name: Configure and Build OpenSSL 3.3 with FIPS mode
+        if: steps.openssl-cache.outputs.cache-hit != 'true'
+        run: |
+          cd openssl-3.3.0
+          ./Configure enable-fips linux-x86_64 --prefix=/usr/local/openssl-3.3-fips
           make
           sudo make install
 
       - name: Set OpenSSL environment variables
         run: |
-          echo "/usr/local/lib64" | sudo tee /etc/ld.so.conf.d/openssl.conf
+          echo "OPENSSL_DIR=/usr/local/openssl-3.3-fips" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=/usr/local/openssl-3.3-fips/lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=/usr/local/openssl-3.3-fips/include" >> $GITHUB_ENV
+          echo "/usr/local/openssl-3.3-fips/lib" | sudo tee -a /etc/ld.so.conf.d/openssl-3.3-fips.conf
           sudo ldconfig
-          export OPENSSL_DIR=/usr/local/ssl
-          export OPENSSL_LIB_DIR=/usr/local/lib64
-          export OPENSSL_INCLUDE_DIR=/usr/local/include
 
       - name: Verify OpenSSL version
         run: |
