@@ -207,12 +207,22 @@ impl<SGen: SymKeyGenWrapper, SC: SymKeyComposerWrapper, P: PkFromUserKeyWrapper>
 #[cfg(test)]
 mod test
 {
-	use sentc_crypto_std_keys::util::{PublicKey, SignKey, SymmetricKey};
 	use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SkCryptoWrapper, SymKeyCrypto};
 
-	use super::*;
+	use crate::crypto::mimic_keys::FakeSignKeyWrapper;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestKeyGenerator = crate::keys::std::StdKeyGenerator;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestKeyGenerator = crate::keys::fips::FipsKeyGenerator;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestPublicKey = sentc_crypto_std_keys::util::PublicKey;
+
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestPublicKey = sentc_crypto_fips_keys::util::PublicKey;
 
 	#[test]
 	fn test_encrypt_decrypt_sym_raw()
@@ -226,7 +236,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let (head, encrypted) = group_key
-			.encrypt_raw(text.as_bytes(), None::<&SignKey>)
+			.encrypt_raw(text.as_bytes(), None::<&FakeSignKeyWrapper>)
 			.unwrap();
 
 		let decrypted = group_key.decrypt_raw(&encrypted, &head, None).unwrap();
@@ -270,7 +280,7 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 
 		let (head, encrypted) = group_key
-			.encrypt_raw_with_aad(text.as_bytes(), payload, None::<&SignKey>)
+			.encrypt_raw_with_aad(text.as_bytes(), payload, None::<&FakeSignKeyWrapper>)
 			.unwrap();
 
 		let decrypted = group_key
@@ -315,10 +325,10 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let (head, encrypted) = PublicKey::encrypt_raw_with_user_key(
+		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key(
 			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
-			None::<&SignKey>,
+			None::<&FakeSignKeyWrapper>,
 		)
 		.unwrap();
 
@@ -336,7 +346,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let (head, encrypted) = PublicKey::encrypt_raw_with_user_key(
+		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key(
 			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
 			Some(&user.user_keys[0].sign_key),
@@ -363,7 +373,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = group_key
-			.encrypt(text.as_bytes(), None::<&SignKey>)
+			.encrypt(text.as_bytes(), None::<&FakeSignKeyWrapper>)
 			.unwrap();
 
 		let decrypted = group_key.decrypt(&encrypted, None).unwrap();
@@ -383,7 +393,7 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 
 		let encrypted = group_key
-			.encrypt_with_aad(text.as_bytes(), payload, None::<&SignKey>)
+			.encrypt_with_aad(text.as_bytes(), payload, None::<&FakeSignKeyWrapper>)
 			.unwrap();
 
 		let decrypted = group_key
@@ -406,7 +416,7 @@ mod test
 		let payload2 = b"payload1234567891011121314151618";
 
 		let encrypted = group_key
-			.encrypt_with_aad(text.as_bytes(), payload, None::<&SignKey>)
+			.encrypt_with_aad(text.as_bytes(), payload, None::<&FakeSignKeyWrapper>)
 			.unwrap();
 
 		let decrypted = group_key.decrypt_with_aad(&encrypted, payload2, None);
@@ -447,10 +457,10 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = PublicKey::encrypt_with_user_key(
+		let encrypted = TestPublicKey::encrypt_with_user_key(
 			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
-			None::<&SignKey>,
+			None::<&FakeSignKeyWrapper>,
 		)
 		.unwrap();
 
@@ -470,7 +480,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = PublicKey::encrypt_with_user_key(
+		let encrypted = TestPublicKey::encrypt_with_user_key(
 			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
 			Some(&user.user_keys[0].sign_key),
@@ -496,7 +506,9 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = group_key.encrypt_string(text, None::<&SignKey>).unwrap();
+		let encrypted = group_key
+			.encrypt_string(text, None::<&FakeSignKeyWrapper>)
+			.unwrap();
 
 		let decrypted = group_key.decrypt_string(&encrypted, None).unwrap();
 
@@ -514,7 +526,7 @@ mod test
 		let payload = "payload1234567891011121314151617";
 
 		let encrypted = group_key
-			.encrypt_string_with_aad(text, payload, None::<&SignKey>)
+			.encrypt_string_with_aad(text, payload, None::<&FakeSignKeyWrapper>)
 			.unwrap();
 
 		let decrypted = group_key
@@ -554,7 +566,12 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = PublicKey::encrypt_string_with_user_key(&user.user_keys[0].exported_public_key, text, None::<&SignKey>).unwrap();
+		let encrypted = TestPublicKey::encrypt_string_with_user_key(
+			&user.user_keys[0].exported_public_key,
+			text,
+			None::<&FakeSignKeyWrapper>,
+		)
+		.unwrap();
 
 		let decrypted = user.user_keys[0]
 			.private_key
@@ -572,7 +589,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = PublicKey::encrypt_string_with_user_key(
+		let encrypted = TestPublicKey::encrypt_string_with_user_key(
 			&user.user_keys[0].exported_public_key,
 			text,
 			Some(&user.user_keys[0].sign_key),
@@ -594,7 +611,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let master_key = &key_data[0].group_key;
 
-		let (key, encrypted_key) = KeyGenerator::<SymmetricKey, SymmetricKey, PublicKey>::generate_non_register_sym_key(master_key).unwrap();
+		let (key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(master_key).unwrap();
 
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
@@ -611,7 +628,7 @@ mod test
 
 		//check if we can decrypt the key with the master key
 
-		let decrypted_key = KeyGenerator::<SymmetricKey, SymmetricKey, PublicKey>::decrypt_sym_key(master_key, &encrypted_key).unwrap();
+		let decrypted_key = TestKeyGenerator::decrypt_sym_key(master_key, &encrypted_key).unwrap();
 
 		assert_eq!(key.key.as_ref(), decrypted_key.key.as_ref());
 	}
@@ -621,10 +638,7 @@ mod test
 	{
 		let user = create_user();
 
-		let (key, encrypted_key) = KeyGenerator::<SymmetricKey, SymmetricKey, PublicKey>::generate_non_register_sym_key_by_public_key(
-			&user.user_keys[0].exported_public_key,
-		)
-		.unwrap();
+		let (key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key_by_public_key(&user.user_keys[0].exported_public_key).unwrap();
 
 		//test the encrypt / decrypt
 		let text = "123*+^êéèüöß@€&$";
@@ -641,9 +655,7 @@ mod test
 
 		//check if we can decrypt the key with the master key
 
-		let decrypted_key =
-			KeyGenerator::<SymmetricKey, SymmetricKey, PublicKey>::decrypt_sym_key_by_private_key(&user.user_keys[0].private_key, &encrypted_key)
-				.unwrap();
+		let decrypted_key = TestKeyGenerator::decrypt_sym_key_by_private_key(&user.user_keys[0].private_key, &encrypted_key).unwrap();
 
 		let text = "123*+^êéèüöß@€&$";
 

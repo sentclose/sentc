@@ -684,10 +684,10 @@ mod test
 	};
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::cryptomat::Pk;
-	use sentc_crypto_std_keys::util::SignKey;
 
 	use super::*;
-	use crate::group::test_fn::{create_group, StdGroup};
+	use crate::crypto::mimic_keys::FakeSignKeyWrapper;
+	use crate::group::test_fn::{create_group, TestGroup};
 	use crate::user::test_fn::create_user;
 
 	#[test]
@@ -697,7 +697,7 @@ mod test
 		let user = create_user();
 		let user_keys = &user.user_keys[0];
 
-		let group = StdGroup::prepare_create(&user_keys.public_key).unwrap();
+		let group = TestGroup::prepare_create(&user_keys.public_key).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		assert_eq!(group.creator_public_key_id, user_keys.public_key.key_id);
@@ -749,7 +749,7 @@ mod test
 		let mut group_keys = Vec::with_capacity(group_keys_from_server_out.len());
 
 		for k in group_keys_from_server_out {
-			group_keys.push(StdGroup::decrypt_group_keys(&user_keys.private_key, k).unwrap());
+			group_keys.push(TestGroup::decrypt_group_keys(&user_keys.private_key, k).unwrap());
 		}
 
 		assert_eq!(
@@ -760,7 +760,7 @@ mod test
 		//fetch the key single
 		let key = get_group_key_from_server_output(single_fetch.as_str()).unwrap();
 
-		let group_keys_from_single_server_out = StdGroup::decrypt_group_keys(&user_keys.private_key, key).unwrap();
+		let group_keys_from_single_server_out = TestGroup::decrypt_group_keys(&user_keys.private_key, key).unwrap();
 
 		assert_eq!(
 			&key_data[0].group_key.key.as_ref(),
@@ -777,7 +777,7 @@ mod test
 		let user1 = create_user();
 		let user_keys1 = &user1.user_keys[0];
 
-		let group_create = StdGroup::prepare_create(&user_keys.public_key).unwrap();
+		let group_create = TestGroup::prepare_create(&user_keys.public_key).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -836,11 +836,11 @@ mod test
 		let mut group_keys = Vec::with_capacity(group_data_user_0.keys.len());
 
 		for key in group_data_user_0.keys {
-			group_keys.push(StdGroup::decrypt_group_keys(&user_keys.private_key, key).unwrap());
+			group_keys.push(TestGroup::decrypt_group_keys(&user_keys.private_key, key).unwrap());
 		}
 
 		//prepare the keys for user 1
-		let out = StdGroup::prepare_group_keys_for_new_member(
+		let out = TestGroup::prepare_group_keys_for_new_member(
 			&user_keys1.exported_public_key,
 			&[&group_keys[0].group_key],
 			false,
@@ -906,7 +906,7 @@ mod test
 		let mut group_keys_u2 = Vec::with_capacity(group_data_user_1.keys.len());
 
 		for key in group_data_user_1.keys {
-			group_keys_u2.push(StdGroup::decrypt_group_keys(&user_keys1.private_key, key).unwrap());
+			group_keys_u2.push(TestGroup::decrypt_group_keys(&user_keys1.private_key, key).unwrap());
 		}
 
 		assert_eq!(group_keys_u2[0].group_key.key_id, group_keys_u2[0].group_key.key_id);
@@ -927,7 +927,7 @@ mod test
 
 		let user1 = create_user();
 
-		let group_create = StdGroup::prepare_create(&user.user_keys[0].public_key).unwrap();
+		let group_create = TestGroup::prepare_create(&user.user_keys[0].public_key).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -986,11 +986,11 @@ mod test
 		let mut group_keys_u0 = Vec::with_capacity(group_data_user_0.keys.len());
 
 		for key in group_data_user_0.keys {
-			group_keys_u0.push(StdGroup::decrypt_group_keys(&user.user_keys[0].private_key, key).unwrap());
+			group_keys_u0.push(TestGroup::decrypt_group_keys(&user.user_keys[0].private_key, key).unwrap());
 		}
 
 		//prepare the keys for user 1
-		let out = StdGroup::prepare_group_keys_for_new_member_via_session(
+		let out = TestGroup::prepare_group_keys_for_new_member_via_session(
 			&user1.user_keys[0].exported_public_key,
 			&[&group_keys_u0[0].group_key],
 		)
@@ -1055,7 +1055,7 @@ mod test
 		let mut group_keys_u1 = Vec::with_capacity(group_data_user_1.keys.len());
 
 		for key in group_data_user_1.keys {
-			group_keys_u1.push(StdGroup::decrypt_group_keys(&user1.user_keys[0].private_key, key).unwrap());
+			group_keys_u1.push(TestGroup::decrypt_group_keys(&user1.user_keys[0].private_key, key).unwrap());
 		}
 
 		assert_eq!(group_keys_u0[0].group_key.key_id, group_keys_u1[0].group_key.key_id);
@@ -1073,11 +1073,11 @@ mod test
 
 		let (_data, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
 
-		let rotation_out = StdGroup::key_rotation(
+		let rotation_out = TestGroup::key_rotation(
 			&key_data[0].group_key,
 			&user.user_keys[0].public_key,
 			false,
-			None::<&SignKey>,
+			None::<&FakeSignKeyWrapper>,
 			Default::default(),
 		)
 		.unwrap();
@@ -1102,7 +1102,7 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let new_group_key_direct = StdGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
+		let new_group_key_direct = TestGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
 
 		//simulate server key rotation encrypt. encrypt the ephemeral_key (encrypted by the previous room key) with the public keys of all users
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
@@ -1127,7 +1127,7 @@ mod test
 			signed_by_user_sign_key_alg: None,
 		};
 
-		let done_key_rotation = StdGroup::done_key_rotation(
+		let done_key_rotation = TestGroup::done_key_rotation(
 			&user.user_keys[0].private_key,
 			&user.user_keys[0].public_key,
 			&key_data[0].group_key,
@@ -1156,7 +1156,7 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let out = StdGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
+		let out = TestGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
 		assert_ne!(key_data[0].group_key.key.as_ref(), out.group_key.key.as_ref());
@@ -1174,7 +1174,7 @@ mod test
 
 		let (_data, key_data, group_server_out, _, _) = create_group(&user.user_keys[0]);
 
-		let rotation_out = StdGroup::key_rotation(
+		let rotation_out = TestGroup::key_rotation(
 			&key_data[0].group_key,
 			&user.user_keys[0].public_key,
 			false,
@@ -1210,7 +1210,7 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let new_group_key_direct = StdGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
+		let new_group_key_direct = TestGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output_direct).unwrap();
 
 		//__________________________________________________________________________________________
 		//do the server part
@@ -1239,7 +1239,7 @@ mod test
 		//__________________________________________________________________________________________
 		//test done key rotation without verify key (should work even if it is signed, sign is here ignored)
 
-		let done_key_rotation_out = StdGroup::done_key_rotation(
+		let done_key_rotation_out = TestGroup::done_key_rotation(
 			&user.user_keys[0].private_key,
 			&user.user_keys[0].public_key,
 			&key_data[0].group_key,
@@ -1268,7 +1268,7 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let out = StdGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
+		let out = TestGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
 		assert_ne!(key_data[0].group_key.key.as_ref(), out.group_key.key.as_ref());
@@ -1296,7 +1296,7 @@ mod test
 			signed_by_user_sign_key_alg: rotation_out.signed_by_user_sign_key_alg,
 		};
 
-		let done_key_rotation_out = StdGroup::done_key_rotation(
+		let done_key_rotation_out = TestGroup::done_key_rotation(
 			&user.user_keys[0].private_key,
 			&user.user_keys[0].public_key,
 			&key_data[0].group_key,
@@ -1325,7 +1325,7 @@ mod test
 			public_key_sig_key_id: None,
 		};
 
-		let out = StdGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
+		let out = TestGroup::decrypt_group_keys(&user.user_keys[0].private_key, server_key_output).unwrap();
 
 		//the new group key must be different after key rotation
 		assert_ne!(key_data[0].group_key.key.as_ref(), out.group_key.key.as_ref());

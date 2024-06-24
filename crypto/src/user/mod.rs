@@ -52,54 +52,47 @@ pub(crate) mod test_fn
 		VerifyLoginOutput,
 	};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_std_keys::core::ClientRandomValue;
-	use sentc_crypto_std_keys::util::SecretKey;
 
 	use super::*;
 	#[cfg(feature = "export")]
 	use crate::entities::user::UserDataExport;
-	use crate::entities::user::{UserDataInt, UserKeyDataInt};
 	use crate::util;
 	use crate::util::server::generate_salt_from_base64_to_string;
 
-	pub type StdUser = User<
-		sentc_crypto_std_keys::util::SymmetricKey,
-		SecretKey,
-		sentc_crypto_std_keys::util::SignKey,
-		sentc_crypto_std_keys::core::HmacKey,
-		sentc_crypto_std_keys::core::SortKeys,
-		sentc_crypto_std_keys::util::SymmetricKey,
-		SecretKey,
-		sentc_crypto_std_keys::util::SignKey,
-		sentc_crypto_std_keys::util::HmacKey,
-		sentc_crypto_std_keys::util::SortableKey,
-		sentc_crypto_std_keys::util::PublicKey,
-		sentc_crypto_std_keys::util::VerifyKey,
-		sentc_crypto_std_keys::core::PwHasherGetter,
-	>;
+	#[cfg(feature = "std_keys")]
+	pub type TestUser = crate::keys::std::StdUser;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestUser = crate::keys::fips::FipsUser;
 
-	pub type StdUserDataInt = UserDataInt<
-		sentc_crypto_std_keys::util::SymmetricKey,
-		SecretKey,
-		sentc_crypto_std_keys::util::PublicKey,
-		sentc_crypto_std_keys::util::SignKey,
-		sentc_crypto_std_keys::util::VerifyKey,
-	>;
+	#[cfg(feature = "std_keys")]
+	pub type TestUserDataInt = crate::keys::std::StdUserDataInt;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestUserDataInt = crate::keys::fips::FipsUserDataInt;
 
-	pub type StdUserKeyDataInt = UserKeyDataInt<
-		sentc_crypto_std_keys::util::SymmetricKey,
-		SecretKey,
-		sentc_crypto_std_keys::util::PublicKey,
-		sentc_crypto_std_keys::util::SignKey,
-		sentc_crypto_std_keys::util::VerifyKey,
-	>;
+	#[cfg(feature = "std_keys")]
+	pub type TestUserKeyDataInt = crate::keys::std::StdUserKeyDataInt;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestUserKeyDataInt = crate::keys::fips::FipsUserKeyDataInt;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
 		//and now try to log in
 		//normally the salt gets calc by the api
-		let salt_string =
-			generate_salt_from_base64_to_string::<ClientRandomValue>(derived.client_random_value.as_str(), derived.derived_alg.as_str(), "").unwrap();
+		#[cfg(feature = "std_keys")]
+		let salt_string = generate_salt_from_base64_to_string::<sentc_crypto_std_keys::core::ClientRandomValue>(
+			&derived.client_random_value,
+			&derived.derived_alg,
+			"",
+		)
+		.unwrap();
+
+		#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+		let salt_string = generate_salt_from_base64_to_string::<sentc_crypto_fips_keys::core::pw_hash::ClientRandomValue>(
+			&derived.client_random_value,
+			&derived.derived_alg,
+			"",
+		)
+		.unwrap();
 
 		ServerOutput {
 			status: true,
@@ -120,7 +113,16 @@ pub(crate) mod test_fn
 			device, ..
 		} = data;
 
-		let challenge = util::server::encrypt_login_verify_challenge::<SecretKey>(
+		#[cfg(feature = "std_keys")]
+		let challenge = util::server::encrypt_login_verify_challenge::<sentc_crypto_std_keys::util::SecretKey>(
+			&device.derived.public_key,
+			&device.derived.keypair_encrypt_alg,
+			"abcd",
+		)
+		.unwrap();
+
+		#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+		let challenge = util::server::encrypt_login_verify_challenge::<sentc_crypto_fips_keys::util::SecretKey>(
 			&device.derived.public_key,
 			&device.derived.keypair_encrypt_alg,
 			"abcd",
@@ -201,21 +203,21 @@ pub(crate) mod test_fn
 		.unwrap()
 	}
 
-	pub(crate) fn create_user() -> StdUserDataInt
+	pub(crate) fn create_user() -> TestUserDataInt
 	{
 		let username = "admin";
 		let password = "12345";
 
-		let out_string = StdUser::register(username, password).unwrap();
+		let out_string = TestUser::register(username, password).unwrap();
 
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 		let server_output = simulate_server_prepare_login(&out.device.derived);
 
-		let (_input, auth_key, master_key_encryption_key) = StdUser::prepare_login(username, password, &server_output).unwrap();
+		let (_input, auth_key, master_key_encryption_key) = TestUser::prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
-		let done_login = StdUser::done_login(
+		let done_login = TestUser::done_login(
 			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
@@ -225,7 +227,7 @@ pub(crate) mod test_fn
 
 		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &done_login.challenge);
 
-		StdUser::verify_login(
+		TestUser::verify_login(
 			&server_output,
 			done_login.user_id,
 			done_login.device_id,
