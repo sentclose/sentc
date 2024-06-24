@@ -1,4 +1,4 @@
-pub mod group;
+pub(crate) mod group;
 
 #[cfg(feature = "export")]
 mod group_export;
