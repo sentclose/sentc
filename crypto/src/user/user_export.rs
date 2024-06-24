@@ -9,7 +9,8 @@ use sentc_crypto_utils::user;
 use serde_json::from_str;
 
 use crate::entities::user::{UserDataExport, UserKeyDataExport};
-use crate::{group, SdkError, StdUser};
+use crate::keys::std::StdUser;
+use crate::{group, SdkError};
 
 pub type StdDeviceKeyDataInt = user::DeviceKeyDataInt<SecretKey, PublicKey, SignKey, VerifyKey>;
 pub type StdUserPreVerifyLogin = user::UserPreVerifyLogin<SecretKey, PublicKey, SignKey, VerifyKey>;

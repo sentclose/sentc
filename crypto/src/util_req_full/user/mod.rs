@@ -34,7 +34,7 @@ use crate::entities::user::{UserDataInt, UserKeyDataInt};
 use crate::group::Group;
 use crate::user::User;
 use crate::util_req_full::SessionKind;
-use crate::{SdkError, StdUser};
+use crate::SdkError;
 
 #[allow(clippy::large_enum_variant)]
 pub enum PreLoginOut<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper, DMK: DeriveMasterKeyForAuth>
@@ -100,7 +100,7 @@ where
 
 		let key_session = key_count > 50;
 
-		let (input, exported_device_public_key) = StdUser::prepare_register_device(server_output, user_keys, key_session)?;
+		let (input, exported_device_public_key) = Self::prepare_register_device(server_output, user_keys, key_session)?;
 
 		let res = auth_req(HttpMethod::PUT, &url, auth_token, Some(input), jwt).await?;
 

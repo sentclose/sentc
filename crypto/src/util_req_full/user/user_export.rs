@@ -7,8 +7,9 @@ use serde_json::from_str;
 
 use crate::entities::user::{UserDataExport, UserKeyDataExport};
 use crate::group::prepare_prepare_group_keys_for_new_member;
+use crate::keys::std::{StdGroup, StdPreLoginOut, StdUser};
 use crate::util_req_full::SessionKind;
-use crate::{group, SdkError, StdGroup, StdUser};
+use crate::{group, SdkError};
 
 pub async fn register(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> Result<String, String>
 {
@@ -116,7 +117,7 @@ impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: Veri
 
 pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> Result<PreLoginOutExport, String>
 {
-	let out: crate::StdPreLoginOut = StdUser::login(base_url, auth_token, user_identifier, password).await?;
+	let out: StdPreLoginOut = StdUser::login(base_url, auth_token, user_identifier, password).await?;
 
 	Ok(out.try_into()?)
 }

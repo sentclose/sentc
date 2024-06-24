@@ -1256,6 +1256,7 @@ dependencies = [
  "pem-rfc7468",
  "sentc-crypto-common",
  "sentc-crypto-core",
+ "sentc-crypto-fips-keys",
  "sentc-crypto-std-keys",
  "sentc-crypto-utils",
  "serde",

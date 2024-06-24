@@ -16,7 +16,8 @@ use sentc_crypto_utils::cryptomat::KeyToString;
 use serde_json::from_str;
 
 use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport, GroupOutDataKeyExport, GroupOutDataLightExport};
-use crate::{SdkError, StdGroup};
+use crate::keys::std::StdGroup;
+use crate::SdkError;
 
 macro_rules! prepare_prepare_group_keys_for_new_member {
 	($requester_public_key_data:expr,$group_keys:expr,|$uk:ident,$split_group_keys:ident|$scope:block) => {{

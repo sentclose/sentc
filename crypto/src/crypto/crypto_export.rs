@@ -6,7 +6,8 @@ use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_std_keys::util::{PublicKey, SecretKey, SignKey, SymmetricKey};
 use sentc_crypto_utils::cryptomat::{KeyToString, PkFromUserKeyWrapper, SkCryptoWrapper, SymKeyCrypto};
 
-use crate::{SdkError, StdKeyGenerator};
+use crate::keys::std::StdKeyGenerator;
+use crate::SdkError;
 
 pub(crate) fn prepare_sign_key(sign_key: Option<&str>) -> Result<Option<SignKey>, SdkError>
 {

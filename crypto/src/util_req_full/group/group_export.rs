@@ -6,7 +6,7 @@ use sentc_crypto_common::UserId;
 use sentc_crypto_std_keys::util::{PublicKey, SignKey, SymmetricKey};
 
 use crate::group::{get_done_key_rotation_server_input, prepare_prepare_group_keys_for_new_member};
-use crate::StdGroup;
+use crate::keys::std::StdGroup;
 
 pub async fn create(base_url: String, auth_token: &str, jwt: &str, creators_public_key: &str, group_as_member: Option<&str>)
 	-> Result<String, String>

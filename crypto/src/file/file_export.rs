@@ -5,8 +5,9 @@ use sentc_crypto_common::file::BelongsToType;
 use sentc_crypto_std_keys::util::SymmetricKey;
 
 use crate::crypto::{prepare_sign_key, prepare_verify_key};
+use crate::keys::std::StdFileEncryptor;
 use crate::util::{export_core_sym_key_to_string, import_core_sym_key};
-use crate::{SdkError, StdFileEncryptor};
+use crate::SdkError;
 
 pub fn prepare_register_file(
 	master_key_id: String,

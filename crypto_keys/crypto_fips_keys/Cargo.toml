@@ -19,7 +19,6 @@ include = [
 sentc-crypto-core.workspace = true
 sentc-crypto-utils = { workspace = true, optional = true }
 sentc-crypto-common = { workspace = true, optional = true }
-sentc-crypto = { workspace = true, optional = true }
 
 openssl = { version = "0.10.64", default-features = false }
 
@@ -31,11 +30,8 @@ serde = { version = "1.0.137", features = ["derive"], optional = true }
 serde_json = { version = "1.0.81", default-features = false, features = ["alloc"], optional = true }
 
 [dev-dependencies]
-sentc-crypto = { workspace = true, features = ["server"] }
+sentc-crypto = { workspace = true, features = ["server", "fips_keys"] }
 
 [features]
 wrapper = ["sentc-crypto-utils", "sentc-crypto-common", "serde", "serde_json", "pem-rfc7468"]
 full = ["wrapper", "sentc-crypto-utils/encryption", "base64ct"]
-
-sdk = ["sentc-crypto"]
-sdk_full = ["sdk", "sentc-crypto/full_rustls"]
