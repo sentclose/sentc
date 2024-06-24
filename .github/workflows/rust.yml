@@ -80,7 +80,7 @@ jobs:
           key: ${{ runner.os }}-cargo-crypto_rust-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Crypto rust tests
-        run: cargo test --package sentc-crypto --lib test --features=server
+        run: cargo test --package sentc-crypto --lib test --features=server,std_keys
 
   crypto-light-default:
     runs-on: ubuntu-latest
