@@ -22,40 +22,54 @@ pub(crate) mod test_fn
 
 	use sentc_crypto_common::group::{CreateData, GroupHmacData, GroupKeyServerOutput, GroupServerData, GroupSortableData, GroupUserAccessBy};
 	use sentc_crypto_common::ServerOutput;
-	use sentc_crypto_std_keys::util::{HmacKey, PublicKey, SecretKey, SortableKey, SymmetricKey};
 
 	use super::*;
 	use crate::entities::group::{GroupKeyData, GroupOutData};
 	#[cfg(feature = "export")]
 	use crate::entities::group::{GroupKeyDataExport, GroupOutDataExport};
-	use crate::user::test_fn::StdUserKeyDataInt;
+	use crate::user::test_fn::TestUserKeyDataInt;
 
-	pub type StdGroup = Group<
-		SymmetricKey,
-		SecretKey,
-		sentc_crypto_std_keys::util::SignKey,
-		sentc_crypto_std_keys::core::HmacKey,
-		sentc_crypto_std_keys::core::SortKeys,
-		SymmetricKey,
-		SecretKey,
-		sentc_crypto_std_keys::util::SignKey,
-		HmacKey,
-		SortableKey,
-		PublicKey,
-		sentc_crypto_std_keys::util::VerifyKey,
-	>;
+	#[cfg(feature = "std_keys")]
+	pub type TestGroup = crate::keys::std::StdGroup;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestGroup = crate::keys::fips::FipsGroup;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestPublicKey = sentc_crypto_std_keys::util::PublicKey;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestPublicKey = sentc_crypto_fips_keys::util::PublicKey;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestSymmetricKey = sentc_crypto_std_keys::util::SymmetricKey;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestSymmetricKey = sentc_crypto_fips_keys::util::SymmetricKey;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestSecretKey = sentc_crypto_std_keys::util::SecretKey;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestSecretKey = sentc_crypto_fips_keys::util::SecretKey;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestHmacKey = sentc_crypto_std_keys::util::HmacKey;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestHmacKey = sentc_crypto_fips_keys::util::HmacKey;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestSortableKey = sentc_crypto_std_keys::util::SortableKey;
+	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
+	pub type TestSortableKey = sentc_crypto_fips_keys::util::SortableKey;
 
 	pub(crate) fn create_group(
-		user: &StdUserKeyDataInt,
+		user: &TestUserKeyDataInt,
 	) -> (
 		GroupOutData,
-		Vec<GroupKeyData<SymmetricKey, SecretKey, PublicKey>>,
+		Vec<GroupKeyData<TestSymmetricKey, TestSecretKey, TestPublicKey>>,
 		GroupServerData,
-		Vec<HmacKey>,
-		Vec<SortableKey>,
+		Vec<TestHmacKey>,
+		Vec<TestSortableKey>,
 	)
 	{
-		let group = StdGroup::prepare_create(&user.public_key).unwrap();
+		let group = TestGroup::prepare_create(&user.public_key).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
@@ -117,19 +131,19 @@ pub(crate) mod test_fn
 		let group_keys: Vec<_> = out
 			.keys
 			.into_iter()
-			.map(|k| StdGroup::decrypt_group_keys(&user.private_key, k).unwrap())
+			.map(|k| TestGroup::decrypt_group_keys(&user.private_key, k).unwrap())
 			.collect();
 
 		let hmac_keys = out
 			.hmac_keys
 			.into_iter()
-			.map(|k| StdGroup::decrypt_group_hmac_key(&group_keys[0].group_key, k).unwrap())
+			.map(|k| TestGroup::decrypt_group_hmac_key(&group_keys[0].group_key, k).unwrap())
 			.collect();
 
 		let sortable_keys = out
 			.sortable_keys
 			.into_iter()
-			.map(|k| StdGroup::decrypt_group_sortable_key(&group_keys[0].group_key, k).unwrap())
+			.map(|k| TestGroup::decrypt_group_sortable_key(&group_keys[0].group_key, k).unwrap())
 			.collect();
 
 		(

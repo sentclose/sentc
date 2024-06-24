@@ -4,7 +4,7 @@ mod crypto_sortable_export;
 #[cfg(feature = "export")]
 pub use crypto_sortable_export::*;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std_keys"))]
 mod test
 {
 	use core::str::FromStr;

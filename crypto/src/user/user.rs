@@ -586,7 +586,7 @@ mod test
 	use serde_json::to_string;
 
 	use super::*;
-	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login, StdUser};
+	use crate::user::test_fn::{create_user, simulate_server_done_login, simulate_server_prepare_login, simulate_verify_login, TestUser};
 
 	#[test]
 	fn test_register()
@@ -594,7 +594,7 @@ mod test
 		let username = "admin";
 		let password = "abc*èéöäüê";
 
-		let out = StdUser::register(username, password).unwrap();
+		let out = TestUser::register(username, password).unwrap();
 
 		std::println!("rust: {}", out);
 	}
@@ -604,7 +604,7 @@ mod test
 	{
 		let (username, password) = generate_user_register_data().unwrap();
 
-		StdUser::register(&username, &password).unwrap();
+		TestUser::register(&username, &password).unwrap();
 	}
 
 	#[test]
@@ -613,19 +613,19 @@ mod test
 		let username = "admin";
 		let password = "abc*èéöäüê";
 
-		let out_string = StdUser::register(username, password).unwrap();
+		let out_string = TestUser::register(username, password).unwrap();
 
 		let out = RegisterData::from_string(&out_string).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.device.derived);
 
 		//back to the client, send prep login out string to the server if it is no err
-		let (_, auth_key, master_key_encryption_key) = StdUser::prepare_login(username, password, &server_output).unwrap();
+		let (_, auth_key, master_key_encryption_key) = TestUser::prepare_login(username, password, &server_output).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let login_out = StdUser::done_login(
+		let login_out = TestUser::done_login(
 			&master_key_encryption_key,
 			auth_key,
 			username.to_string(),
@@ -634,7 +634,7 @@ mod test
 		.unwrap();
 
 		let server_output = simulate_verify_login(RegisterData::from_string(&out_string).unwrap(), &login_out.challenge);
-		let _out = StdUser::verify_login(
+		let _out = TestUser::verify_login(
 			&server_output,
 			login_out.user_id,
 			login_out.device_id,
@@ -650,7 +650,7 @@ mod test
 		let password = "abc*èéöäüê";
 		let new_password = "abcdfg";
 
-		let out = StdUser::register(username, password).unwrap();
+		let out = TestUser::register(username, password).unwrap();
 
 		let out_new = RegisterData::from_string(out.as_str()).unwrap();
 		let out_old = RegisterData::from_string(out.as_str()).unwrap();
@@ -658,7 +658,7 @@ mod test
 		let prep_server_output = simulate_server_prepare_login(&out_new.device.derived);
 		let done_server_output = simulate_server_done_login(out_new);
 
-		let pw_change_out = StdUser::change_password(password, new_password, &prep_server_output, done_server_output).unwrap();
+		let pw_change_out = TestUser::change_password(password, new_password, &prep_server_output, done_server_output).unwrap();
 
 		let pw_change_out = ChangePasswordData::from_string(pw_change_out.as_str()).unwrap();
 
@@ -677,16 +677,16 @@ mod test
 	fn test_new_device()
 	{
 		//1. register the main device
-		let out_string = StdUser::register("hello", "1234").unwrap();
+		let out_string = TestUser::register("hello", "1234").unwrap();
 		let out = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&out.device.derived);
-		let (_, auth_key, master_key_encryption_key) = StdUser::prepare_login("hello", "1234", server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = TestUser::prepare_login("hello", "1234", server_output.as_str()).unwrap();
 
 		let server_output = simulate_server_done_login(out);
 
 		//now save the values
-		let done_login_out = StdUser::done_login(
+		let done_login_out = TestUser::done_login(
 			&master_key_encryption_key, //the value comes from prepare login
 			auth_key,
 			"hello".to_string(),
@@ -698,7 +698,7 @@ mod test
 			RegisterData::from_string(&out_string).unwrap(),
 			&done_login_out.challenge,
 		);
-		let user = StdUser::verify_login(
+		let user = TestUser::verify_login(
 			&server_output,
 			done_login_out.user_id,
 			done_login_out.device_id,
@@ -710,7 +710,7 @@ mod test
 		let device_id = "hello_device";
 		let device_pw = "12345";
 
-		let server_input = StdUser::prepare_register_device_start(device_id, device_pw).unwrap();
+		let server_input = TestUser::prepare_register_device_start(device_id, device_pw).unwrap();
 
 		//3. simulate server
 		let input: UserDeviceRegisterInput = serde_json::from_str(&server_input).unwrap();
@@ -738,7 +738,7 @@ mod test
 
 		//6. register the device with the main device
 
-		let (out, _) = StdUser::prepare_register_device(&server_output, &[&user.user_keys[0].group_key], false).unwrap();
+		let (out, _) = TestUser::prepare_register_device(&server_output, &[&user.user_keys[0].group_key], false).unwrap();
 
 		let out: UserDeviceDoneRegisterInput = serde_json::from_str(&out).unwrap();
 		let user_keys = &out.user_keys.keys[0];
@@ -747,7 +747,7 @@ mod test
 		let out_new_device = RegisterData::from_string(out_string.as_str()).unwrap();
 
 		let server_output = simulate_server_prepare_login(&input.derived);
-		let (_, auth_key, master_key_encryption_key) = StdUser::prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
+		let (_, auth_key, master_key_encryption_key) = TestUser::prepare_login(device_id, device_pw, server_output.as_str()).unwrap();
 
 		let new_device_register_data = to_string(&RegisterData {
 			device: input,
@@ -775,7 +775,7 @@ mod test
 
 		let server_output = simulate_server_done_login(serde_json::from_str(&new_device_register_data).unwrap());
 
-		let new_device_data = StdUser::done_login(
+		let new_device_data = TestUser::done_login(
 			&master_key_encryption_key,
 			auth_key,
 			device_id.to_string(),
@@ -788,7 +788,7 @@ mod test
 			&new_device_data.challenge,
 		);
 
-		let new_device_data = StdUser::verify_login(
+		let new_device_data = TestUser::verify_login(
 			&server_output,
 			new_device_data.user_id,
 			new_device_data.device_id,
@@ -813,16 +813,16 @@ mod test
 		let user_3 = create_user();
 		let user_3_id = "abc3";
 
-		let _number_single = StdUser::create_safety_number(&user_1.user_keys[0].exported_verify_key, &user_1.user_id, None, None).unwrap();
+		let _number_single = TestUser::create_safety_number(&user_1.user_keys[0].exported_verify_key, &user_1.user_id, None, None).unwrap();
 
-		let number = StdUser::create_safety_number(
+		let number = TestUser::create_safety_number(
 			&user_1.user_keys[0].exported_verify_key,
 			user_1_id,
 			Some(&user_2.user_keys[0].exported_verify_key),
 			Some(user_2_id),
 		)
 		.unwrap();
-		let number_2 = StdUser::create_safety_number(
+		let number_2 = TestUser::create_safety_number(
 			&user_2.user_keys[0].exported_verify_key,
 			user_2_id,
 			Some(&user_1.user_keys[0].exported_verify_key),
@@ -832,7 +832,7 @@ mod test
 
 		assert_eq!(number, number_2);
 
-		let number_3 = StdUser::create_safety_number(
+		let number_3 = TestUser::create_safety_number(
 			&user_3.user_keys[0].exported_verify_key,
 			user_3_id,
 			Some(&user_1.user_keys[0].exported_verify_key),
@@ -848,7 +848,7 @@ mod test
 	{
 		let user_1 = create_user();
 
-		let verify = StdUser::verify_user_public_key(
+		let verify = TestUser::verify_user_public_key(
 			&user_1.user_keys[0].exported_verify_key,
 			&user_1.user_keys[0].exported_public_key,
 		)
