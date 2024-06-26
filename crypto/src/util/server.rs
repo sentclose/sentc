@@ -19,7 +19,9 @@ macro_rules! traverse_keys {
 		match $method::<$first>($($arg),*) {
             Ok(val) => Ok(val),
             Err(err) => match err {
-               $crate::SdkError::Util($crate::sdk_utils::error::SdkUtilError::AlgNotFound) | $crate::SdkError::AlgNotFound => traverse_keys!($method, ($($arg),*), [$($rest),*]),
+               $crate::SdkError::Util($crate::sdk_utils::error::SdkUtilError::Base($crate::sdk_core::Error::AlgNotFound)) |
+			   $crate::SdkError::Util($crate::sdk_utils::error::SdkUtilError::AlgNotFound) |
+			   $crate::SdkError::AlgNotFound => traverse_keys!($method, ($($arg),*), [$($rest),*]),
                 _ => Err(err),
             }
         }
