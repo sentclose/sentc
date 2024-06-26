@@ -99,7 +99,7 @@ impl StaticKeyPair for EciesKeyPair
 
 pub(super) fn generate_static_keypair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> (StaticSecret, PublicKey)
 {
-	let sk = StaticSecret::new(rng);
+	let sk = StaticSecret::random_from_rng(rng);
 	let pk = PublicKey::from(&sk);
 
 	(sk, pk)
@@ -107,7 +107,7 @@ pub(super) fn generate_static_keypair_internally<R: CryptoRng + RngCore>(rng: &m
 
 fn generate_keypair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> (EphemeralSecret, PublicKey)
 {
-	let sk = EphemeralSecret::new(rng);
+	let sk = EphemeralSecret::random_from_rng(rng);
 	let pk = PublicKey::from(&sk);
 
 	(sk, pk)
