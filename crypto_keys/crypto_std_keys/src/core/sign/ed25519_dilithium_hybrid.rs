@@ -171,16 +171,16 @@ impl SignKeyPair for Ed25519DilithiumHybridKeyPair
 
 	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
-		let kp = super::ed25519::generate_key_pair_internally(&mut get_rand())?;
+		let (xsk, xvk) = super::ed25519::generate_key_pair_internally(&mut get_rand())?;
 		let (sk, pk) = super::pqc_dilithium::generate_key_pair_internally(&mut get_rand())?;
 
 		Ok((
 			Ed25519DilithiumHybridSignK {
-				x: kp.secret.to_bytes(),
+				x: xsk,
 				k: sk,
 			},
 			Ed25519DilithiumHybridVerifyKey {
-				x: kp.public.to_bytes(),
+				x: xvk,
 				k: pk,
 			},
 		))

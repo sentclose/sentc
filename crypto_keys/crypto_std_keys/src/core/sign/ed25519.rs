@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer, Verifier};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use hmac::digest::Digest;
 use rand_core::{CryptoRng, RngCore};
 use sentc_crypto_core::cryptomat::{Sig, SignK, SignKeyPair, SymKey, VerifyK};
@@ -16,7 +16,6 @@ use sentc_crypto_core::{
 use crate::core::sign::{SignKey, VerifyKey};
 use crate::get_rand;
 
-pub const SIGN_KEY_LENGTH: usize = 32;
 pub const SIG_LENGTH: usize = 64;
 
 pub const ED25519_OUTPUT: &str = "ED25519";
@@ -139,12 +138,9 @@ impl SignKeyPair for Ed25519KeyPair
 
 	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
-		let keypair = generate_key_pair_internally(&mut get_rand())?;
+		let (s, v) = generate_key_pair_internally(&mut get_rand())?;
 
-		Ok((
-			Ed25519SignK(keypair.secret.to_bytes()),
-			Ed25519VerifyK(keypair.public.to_bytes()),
-		))
+		Ok((Ed25519SignK(s), Ed25519VerifyK(v)))
 	}
 }
 
@@ -156,45 +152,28 @@ pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]),
 //__________________________________________________________________________________________________
 //internally function
 
-pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<Keypair, Error>
+pub(super) fn generate_key_pair_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<([u8; 32], [u8; 32]), Error>
 {
-	//generate the keys like the Keypair::generate() functions but with rand_core instead of rand
-	let mut sk_bytes = [0u8; SIGN_KEY_LENGTH];
+	let sk = SigningKey::generate(rng);
+	let verify_key = sk.verifying_key().to_bytes();
+	let sign_key = sk.to_bytes();
 
-	rng.try_fill_bytes(&mut sk_bytes)
-		.map_err(|_| Error::SignKeyCreateFailed)?;
-
-	let sk = SecretKey::from_bytes(&sk_bytes).map_err(|_| Error::SignKeyCreateFailed)?;
-	let pk: PublicKey = (&sk).into();
-
-	Ok(Keypair {
-		public: pk,
-		secret: sk,
-	})
+	Ok((sign_key, verify_key))
 }
 
 pub(super) fn sign_internally(sign_key: &[u8; 32], data: &[u8]) -> Result<[u8; 64], Error>
 {
-	//create the key pair like the bytes functions but only from the select key not both to avoid select key leak
-	//see here: https://github.com/MystenLabs/ed25519-unsafe-libs
+	let sk = SigningKey::from_bytes(sign_key);
 
-	let sk = SecretKey::from_bytes(sign_key).map_err(|_| Error::InitSignFailed)?;
-	let vk: PublicKey = (&sk).into();
-
-	let keypair = Keypair {
-		public: vk,
-		secret: sk,
-	};
-
-	let sig = keypair.sign(data);
+	let sig = sk.sign(data);
 
 	Ok(sig.to_bytes())
 }
 
 pub(super) fn verify_internally(verify_key: &[u8; 32], sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
-	let vk = PublicKey::from_bytes(verify_key).map_err(|_| Error::InitVerifyFailed)?;
-	let sig = Signature::from_bytes(sig).map_err(|_| Error::InitVerifyFailed)?;
+	let vk = VerifyingKey::from_bytes(verify_key).map_err(|_| Error::InitVerifyFailed)?;
+	let sig = Signature::try_from(sig).map_err(|_| Error::InitVerifyFailed)?;
 
 	let result = vk.verify(data, &sig);
 
