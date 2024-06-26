@@ -21,10 +21,8 @@ sentc-crypto-utils = { workspace = true, optional = true }
 sentc-crypto-common = { workspace = true, optional = true }
 
 aes-gcm = "0.9.4"
-# pre here because we must use rand_core version 0.6.3 under the hood but the actual version of x25519-dalek uses version 0.5
-curve25519-dalek = { version = "3.2.0", default-features = false, features = ["u64_backend", "alloc"] }
-x25519-dalek = { version = "2.0.0-pre.1", default-features = false, features = ["u64_backend"] }
-ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
+x25519-dalek = { version = "2.0.1", default-features = false, features = ["static_secrets"] }
+ed25519-dalek = { version = "2.1.1", default-features = false, features = ["fast", "rand_core"] }
 rand_core = { version = "0.6.3", default-features = false, features = ["getrandom"] }
 sha2 = { version = "0.10.2", default-features = false }
 hkdf = { version = "0.12.3", default-features = false }
