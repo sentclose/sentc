@@ -3,22 +3,21 @@ use std::str::FromStr;
 use openssl::base64::{decode_block, encode_block};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
-use sentc_crypto_core::cryptomat::{SignK, SignKeyComposer, SignKeyPair, SkComposer, StaticKeyPair, SymKeyComposer, SymKeyGen, VerifyK};
-use sentc_crypto_utils::cryptomat::{
-	PkWrapper,
-	SignComposerWrapper,
-	SignKWrapper,
-	SignKeyPairWrapper,
-	SkWrapper,
-	StaticKeyComposerWrapper,
-	StaticKeyPairWrapper,
-	SymKeyComposerWrapper,
-	SymKeyGenWrapper,
-	SymKeyWrapper,
-	VerifyKWrapper,
-};
+use sentc_crypto_core::cryptomat::SignK;
+use sentc_crypto_utils::cryptomat::{PkWrapper, SignKWrapper, SkWrapper, SymKeyWrapper, VerifyKWrapper};
 use sentc_crypto_utils::error::SdkUtilError;
-use sentc_crypto_utils::{from_string_impl, to_string_impl, to_string_try_impl, wrapper_impl};
+use sentc_crypto_utils::{
+	from_string_impl,
+	sign_key_composer_self,
+	sign_key_pair_self,
+	static_key_composer_self,
+	static_key_pair_self,
+	sym_key_com_self,
+	sym_key_gen_self,
+	to_string_impl,
+	to_string_try_impl,
+	wrapper_impl,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "full")]
@@ -48,34 +47,8 @@ pub struct SymmetricKey
 wrapper_impl!(SymKeyWrapper, SymmetricKey, Aes256GcmKey);
 to_string_impl!(SymmetricKey, SymKeyFormatExport);
 from_string_impl!(SymmetricKey, SymKeyFormatExport);
-
-impl SymKeyGenWrapper for SymmetricKey
-{
-	type SymmetricKeyWrapper = Self;
-	type KeyGen = Aes256GcmKey;
-
-	fn from_inner(inner: <<Self as SymKeyGenWrapper>::KeyGen as SymKeyGen>::SymmetricKey, id: String) -> Self::SymmetricKeyWrapper
-	{
-		Self {
-			key: inner,
-			key_id: id,
-		}
-	}
-}
-
-impl SymKeyComposerWrapper for SymmetricKey
-{
-	type SymmetricKeyWrapper = Self;
-	type Composer = Aes256GcmKey;
-
-	fn from_inner(inner: <<Self as SymKeyComposerWrapper>::Composer as SymKeyComposer>::SymmetricKey, id: String) -> Self::SymmetricKeyWrapper
-	{
-		Self {
-			key_id: id,
-			key: inner,
-		}
-	}
-}
+sym_key_gen_self!(SymmetricKey, Aes256GcmKey);
+sym_key_com_self!(SymmetricKey, Aes256GcmKey);
 
 #[derive(Serialize, Deserialize)]
 pub struct SymKeyFormatExport
@@ -135,56 +108,14 @@ pub struct SecretKey
 	pub key_id: EncryptionKeyPairId,
 }
 
-impl StaticKeyPairWrapper for SecretKey
-{
-	type PkWrapper = PublicKey;
-	type KeyGen = RsaSk;
-
-	fn pk_from_inner(inner: <<Self as StaticKeyPairWrapper>::KeyGen as StaticKeyPair>::PublicKey, id: String) -> Self::PkWrapper
-	{
-		PublicKey {
-			key: inner,
-			key_id: id,
-		}
-	}
-
-	fn pk_inner_to_pem(inner: &<<Self as StaticKeyPairWrapper>::KeyGen as StaticKeyPair>::PublicKey) -> Result<String, SdkUtilError>
-	{
-		export_raw_public_key_to_pem(inner)
-	}
-}
-
-impl StaticKeyComposerWrapper for SecretKey
-{
-	type SkWrapper = Self;
-	type PkWrapper = PublicKey;
-	type InnerPk = RsaPk;
-	type Composer = RsaSk;
-
-	fn sk_from_inner(inner: <<Self as StaticKeyComposerWrapper>::Composer as SkComposer>::SecretKey, id: String) -> Self::SkWrapper
-	{
-		Self {
-			key_id: id,
-			key: inner,
-		}
-	}
-
-	fn pk_from_pem(public_key: &str, alg: &str, id: String) -> Result<Self::PkWrapper, SdkUtilError>
-	{
-		let key = import_public_key_from_pem_with_alg(public_key, alg)?;
-
-		Ok(PublicKey {
-			key,
-			key_id: id,
-		})
-	}
-
-	fn pk_inner_from_pem(public_key: &str, alg: &str) -> Result<Self::InnerPk, SdkUtilError>
-	{
-		import_public_key_from_pem_with_alg(public_key, alg)
-	}
-}
-
+static_key_pair_self!(SecretKey, RsaSk, PublicKey, export_raw_public_key_to_pem);
+static_key_composer_self!(
+	SecretKey,
+	RsaSk,
+	PublicKey,
+	RsaPk,
+	import_public_key_from_pem_with_alg
+);
 wrapper_impl!(SkWrapper, SecretKey, RsaSk);
 to_string_try_impl!(SecretKey, SecretKeyFormatExport);
 from_string_impl!(SecretKey, SecretKeyFormatExport);
@@ -336,57 +267,15 @@ pub struct SignKey
 wrapper_impl!(SignKWrapper, SignKey, Ed25519FIPSSignK);
 to_string_try_impl!(SignKey, SignKeyFormatExport);
 from_string_impl!(SignKey, SignKeyFormatExport);
-
-impl SignKeyPairWrapper for SignKey
-{
-	type KeyGen = Ed25519FIPSSignK;
-
-	fn vk_inner_to_pem(inner: &<<Self as SignKeyPairWrapper>::KeyGen as SignKeyPair>::VerifyKey) -> Result<String, SdkUtilError>
-	{
-		export_raw_verify_key_to_pem(inner)
-	}
-
-	fn sig_to_string(sig: <<<Self as SignKeyPairWrapper>::KeyGen as SignKeyPair>::SignKey as SignK>::Signature) -> String
-	{
-		sig_to_string(&sig)
-	}
-}
-
-impl SignComposerWrapper for SignKey
-{
-	type SignKWrapper = Self;
-	type VerifyKWrapper = VerifyKey;
-	type InnerVk = Ed25519FIPSVerifyK;
-	type Composer = Ed25519FIPSSignK;
-
-	fn sk_from_inner(inner: <<Self as SignComposerWrapper>::Composer as SignKeyComposer>::Key, id: String) -> Self::SignKWrapper
-	{
-		Self {
-			key_id: id,
-			key: inner,
-		}
-	}
-
-	fn vk_from_pem(public_key: &str, alg: &str, id: String) -> Result<Self::VerifyKWrapper, SdkUtilError>
-	{
-		let key = import_verify_key_from_pem_with_alg(public_key, alg)?;
-
-		Ok(VerifyKey {
-			key,
-			key_id: id,
-		})
-	}
-
-	fn vk_inner_from_pem(public_key: &str, alg: &str) -> Result<Self::InnerVk, SdkUtilError>
-	{
-		import_verify_key_from_pem_with_alg(public_key, alg)
-	}
-
-	fn sig_from_string(sig: &str, alg: &str) -> Result<<<Self as SignComposerWrapper>::InnerVk as VerifyK>::Signature, SdkUtilError>
-	{
-		import_sig_from_string(sig, alg)
-	}
-}
+sign_key_pair_self!(SignKey, Ed25519FIPSSignK, export_raw_verify_key_to_pem, sig_to_string);
+sign_key_composer_self!(
+	SignKey,
+	Ed25519FIPSSignK,
+	VerifyKey,
+	Ed25519FIPSVerifyK,
+	import_verify_key_from_pem_with_alg,
+	import_sig_from_string
+);
 
 #[derive(Serialize, Deserialize)]
 pub struct SignKeyFormatExport

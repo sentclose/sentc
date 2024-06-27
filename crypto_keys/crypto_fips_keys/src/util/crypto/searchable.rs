@@ -1,24 +1,13 @@
 use base64ct::{Base64UrlUnpadded, Encoding};
-use sentc_crypto_core::cryptomat::{SearchableKey, SearchableKeyComposer};
-use sentc_crypto_utils::cryptomat::{SearchableKeyComposerWrapper, SearchableKeyWrapper};
+use sentc_crypto_core::cryptomat::SearchableKey;
+use sentc_crypto_utils::cryptomat::SearchableKeyWrapper;
 use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::search_key_composer;
 
 use crate::core::hmac::HmacKey as CoreHmacKey;
 use crate::util::HmacKey;
 
-impl SearchableKeyComposerWrapper for HmacKey
-{
-	type SearchableKeyWrapper = Self;
-	type Composer = CoreHmacKey;
-
-	fn from_inner(inner: <<Self as SearchableKeyComposerWrapper>::Composer as SearchableKeyComposer>::Key, id: String) -> Self::SearchableKeyWrapper
-	{
-		Self {
-			key: inner,
-			key_id: id,
-		}
-	}
-}
+search_key_composer!(HmacKey, CoreHmacKey);
 
 impl SearchableKeyWrapper for HmacKey
 {

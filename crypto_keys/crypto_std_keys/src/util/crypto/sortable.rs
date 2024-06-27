@@ -2,26 +2,15 @@ use alloc::string::{String, ToString};
 use core::cmp::Ordering;
 
 use sentc_crypto_common::content_sortable::SortableEncryptOutput;
-use sentc_crypto_core::cryptomat::{CryptoAlg, SortableKey as CoreSortableI, SortableKeyComposer};
-use sentc_crypto_utils::cryptomat::{SortableKeyComposerWrapper, SortableKeyWrapper};
+use sentc_crypto_core::cryptomat::{CryptoAlg, SortableKey as CoreSortableI};
+use sentc_crypto_utils::cryptomat::SortableKeyWrapper;
 use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::sortable_composer;
 
 use crate::core::SortKeys as CoreSortableKey;
 use crate::util::SortableKey;
 
-impl SortableKeyComposerWrapper for SortableKey
-{
-	type SortableKeyWrapper = Self;
-	type Composer = CoreSortableKey;
-
-	fn from_inner(inner: <<Self as SortableKeyComposerWrapper>::Composer as SortableKeyComposer>::Key, id: String) -> Self::SortableKeyWrapper
-	{
-		Self {
-			key: inner,
-			key_id: id,
-		}
-	}
-}
+sortable_composer!(SortableKey, CoreSortableKey);
 
 impl SortableKeyWrapper for SortableKey
 {
