@@ -134,10 +134,9 @@ impl StaticKeyPair for RsaSk
 	{
 		let rsa_private = Rsa::generate(RSA_LENGTH).map_err(|_| Error::KeyCreationFailed)?;
 
-		Ok((
-			Self(import_sk(&export_sk(&rsa_private)?)?),
-			RsaPk(import_pk(&export_pk(&rsa_private)?)?),
-		))
+		let pub_k = RsaPk(import_pk(&export_pk(&rsa_private)?)?);
+
+		Ok((Self(rsa_private), pub_k))
 	}
 }
 

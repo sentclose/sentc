@@ -118,10 +118,9 @@ impl SignKeyPair for Ed25519FIPSSignK
 	{
 		let private_key = PKey::generate_ed25519().map_err(|_| Error::SignKeyCreateFailed)?;
 
-		Ok((
-			Self(import_sk(&export_sk(&private_key)?)?),
-			Ed25519FIPSVerifyK(import_pk(&export_pk(&private_key)?)?),
-		))
+		let pub_k = Ed25519FIPSVerifyK(import_pk(&export_pk(&private_key)?)?);
+
+		Ok((Self(private_key), pub_k))
 	}
 }
 
