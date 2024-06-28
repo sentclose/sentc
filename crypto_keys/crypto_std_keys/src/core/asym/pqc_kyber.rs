@@ -115,15 +115,9 @@ pub(super) fn decrypt_internally(receiver_sec: &SecretKey, ciphertext: &[u8]) ->
 		return Err(Error::DecryptionFailedCiphertextShort);
 	}
 
-	let ep_pk_bytes: [u8; KYBER_CIPHERTEXTBYTES] = match ciphertext[..KYBER_CIPHERTEXTBYTES].try_into() {
-		Err(_e) => return Err(Error::DecryptionFailedCiphertextShort),
-		Ok(bytes) => bytes,
-	};
+	let shared_secret_bob = decapsulate(&ciphertext[..KYBER_CIPHERTEXTBYTES], receiver_sec).map_err(|_| Error::DecryptionFailed)?;
 
 	let encrypted = &ciphertext[KYBER_CIPHERTEXTBYTES..];
-
-	let shared_secret_bob = decapsulate(&ep_pk_bytes, receiver_sec).map_err(|_| Error::DecryptionFailed)?;
-
 	let decrypted = aes_decrypt(&shared_secret_bob, encrypted)?;
 
 	Ok(decrypted)
