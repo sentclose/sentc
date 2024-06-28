@@ -33,10 +33,10 @@ pqc_kyber_edit = { version = "0.7.2", features = ["90s-fixslice"] }
 pqc_dilithium_edit = { version = "0.2.0", features = ["mode3", "aes", "random_signing"] }
 
 # key and data export
-base64ct = { version = "1.0.1", default-features = false, features = ["alloc"], optional = true }  # must use this version because it is not comp. with password_hash from argon2
-pem-rfc7468 = { version = "0.3.1", features = ["alloc"], optional = true }
-serde_json = { version = "1.0.81", default-features = false, features = ["alloc"], optional = true }
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
+base64ct = { workspace = true, optional = true }  # must use this version because it is not comp. with password_hash from argon2
+pem-rfc7468 = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
 
 [features]
 default = ["aes", "ecies_kyber_hybrid", "ed25519_dilithium_hybrid", "hmac_sha256", "ope_sort", "argon2_hash", "default_env"]

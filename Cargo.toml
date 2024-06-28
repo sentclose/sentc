@@ -33,6 +33,14 @@ sentc-crypto = { version = "0.13.0", path = "crypto", default-features = false }
 sentc-crypto-light = { version = "0.13.0", path = "crypto_light", default-features = false }
 sentc-crypto-std-keys = { version = "0.13.0", path = "crypto_keys/crypto_std_keys" }
 sentc-crypto-fips-keys = { version = "0.13.0", path = "crypto_keys/crypto_fips_keys" }
+sentc-crypto-rec-keys = { version = "0.13.0", path = "crypto_keys/crypto_rec_keys" }
+
+#key export
+# must use this version because it is not comp. with password_hash from argon2
+base64ct = { version = "1.0.1", default-features = false, features = ["alloc"] }
+pem-rfc7468 = { version = "0.3.1", features = ["alloc"] }
+serde = { version = "1.0.137", features = ["derive"] }
+serde_json = { version = "1.0.81", default-features = false, features = ["alloc"] }
 
 [profile.dev]
 # Must always use panic = "abort" to avoid needing to define the unstable eh_personality lang item.

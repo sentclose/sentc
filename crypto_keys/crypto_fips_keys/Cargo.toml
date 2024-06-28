@@ -24,13 +24,10 @@ openssl = { version = "0.10.64", default-features = false }
 
 digest = "0.10.7"
 
-base64ct = { version = "1.0.1", default-features = false, features = ["alloc"], optional = true }
-pem-rfc7468 = { version = "0.3.1", features = ["alloc"], optional = true }
-serde = { version = "1.0.137", features = ["derive"], optional = true }
-serde_json = { version = "1.0.81", default-features = false, features = ["alloc"], optional = true }
-
-[dev-dependencies]
-sentc-crypto = { workspace = true, features = ["server", "fips_keys"] }
+base64ct = { workspace = true, optional = true }
+pem-rfc7468 = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 
 [features]
 wrapper = ["sentc-crypto-utils", "sentc-crypto-common", "serde", "serde_json", "pem-rfc7468"]
