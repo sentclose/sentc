@@ -142,15 +142,7 @@ impl SignKeyComposer for Ed25519FIPSSignK
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
-	if data_with_sig.len() <= SIG_LENGTH {
-		return Err(Error::DataToSignTooShort);
-	}
-
-	//split sign and data
-	let sig = &data_with_sig[..SIG_LENGTH];
-	let data = &data_with_sig[SIG_LENGTH..];
-
-	Ok((sig, data))
+	sentc_crypto_core::split_sig_and_data(data_with_sig, SIG_LENGTH)
 }
 
 //__________________________________________________________________________________________________

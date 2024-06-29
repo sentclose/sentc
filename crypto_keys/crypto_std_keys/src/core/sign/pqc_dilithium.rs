@@ -144,7 +144,7 @@ impl SignKeyPair for DilithiumKeyPair
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
-	super::split_sig_and_data(data_with_sig, SIGNBYTES)
+	sentc_crypto_core::split_sig_and_data(data_with_sig, SIGNBYTES)
 }
 
 //__________________________________________________________________________________________________

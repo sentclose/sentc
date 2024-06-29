@@ -12,19 +12,6 @@ pub(crate) mod ed25519;
 pub(crate) mod ed25519_dilithium_hybrid;
 pub(crate) mod pqc_dilithium;
 
-pub(crate) fn split_sig_and_data(data_with_sig: &[u8], len: usize) -> Result<(&[u8], &[u8]), Error>
-{
-	if data_with_sig.len() <= len {
-		return Err(Error::DataToSignTooShort);
-	}
-
-	//split sign and data
-	let sig = &data_with_sig[..len];
-	let data = &data_with_sig[len..];
-
-	Ok((sig, data))
-}
-
 macro_rules! deref_macro {
     ($self:expr, $method:ident $(, $args:expr)*) => {
         match $self {

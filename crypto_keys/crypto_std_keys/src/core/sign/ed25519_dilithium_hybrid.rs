@@ -78,7 +78,7 @@ impl VerifyK for Ed25519DilithiumHybridVerifyKey
 		let (sig, data) = split_sig_and_data(data_with_sig)?;
 
 		//now split the both sig
-		let (sig_x, sig_k) = super::split_sig_and_data(sig, super::ed25519::SIG_LENGTH)?;
+		let (sig_x, sig_k) = sentc_crypto_core::split_sig_and_data(sig, super::ed25519::SIG_LENGTH)?;
 
 		Ok((data, verify_internally(&self.x, &self.k, sig_x, sig_k, data)?))
 	}
@@ -189,7 +189,7 @@ impl SignKeyPair for Ed25519DilithiumHybridKeyPair
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
-	super::split_sig_and_data(data_with_sig, super::ed25519::SIG_LENGTH + SIGNBYTES)
+	sentc_crypto_core::split_sig_and_data(data_with_sig, super::ed25519::SIG_LENGTH + SIGNBYTES)
 }
 
 //__________________________________________________________________________________________________
