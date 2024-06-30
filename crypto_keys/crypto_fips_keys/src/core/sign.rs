@@ -130,7 +130,7 @@ impl SignKeyComposer for Ed25519FIPSSignK
 	}
 }
 
-pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
+pub fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
 	sentc_crypto_core::split_sig_and_data(data_with_sig, SIG_LENGTH)
 }
