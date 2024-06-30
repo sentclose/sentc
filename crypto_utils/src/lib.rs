@@ -4,8 +4,10 @@
 extern crate alloc;
 
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
+use pem_rfc7468::LineEnding;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
 use sentc_crypto_core::cryptomat::{ClientRandomValue, ClientRandomValueComposer, DeriveAuthKeyForAuth, HashedAuthenticationKey};
@@ -111,15 +113,30 @@ pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a
 }
 
 #[cfg(feature = "encryption")]
-pub fn put_head_and_encrypted_data<T: serde::Serialize>(head: &T, encrypted: &[u8]) -> Result<alloc::vec::Vec<u8>, SdkUtilError>
+pub fn put_head_and_encrypted_data<T: serde::Serialize>(head: &T, encrypted: &[u8]) -> Result<Vec<u8>, SdkUtilError>
 {
 	let head = serde_json::to_string(head).map_err(|_| SdkUtilError::JsonToStringFailed)?;
 
-	let mut out = alloc::vec::Vec::with_capacity(head.len() + 1 + encrypted.len());
+	let mut out = Vec::with_capacity(head.len() + 1 + encrypted.len());
 
 	out.extend_from_slice(head.as_bytes());
 	out.extend_from_slice(&[0u8]);
 	out.extend_from_slice(encrypted);
 
 	Ok(out)
+}
+
+pub fn import_key_from_pem(pem: &str) -> Result<Vec<u8>, SdkUtilError>
+{
+	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| SdkUtilError::ImportingKeyFromPemFailed)?;
+
+	Ok(data)
+}
+
+pub fn export_key_to_pem(key: &[u8]) -> Result<String, SdkUtilError>
+{
+	//export should not panic because we are creating the keys
+	let key = pem_rfc7468::encode_string("PUBLIC KEY", LineEnding::default(), key).map_err(|_| SdkUtilError::ExportingPublicKeyFailed)?;
+
+	Ok(key)
 }

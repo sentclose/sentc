@@ -1,9 +1,8 @@
 use alloc::string::String;
-use alloc::vec::Vec;
 
 use base64ct::{Base64, Encoding};
-use pem_rfc7468::LineEnding;
 use sentc_crypto_utils::error::SdkUtilError;
+use sentc_crypto_utils::{export_key_to_pem, import_key_from_pem};
 
 use crate::core::{
 	PublicKey,
@@ -17,21 +16,6 @@ use crate::core::{
 	KYBER_OUTPUT,
 };
 use crate::util::HybridPublicKeyExportFormat;
-
-pub fn import_key_from_pem(pem: &str) -> Result<Vec<u8>, SdkUtilError>
-{
-	let (_type_label, data) = pem_rfc7468::decode_vec(pem.as_bytes()).map_err(|_| SdkUtilError::ImportingKeyFromPemFailed)?;
-
-	Ok(data)
-}
-
-pub fn export_key_to_pem(key: &[u8]) -> Result<String, SdkUtilError>
-{
-	//export should not panic because we are creating the keys
-	let key = pem_rfc7468::encode_string("PUBLIC KEY", LineEnding::default(), key).map_err(|_| SdkUtilError::ExportingPublicKeyFailed)?;
-
-	Ok(key)
-}
 
 pub fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<PublicKey, SdkUtilError>
 {
