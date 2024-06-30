@@ -50,5 +50,5 @@ pub fn import_sig_from_string(sig: &str, alg: &str) -> Result<Ed25519FIPSSig, Sd
 
 	let bytes = decode_block(sig).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 
-	Ok(Ed25519FIPSSig::try_from(bytes)?)
+	Ok(bytes.into())
 }

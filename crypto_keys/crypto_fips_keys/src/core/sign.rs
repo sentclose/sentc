@@ -2,7 +2,7 @@ use digest::Digest;
 use openssl::pkey::{HasPrivate, HasPublic, Id, PKey, Private, Public};
 use openssl::sign::{Signer, Verifier};
 use sentc_crypto_core::cryptomat::{Sig, SignK, SignKeyComposer, SignKeyPair, SymKey, VerifyK};
-use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_single_value, Error};
 
 use crate::core::export_sk;
 use crate::import_export_openssl;
@@ -13,7 +13,6 @@ pub const SIG_LENGTH: usize = 64;
 pub struct Ed25519FIPSSig(Vec<u8>);
 crypto_alg_str_impl!(Ed25519FIPSSig, FIPS_OPENSSL_ED25519);
 try_from_bytes_single_value!(Ed25519FIPSSig);
-try_from_bytes_owned_single_value!(Ed25519FIPSSig);
 as_ref_bytes_single_value!(Ed25519FIPSSig);
 
 impl Into<Vec<u8>> for Ed25519FIPSSig
@@ -21,6 +20,14 @@ impl Into<Vec<u8>> for Ed25519FIPSSig
 	fn into(self) -> Vec<u8>
 	{
 		self.0
+	}
+}
+
+impl From<Vec<u8>> for Ed25519FIPSSig
+{
+	fn from(value: Vec<u8>) -> Self
+	{
+		Self(value)
 	}
 }
 
