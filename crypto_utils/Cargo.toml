@@ -30,7 +30,7 @@ serde.workspace = true
 
 # key and data export
 base64ct.workspace = true
-pem-rfc7468.workspace = true
+pem-rfc7468 = { version = "0.3.1", features = ["alloc"] }
 
 #_______________________________________________________________________________________________________________________
 # req handling

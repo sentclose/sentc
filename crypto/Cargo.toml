@@ -26,7 +26,6 @@ sentc-crypto-fips-keys = { workspace = true, features = ["full"], optional = tru
 
 # key and data export
 base64ct.workspace = true
-pem-rfc7468.workspace = true
 
 # json handling
 serde_json.workspace = true
