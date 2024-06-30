@@ -3,7 +3,6 @@ mod crypto;
 pub mod export;
 
 use alloc::string::String;
-use core::ops::Deref;
 use core::str::FromStr;
 
 use base64ct::{Base64, Encoding};
@@ -40,22 +39,6 @@ use crate::core::{
 };
 use crate::util::export::{export_raw_verify_key_to_pem, sig_to_string};
 
-macro_rules! deref_impl {
-	($st:ty, $t:ty) => {
-		impl Deref for $st
-		{
-			type Target = $t;
-
-			fn deref(&self) -> &Self::Target
-			{
-				&self.key
-			}
-		}
-	};
-}
-
-pub(crate) use deref_impl;
-
 //__________________________________________________________________________________________________
 
 pub struct SymmetricKey
@@ -65,7 +48,6 @@ pub struct SymmetricKey
 }
 
 wrapper_impl!(SymKeyWrapper, SymmetricKey, CoreSymmetricKey);
-deref_impl!(SymmetricKey, CoreSymmetricKey);
 to_string_impl!(SymmetricKey, SymKeyFormatExport);
 from_string_impl!(SymmetricKey, SymKeyFormatExport);
 sym_key_gen_self!(SymmetricKey, CoreSymmetricKey);
@@ -84,7 +66,7 @@ impl From<SymmetricKey> for SymKeyFormatExport
 {
 	fn from(value: SymmetricKey) -> Self
 	{
-		let key = Base64::encode_string(value.as_ref());
+		let key = Base64::encode_string(value.key.as_ref());
 
 		match value.key {
 			CoreSymmetricKey::Aes(_) => {
@@ -160,7 +142,6 @@ static_key_composer_self!(
 	import_public_key_from_pem_with_alg
 );
 wrapper_impl!(SkWrapper, SecretKey, CoreSecretKey);
-deref_impl!(SecretKey, CoreSecretKey);
 to_string_impl!(SecretKey, SecretKeyFormatExport);
 from_string_impl!(SecretKey, SecretKeyFormatExport);
 
@@ -296,7 +277,6 @@ impl PublicKey
 }
 
 wrapper_impl!(PkWrapper, PublicKey, CorePublicKey);
-deref_impl!(PublicKey, CorePublicKey);
 to_string_impl!(PublicKey, PublicKeyFormatExport);
 from_string_impl!(PublicKey, PublicKeyFormatExport);
 pk_user_pk!(PublicKey, import_public_key_from_pem_with_alg);
@@ -451,7 +431,6 @@ pub struct SignKey
 }
 
 wrapper_impl!(SignKWrapper, SignKey, CoreSignKey);
-deref_impl!(SignKey, CoreSignKey);
 to_string_impl!(SignKey, SignKeyFormatExport);
 from_string_impl!(SignKey, SignKeyFormatExport);
 sign_key_pair_self!(SignKey, CoreSignKey, export_raw_verify_key_to_pem, sig_to_string);
@@ -575,7 +554,6 @@ pub struct VerifyKey
 }
 
 wrapper_impl!(VerifyKWrapper, VerifyKey, CoreVerifyKey);
-deref_impl!(VerifyKey, CoreVerifyKey);
 to_string_impl!(VerifyKey, VerifyKeyFormatExport);
 from_string_impl!(VerifyKey, VerifyKeyFormatExport);
 vk_user_vk!(VerifyKey, import_verify_key_from_pem_with_alg);

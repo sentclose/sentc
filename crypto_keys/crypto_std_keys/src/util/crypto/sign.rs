@@ -47,7 +47,7 @@ impl SignKCryptoWrapper for SignKey
 		Ok((
 			SignHead {
 				id: self.key_id.clone(),
-				alg: self.get_alg_str().to_string(),
+				alg: self.key.get_alg_str().to_string(),
 			},
 			sig,
 		))
