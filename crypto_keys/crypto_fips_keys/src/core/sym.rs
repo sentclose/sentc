@@ -14,7 +14,7 @@ pub struct Aes256GcmKey(AesKey);
 
 impl Aes256GcmKey
 {
-	pub(crate) fn from_raw_key(raw: AesKey) -> Self
+	pub fn from_raw_key(raw: AesKey) -> Self
 	{
 		Self(raw)
 	}

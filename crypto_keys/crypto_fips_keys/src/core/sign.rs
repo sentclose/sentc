@@ -5,6 +5,7 @@ use sentc_crypto_core::cryptomat::{Sig, SignK, SignKeyComposer, SignKeyPair, Sym
 use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 use crate::core::export_sk;
+use crate::import_export_openssl;
 
 pub const FIPS_OPENSSL_ED25519: &str = "fips_openssl_ED25519";
 pub const SIG_LENGTH: usize = 64;
@@ -27,19 +28,7 @@ impl Sig for Ed25519FIPSSig {}
 
 pub struct Ed25519FIPSVerifyK(PKey<Public>);
 
-impl Ed25519FIPSVerifyK
-{
-	pub fn export(&self) -> Result<Vec<u8>, Error>
-	{
-		export_pk(&self.0)
-	}
-
-	pub fn import(bytes: &[u8]) -> Result<Self, Error>
-	{
-		Ok(Self(import_pk(bytes)?))
-	}
-}
-
+import_export_openssl!(Ed25519FIPSVerifyK, import_pk, export_pk);
 crypto_alg_str_impl!(Ed25519FIPSVerifyK, FIPS_OPENSSL_ED25519);
 
 impl VerifyK for Ed25519FIPSVerifyK
@@ -68,17 +57,13 @@ pub struct Ed25519FIPSSignK(PKey<Private>);
 
 impl Ed25519FIPSSignK
 {
-	pub fn export(&self) -> Result<Vec<u8>, Error>
-	{
-		export_sk(&self.0)
-	}
-
 	pub fn import(bytes: &[u8]) -> Result<Self, Error>
 	{
 		Ok(Self(import_sk(bytes)?))
 	}
 }
 
+import_export_openssl!(Ed25519FIPSSignK, import_sk, export_sk);
 crypto_alg_str_impl!(Ed25519FIPSSignK, FIPS_OPENSSL_ED25519);
 
 impl SignK for Ed25519FIPSSignK
@@ -116,11 +101,9 @@ impl SignKeyPair for Ed25519FIPSSignK
 
 	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
-		let private_key = PKey::generate_ed25519().map_err(|_| Error::SignKeyCreateFailed)?;
+		let (vk, sk) = generate_key_pair()?;
 
-		let pub_k = Ed25519FIPSVerifyK(import_pk(&export_pk(&private_key)?)?);
-
-		Ok((Self(private_key), pub_k))
+		Ok((Self(sk), Ed25519FIPSVerifyK(vk)))
 	}
 }
 
@@ -147,7 +130,7 @@ pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]),
 
 //__________________________________________________________________________________________________
 
-fn import_sk(key: &[u8]) -> Result<PKey<Private>, Error>
+pub fn import_sk(key: &[u8]) -> Result<PKey<Private>, Error>
 {
 	PKey::private_key_from_raw_bytes(key, Id::ED25519).map_err(|_e| Error::KeyCreationFailed)
 }
@@ -159,12 +142,19 @@ fn export_pk<T: HasPublic>(verify_key: &PKey<T>) -> Result<Vec<u8>, Error>
 		.map_err(|_e| Error::KeyCreationFailed)
 }
 
-fn import_pk(key: &[u8]) -> Result<PKey<Public>, Error>
+pub fn import_pk(key: &[u8]) -> Result<PKey<Public>, Error>
 {
 	PKey::public_key_from_raw_bytes(key, Id::ED25519).map_err(|_e| Error::KeyCreationFailed)
 }
 
-fn sign_internally<T: HasPrivate>(sign_key: &PKey<T>, data: &[u8]) -> Result<Vec<u8>, Error>
+pub fn generate_key_pair() -> Result<(PKey<Public>, PKey<Private>), Error>
+{
+	let k = PKey::generate_ed25519().map_err(|_| Error::SignKeyCreateFailed)?;
+
+	Ok((import_pk(&export_pk(&k)?)?, k))
+}
+
+pub fn sign_internally<T: HasPrivate>(sign_key: &PKey<T>, data: &[u8]) -> Result<Vec<u8>, Error>
 {
 	let mut signer = Signer::new_without_digest(sign_key).map_err(|_| Error::InitSignFailed)?;
 	signer
@@ -172,7 +162,7 @@ fn sign_internally<T: HasPrivate>(sign_key: &PKey<T>, data: &[u8]) -> Result<Vec
 		.map_err(|_| Error::InitSignFailed)
 }
 
-fn verify_internally<T: HasPublic>(verify_key: &PKey<T>, sig: &[u8], data: &[u8]) -> Result<bool, Error>
+pub fn verify_internally<T: HasPublic>(verify_key: &PKey<T>, sig: &[u8], data: &[u8]) -> Result<bool, Error>
 {
 	let mut verifier = Verifier::new_without_digest(verify_key).map_err(|_| Error::InitVerifyFailed)?;
 

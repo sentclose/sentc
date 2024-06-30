@@ -4,6 +4,7 @@ use sentc_crypto_core::cryptomat::{Pk, SignK, Sk, SkComposer, StaticKeyPair, Sym
 use sentc_crypto_core::{crypto_alg_str_impl, Error};
 
 use crate::core::sym;
+use crate::import_export_openssl;
 
 pub const FIPS_OPENSSL_RSA_OAEP_WRAP: &str = "fips_openssl_rsa_oaep_wrap";
 
@@ -12,20 +13,8 @@ pub const RSA_LENGTH: u32 = 2048;
 #[derive(Clone)]
 pub struct RsaPk(Rsa<Public>);
 
+import_export_openssl!(RsaPk, import_pk, export_pk);
 crypto_alg_str_impl!(RsaPk, FIPS_OPENSSL_RSA_OAEP_WRAP);
-
-impl RsaPk
-{
-	pub fn export(&self) -> Result<Vec<u8>, Error>
-	{
-		export_pk(&self.0)
-	}
-
-	pub fn import(bytes: &[u8]) -> Result<Self, Error>
-	{
-		Ok(Self(import_pk(bytes)?))
-	}
-}
 
 impl Pk for RsaPk
 {
@@ -64,20 +53,8 @@ impl Pk for RsaPk
 
 pub struct RsaSk(Rsa<Private>);
 
+import_export_openssl!(RsaSk, import_sk, export_sk);
 crypto_alg_str_impl!(RsaSk, FIPS_OPENSSL_RSA_OAEP_WRAP);
-
-impl RsaSk
-{
-	pub fn export(&self) -> Result<Vec<u8>, Error>
-	{
-		export_sk(&self.0)
-	}
-
-	pub fn import(bytes: &[u8]) -> Result<Self, Error>
-	{
-		Ok(Self(import_sk(bytes)?))
-	}
-}
 
 impl Sk for RsaSk
 {

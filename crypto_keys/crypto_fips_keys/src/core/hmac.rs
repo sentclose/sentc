@@ -6,24 +6,13 @@ use sentc_crypto_core::cryptomat::{SearchableKey, SearchableKeyComposer, Searcha
 use sentc_crypto_core::{crypto_alg_str_impl, Error};
 
 use crate::core::{export_sk, sym};
+use crate::import_export_openssl;
 
 pub const FIPS_OPENSSL_HMAC_SHA256_OUTPUT: &str = "fips_openssl_HMAC-SHA256";
 
 pub struct HmacKey(PKey<Private>);
 
-impl HmacKey
-{
-	pub fn export(&self) -> Result<Vec<u8>, Error>
-	{
-		export_sk(&self.0)
-	}
-
-	pub fn import(bytes: &[u8]) -> Result<Self, Error>
-	{
-		Ok(Self(import_sk(bytes)?))
-	}
-}
-
+import_export_openssl!(HmacKey, import_sk, export_sk);
 crypto_alg_str_impl!(HmacKey, FIPS_OPENSSL_HMAC_SHA256_OUTPUT);
 
 impl SearchableKey for HmacKey
@@ -79,7 +68,7 @@ impl SearchableKeyComposer for HmacKey
 
 		let key = master_key.decrypt(encrypted_key)?;
 
-		Self::import(&key)
+		Self::try_from(key)
 	}
 }
 

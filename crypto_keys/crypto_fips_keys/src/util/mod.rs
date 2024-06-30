@@ -152,7 +152,7 @@ impl TryInto<SecretKey> for SecretKeyFormatExport
 
 		Ok(SecretKey {
 			key_id: self.key_id,
-			key: RsaSk::import(&bytes)?,
+			key: RsaSk::try_from(bytes)?,
 		})
 	}
 }
@@ -225,7 +225,7 @@ impl TryInto<PublicKey> for PublicKeyFormatExport
 
 		Ok(PublicKey {
 			key_id: self.key_id,
-			key: RsaPk::import(&bytes)?,
+			key: RsaPk::try_from(bytes)?,
 		})
 	}
 }
@@ -358,7 +358,7 @@ impl TryInto<VerifyKey> for VerifyKeyFormatExport
 
 		Ok(VerifyKey {
 			key_id: self.key_id,
-			key: Ed25519FIPSVerifyK::import(&bytes)?,
+			key: Ed25519FIPSVerifyK::try_from(bytes)?,
 		})
 	}
 }
