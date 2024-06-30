@@ -1,13 +1,13 @@
 use std::str::FromStr;
 
 use openssl::base64::{decode_block, encode_block};
-use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::cryptomat::SignK;
 use sentc_crypto_utils::cryptomat::{PkWrapper, SignKWrapper, SkWrapper, SymKeyWrapper, VerifyKWrapper};
 use sentc_crypto_utils::error::SdkUtilError;
 use sentc_crypto_utils::{
 	from_string_impl,
+	pk_user_pk,
 	sign_key_composer_self,
 	sign_key_pair_self,
 	static_key_composer_self,
@@ -16,6 +16,7 @@ use sentc_crypto_utils::{
 	sym_key_gen_self,
 	to_string_impl,
 	to_string_try_impl,
+	vk_user_vk,
 	wrapper_impl,
 };
 use serde::{Deserialize, Serialize};
@@ -177,6 +178,7 @@ impl PublicKey
 wrapper_impl!(PkWrapper, PublicKey, RsaPk);
 to_string_try_impl!(PublicKey, PublicKeyFormatExport);
 from_string_impl!(PublicKey, PublicKeyFormatExport);
+pk_user_pk!(PublicKey, import_public_key_from_pem_with_alg);
 
 #[derive(Serialize, Deserialize)]
 pub struct PublicKeyFormatExport
@@ -226,32 +228,6 @@ impl TryInto<PublicKey> for PublicKeyFormatExport
 		Ok(PublicKey {
 			key_id: self.key_id,
 			key: RsaPk::try_from(bytes)?,
-		})
-	}
-}
-
-impl TryFrom<UserPublicKeyData> for PublicKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: UserPublicKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.public_key_id,
-			key: import_public_key_from_pem_with_alg(&value.public_key_pem, &value.public_key_alg)?,
-		})
-	}
-}
-
-impl<'a> TryFrom<&'a UserPublicKeyData> for PublicKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: &'a UserPublicKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.public_key_id.clone(),
-			key: import_public_key_from_pem_with_alg(&value.public_key_pem, &value.public_key_alg)?,
 		})
 	}
 }
@@ -325,6 +301,7 @@ pub struct VerifyKey
 wrapper_impl!(VerifyKWrapper, VerifyKey, Ed25519FIPSVerifyK);
 to_string_try_impl!(VerifyKey, VerifyKeyFormatExport);
 from_string_impl!(VerifyKey, VerifyKeyFormatExport);
+vk_user_vk!(VerifyKey, import_verify_key_from_pem_with_alg);
 
 #[derive(Serialize, Deserialize)]
 pub struct VerifyKeyFormatExport
@@ -359,32 +336,6 @@ impl TryInto<VerifyKey> for VerifyKeyFormatExport
 		Ok(VerifyKey {
 			key_id: self.key_id,
 			key: Ed25519FIPSVerifyK::try_from(bytes)?,
-		})
-	}
-}
-
-impl TryFrom<UserVerifyKeyData> for VerifyKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: UserVerifyKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.verify_key_id,
-			key: import_verify_key_from_pem_with_alg(&value.verify_key_pem, &value.verify_key_alg)?,
-		})
-	}
-}
-
-impl<'a> TryFrom<&'a UserVerifyKeyData> for VerifyKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: &'a UserVerifyKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.verify_key_id.clone(),
-			key: import_verify_key_from_pem_with_alg(&value.verify_key_pem, &value.verify_key_alg)?,
 		})
 	}
 }
