@@ -63,16 +63,22 @@ pub(crate) mod test_fn
 	pub type TestUser = crate::keys::std::StdUser;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestUser = crate::keys::fips::FipsUser;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestUser = crate::keys::rec::RecUser;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestUserDataInt = crate::keys::std::StdUserDataInt;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestUserDataInt = crate::keys::fips::FipsUserDataInt;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestUserDataInt = crate::keys::rec::RecUserDataInt;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestUserKeyDataInt = crate::keys::std::StdUserKeyDataInt;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestUserKeyDataInt = crate::keys::fips::FipsUserKeyDataInt;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestUserKeyDataInt = crate::keys::rec::RecUserKeyDataInt;
 
 	pub(crate) fn simulate_server_prepare_login(derived: &KeyDerivedData) -> String
 	{
@@ -88,6 +94,14 @@ pub(crate) mod test_fn
 
 		#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 		let salt_string = generate_salt_from_base64_to_string::<sentc_crypto_fips_keys::core::pw_hash::ClientRandomValue>(
+			&derived.client_random_value,
+			&derived.derived_alg,
+			"",
+		)
+		.unwrap();
+
+		#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+		let salt_string = generate_salt_from_base64_to_string::<sentc_crypto_rec_keys::core::pw_hash::ClientRandomValue>(
 			&derived.client_random_value,
 			&derived.derived_alg,
 			"",
@@ -123,6 +137,14 @@ pub(crate) mod test_fn
 
 		#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 		let challenge = util::server::encrypt_login_verify_challenge::<sentc_crypto_fips_keys::util::SecretKey>(
+			&device.derived.public_key,
+			&device.derived.keypair_encrypt_alg,
+			"abcd",
+		)
+		.unwrap();
+
+		#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+		let challenge = util::server::encrypt_login_verify_challenge::<sentc_crypto_rec_keys::util::SecretKey>(
 			&device.derived.public_key,
 			&device.derived.keypair_encrypt_alg,
 			"abcd",

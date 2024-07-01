@@ -6,7 +6,7 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::crypto::{EncryptedHead, GeneratedSymKeyHeadServerOutput};
 use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_core::cryptomat::{CryptoAlg, SymKeyComposer, SymKeyGen};
-use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, PkWrapper, SkWrapper, SymKeyComposerWrapper, SymKeyGenWrapper, SymKeyWrapper};
+use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SkWrapper, SymKeyComposerWrapper, SymKeyGenWrapper, SymKeyWrapper};
 use serde::{Deserialize, Serialize};
 
 use crate::util::public::handle_server_response;
@@ -186,7 +186,7 @@ impl<SGen: SymKeyGenWrapper, SC: SymKeyComposerWrapper, P: PkFromUserKeyWrapper>
 	{
 		let public_key = P::from_user_key(reply_public_key)?;
 
-		let (encrypted_key, key) = SGen::KeyGen::generate_symmetric_with_public_key(public_key.get_key())?;
+		let (encrypted_key, key) = SGen::KeyGen::generate_symmetric_with_public_key(&public_key)?;
 
 		let encrypted_key_string = Base64::encode_string(&encrypted_key);
 
@@ -195,7 +195,7 @@ impl<SGen: SymKeyGenWrapper, SC: SymKeyComposerWrapper, P: PkFromUserKeyWrapper>
 		let server_output = GeneratedSymKeyHeadServerOutput {
 			alg: sym_key_format.get_key().get_alg_str().to_string(),
 			encrypted_key_string,
-			master_key_id: public_key.get_id().to_string(),
+			master_key_id: reply_public_key.public_key_id.to_string(),
 			key_id: "non_registered".to_string(),
 			time: 0,
 		};
@@ -209,7 +209,6 @@ mod test
 {
 	use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SkCryptoWrapper, SymKeyCrypto};
 
-	use crate::crypto::mimic_keys::FakeSignKeyWrapper;
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
 
@@ -217,12 +216,15 @@ mod test
 	pub type TestKeyGenerator = crate::keys::std::StdKeyGenerator;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestKeyGenerator = crate::keys::fips::FipsKeyGenerator;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestKeyGenerator = crate::keys::rec::RecKeyGenerator;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestPublicKey = sentc_crypto_std_keys::util::PublicKey;
-
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestPublicKey = sentc_crypto_fips_keys::util::PublicKey;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestPublicKey = sentc_crypto_rec_keys::util::PublicKey;
 
 	#[test]
 	fn test_encrypt_decrypt_sym_raw()
@@ -235,9 +237,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let (head, encrypted) = group_key
-			.encrypt_raw(text.as_bytes(), None::<&FakeSignKeyWrapper>)
-			.unwrap();
+		let (head, encrypted) = group_key.encrypt_raw(text.as_bytes(), None).unwrap();
 
 		let decrypted = group_key.decrypt_raw(&encrypted, &head, None).unwrap();
 
@@ -280,7 +280,7 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 
 		let (head, encrypted) = group_key
-			.encrypt_raw_with_aad(text.as_bytes(), payload, None::<&FakeSignKeyWrapper>)
+			.encrypt_raw_with_aad(text.as_bytes(), payload, None)
 			.unwrap();
 
 		let decrypted = group_key
@@ -325,12 +325,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key(
-			&user.user_keys[0].exported_public_key,
-			text.as_bytes(),
-			None::<&FakeSignKeyWrapper>,
-		)
-		.unwrap();
+		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes(), None).unwrap();
 
 		let decrypted = user.user_keys[0]
 			.private_key
@@ -372,9 +367,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = group_key
-			.encrypt(text.as_bytes(), None::<&FakeSignKeyWrapper>)
-			.unwrap();
+		let encrypted = group_key.encrypt(text.as_bytes(), None).unwrap();
 
 		let decrypted = group_key.decrypt(&encrypted, None).unwrap();
 
@@ -393,7 +386,7 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 
 		let encrypted = group_key
-			.encrypt_with_aad(text.as_bytes(), payload, None::<&FakeSignKeyWrapper>)
+			.encrypt_with_aad(text.as_bytes(), payload, None)
 			.unwrap();
 
 		let decrypted = group_key
@@ -416,7 +409,7 @@ mod test
 		let payload2 = b"payload1234567891011121314151618";
 
 		let encrypted = group_key
-			.encrypt_with_aad(text.as_bytes(), payload, None::<&FakeSignKeyWrapper>)
+			.encrypt_with_aad(text.as_bytes(), payload, None)
 			.unwrap();
 
 		let decrypted = group_key.decrypt_with_aad(&encrypted, payload2, None);
@@ -457,12 +450,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = TestPublicKey::encrypt_with_user_key(
-			&user.user_keys[0].exported_public_key,
-			text.as_bytes(),
-			None::<&FakeSignKeyWrapper>,
-		)
-		.unwrap();
+		let encrypted = TestPublicKey::encrypt_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes(), None).unwrap();
 
 		let decrypted = user.user_keys[0]
 			.private_key
@@ -506,9 +494,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = group_key
-			.encrypt_string(text, None::<&FakeSignKeyWrapper>)
-			.unwrap();
+		let encrypted = group_key.encrypt_string(text, None).unwrap();
 
 		let decrypted = group_key.decrypt_string(&encrypted, None).unwrap();
 
@@ -526,7 +512,7 @@ mod test
 		let payload = "payload1234567891011121314151617";
 
 		let encrypted = group_key
-			.encrypt_string_with_aad(text, payload, None::<&FakeSignKeyWrapper>)
+			.encrypt_string_with_aad(text, payload, None)
 			.unwrap();
 
 		let decrypted = group_key
@@ -566,12 +552,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = TestPublicKey::encrypt_string_with_user_key(
-			&user.user_keys[0].exported_public_key,
-			text,
-			None::<&FakeSignKeyWrapper>,
-		)
-		.unwrap();
+		let encrypted = TestPublicKey::encrypt_string_with_user_key(&user.user_keys[0].exported_public_key, text, None).unwrap();
 
 		let decrypted = user.user_keys[0]
 			.private_key

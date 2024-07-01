@@ -213,7 +213,7 @@ where
 		previous_group_key: &impl SymKeyWrapper,
 		invoker_public_key: &impl PkWrapper,
 		user_group: bool,
-		sign_key: Option<&impl SignKWrapper>,
+		sign_key: Option<&SignC::SignKWrapper>,
 		starter: UserId,
 	) -> Result<String, SdkError>
 	{
@@ -686,7 +686,6 @@ mod test
 	use sentc_crypto_core::cryptomat::Pk;
 
 	use super::*;
-	use crate::crypto::mimic_keys::FakeSignKeyWrapper;
 	use crate::group::test_fn::{create_group, TestGroup};
 	use crate::user::test_fn::create_user;
 
@@ -1077,7 +1076,7 @@ mod test
 			&key_data[0].group_key,
 			&user.user_keys[0].public_key,
 			false,
-			None::<&FakeSignKeyWrapper>,
+			None,
 			Default::default(),
 		)
 		.unwrap();

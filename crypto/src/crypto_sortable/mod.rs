@@ -4,19 +4,23 @@ mod crypto_sortable_export;
 #[cfg(feature = "export")]
 pub use crypto_sortable_export::*;
 
-#[cfg(all(test, feature = "std_keys"))]
+#[cfg(all(test, any(feature = "std_keys", feature = "rec_keys")))]
 mod test
 {
 	use core::str::FromStr;
 
 	use sentc_crypto_core::cryptomat::SortableKey as CoreSort;
-	use sentc_crypto_std_keys::util::SortableKey;
 	use sentc_crypto_utils::cryptomat::SortableKeyWrapper;
 
 	use crate::group::test_fn::create_group;
 	use crate::user::test_fn::create_user;
 
 	extern crate std;
+
+	#[cfg(feature = "std_keys")]
+	pub type TestKey = sentc_crypto_std_keys::util::SortableKey;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestKey = sentc_crypto_rec_keys::util::SortableKey;
 
 	#[test]
 	fn test_simple()
@@ -49,18 +53,21 @@ mod test
 	{
 		const KEY: &str = r#"{"Ope16":{"key":"5kGPKgLQKmuZeOWQyJ7vOg==","key_id":"1876b629-5795-471f-9704-0cac52eaf9a1"}}"#;
 
-		let a = SortableKey::from_str(KEY)
+		let a = TestKey::from_str(KEY)
 			.unwrap()
+			.key
 			.encrypt_sortable(262)
 			.unwrap();
 
-		let b = SortableKey::from_str(KEY)
+		let b = TestKey::from_str(KEY)
 			.unwrap()
+			.key
 			.encrypt_sortable(263)
 			.unwrap();
 
-		let c = SortableKey::from_str(KEY)
+		let c = TestKey::from_str(KEY)
 			.unwrap()
+			.key
 			.encrypt_sortable(65321)
 			.unwrap();
 

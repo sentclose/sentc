@@ -28,7 +28,6 @@ use sentc_crypto_utils::cryptomat::{
 	PkWrapper,
 	SearchableKeyComposerWrapper,
 	SignComposerWrapper,
-	SignKWrapper,
 	SignKeyPairWrapper,
 	SkWrapper,
 	SortableKeyComposerWrapper,
@@ -371,7 +370,7 @@ where
 		public_key: &impl PkWrapper,
 		pre_group_key: &impl SymKeyWrapper,
 		user_group: bool,
-		sign_key: Option<&impl SignKWrapper>,
+		sign_key: Option<&SignC::SignKWrapper>,
 		starter: UserId,
 		group_as_member: Option<&str>,
 	) -> Result<String, SdkError>
