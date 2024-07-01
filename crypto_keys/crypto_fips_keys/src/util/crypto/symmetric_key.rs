@@ -2,21 +2,24 @@ use openssl::base64::{decode_block, encode_block};
 use sentc_crypto_common::crypto::EncryptedHead;
 use sentc_crypto_common::user::UserVerifyKeyData;
 use sentc_crypto_core::cryptomat::SymKey;
-use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyCrypto, VerifyKFromUserKeyWrapper};
+use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyCrypto};
 use sentc_crypto_utils::error::SdkUtilError;
 
-use crate::util::{SymmetricKey, VerifyKey};
+use crate::util::{SignKey, SymmetricKey, VerifyKey};
 
 impl SymKeyCrypto for SymmetricKey
 {
-	fn encrypt_raw(&self, data: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
+	type SignKey = SignKey;
+	type VerifyKey = VerifyKey;
+
+	fn encrypt_raw(&self, data: &[u8], sign_key: Option<&Self::SignKey>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
 	{
 		let encrypted = self.key.encrypt(data)?;
 
 		self.finish_raw_encrypt(encrypted, sign_key)
 	}
 
-	fn encrypt_raw_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
+	fn encrypt_raw_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&Self::SignKey>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
 	{
 		let encrypted = self.key.encrypt_with_aad(data, aad)?;
 
@@ -43,14 +46,14 @@ impl SymKeyCrypto for SymmetricKey
 		Ok(self.key.decrypt_with_aad(data_to_decrypt, aad)?)
 	}
 
-	fn encrypt_string(&self, data: &str, sign_key: Option<&impl SignKWrapper>) -> Result<String, SdkUtilError>
+	fn encrypt_string(&self, data: &str, sign_key: Option<&Self::SignKey>) -> Result<String, SdkUtilError>
 	{
 		let encrypted = self.encrypt(data.as_bytes(), sign_key)?;
 
 		Ok(encode_block(&encrypted))
 	}
 
-	fn encrypt_string_with_aad(&self, data: &str, aad: &str, sign_key: Option<&impl SignKWrapper>) -> Result<String, SdkUtilError>
+	fn encrypt_string_with_aad(&self, data: &str, aad: &str, sign_key: Option<&Self::SignKey>) -> Result<String, SdkUtilError>
 	{
 		let encrypted = self.encrypt_with_aad(data.as_bytes(), aad.as_bytes(), sign_key)?;
 
@@ -83,22 +86,6 @@ impl SymKeyCrypto for SymmetricKey
 
 impl SymmetricKey
 {
-	fn prepare_decrypt<'a>(encrypted_data: &'a [u8], head: &EncryptedHead, verify_key: Option<&UserVerifyKeyData>) -> Result<&'a [u8], SdkUtilError>
-	{
-		match &head.sign {
-			None => Ok(encrypted_data),
-			Some(h) => {
-				match verify_key {
-					None => {
-						let (_, encrypted_data_without_sig) = VerifyKey::split_sig_and_data(&h.alg, encrypted_data)?;
-						Ok(encrypted_data_without_sig)
-					},
-					Some(vk) => Ok(VerifyKey::verify_with_user_key(vk, encrypted_data, h)?),
-				}
-			},
-		}
-	}
-
 	fn finish_raw_encrypt(&self, encrypted: Vec<u8>, sign_key: Option<&impl SignKWrapper>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
 	{
 		match sign_key {

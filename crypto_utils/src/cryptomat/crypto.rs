@@ -7,9 +7,9 @@ use sentc_crypto_common::content_searchable::SearchableCreateOutput;
 use sentc_crypto_common::content_sortable::SortableEncryptOutput;
 use sentc_crypto_common::crypto::{EncryptedHead, SignHead};
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
-use sentc_crypto_core::cryptomat::{CryptoAlg, SearchableKey, SearchableKeyComposer, SortableKey, SortableKeyComposer};
+use sentc_crypto_core::cryptomat::{CryptoAlg, Pk, SearchableKey, SearchableKeyComposer, SortableKey, SortableKeyComposer, VerifyK};
 
-use crate::cryptomat::{KeyToString, PkWrapper, SignKWrapper};
+use crate::cryptomat::{KeyToString, SignKWrapper};
 use crate::error::SdkUtilError;
 use crate::{put_head_and_encrypted_data, split_head_and_encrypted_data};
 
@@ -144,9 +144,28 @@ pub trait SortableKeyComposerWrapper
 
 pub trait SymKeyCrypto
 {
-	fn encrypt_raw(&self, data: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>;
+	type SignKey: SignKWrapper;
+	type VerifyKey: VerifyKFromUserKeyWrapper;
 
-	fn encrypt_raw_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>;
+	fn prepare_decrypt<'a>(encrypted_data: &'a [u8], head: &EncryptedHead, verify_key: Option<&UserVerifyKeyData>) -> Result<&'a [u8], SdkUtilError>
+	{
+		match &head.sign {
+			None => Ok(encrypted_data),
+			Some(h) => {
+				match verify_key {
+					Some(vk) => Self::VerifyKey::verify_with_user_key(vk, encrypted_data, h),
+					None => {
+						let (_, encrypted_data_without_sig) = Self::VerifyKey::split_sig_and_data(&h.alg, encrypted_data)?;
+						Ok(encrypted_data_without_sig)
+					},
+				}
+			},
+		}
+	}
+
+	fn encrypt_raw(&self, data: &[u8], sign_key: Option<&Self::SignKey>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>;
+
+	fn encrypt_raw_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&Self::SignKey>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>;
 
 	fn decrypt_raw(&self, encrypted_data: &[u8], head: &EncryptedHead, verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>;
 
@@ -158,14 +177,14 @@ pub trait SymKeyCrypto
 		verify_key: Option<&UserVerifyKeyData>,
 	) -> Result<Vec<u8>, SdkUtilError>;
 
-	fn encrypt(&self, data: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>
+	fn encrypt(&self, data: &[u8], sign_key: Option<&Self::SignKey>) -> Result<Vec<u8>, SdkUtilError>
 	{
 		let (head, encrypted) = self.encrypt_raw(data, sign_key)?;
 
 		put_head_and_encrypted_data(&head, &encrypted)
 	}
 
-	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&impl SignKWrapper>) -> Result<Vec<u8>, SdkUtilError>
+	fn encrypt_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&Self::SignKey>) -> Result<Vec<u8>, SdkUtilError>
 	{
 		let (head, encrypted) = self.encrypt_raw_with_aad(data, aad, sign_key)?;
 
@@ -186,9 +205,9 @@ pub trait SymKeyCrypto
 		self.decrypt_raw_with_aad(encrypted_data, aad, &head, verify_key)
 	}
 
-	fn encrypt_string(&self, data: &str, sign_key: Option<&impl SignKWrapper>) -> Result<String, SdkUtilError>;
+	fn encrypt_string(&self, data: &str, sign_key: Option<&Self::SignKey>) -> Result<String, SdkUtilError>;
 
-	fn encrypt_string_with_aad(&self, data: &str, aad: &str, sign_key: Option<&impl SignKWrapper>) -> Result<String, SdkUtilError>;
+	fn encrypt_string_with_aad(&self, data: &str, aad: &str, sign_key: Option<&Self::SignKey>) -> Result<String, SdkUtilError>;
 
 	fn decrypt_string(&self, encrypted_data_with_head: &str, verify_key: Option<&UserVerifyKeyData>) -> Result<String, SdkUtilError>;
 
@@ -218,16 +237,41 @@ pub trait SkCryptoWrapper
 
 pub trait PkFromUserKeyWrapper
 {
-	type Pk: PkWrapper;
+	type CorePk: Pk;
+	type SignKey: SignKWrapper;
 
 	fn encrypt_raw_with_user_key(
 		reply_public_key: &UserPublicKeyData,
 		data: &[u8],
-		sign_key: Option<&impl SignKWrapper>,
-	) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>;
+		sign_key: Option<&Self::SignKey>,
+	) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
+	{
+		let public_key = Self::from_user_key(reply_public_key)?;
 
-	fn encrypt_with_user_key(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&impl SignKWrapper>)
-		-> Result<Vec<u8>, SdkUtilError>
+		let encrypted = public_key.encrypt(data)?;
+
+		if let Some(sk) = sign_key {
+			let (sign_head, data_with_sign) = sk.sign_with_head(&encrypted)?;
+
+			Ok((
+				EncryptedHead {
+					id: reply_public_key.public_key_id.to_string(),
+					sign: Some(sign_head),
+				},
+				data_with_sign,
+			))
+		} else {
+			Ok((
+				EncryptedHead {
+					id: reply_public_key.public_key_id.to_string(),
+					sign: None,
+				},
+				encrypted,
+			))
+		}
+	}
+
+	fn encrypt_with_user_key(reply_public_key: &UserPublicKeyData, data: &[u8], sign_key: Option<&Self::SignKey>) -> Result<Vec<u8>, SdkUtilError>
 	{
 		let (head, data) = Self::encrypt_raw_with_user_key(reply_public_key, data, sign_key)?;
 
@@ -237,10 +281,10 @@ pub trait PkFromUserKeyWrapper
 	fn encrypt_string_with_user_key(
 		reply_public_key: &UserPublicKeyData,
 		data: &str,
-		sign_key: Option<&impl SignKWrapper>,
+		sign_key: Option<&Self::SignKey>,
 	) -> Result<String, SdkUtilError>;
 
-	fn from_user_key(reply_public_key: &UserPublicKeyData) -> Result<Self::Pk, SdkUtilError>;
+	fn from_user_key(reply_public_key: &UserPublicKeyData) -> Result<Self::CorePk, SdkUtilError>;
 }
 
 //__________________________________________________________________________________________________
@@ -252,7 +296,26 @@ pub trait SignKCryptoWrapper
 
 pub trait VerifyKFromUserKeyWrapper
 {
-	fn verify_with_user_key<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkUtilError>;
+	type CoreVk: VerifyK;
+
+	fn verify_with_user_key<'a>(verify_key: &UserVerifyKeyData, data_with_sig: &'a [u8], sign_head: &SignHead) -> Result<&'a [u8], SdkUtilError>
+	{
+		let vk = Self::from_user_key(verify_key)?;
+
+		if verify_key.verify_key_id != sign_head.id {
+			return Err(SdkUtilError::SigFoundNotKey);
+		}
+
+		let (encrypted_data_without_sig, check) = vk.verify(data_with_sig)?;
+
+		if !check {
+			return Err(SdkUtilError::VerifyFailed);
+		}
+
+		Ok(encrypted_data_without_sig)
+	}
 
 	fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'a [u8], &'a [u8]), SdkUtilError>;
+
+	fn from_user_key(verify_key: &UserVerifyKeyData) -> Result<Self::CoreVk, SdkUtilError>;
 }
