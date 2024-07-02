@@ -343,6 +343,19 @@ macro_rules! try_from_bytes_owned_single_value {
 }
 
 #[macro_export]
+macro_rules! from_bytes_owned_single_value {
+	($st:ty) => {
+		impl From<Vec<u8>> for $st
+		{
+			fn from(value: Vec<u8>) -> Self
+			{
+				Self(value)
+			}
+		}
+	};
+}
+
+#[macro_export]
 macro_rules! as_ref_bytes_single_value {
 	($st:ty) => {
 		impl AsRef<[u8]> for $st
@@ -363,6 +376,19 @@ macro_rules! into_bytes_single_value {
 			fn into(self) -> Vec<u8>
 			{
 				Vec::from(self.0)
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! into_bytes_from_bytes_inner {
+	($st:ty) => {
+		impl Into<Vec<u8>> for $st
+		{
+			fn into(self) -> Vec<u8>
+			{
+				self.0
 			}
 		}
 	};
