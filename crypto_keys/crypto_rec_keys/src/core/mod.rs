@@ -27,57 +27,20 @@ fn export_sk<T: HasPrivate>(key: &PKey<T>) -> Result<Vec<u8>, Error>
 }
 
 #[macro_export]
-macro_rules! import_export_pqc {
-	($st:ty,$k:ident) => {
-		impl AsRef<[u8]> for $st
-		{
-			fn as_ref(&self) -> &[u8]
-			{
-				self.0.as_bytes()
-			}
-		}
-
-		impl TryFrom<Vec<u8>> for $st
-		{
-			type Error = sentc_crypto_core::Error;
-
-			fn try_from(value: Vec<u8>) -> Result<Self, Self::Error>
-			{
-				Ok(Self(
-					$k::from_bytes(&value).map_err(|_| sentc_crypto_core::Error::KeyDecryptFailed)?,
-				))
-			}
-		}
-
-		impl<'a> TryFrom<&'a [u8]> for $st
-		{
-			type Error = sentc_crypto_core::Error;
-
-			fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
-			{
-				Ok(Self(
-					$k::from_bytes(value).map_err(|_| sentc_crypto_core::Error::KeyDecryptFailed)?,
-				))
-			}
-		}
-	};
-}
-
-#[macro_export]
 macro_rules! hybrid_import_export {
-	($st:ty,$import_k:ident, $export_k:ident,$k:ident) => {
+	($st:ty,$import_k:ident, $export_k:ident) => {
 		impl $st
 		{
 			pub fn prepare_export(&self) -> Result<(Vec<u8>, &[u8]), sentc_crypto_core::Error>
 			{
-				Ok(($export_k(&self.x)?, self.k.as_bytes()))
+				Ok(($export_k(&self.x)?, self.k.as_slice()))
 			}
 
-			pub fn from_bytes(bytes_x: &[u8], bytes_k: &[u8]) -> Result<Self, sentc_crypto_core::Error>
+			pub fn from_bytes(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, sentc_crypto_core::Error>
 			{
 				Ok(Self {
-					x: $import_k(bytes_x)?,
-					k: $k::from_bytes(bytes_k).map_err(|_| sentc_crypto_core::Error::KeyDecryptFailed)?,
+					x: $import_k(&bytes_x)?,
+					k: bytes_k,
 				})
 			}
 		}
@@ -86,7 +49,7 @@ macro_rules! hybrid_import_export {
 
 #[macro_export]
 macro_rules! hybrid_sk_from_bytes {
-	($st:ty,$import_k:ident, $k:ident) => {
+	($st:ty,$import_k:ident) => {
 		impl $st
 		{
 			fn import(bytes: &[u8]) -> Result<Self, sentc_crypto_core::Error>
@@ -96,7 +59,7 @@ macro_rules! hybrid_sk_from_bytes {
 
 				Ok(Self {
 					x: $import_k(x)?,
-					k: $k::from_bytes(k).map_err(|_| sentc_crypto_core::Error::KeyDecryptFailed)?,
+					k: k.to_vec(),
 				})
 			}
 		}

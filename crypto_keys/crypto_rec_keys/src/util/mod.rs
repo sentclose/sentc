@@ -130,11 +130,11 @@ pub enum SecretKeyFormatExport
 	{
 		key: String, key_id: EncryptionKeyPairId
 	},
-	Kyber
+	MlKem
 	{
 		key: String, key_id: EncryptionKeyPairId
 	},
-	EciesKyberHybrid
+	EciesMlKemHybrid
 	{
 		x: String, k: String, key_id: EncryptionKeyPairId
 	},
@@ -155,21 +155,21 @@ impl TryFrom<SecretKey> for SecretKeyFormatExport
 					key_id: value.key_id,
 				})
 			},
-			CoreSk::Kyber(k) => {
+			CoreSk::MlKem(k) => {
 				let key = encode_block(k.as_ref());
 
-				Ok(Self::Kyber {
+				Ok(Self::MlKem {
 					key,
 					key_id: value.key_id,
 				})
 			},
-			CoreSk::EciesKyberHybrid(k) => {
+			CoreSk::EciesMlKemHybrid(k) => {
 				let (x, k) = k.prepare_export()?;
 
 				let x = encode_block(&x);
 				let k = encode_block(k);
 
-				Ok(Self::EciesKyberHybrid {
+				Ok(Self::EciesMlKemHybrid {
 					k,
 					x,
 					key_id: value.key_id.clone(),
@@ -197,7 +197,7 @@ impl TryInto<SecretKey> for SecretKeyFormatExport
 					key: CoreSk::ecies_from_bytes_owned(bytes)?,
 				})
 			},
-			Self::Kyber {
+			Self::MlKem {
 				key,
 				key_id,
 			} => {
@@ -205,10 +205,10 @@ impl TryInto<SecretKey> for SecretKeyFormatExport
 
 				Ok(SecretKey {
 					key_id,
-					key: CoreSk::kyber_from_bytes_owned(bytes)?,
+					key: CoreSk::ml_kem_from_bytes_owned(bytes),
 				})
 			},
-			Self::EciesKyberHybrid {
+			Self::EciesMlKemHybrid {
 				x,
 				k,
 				key_id,
@@ -218,7 +218,7 @@ impl TryInto<SecretKey> for SecretKeyFormatExport
 
 				Ok(SecretKey {
 					key_id,
-					key: CoreSk::ecies_kyber_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
+					key: CoreSk::ecies_ml_kem_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
 				})
 			},
 		}
@@ -254,12 +254,12 @@ pub enum PublicKeyFormatExport
 		key: String, key_id: EncryptionKeyPairId
 	},
 
-	Kyber
+	MlKem
 	{
 		key: String, key_id: EncryptionKeyPairId
 	},
 
-	EciesKyberHybrid
+	EciesMlKemHybrid
 	{
 		x: String, k: String, key_id: EncryptionKeyPairId
 	},
@@ -280,21 +280,21 @@ impl TryFrom<PublicKey> for PublicKeyFormatExport
 					key_id: value.key_id,
 				})
 			},
-			CorePk::Kyber(k) => {
+			CorePk::MlKem(k) => {
 				let key = encode_block(k.as_ref());
 
-				Ok(Self::Kyber {
+				Ok(Self::MlKem {
 					key,
 					key_id: value.key_id,
 				})
 			},
-			CorePk::EciesKyberHybrid(k) => {
+			CorePk::EciesMlKemHybrid(k) => {
 				let (x, k) = k.prepare_export()?;
 
 				let x = encode_block(&x);
 				let k = encode_block(k);
 
-				Ok(Self::EciesKyberHybrid {
+				Ok(Self::EciesMlKemHybrid {
 					x,
 					k,
 					key_id: value.key_id,
@@ -319,21 +319,21 @@ impl<'a> TryFrom<&'a PublicKey> for PublicKeyFormatExport
 					key_id: value.key_id.clone(),
 				})
 			},
-			CorePk::Kyber(k) => {
+			CorePk::MlKem(k) => {
 				let key = encode_block(k.as_ref());
 
-				Ok(Self::Kyber {
+				Ok(Self::MlKem {
 					key,
 					key_id: value.key_id.clone(),
 				})
 			},
-			CorePk::EciesKyberHybrid(k) => {
+			CorePk::EciesMlKemHybrid(k) => {
 				let (x, k) = k.prepare_export()?;
 
 				let x = encode_block(&x);
 				let k = encode_block(k);
 
-				Ok(Self::EciesKyberHybrid {
+				Ok(Self::EciesMlKemHybrid {
 					x,
 					k,
 					key_id: value.key_id.clone(),
@@ -361,18 +361,18 @@ impl TryInto<PublicKey> for PublicKeyFormatExport
 					key_id,
 				})
 			},
-			Self::Kyber {
+			Self::MlKem {
 				key_id,
 				key,
 			} => {
 				let bytes = decode_block(&key).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
 
 				Ok(PublicKey {
-					key: CorePk::kyber_from_bytes_owned(bytes)?,
+					key: CorePk::ml_kem_from_bytes_owned(bytes),
 					key_id,
 				})
 			},
-			Self::EciesKyberHybrid {
+			Self::EciesMlKemHybrid {
 				key_id,
 				x,
 				k,
@@ -382,7 +382,7 @@ impl TryInto<PublicKey> for PublicKeyFormatExport
 
 				Ok(PublicKey {
 					key_id,
-					key: CorePk::ecies_kyber_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
+					key: CorePk::ecies_ml_kem_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
 				})
 			},
 		}
@@ -417,12 +417,12 @@ pub enum SignKeyFormatExport
 		key: String, key_id: SignKeyPairId
 	},
 
-	Dilithium
+	MlDsa
 	{
 		key: String, key_id: SignKeyPairId
 	},
 
-	Ed25519DilithiumHybrid
+	Ed25519MlDsaHybrid
 	{
 		x: String, k: String, key_id: SignKeyPairId
 	},
@@ -443,21 +443,21 @@ impl TryFrom<SignKey> for SignKeyFormatExport
 					key_id: value.key_id,
 				})
 			},
-			CoreSign::Dilithium(k) => {
+			CoreSign::MlDsa(k) => {
 				let key = encode_block(k.as_ref());
 
-				Ok(Self::Dilithium {
+				Ok(Self::MlDsa {
 					key,
 					key_id: value.key_id,
 				})
 			},
-			CoreSign::Ed25519DilithiumHybrid(k) => {
+			CoreSign::Ed25519MlDsaHybrid(k) => {
 				let (x, k) = k.prepare_export()?;
 
 				let x = encode_block(&x);
 				let k = encode_block(k);
 
-				Ok(Self::Ed25519DilithiumHybrid {
+				Ok(Self::Ed25519MlDsaHybrid {
 					x,
 					k,
 					key_id: value.key_id,
@@ -485,7 +485,7 @@ impl TryInto<SignKey> for SignKeyFormatExport
 					key: CoreSign::ed25519_from_bytes_owned(bytes)?,
 				})
 			},
-			Self::Dilithium {
+			Self::MlDsa {
 				key,
 				key_id,
 			} => {
@@ -493,10 +493,10 @@ impl TryInto<SignKey> for SignKeyFormatExport
 
 				Ok(SignKey {
 					key_id,
-					key: CoreSign::dilithium_from_bytes_owned(bytes)?,
+					key: CoreSign::ml_dsa_from_bytes_owned(bytes),
 				})
 			},
-			Self::Ed25519DilithiumHybrid {
+			Self::Ed25519MlDsaHybrid {
 				x,
 				k,
 				key_id,
@@ -506,7 +506,7 @@ impl TryInto<SignKey> for SignKeyFormatExport
 
 				Ok(SignKey {
 					key_id,
-					key: CoreSign::ed25519_dilithium_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
+					key: CoreSign::ed25519_ml_dsa_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
 				})
 			},
 		}
@@ -534,12 +534,12 @@ pub enum VerifyKeyFormatExport
 		key: String, key_id: SignKeyPairId
 	},
 
-	Dilithium
+	MlDsa
 	{
 		key: String, key_id: SignKeyPairId
 	},
 
-	Ed25519DilithiumHybrid
+	Ed25519MlDsaHybrid
 	{
 		x: String, k: String, key_id: SignKeyPairId
 	},
@@ -560,21 +560,21 @@ impl TryFrom<VerifyKey> for VerifyKeyFormatExport
 					key_id: value.key_id.clone(),
 				})
 			},
-			CoreVk::Dilithium(k) => {
+			CoreVk::MlDsa(k) => {
 				let key = encode_block(k.as_ref());
 
-				Ok(Self::Dilithium {
+				Ok(Self::MlDsa {
 					key,
 					key_id: value.key_id.clone(),
 				})
 			},
-			CoreVk::Ed25519DilithiumHybrid(k) => {
+			CoreVk::Ed25519MlDsaHybrid(k) => {
 				let (x, k) = k.prepare_export()?;
 
 				let x = encode_block(&x);
 				let k = encode_block(k);
 
-				Ok(Self::Ed25519DilithiumHybrid {
+				Ok(Self::Ed25519MlDsaHybrid {
 					x,
 					k,
 					key_id: value.key_id.clone(),
@@ -602,18 +602,18 @@ impl TryInto<VerifyKey> for VerifyKeyFormatExport
 					key_id,
 				})
 			},
-			Self::Dilithium {
+			Self::MlDsa {
 				key_id,
 				key,
 			} => {
 				let bytes = decode_block(&key).map_err(|_| SdkUtilError::ImportPublicKeyFailed)?;
 
 				Ok(VerifyKey {
-					key: CoreVk::dilithium_from_bytes_owned(bytes)?,
+					key: CoreVk::ml_dsa_from_bytes_owned(bytes),
 					key_id,
 				})
 			},
-			Self::Ed25519DilithiumHybrid {
+			Self::Ed25519MlDsaHybrid {
 				key_id,
 				x,
 				k,
@@ -623,7 +623,7 @@ impl TryInto<VerifyKey> for VerifyKeyFormatExport
 
 				Ok(VerifyKey {
 					key_id,
-					key: CoreVk::ed25519_dilithium_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
+					key: CoreVk::ed25519_ml_dsa_hybrid_from_bytes_owned(bytes_x, bytes_k)?,
 				})
 			},
 		}

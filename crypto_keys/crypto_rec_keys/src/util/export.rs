@@ -2,8 +2,8 @@ use openssl::base64::{decode_block, encode_block};
 use sentc_crypto_utils::error::SdkUtilError;
 use sentc_crypto_utils::{export_key_to_pem, import_key_from_pem};
 
-use crate::core::asym::{PublicKey, ECIES_KYBER_REC_HYBRID_OUTPUT, ECIES_REC_OUTPUT, KYBER_REC_OUTPUT};
-use crate::core::sign::{Signature, VerifyKey, DILITHIUM_REC_OUTPUT, ED25519_DILITHIUM_HYBRID_REC_OUTPUT, FIPS_OPENSSL_ED25519};
+use crate::core::asym::{PublicKey, ECIES_ML_KEM_REC_HYBRID_OUTPUT, ECIES_REC_OUTPUT, ML_KEM_REC_OUTPUT};
+use crate::core::sign::{Signature, VerifyKey, ED25519_ML_DSA_HYBRID_REC_OUTPUT, FIPS_OPENSSL_ED25519, ML_DSA_REC_OUTPUT};
 use crate::util::HybridPublicKeyExportFormat;
 
 pub fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Result<PublicKey, SdkUtilError>
@@ -13,17 +13,17 @@ pub fn import_public_key_from_pem_with_alg(public_key: &str, alg: &str) -> Resul
 			let bytes = import_key_from_pem(public_key)?;
 			Ok(PublicKey::ecies_from_bytes_owned(bytes)?)
 		},
-		KYBER_REC_OUTPUT => {
+		ML_KEM_REC_OUTPUT => {
 			let bytes = import_key_from_pem(public_key)?;
-			Ok(PublicKey::kyber_from_bytes_owned(bytes)?)
+			Ok(PublicKey::ml_kem_from_bytes_owned(bytes))
 		},
-		ECIES_KYBER_REC_HYBRID_OUTPUT => {
+		ECIES_ML_KEM_REC_HYBRID_OUTPUT => {
 			let key: HybridPublicKeyExportFormat = serde_json::from_str(public_key).map_err(SdkUtilError::JsonParseFailed)?;
 
 			let bytes_x = import_key_from_pem(&key.x)?;
 			let bytes_k = import_key_from_pem(&key.k)?;
 
-			Ok(PublicKey::ecies_kyber_hybrid_from_bytes_owned(bytes_x, bytes_k)?)
+			Ok(PublicKey::ecies_ml_kem_hybrid_from_bytes_owned(bytes_x, bytes_k)?)
 		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}
@@ -36,19 +36,17 @@ pub fn import_verify_key_from_pem_with_alg(verify_key: &str, alg: &str) -> Resul
 			let bytes = import_key_from_pem(verify_key)?;
 			Ok(VerifyKey::ed25519_from_bytes_owned(bytes)?)
 		},
-		DILITHIUM_REC_OUTPUT => {
+		ML_DSA_REC_OUTPUT => {
 			let bytes = import_key_from_pem(verify_key)?;
-			Ok(VerifyKey::dilithium_from_bytes_owned(bytes)?)
+			Ok(VerifyKey::ml_dsa_from_bytes_owned(bytes))
 		},
-		ED25519_DILITHIUM_HYBRID_REC_OUTPUT => {
+		ED25519_ML_DSA_HYBRID_REC_OUTPUT => {
 			let key: HybridPublicKeyExportFormat = serde_json::from_str(verify_key).map_err(SdkUtilError::JsonParseFailed)?;
 
 			let bytes_x = import_key_from_pem(&key.x)?;
 			let bytes_k = import_key_from_pem(&key.k)?;
 
-			Ok(VerifyKey::ed25519_dilithium_hybrid_from_bytes_owned(
-				bytes_x, bytes_k,
-			)?)
+			Ok(VerifyKey::ed25519_ml_dsa_hybrid_from_bytes_owned(bytes_x, bytes_k)?)
 		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}
@@ -61,17 +59,17 @@ pub fn import_sig_from_string(sig: &str, alg: &str) -> Result<Signature, SdkUtil
 			let bytes = decode_block(sig).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 			Ok(Signature::ed25519_from_bytes_owned(bytes))
 		},
-		DILITHIUM_REC_OUTPUT => {
+		ML_DSA_REC_OUTPUT => {
 			let bytes = decode_block(sig).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
-			Ok(Signature::dilithium_from_bytes_owned(bytes))
+			Ok(Signature::ml_dsa_from_bytes_owned(bytes))
 		},
-		ED25519_DILITHIUM_HYBRID_REC_OUTPUT => {
+		ED25519_ML_DSA_HYBRID_REC_OUTPUT => {
 			let key: HybridPublicKeyExportFormat = serde_json::from_str(sig).map_err(SdkUtilError::JsonParseFailed)?;
 
 			let bytes_x = decode_block(&key.x).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 			let bytes_k = decode_block(&key.k).map_err(|_| SdkUtilError::DecodePublicKeyFailed)?;
 
-			Ok(Signature::ed25519_dilithium_hybrid_from_bytes_owned(bytes_x, bytes_k))
+			Ok(Signature::ed25519_ml_dsa_hybrid_from_bytes_owned(bytes_x, bytes_k))
 		},
 		_ => Err(SdkUtilError::AlgNotFound),
 	}
@@ -81,8 +79,8 @@ pub fn sig_to_string(sig: &Signature) -> String
 {
 	match sig {
 		Signature::Ed25519(s) => encode_block(s.as_ref()),
-		Signature::Dilithium(s) => encode_block(s.as_ref()),
-		Signature::Ed25519DilithiumHybrid(s) => {
+		Signature::MlDsa(s) => encode_block(s.as_ref()),
+		Signature::Ed25519MlDsaHybrid(s) => {
 			let (x, k) = s.get_raw_sig();
 
 			let x = encode_block(x);
@@ -101,8 +99,8 @@ pub fn export_raw_public_key_to_pem(key: &PublicKey) -> Result<String, SdkUtilEr
 {
 	match key {
 		PublicKey::Ecies(key) => export_key_to_pem(&key.export()?),
-		PublicKey::Kyber(key) => export_key_to_pem(key.as_ref()),
-		PublicKey::EciesKyberHybrid(key) => {
+		PublicKey::MlKem(key) => export_key_to_pem(key.as_ref()),
+		PublicKey::EciesMlKemHybrid(key) => {
 			let (x, k) = key.prepare_export()?;
 
 			let x = export_key_to_pem(&x)?;
@@ -121,8 +119,8 @@ pub fn export_raw_verify_key_to_pem(key: &VerifyKey) -> Result<String, SdkUtilEr
 {
 	match key {
 		VerifyKey::Ed25519(key) => export_key_to_pem(&key.export()?),
-		VerifyKey::Dilithium(key) => export_key_to_pem(key.as_ref()),
-		VerifyKey::Ed25519DilithiumHybrid(key) => {
+		VerifyKey::MlDsa(key) => export_key_to_pem(key.as_ref()),
+		VerifyKey::Ed25519MlDsaHybrid(key) => {
 			let (x, k) = key.prepare_export()?;
 
 			let x = export_key_to_pem(&x)?;

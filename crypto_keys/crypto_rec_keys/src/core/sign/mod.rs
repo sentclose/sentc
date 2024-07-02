@@ -6,13 +6,13 @@ use sentc_crypto_core::Error;
 pub use sentc_crypto_fips_keys::core::sign::FIPS_OPENSSL_ED25519;
 use sentc_crypto_fips_keys::core::sign::{Ed25519FIPSSig, Ed25519FIPSSignK, Ed25519FIPSVerifyK};
 
-pub use crate::core::sign::ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_REC_OUTPUT;
-use crate::core::sign::ed25519_dilithium_hybrid::{Ed25519DilithiumHybridSig, Ed25519DilithiumHybridSignK, Ed25519DilithiumHybridVerifyKey};
-pub use crate::core::sign::pqc_dilithium::DILITHIUM_REC_OUTPUT;
-use crate::core::sign::pqc_dilithium::{DilithiumSig, DilithiumSignK, DilithiumVk};
+pub use crate::core::sign::ed25519_ml_dsa_hybrid::ED25519_ML_DSA_HYBRID_REC_OUTPUT;
+use crate::core::sign::ed25519_ml_dsa_hybrid::{Ed25519MlDsaHybridSig, Ed25519MlDsaHybridSignK, Ed25519MlDsaHybridVerifyKey};
+pub use crate::core::sign::pqc_ml_dsa::ML_DSA_REC_OUTPUT;
+use crate::core::sign::pqc_ml_dsa::{MlDsaSig, MlDsaSk, MlDsaVk};
 
-mod ed25519_dilithium_hybrid;
-mod pqc_dilithium;
+mod ed25519_ml_dsa_hybrid;
+mod pqc_ml_dsa;
 
 mod ed25519
 {
@@ -23,8 +23,8 @@ macro_rules! deref_macro {
     ($self:expr, $method:ident $(, $args:expr)*) => {
         match $self {
             Self::Ed25519(inner) => inner.$method($($args),*),
-            Self::Dilithium(inner) => inner.$method($($args),*),
-			Self::Ed25519DilithiumHybrid(inner) => inner.$method($($args),*),
+            Self::MlDsa(inner) => inner.$method($($args),*),
+			Self::Ed25519MlDsaHybrid(inner) => inner.$method($($args),*),
         }
     };
 }
@@ -50,14 +50,14 @@ macro_rules! get_inner_key {
 				Ok(Self::Ed25519(bytes.try_into()?))
 			}
 
-			pub fn dilithium_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+			pub fn ml_dsa_from_bytes_owned(bytes: Vec<u8>) -> Self
 			{
-				Ok(Self::Dilithium(bytes.try_into()?))
+				Self::MlDsa(bytes.into())
 			}
 
-			pub fn ed25519_dilithium_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, Error>
+			pub fn ed25519_ml_dsa_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, Error>
 			{
-				Ok(Self::Ed25519DilithiumHybrid($t::from_bytes(&bytes_x, &bytes_k)?))
+				Ok(Self::Ed25519MlDsaHybrid($t::from_bytes(bytes_x, bytes_k)?))
 			}
 		}
 	};
@@ -66,8 +66,8 @@ macro_rules! get_inner_key {
 pub enum Signature
 {
 	Ed25519(Ed25519FIPSSig),
-	Dilithium(DilithiumSig),
-	Ed25519DilithiumHybrid(Ed25519DilithiumHybridSig),
+	MlDsa(MlDsaSig),
+	Ed25519MlDsaHybrid(Ed25519MlDsaHybridSig),
 }
 crypto_alg_impl!(Signature);
 
@@ -78,22 +78,22 @@ impl Signature
 		Self::Ed25519(bytes.into())
 	}
 
-	pub fn dilithium_from_bytes_owned(bytes: Vec<u8>) -> Self
+	pub fn ml_dsa_from_bytes_owned(bytes: Vec<u8>) -> Self
 	{
-		Self::Dilithium(bytes.into())
+		Self::MlDsa(bytes.into())
 	}
 
-	pub fn ed25519_dilithium_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Self
+	pub fn ed25519_ml_dsa_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Self
 	{
-		Self::Ed25519DilithiumHybrid(Ed25519DilithiumHybridSig::from_bytes_owned(bytes_x, bytes_k))
+		Self::Ed25519MlDsaHybrid(Ed25519MlDsaHybridSig::from_bytes_owned(bytes_x, bytes_k))
 	}
 
 	pub fn split_sig_and_data<'a>(alg: &str, data_with_sign: &'a [u8]) -> Result<(&'a [u8], &'a [u8]), Error>
 	{
 		match alg {
 			FIPS_OPENSSL_ED25519 => ed25519::split_sig_and_data(data_with_sign),
-			DILITHIUM_REC_OUTPUT => pqc_dilithium::split_sig_and_data(data_with_sign),
-			ED25519_DILITHIUM_HYBRID_REC_OUTPUT => ed25519_dilithium_hybrid::split_sig_and_data(data_with_sign),
+			ML_DSA_REC_OUTPUT => pqc_ml_dsa::split_sig_and_data(data_with_sign),
+			ED25519_ML_DSA_HYBRID_REC_OUTPUT => ed25519_ml_dsa_hybrid::split_sig_and_data(data_with_sign),
 			_ => Err(Error::AlgNotFound),
 		}
 	}
@@ -120,11 +120,11 @@ impl From<Ed25519FIPSSig> for Signature
 pub enum SignKey
 {
 	Ed25519(Ed25519FIPSSignK),
-	Dilithium(DilithiumSignK),
-	Ed25519DilithiumHybrid(Ed25519DilithiumHybridSignK),
+	MlDsa(MlDsaSk),
+	Ed25519MlDsaHybrid(Ed25519MlDsaHybridSignK),
 }
 crypto_alg_impl!(SignKey);
-get_inner_key!(SignKey, Ed25519DilithiumHybridSignK);
+get_inner_key!(SignKey, Ed25519MlDsaHybridSignK);
 
 impl From<Ed25519FIPSSignK> for SignKey
 {
@@ -152,8 +152,8 @@ impl SignK for SignKey
 	{
 		let out: Signature = match self {
 			Self::Ed25519(inner) => inner.sign_only(data)?.into(),
-			Self::Dilithium(inner) => inner.sign_only(data)?.into(),
-			Self::Ed25519DilithiumHybrid(inner) => inner.sign_only(data)?.into(),
+			Self::MlDsa(inner) => inner.sign_only(data)?.into(),
+			Self::Ed25519MlDsaHybrid(inner) => inner.sign_only(data)?.into(),
 		};
 
 		Ok(out)
@@ -167,8 +167,8 @@ impl SignKeyPair for SignKey
 
 	fn generate_key_pair() -> Result<(Self::SignKey, Self::VerifyKey), Error>
 	{
-		#[cfg(feature = "ed25519_dilithium_hybrid")]
-		let (sk, vk) = Ed25519DilithiumHybridSignK::generate_key_pair()?;
+		#[cfg(feature = "ed25519_ml_dsa_hybrid")]
+		let (sk, vk) = Ed25519MlDsaHybridSignK::generate_key_pair()?;
 
 		#[cfg(feature = "ed25519")]
 		let (sk, vk) = Ed25519FIPSSignK::generate_key_pair()?;
@@ -187,8 +187,8 @@ impl SignKeyComposer for SignKey
 
 		let key = match alg_str {
 			FIPS_OPENSSL_ED25519 => Self::Ed25519(key.try_into()?),
-			DILITHIUM_REC_OUTPUT => Self::Dilithium(key.try_into()?),
-			ED25519_DILITHIUM_HYBRID_REC_OUTPUT => Self::Ed25519DilithiumHybrid(key.try_into()?),
+			ML_DSA_REC_OUTPUT => Self::MlDsa(key.into()),
+			ED25519_ML_DSA_HYBRID_REC_OUTPUT => Self::Ed25519MlDsaHybrid(key.try_into()?),
 			_ => return Err(Error::AlgNotFound),
 		};
 
@@ -199,11 +199,11 @@ impl SignKeyComposer for SignKey
 pub enum VerifyKey
 {
 	Ed25519(Ed25519FIPSVerifyK),
-	Dilithium(DilithiumVk),
-	Ed25519DilithiumHybrid(Ed25519DilithiumHybridVerifyKey),
+	MlDsa(MlDsaVk),
+	Ed25519MlDsaHybrid(Ed25519MlDsaHybridVerifyKey),
 }
 crypto_alg_impl!(VerifyKey);
-get_inner_key!(VerifyKey, Ed25519DilithiumHybridVerifyKey);
+get_inner_key!(VerifyKey, Ed25519MlDsaHybridVerifyKey);
 
 impl From<Ed25519FIPSVerifyK> for VerifyKey
 {
@@ -226,8 +226,8 @@ impl VerifyK for VerifyKey
 	{
 		match (self, sig) {
 			(Self::Ed25519(inner), Signature::Ed25519(s)) => inner.verify_only(s, data),
-			(Self::Dilithium(inner), Signature::Dilithium(s)) => inner.verify_only(s, data),
-			(Self::Ed25519DilithiumHybrid(inner), Signature::Ed25519DilithiumHybrid(s)) => inner.verify_only(s, data),
+			(Self::MlDsa(inner), Signature::MlDsa(s)) => inner.verify_only(s, data),
+			(Self::Ed25519MlDsaHybrid(inner), Signature::Ed25519MlDsaHybrid(s)) => inner.verify_only(s, data),
 			_ => Err(Error::AlgNotFound),
 		}
 	}

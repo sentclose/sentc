@@ -3,21 +3,21 @@ use sentc_crypto_core::Error;
 
 pub use crate::core::asym::ecies::ECIES_REC_OUTPUT;
 use crate::core::asym::ecies::{EciesPk, EciesSk};
-pub use crate::core::asym::ecies_kyber_hybrid::ECIES_KYBER_REC_HYBRID_OUTPUT;
-use crate::core::asym::ecies_kyber_hybrid::{EciesKyberHybridPk, EciesKyberHybridSk};
-pub use crate::core::asym::pqc_kyber::KYBER_REC_OUTPUT;
-use crate::core::asym::pqc_kyber::{KyberPk, KyberSk};
+pub use crate::core::asym::ecies_ml_kem_hybrid::ECIES_ML_KEM_REC_HYBRID_OUTPUT;
+use crate::core::asym::ecies_ml_kem_hybrid::{EciesMlKemHybridPk, EciesMlKemHybridSk};
+pub use crate::core::asym::pqc_ml_kem::ML_KEM_REC_OUTPUT;
+use crate::core::asym::pqc_ml_kem::{MlKemPk, MlKemSk};
 
 mod ecies;
-mod ecies_kyber_hybrid;
-mod pqc_kyber;
+mod ecies_ml_kem_hybrid;
+mod pqc_ml_kem;
 
 macro_rules! deref_macro {
     ($self:expr, $method:ident $(, $args:expr)*) => {
         match $self {
             Self::Ecies(inner) => inner.$method($($args),*),
-            Self::Kyber(inner) => inner.$method($($args),*),
-			Self::EciesKyberHybrid(inner) => inner.$method($($args),*),
+            Self::MlKem(inner) => inner.$method($($args),*),
+			Self::EciesMlKemHybrid(inner) => inner.$method($($args),*),
         }
     };
 }
@@ -43,14 +43,14 @@ macro_rules! get_inner_key {
 				Ok(Self::Ecies(bytes.try_into()?))
 			}
 
-			pub fn kyber_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
+			pub fn ml_kem_from_bytes_owned(bytes: Vec<u8>) -> Self
 			{
-				Ok(Self::Kyber(bytes.try_into()?))
+				Self::MlKem(bytes.into())
 			}
 
-			pub fn ecies_kyber_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, Error>
+			pub fn ecies_ml_kem_hybrid_from_bytes_owned(bytes_x: Vec<u8>, bytes_k: Vec<u8>) -> Result<Self, Error>
 			{
-				Ok(Self::EciesKyberHybrid($t::from_bytes(&bytes_x, &bytes_k)?))
+				Ok(Self::EciesMlKemHybrid($t::from_bytes(bytes_x, bytes_k)?))
 			}
 		}
 	};
@@ -60,12 +60,12 @@ macro_rules! get_inner_key {
 pub enum PublicKey
 {
 	Ecies(EciesPk),
-	Kyber(KyberPk),
-	EciesKyberHybrid(EciesKyberHybridPk),
+	MlKem(MlKemPk),
+	EciesMlKemHybrid(EciesMlKemHybridPk),
 }
 
 crypto_alg_impl!(PublicKey);
-get_inner_key!(PublicKey, EciesKyberHybridPk);
+get_inner_key!(PublicKey, EciesMlKemHybridPk);
 
 impl Pk for PublicKey
 {
@@ -88,12 +88,12 @@ impl Pk for PublicKey
 pub enum SecretKey
 {
 	Ecies(EciesSk),
-	Kyber(KyberSk),
-	EciesKyberHybrid(EciesKyberHybridSk),
+	MlKem(MlKemSk),
+	EciesMlKemHybrid(EciesMlKemHybridSk),
 }
 
 crypto_alg_impl!(SecretKey);
-get_inner_key!(SecretKey, EciesKyberHybridSk);
+get_inner_key!(SecretKey, EciesMlKemHybridSk);
 
 impl Sk for SecretKey
 {
@@ -118,8 +118,8 @@ impl SkComposer for SecretKey
 
 		let key = match alg_str {
 			ECIES_REC_OUTPUT => Self::Ecies(bytes.try_into()?),
-			KYBER_REC_OUTPUT => Self::Kyber(bytes.try_into()?),
-			ECIES_KYBER_REC_HYBRID_OUTPUT => Self::EciesKyberHybrid(bytes.try_into()?),
+			ML_KEM_REC_OUTPUT => Self::MlKem(bytes.into()),
+			ECIES_ML_KEM_REC_HYBRID_OUTPUT => Self::EciesMlKemHybrid(bytes.try_into()?),
 			_ => return Err(Error::AlgNotFound),
 		};
 
@@ -134,8 +134,8 @@ impl StaticKeyPair for SecretKey
 
 	fn generate_static_keypair() -> Result<(Self::SecretKey, Self::PublicKey), Error>
 	{
-		#[cfg(feature = "ecies_kyber_hybrid")]
-		let (sk, pk) = EciesKyberHybridSk::generate_static_keypair()?;
+		#[cfg(feature = "ecies_ml_kem_hybrid")]
+		let (sk, pk) = EciesMlKemHybridSk::generate_static_keypair()?;
 
 		#[cfg(feature = "ecies")]
 		let (sk, pk) = EciesSk::generate_static_keypair()?;
