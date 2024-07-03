@@ -42,7 +42,8 @@ pub type StdUserKeyDataInt = entities::user::UserKeyDataInt<SymmetricKey, Secret
 
 pub type StdKeyGenerator = crypto::KeyGenerator<SymmetricKey, SymmetricKey, PublicKey>;
 
-pub type StdFileEncryptor = file::FileEncryptor<sentc_crypto_std_keys::core::SymmetricKey, sentc_crypto_std_keys::core::SymmetricKey, VerifyKey>;
+pub type StdFileEncryptor =
+	file::FileEncryptor<sentc_crypto_std_keys::core::SymmetricKey, sentc_crypto_std_keys::core::SymmetricKey, SignKey, VerifyKey>;
 
 #[cfg(any(feature = "full_rustls", feature = "full_wasm"))]
 pub type StdPreLoginOut = crate::util_req_full::user::PreLoginOut<
