@@ -16,22 +16,6 @@ pub struct EciesKyberHybridPk
 	k: [u8; KYBER_PUBLICKEYBYTES],
 }
 
-impl<'a> TryFrom<&'a [u8]> for EciesKyberHybridPk
-{
-	type Error = Error;
-
-	fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
-	{
-		let x = &value[..32];
-		let k = &value[32..];
-
-		Ok(Self {
-			x: x.try_into().map_err(|_| Error::KeyDecryptFailed)?,
-			k: k.try_into().map_err(|_| Error::KeyDecryptFailed)?,
-		})
-	}
-}
-
 hybrid_key_import_export!(EciesKyberHybridPk);
 crypto_alg_str_impl!(EciesKyberHybridPk, ECIES_KYBER_HYBRID_OUTPUT);
 
@@ -77,11 +61,11 @@ pub struct EciesKyberHybridSk
 	k: [u8; KYBER_SECRETKEYBYTES],
 }
 
-impl<'a> TryFrom<&'a [u8]> for EciesKyberHybridSk
+impl TryFrom<Vec<u8>> for EciesKyberHybridSk
 {
 	type Error = Error;
 
-	fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error>
 	{
 		let x = &value[..32];
 		let k = &value[32..];

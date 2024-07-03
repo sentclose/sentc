@@ -22,14 +22,6 @@ pub enum HmacKey
 
 impl HmacKey
 {
-	pub fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		match alg_str {
-			hmac_sha256::HMAC_SHA256_OUTPUT => Ok(HmacKey::HmacSha256(bytes.try_into()?)),
-			_ => Err(Error::AlgNotFound),
-		}
-	}
-
 	pub fn hmac_sha256_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
 	{
 		Ok(HmacKey::HmacSha256(bytes.try_into()?))
@@ -89,6 +81,9 @@ impl SearchableKeyComposer for HmacKey
 	{
 		let key = master_key.decrypt(encrypted_key)?;
 
-		Self::from_bytes(&key, alg_str)
+		match alg_str {
+			hmac_sha256::HMAC_SHA256_OUTPUT => Ok(HmacKey::HmacSha256(key.try_into()?)),
+			_ => Err(Error::AlgNotFound),
+		}
 	}
 }

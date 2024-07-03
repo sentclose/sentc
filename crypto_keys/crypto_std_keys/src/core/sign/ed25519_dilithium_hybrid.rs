@@ -39,18 +39,7 @@ impl Into<Vec<u8>> for Ed25519DilithiumHybridSig
 	}
 }
 
-impl Sig for Ed25519DilithiumHybridSig
-{
-	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
-	// {
-	// 	split_sig_and_data(&self.0)
-	// }
-	//
-	// fn get_raw(&self) -> &[u8]
-	// {
-	// 	&self.0
-	// }
-}
+impl Sig for Ed25519DilithiumHybridSig {}
 
 pub struct Ed25519DilithiumHybridVerifyKey
 {
@@ -101,11 +90,11 @@ pub struct Ed25519DilithiumHybridSignK
 	k: [u8; SECRETKEYBYTES],
 }
 
-impl<'a> TryFrom<&'a [u8]> for Ed25519DilithiumHybridSignK
+impl TryFrom<Vec<u8>> for Ed25519DilithiumHybridSignK
 {
 	type Error = Error;
 
-	fn try_from(value: &'a [u8]) -> Result<Self, Self::Error>
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error>
 	{
 		let x = &value[..32];
 		let k = &value[32..];

@@ -97,21 +97,6 @@ pub enum SecretKey
 	EciesKyberHybrid(EciesKyberHybridSk),
 }
 
-impl SecretKey
-{
-	pub fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		let key = match alg_str {
-			ecies::ECIES_OUTPUT => Self::Ecies(bytes.try_into()?),
-			pqc_kyber::KYBER_OUTPUT => Self::Kyber(bytes.try_into()?),
-			ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT => Self::EciesKyberHybrid(bytes.try_into()?),
-			_ => return Err(Error::AlgNotFound),
-		};
-
-		Ok(key)
-	}
-}
-
 get_inner_key!(SecretKey, EciesKyberHybridSk);
 crypto_alg_impl!(SecretKey);
 
@@ -136,7 +121,14 @@ impl SkComposer for SecretKey
 	{
 		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
 
-		Self::from_bytes(&decrypted_bytes, alg_str)
+		let key = match alg_str {
+			ecies::ECIES_OUTPUT => Self::Ecies(decrypted_bytes.try_into()?),
+			pqc_kyber::KYBER_OUTPUT => Self::Kyber(decrypted_bytes.try_into()?),
+			ecies_kyber_hybrid::ECIES_KYBER_HYBRID_OUTPUT => Self::EciesKyberHybrid(decrypted_bytes.try_into()?),
+			_ => return Err(Error::AlgNotFound),
+		};
+
+		Ok(key)
 	}
 }
 

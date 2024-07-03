@@ -56,20 +56,20 @@ pub trait SymKeyComposer
 {
 	type SymmetricKey: SymKey;
 
-	fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>;
+	fn from_bytes_owned(bytes: Vec<u8>, alg_str: &str) -> Result<Self::SymmetricKey, Error>;
 
 	fn decrypt_key_by_master_key<M: Sk>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
 	{
 		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
 
-		Self::from_bytes(&decrypted_bytes, alg_str)
+		Self::from_bytes_owned(decrypted_bytes, alg_str)
 	}
 
 	fn decrypt_key_by_sym_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
 	{
 		let decrypted_bytes = master_key.decrypt(encrypted_key)?;
 
-		Self::from_bytes(&decrypted_bytes, alg_str)
+		Self::from_bytes_owned(decrypted_bytes, alg_str)
 	}
 }
 
@@ -147,12 +147,7 @@ pub trait SignKeyComposer
 	fn decrypt_by_master_key<M: SymKey>(master_key: &M, encrypted_key: &[u8], alg_str: &str) -> Result<Self::Key, Error>;
 }
 
-pub trait Sig: CryptoAlg + Into<Vec<u8>>
-{
-	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>;
-	//
-	// fn get_raw(&self) -> &[u8];
-}
+pub trait Sig: CryptoAlg + Into<Vec<u8>> {}
 
 //__________________________________________________________________________________________________
 //searchable

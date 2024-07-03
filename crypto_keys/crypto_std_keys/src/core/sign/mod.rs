@@ -63,21 +63,6 @@ pub enum SignKey
 	Ed25519DilithiumHybrid(Ed25519DilithiumHybridSignK),
 }
 
-impl SignKey
-{
-	pub fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		let key = match alg_str {
-			ed25519::ED25519_OUTPUT => Self::Ed25519(bytes.try_into()?),
-			pqc_dilithium::DILITHIUM_OUTPUT => Self::Dilithium(bytes.try_into()?),
-			ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT => Self::Ed25519DilithiumHybrid(bytes.try_into()?),
-			_ => return Err(Error::AlgNotFound),
-		};
-
-		Ok(key)
-	}
-}
-
 get_inner_key!(SignKey, Ed25519DilithiumHybridSignK);
 crypto_alg_impl!(SignKey);
 
@@ -132,7 +117,14 @@ impl SignKeyComposer for SignKey
 	{
 		let key = master_key.decrypt(encrypted_key)?;
 
-		Self::from_bytes(&key, alg_str)
+		let key = match alg_str {
+			ed25519::ED25519_OUTPUT => Self::Ed25519(key.try_into()?),
+			pqc_dilithium::DILITHIUM_OUTPUT => Self::Dilithium(key.try_into()?),
+			ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT => Self::Ed25519DilithiumHybrid(key.try_into()?),
+			_ => return Err(Error::AlgNotFound),
+		};
+
+		Ok(key)
 	}
 }
 

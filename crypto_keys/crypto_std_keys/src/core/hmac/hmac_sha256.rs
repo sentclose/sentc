@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use hmac::{Hmac, Mac};
 use sentc_crypto_core::cryptomat::{SearchableKey, SearchableKeyGen, SymKey};
-use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, Error};
 use sha2::Sha256;
 
 use crate::core::hmac::HmacKey;
@@ -15,7 +15,6 @@ type HmacSha256 = Hmac<Sha256>;
 
 pub struct HmacSha256Key(AesKey);
 
-try_from_bytes_single_value!(HmacSha256Key);
 try_from_bytes_owned_single_value!(HmacSha256Key);
 as_ref_bytes_single_value!(HmacSha256Key);
 crypto_alg_str_impl!(HmacSha256Key, HMAC_SHA256_OUTPUT);
