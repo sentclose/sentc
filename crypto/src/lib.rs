@@ -37,6 +37,8 @@ Reexport of the crypto core crate to access the raw types
 pub use sentc_crypto_core as sdk_core;
 #[cfg(feature = "fips_keys")]
 pub use sentc_crypto_fips_keys as fips_keys;
+#[cfg(feature = "rec_keys")]
+pub use sentc_crypto_rec_keys as rec_keys;
 #[cfg(feature = "std_keys")]
 pub use sentc_crypto_std_keys as std_keys;
 pub use sentc_crypto_utils as sdk_utils;
