@@ -22,14 +22,6 @@ pub enum SortKeys
 
 impl SortKeys
 {
-	pub fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		match alg_str {
-			ope::OPE_OUT => Ok(SortKeys::Ope(bytes.try_into()?)),
-			_ => Err(Error::AlgNotFound),
-		}
-	}
-
 	pub fn ope_key_from_bytes_owned(bytes: Vec<u8>) -> Result<Self, Error>
 	{
 		Ok(SortKeys::Ope(bytes.try_into()?))
@@ -84,6 +76,9 @@ impl SortableKeyComposer for SortKeys
 	{
 		let key = master_key.decrypt(encrypted_key)?;
 
-		Self::from_bytes(&key, alg_str)
+		match alg_str {
+			ope::OPE_OUT => Ok(SortKeys::Ope(key.try_into()?)),
+			_ => Err(Error::AlgNotFound),
+		}
 	}
 }

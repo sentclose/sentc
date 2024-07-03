@@ -177,6 +177,37 @@ macro_rules! static_key_composer_self {
 	};
 }
 
+#[macro_export]
+macro_rules! pk_user_pk {
+	($st:ty,$import_core:ident) => {
+		impl TryFrom<sentc_crypto_common::user::UserPublicKeyData> for $st
+		{
+			type Error = $crate::error::SdkUtilError;
+
+			fn try_from(value: sentc_crypto_common::user::UserPublicKeyData) -> Result<Self, Self::Error>
+			{
+				Ok(Self {
+					key_id: value.public_key_id,
+					key: $import_core(&value.public_key_pem, &value.public_key_alg)?,
+				})
+			}
+		}
+
+		impl<'a> TryFrom<&'a sentc_crypto_common::user::UserPublicKeyData> for $st
+		{
+			type Error = $crate::error::SdkUtilError;
+
+			fn try_from(value: &'a sentc_crypto_common::user::UserPublicKeyData) -> Result<Self, Self::Error>
+			{
+				Ok(Self {
+					key_id: value.public_key_id.clone(),
+					key: $import_core(&value.public_key_pem, &value.public_key_alg)?,
+				})
+			}
+		}
+	};
+}
+
 //__________________________________________________________________________________________________
 
 #[macro_export]
@@ -248,6 +279,37 @@ macro_rules! sign_key_composer_self {
 			>
 			{
 				$sig_from_str(sig, alg)
+			}
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! vk_user_vk {
+	($st:ty,$import_core:ident) => {
+		impl TryFrom<sentc_crypto_common::user::UserVerifyKeyData> for $st
+		{
+			type Error = $crate::error::SdkUtilError;
+
+			fn try_from(value: sentc_crypto_common::user::UserVerifyKeyData) -> Result<Self, Self::Error>
+			{
+				Ok(Self {
+					key_id: value.verify_key_id,
+					key: $import_core(&value.verify_key_pem, &value.verify_key_alg)?,
+				})
+			}
+		}
+
+		impl<'a> TryFrom<&'a sentc_crypto_common::user::UserVerifyKeyData> for $st
+		{
+			type Error = $crate::error::SdkUtilError;
+
+			fn try_from(value: &'a sentc_crypto_common::user::UserVerifyKeyData) -> Result<Self, Self::Error>
+			{
+				Ok(Self {
+					key_id: value.verify_key_id.clone(),
+					key: $import_core(&value.verify_key_pem, &value.verify_key_alg)?,
+				})
 			}
 		}
 	};

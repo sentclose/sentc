@@ -34,7 +34,6 @@ pqc_dilithium_edit = { version = "0.2.0", features = ["mode3", "aes", "random_si
 
 # key and data export
 base64ct = { workspace = true, optional = true }  # must use this version because it is not comp. with password_hash from argon2
-pem-rfc7468 = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 
@@ -64,5 +63,5 @@ argon2_hash = []
 # Descibe the used env for the crng
 default_env = []
 
-wrapper = ["sentc-crypto-utils", "base64ct", "pem-rfc7468", "serde", "serde_json", "sentc-crypto-common"]
+wrapper = ["sentc-crypto-utils", "base64ct", "serde", "serde_json", "sentc-crypto-common"]
 full = ["wrapper", "sentc-crypto-utils/encryption"]

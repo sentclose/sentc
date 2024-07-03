@@ -4,14 +4,7 @@ use hmac::digest::Digest;
 use pqc_dilithium_edit::{Keypair, PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 use rand_core::{CryptoRng, RngCore};
 use sentc_crypto_core::cryptomat::{Sig, SignK, SignKeyPair, SymKey, VerifyK};
-use sentc_crypto_core::{
-	as_ref_bytes_single_value,
-	crypto_alg_str_impl,
-	into_bytes_single_value,
-	try_from_bytes_owned_single_value,
-	try_from_bytes_single_value,
-	Error,
-};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, into_bytes_single_value, try_from_bytes_owned_single_value, Error};
 
 use crate::core::sign::{SignKey, Signature, VerifyKey};
 use crate::get_rand;
@@ -19,9 +12,7 @@ use crate::get_rand;
 pub const DILITHIUM_OUTPUT: &str = "DILITHIUM_3";
 
 pub struct DilithiumSig([u8; SIGNBYTES]);
-
 crypto_alg_str_impl!(DilithiumSig, DILITHIUM_OUTPUT);
-try_from_bytes_single_value!(DilithiumSig);
 try_from_bytes_owned_single_value!(DilithiumSig);
 as_ref_bytes_single_value!(DilithiumSig);
 into_bytes_single_value!(DilithiumSig);
@@ -34,22 +25,9 @@ impl Into<Signature> for DilithiumSig
 	}
 }
 
-impl Sig for DilithiumSig
-{
-	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
-	// {
-	// 	split_sig_and_data(&self.0)
-	// }
-	//
-	// fn get_raw(&self) -> &[u8]
-	// {
-	// 	&self.0
-	// }
-}
+impl Sig for DilithiumSig {}
 
 pub struct DilithiumSignKey([u8; SECRETKEYBYTES]);
-
-try_from_bytes_single_value!(DilithiumSignKey);
 try_from_bytes_owned_single_value!(DilithiumSignKey);
 crypto_alg_str_impl!(DilithiumSignKey, DILITHIUM_OUTPUT);
 as_ref_bytes_single_value!(DilithiumSignKey);
@@ -91,8 +69,6 @@ impl SignK for DilithiumSignKey
 }
 
 pub struct DilithiumVerifyKey([u8; PUBLICKEYBYTES]);
-
-try_from_bytes_single_value!(DilithiumVerifyKey);
 try_from_bytes_owned_single_value!(DilithiumVerifyKey);
 crypto_alg_str_impl!(DilithiumVerifyKey, DILITHIUM_OUTPUT);
 as_ref_bytes_single_value!(DilithiumVerifyKey);
@@ -144,7 +120,7 @@ impl SignKeyPair for DilithiumKeyPair
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
-	super::split_sig_and_data(data_with_sig, SIGNBYTES)
+	sentc_crypto_core::split_sig_and_data(data_with_sig, SIGNBYTES)
 }
 
 //__________________________________________________________________________________________________

@@ -102,7 +102,7 @@ pub(crate) fn get_master_key(derived_encryption_key: &[u8; HALF_DERIVED_KEY_LENG
 {
 	let decrypted_master_key = aes_decrypt(derived_encryption_key, encrypted_master_key)?;
 
-	Aes256GcmKey::try_from(&decrypted_master_key[..])
+	Aes256GcmKey::try_from(decrypted_master_key)
 }
 
 //__________________________________________________________________________________________________

@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use pqc_kyber_edit::{decapsulate, encapsulate, keypair, PublicKey, SecretKey, KYBER_CIPHERTEXTBYTES, KYBER_PUBLICKEYBYTES, KYBER_SECRETKEYBYTES};
 use rand_core::{CryptoRng, RngCore};
 use sentc_crypto_core::cryptomat::{Pk, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
-use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, Error};
 
 use crate::core::sym::aes_gcm::{raw_decrypt as aes_decrypt, raw_encrypt as aes_encrypt};
 use crate::get_rand;
@@ -12,8 +12,6 @@ pub const KYBER_OUTPUT: &str = "KYBER_768";
 
 #[derive(Clone)]
 pub struct KyberPk([u8; KYBER_PUBLICKEYBYTES]);
-
-try_from_bytes_single_value!(KyberPk);
 try_from_bytes_owned_single_value!(KyberPk);
 crypto_alg_str_impl!(KyberPk, KYBER_OUTPUT);
 as_ref_bytes_single_value!(KyberPk);
@@ -45,8 +43,6 @@ impl Pk for KyberPk
 }
 
 pub struct KyberSk([u8; KYBER_SECRETKEYBYTES]);
-
-try_from_bytes_single_value!(KyberSk);
 try_from_bytes_owned_single_value!(KyberSk);
 crypto_alg_str_impl!(KyberSk, KYBER_OUTPUT);
 as_ref_bytes_single_value!(KyberSk);
@@ -115,15 +111,9 @@ pub(super) fn decrypt_internally(receiver_sec: &SecretKey, ciphertext: &[u8]) ->
 		return Err(Error::DecryptionFailedCiphertextShort);
 	}
 
-	let ep_pk_bytes: [u8; KYBER_CIPHERTEXTBYTES] = match ciphertext[..KYBER_CIPHERTEXTBYTES].try_into() {
-		Err(_e) => return Err(Error::DecryptionFailedCiphertextShort),
-		Ok(bytes) => bytes,
-	};
+	let shared_secret_bob = decapsulate(&ciphertext[..KYBER_CIPHERTEXTBYTES], receiver_sec).map_err(|_| Error::DecryptionFailed)?;
 
 	let encrypted = &ciphertext[KYBER_CIPHERTEXTBYTES..];
-
-	let shared_secret_bob = decapsulate(&ep_pk_bytes, receiver_sec).map_err(|_| Error::DecryptionFailed)?;
-
 	let decrypted = aes_decrypt(&shared_secret_bob, encrypted)?;
 
 	Ok(decrypted)

@@ -4,14 +4,7 @@ use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use hmac::digest::Digest;
 use rand_core::{CryptoRng, RngCore};
 use sentc_crypto_core::cryptomat::{Sig, SignK, SignKeyPair, SymKey, VerifyK};
-use sentc_crypto_core::{
-	as_ref_bytes_single_value,
-	crypto_alg_str_impl,
-	into_bytes_single_value,
-	try_from_bytes_owned_single_value,
-	try_from_bytes_single_value,
-	Error,
-};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, into_bytes_single_value, try_from_bytes_owned_single_value, Error};
 
 use crate::core::sign::{SignKey, VerifyKey};
 use crate::get_rand;
@@ -21,9 +14,7 @@ pub const SIG_LENGTH: usize = 64;
 pub const ED25519_OUTPUT: &str = "ED25519";
 
 pub struct Ed25519Sig([u8; 64]);
-
 crypto_alg_str_impl!(Ed25519Sig, ED25519_OUTPUT);
-try_from_bytes_single_value!(Ed25519Sig);
 try_from_bytes_owned_single_value!(Ed25519Sig);
 as_ref_bytes_single_value!(Ed25519Sig);
 into_bytes_single_value!(Ed25519Sig);
@@ -36,22 +27,9 @@ impl Into<crate::core::sign::Signature> for Ed25519Sig
 	}
 }
 
-impl Sig for Ed25519Sig
-{
-	// fn split_sig_and_data<'a>(&self) -> Result<(&'a [u8], &'a [u8]), Error>
-	// {
-	// 	split_sig_and_data(&self.0)
-	// }
-	//
-	// fn get_raw(&self) -> &[u8]
-	// {
-	// 	&self.0
-	// }
-}
+impl Sig for Ed25519Sig {}
 
 pub struct Ed25519VerifyK([u8; 32]);
-
-try_from_bytes_single_value!(Ed25519VerifyK);
 try_from_bytes_owned_single_value!(Ed25519VerifyK);
 crypto_alg_str_impl!(Ed25519VerifyK, ED25519_OUTPUT);
 as_ref_bytes_single_value!(Ed25519VerifyK);
@@ -87,8 +65,6 @@ impl VerifyK for Ed25519VerifyK
 }
 
 pub struct Ed25519SignK([u8; 32]);
-
-try_from_bytes_single_value!(Ed25519SignK);
 try_from_bytes_owned_single_value!(Ed25519SignK);
 crypto_alg_str_impl!(Ed25519SignK, ED25519_OUTPUT);
 as_ref_bytes_single_value!(Ed25519SignK);
@@ -146,7 +122,7 @@ impl SignKeyPair for Ed25519KeyPair
 
 pub(crate) fn split_sig_and_data(data_with_sig: &[u8]) -> Result<(&[u8], &[u8]), Error>
 {
-	super::split_sig_and_data(data_with_sig, SIG_LENGTH)
+	sentc_crypto_core::split_sig_and_data(data_with_sig, SIG_LENGTH)
 }
 
 //__________________________________________________________________________________________________

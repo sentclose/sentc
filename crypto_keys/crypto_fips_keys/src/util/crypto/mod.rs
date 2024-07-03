@@ -57,7 +57,7 @@ impl TryInto<HmacKey> for HmacFormatExport
 		let bytes = decode_block(&self.key).map_err(|_| SdkUtilError::ImportSymmetricKeyFailed)?;
 
 		Ok(HmacKey {
-			key: CoreHmacKey::import(&bytes)?,
+			key: CoreHmacKey::try_from(bytes)?,
 			key_id: self.key_id,
 		})
 	}

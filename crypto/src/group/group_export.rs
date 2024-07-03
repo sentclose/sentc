@@ -343,6 +343,7 @@ mod test
 	use sentc_crypto_common::ServerOutput;
 	use sentc_crypto_core::cryptomat::Pk;
 	use sentc_crypto_std_keys::util::PublicKey;
+	use sentc_crypto_utils::cryptomat::PkWrapper;
 	use serde_json::to_string;
 
 	use super::*;
@@ -770,7 +771,7 @@ mod test
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
 		let pk = PublicKey::from_str(&user_keys.public_key).unwrap();
 
-		let encrypted_ephemeral_key_by_group_key_and_public_key = pk.encrypt(&encrypted_ephemeral_key).unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key = pk.get_key().encrypt(&encrypted_ephemeral_key).unwrap();
 
 		let server_output = KeyRotationInput {
 			error: None,
@@ -889,7 +890,7 @@ mod test
 		let encrypted_ephemeral_key = Base64::decode_vec(rotation_out.encrypted_ephemeral_key.as_str()).unwrap();
 		let pk = PublicKey::from_str(&user_keys.public_key).unwrap();
 
-		let encrypted_ephemeral_key_by_group_key_and_public_key = pk.encrypt(&encrypted_ephemeral_key).unwrap();
+		let encrypted_ephemeral_key_by_group_key_and_public_key = pk.get_key().encrypt(&encrypted_ephemeral_key).unwrap();
 
 		let server_output = KeyRotationInput {
 			error: None,

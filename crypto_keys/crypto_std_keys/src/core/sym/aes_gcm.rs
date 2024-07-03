@@ -5,7 +5,7 @@ use aes_gcm::aead::{Aead, NewAead, Payload};
 use aes_gcm::{Aes256Gcm, Key};
 use rand_core::{CryptoRng, RngCore};
 use sentc_crypto_core::cryptomat::{Pk, SymKey, SymKeyGen};
-use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, Error};
 
 use crate::core::sym::SymmetricKey;
 use crate::get_rand;
@@ -26,7 +26,6 @@ impl Aes256GcmKey
 	}
 }
 
-try_from_bytes_single_value!(Aes256GcmKey);
 try_from_bytes_owned_single_value!(Aes256GcmKey);
 as_ref_bytes_single_value!(Aes256GcmKey);
 crypto_alg_str_impl!(Aes256GcmKey, AES_GCM_OUTPUT);

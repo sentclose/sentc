@@ -10,7 +10,6 @@ use sentc_crypto_core::cryptomat::{CryptoAlg, SymKey, SymKeyComposer, SymKeyGen}
 use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyWrapper, VerifyKFromUserKeyWrapper};
 
 use crate::crypto::crypto::{put_head_and_encrypted_data, split_head_and_encrypted_data};
-use crate::crypto::mimic_keys::FakeSignKeyWrapper;
 use crate::util::public::handle_server_response;
 use crate::SdkError;
 
@@ -43,7 +42,7 @@ pub fn prepare_register_file(
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None::<&FakeSignKeyWrapper>)?)
+			Some(key.encrypt_string(&f, None)?)
 		},
 	};
 
@@ -74,7 +73,7 @@ pub fn prepare_file_name_update(key: &impl SymKeyWrapper, file_name: Option<Stri
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None::<&FakeSignKeyWrapper>)?)
+			Some(key.encrypt_string(&f, None)?)
 		},
 	};
 
@@ -84,32 +83,25 @@ pub fn prepare_file_name_update(key: &impl SymKeyWrapper, file_name: Option<Stri
 	.map_err(|_e| SdkError::JsonToStringFailed)
 }
 
-pub struct FileEncryptor<S, SC, VC>
+pub struct FileEncryptor<S, SC, SignK, VC>
 {
 	_s: PhantomData<S>,
 	_sc: PhantomData<SC>,
+	_sign_k: PhantomData<SignK>,
 	_vc: PhantomData<VC>,
 }
 
-impl<S: SymKeyGen, SC: SymKeyComposer, VC: VerifyKFromUserKeyWrapper> FileEncryptor<S, SC, VC>
+impl<S: SymKeyGen, SC: SymKeyComposer, SignK: SignKWrapper, VC: VerifyKFromUserKeyWrapper> FileEncryptor<S, SC, SignK, VC>
 {
 	/**
 	The first part is encrypted by the file initial key. This key id is stored in the file data and must not be in every file head
 	 */
-	pub fn encrypt_file_part_start(
-		key: &impl SymKeyWrapper,
-		part: &[u8],
-		sign_key: Option<&impl SignKWrapper>,
-	) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
+	pub fn encrypt_file_part_start(key: &impl SymKeyWrapper, part: &[u8], sign_key: Option<&SignK>) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
 	{
 		Self::encrypt_file_part(key.get_key(), part, sign_key)
 	}
 
-	pub fn encrypt_file_part(
-		pre_content_key: &impl SymKey,
-		part: &[u8],
-		sign_key: Option<&impl SignKWrapper>,
-	) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
+	pub fn encrypt_file_part(pre_content_key: &impl SymKey, part: &[u8], sign_key: Option<&SignK>) -> Result<(Vec<u8>, S::SymmetricKey), SdkError>
 	{
 		/*
 		Just create a normal core key without id

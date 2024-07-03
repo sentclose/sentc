@@ -25,10 +25,9 @@ openssl = { version = "0.10.64", default-features = false }
 digest = "0.10.7"
 
 base64ct = { workspace = true, optional = true }
-pem-rfc7468 = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 
 [features]
-wrapper = ["sentc-crypto-utils", "sentc-crypto-common", "serde", "serde_json", "pem-rfc7468"]
+wrapper = ["sentc-crypto-utils", "sentc-crypto-common", "serde", "serde_json"]
 full = ["wrapper", "sentc-crypto-utils/encryption", "base64ct"]

@@ -33,31 +33,43 @@ pub(crate) mod test_fn
 	pub type TestGroup = crate::keys::std::StdGroup;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestGroup = crate::keys::fips::FipsGroup;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestGroup = crate::keys::rec::RecGroup;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestPublicKey = sentc_crypto_std_keys::util::PublicKey;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestPublicKey = sentc_crypto_fips_keys::util::PublicKey;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestPublicKey = sentc_crypto_rec_keys::util::PublicKey;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestSymmetricKey = sentc_crypto_std_keys::util::SymmetricKey;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestSymmetricKey = sentc_crypto_fips_keys::util::SymmetricKey;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestSymmetricKey = sentc_crypto_rec_keys::util::SymmetricKey;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestSecretKey = sentc_crypto_std_keys::util::SecretKey;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestSecretKey = sentc_crypto_fips_keys::util::SecretKey;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestSecretKey = sentc_crypto_rec_keys::util::SecretKey;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestHmacKey = sentc_crypto_std_keys::util::HmacKey;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestHmacKey = sentc_crypto_fips_keys::util::HmacKey;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestHmacKey = sentc_crypto_rec_keys::util::HmacKey;
 
 	#[cfg(feature = "std_keys")]
 	pub type TestSortableKey = sentc_crypto_std_keys::util::SortableKey;
 	#[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 	pub type TestSortableKey = sentc_crypto_fips_keys::util::SortableKey;
+	#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+	pub type TestSortableKey = sentc_crypto_rec_keys::util::SortableKey;
 
 	pub(crate) fn create_group(
 		user: &TestUserKeyDataInt,

@@ -12,19 +12,6 @@ pub(crate) mod ed25519;
 pub(crate) mod ed25519_dilithium_hybrid;
 pub(crate) mod pqc_dilithium;
 
-pub(crate) fn split_sig_and_data(data_with_sig: &[u8], len: usize) -> Result<(&[u8], &[u8]), Error>
-{
-	if data_with_sig.len() <= len {
-		return Err(Error::DataToSignTooShort);
-	}
-
-	//split sign and data
-	let sig = &data_with_sig[..len];
-	let data = &data_with_sig[len..];
-
-	Ok((sig, data))
-}
-
 macro_rules! deref_macro {
     ($self:expr, $method:ident $(, $args:expr)*) => {
         match $self {
@@ -74,21 +61,6 @@ pub enum SignKey
 	Ed25519(Ed25519SignK),
 	Dilithium(DilithiumSignKey),
 	Ed25519DilithiumHybrid(Ed25519DilithiumHybridSignK),
-}
-
-impl SignKey
-{
-	pub fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self, Error>
-	{
-		let key = match alg_str {
-			ed25519::ED25519_OUTPUT => Self::Ed25519(bytes.try_into()?),
-			pqc_dilithium::DILITHIUM_OUTPUT => Self::Dilithium(bytes.try_into()?),
-			ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT => Self::Ed25519DilithiumHybrid(bytes.try_into()?),
-			_ => return Err(Error::AlgNotFound),
-		};
-
-		Ok(key)
-	}
 }
 
 get_inner_key!(SignKey, Ed25519DilithiumHybridSignK);
@@ -145,7 +117,14 @@ impl SignKeyComposer for SignKey
 	{
 		let key = master_key.decrypt(encrypted_key)?;
 
-		Self::from_bytes(&key, alg_str)
+		let key = match alg_str {
+			ed25519::ED25519_OUTPUT => Self::Ed25519(key.try_into()?),
+			pqc_dilithium::DILITHIUM_OUTPUT => Self::Dilithium(key.try_into()?),
+			ed25519_dilithium_hybrid::ED25519_DILITHIUM_HYBRID_OUTPUT => Self::Ed25519DilithiumHybrid(key.try_into()?),
+			_ => return Err(Error::AlgNotFound),
+		};
+
+		Ok(key)
 	}
 }
 

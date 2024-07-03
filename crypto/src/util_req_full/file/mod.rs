@@ -16,7 +16,7 @@ use sentc_crypto_utils::{handle_general_server_response, handle_server_response}
 use crate::file::FileEncryptor;
 use crate::SdkError;
 
-impl<S: SymKeyGen, SC: SymKeyComposer, VC: VerifyKFromUserKeyWrapper> FileEncryptor<S, SC, VC>
+impl<S: SymKeyGen, SC: SymKeyComposer, SignK: SignKWrapper, VC: VerifyKFromUserKeyWrapper> FileEncryptor<S, SC, SignK, VC>
 {
 	pub async fn download_and_decrypt_file_part_start(
 		base_url: String,
@@ -74,7 +74,7 @@ impl<S: SymKeyGen, SC: SymKeyComposer, VC: VerifyKFromUserKeyWrapper> FileEncryp
 		end: bool,
 		sequence: i32,
 		content_key: &impl SymKeyWrapper,
-		sign_key: Option<&impl SignKWrapper>,
+		sign_key: Option<&SignK>,
 		part: &[u8],
 	) -> Result<S::SymmetricKey, SdkError>
 	{
@@ -104,7 +104,7 @@ impl<S: SymKeyGen, SC: SymKeyComposer, VC: VerifyKFromUserKeyWrapper> FileEncryp
 		end: bool,
 		sequence: i32,
 		content_key: &impl SymKey,
-		sign_key: Option<&impl SignKWrapper>,
+		sign_key: Option<&SignK>,
 		part: &[u8],
 	) -> Result<S::SymmetricKey, SdkError>
 	{

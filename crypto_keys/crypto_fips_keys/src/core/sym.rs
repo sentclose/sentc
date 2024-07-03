@@ -14,7 +14,7 @@ pub struct Aes256GcmKey(AesKey);
 
 impl Aes256GcmKey
 {
-	pub(crate) fn from_raw_key(raw: AesKey) -> Self
+	pub fn from_raw_key(raw: AesKey) -> Self
 	{
 		Self(raw)
 	}
@@ -74,7 +74,7 @@ impl SymKeyComposer for Aes256GcmKey
 {
 	type SymmetricKey = Self;
 
-	fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
+	fn from_bytes_owned(bytes: Vec<u8>, alg_str: &str) -> Result<Self::SymmetricKey, Error>
 	{
 		if alg_str != FIPS_OPENSSL_AES_GCM {
 			return Err(Error::AlgNotFound);

@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use hkdf::Hkdf;
 use rand_core::{CryptoRng, RngCore};
 use sentc_crypto_core::cryptomat::{Pk, SignK, Sk, StaticKeyPair, SymKey, VerifyK};
-use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
+use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, Error};
 use sha2::Sha256;
 use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
@@ -20,7 +20,6 @@ const PUBLIC_KEY_LENGTH: usize = 32;
 #[derive(Clone)]
 pub struct EciesPk([u8; 32]);
 
-try_from_bytes_single_value!(EciesPk);
 try_from_bytes_owned_single_value!(EciesPk);
 crypto_alg_str_impl!(EciesPk, ECIES_OUTPUT);
 as_ref_bytes_single_value!(EciesPk);
@@ -53,7 +52,6 @@ impl Pk for EciesPk
 
 pub struct EciesSk([u8; 32]);
 
-try_from_bytes_single_value!(EciesSk);
 try_from_bytes_owned_single_value!(EciesSk);
 crypto_alg_str_impl!(EciesSk, ECIES_OUTPUT);
 as_ref_bytes_single_value!(EciesSk);

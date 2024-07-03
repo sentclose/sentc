@@ -5,7 +5,6 @@ mod sortable;
 mod symmetric_key;
 
 use alloc::string::String;
-use core::ops::Deref;
 use core::str::FromStr;
 
 use base64ct::{Base64, Encoding};
@@ -25,7 +24,6 @@ pub struct HmacKey
 	pub key_id: SymKeyId,
 }
 
-super::deref_impl!(HmacKey, CoreHmacKey);
 to_string_impl!(HmacKey, HmacFormatExport);
 from_string_impl!(HmacKey, HmacFormatExport);
 
@@ -42,7 +40,7 @@ impl From<HmacKey> for HmacFormatExport
 {
 	fn from(value: HmacKey) -> Self
 	{
-		let key = Base64::encode_string(value.as_ref());
+		let key = Base64::encode_string(value.key.as_ref());
 
 		match value.key {
 			CoreHmacKey::HmacSha256(_) => {
@@ -85,7 +83,6 @@ pub struct SortableKey
 	pub key_id: SymKeyId,
 }
 
-super::deref_impl!(SortableKey, CoreSortableKey);
 to_string_impl!(SortableKey, SortableFormatExport);
 from_string_impl!(SortableKey, SortableFormatExport);
 
@@ -102,7 +99,7 @@ impl From<SortableKey> for SortableFormatExport
 {
 	fn from(value: SortableKey) -> Self
 	{
-		let key = Base64::encode_string(value.as_ref());
+		let key = Base64::encode_string(value.key.as_ref());
 
 		match value.key {
 			CoreSortableKey::Ope(_) => {

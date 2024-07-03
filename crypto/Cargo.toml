@@ -23,10 +23,10 @@ sentc-crypto-utils = { workspace = true, features = ["encryption"] }
 sentc-crypto-common = { workspace = true }
 sentc-crypto-std-keys = { workspace = true, features = ["full"], optional = true }
 sentc-crypto-fips-keys = { workspace = true, features = ["full"], optional = true }
+sentc-crypto-rec-keys = { workspace = true, features = ["full"], optional = true }
 
 # key and data export
 base64ct.workspace = true
-pem-rfc7468.workspace = true
 
 # json handling
 serde_json.workspace = true
@@ -37,6 +37,8 @@ export = ["std_keys"]
 std_keys = ["sentc-crypto-std-keys"]
 
 fips_keys = ["sentc-crypto-fips-keys"]
+
+rec_keys = ["sentc-crypto-rec-keys"]
 
 server = []
 server_test = []

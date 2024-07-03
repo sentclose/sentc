@@ -32,7 +32,7 @@ impl SymKeyComposer for SymmetricKey
 {
 	type SymmetricKey = Self;
 
-	fn from_bytes(bytes: &[u8], alg_str: &str) -> Result<Self::SymmetricKey, Error>
+	fn from_bytes_owned(bytes: Vec<u8>, alg_str: &str) -> Result<Self::SymmetricKey, Error>
 	{
 		match alg_str {
 			aes_gcm::AES_GCM_OUTPUT => Ok(Self::Aes(bytes.try_into()?)),

@@ -322,7 +322,7 @@ where
 			device_public_key,
 			pre_user_key,
 			true,
-			None::<&SignC::SignKWrapper>,
+			None,
 			Default::default(),
 			None,
 		)

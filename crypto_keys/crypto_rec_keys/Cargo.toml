@@ -1,0 +1,47 @@
+[package]
+name = "sentc-crypto-rec-keys"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+include = [
+    "Cargo.toml",
+    "../LICENSE",
+    "src/**/*",
+]
+
+[dependencies]
+sentc-crypto-core.workspace = true
+sentc-crypto-utils = { workspace = true, optional = true }
+sentc-crypto-common = { workspace = true, optional = true }
+sentc-crypto-fips-keys.workspace = true
+
+digest = "0.10.7"
+argon2 = "0.3"
+ope = "0.1.1"
+openssl = { version = "0.10.64", default-features = false }
+
+safe-oqs = { version = "0.10.0", default-features = false, features = ["std", "ml_kem", "ml_dsa"] }
+
+# key and data export
+serde_json = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+
+[features]
+default = ["ecies_ml_kem_hybrid", "ed25519_ml_dsa_hybrid"]
+
+# asymmetric encryption
+ecies = []
+ecies_ml_kem_hybrid = []
+
+# sign
+ed25519 = []
+ed25519_ml_dsa_hybrid = []
+
+wrapper = ["sentc-crypto-utils", "serde", "serde_json", "sentc-crypto-common", "sentc-crypto-fips-keys/wrapper"]
+full = ["wrapper", "sentc-crypto-utils/encryption", "sentc-crypto-fips-keys/full"]

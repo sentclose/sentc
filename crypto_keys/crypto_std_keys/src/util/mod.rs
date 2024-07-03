@@ -3,12 +3,10 @@ mod crypto;
 pub mod export;
 
 use alloc::string::String;
-use core::ops::Deref;
 use core::str::FromStr;
 
 use base64ct::{Base64, Encoding};
 use export::{export_raw_public_key_to_pem, import_public_key_from_pem_with_alg, import_sig_from_string, import_verify_key_from_pem_with_alg};
-use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, SymKeyId};
 use sentc_crypto_core::cryptomat::SignK;
 use sentc_crypto_utils::cryptomat::{PkWrapper, SignKWrapper, SkWrapper, SymKeyWrapper, VerifyKWrapper};
@@ -17,6 +15,7 @@ use sentc_crypto_utils::error::SdkUtilError;
 pub use sentc_crypto_utils::split_head_and_encrypted_data;
 use sentc_crypto_utils::{
 	from_string_impl,
+	pk_user_pk,
 	sign_key_composer_self,
 	sign_key_pair_self,
 	static_key_composer_self,
@@ -24,6 +23,7 @@ use sentc_crypto_utils::{
 	sym_key_com_self,
 	sym_key_gen_self,
 	to_string_impl,
+	vk_user_vk,
 	wrapper_impl,
 };
 use serde::{Deserialize, Serialize};
@@ -39,22 +39,6 @@ use crate::core::{
 };
 use crate::util::export::{export_raw_verify_key_to_pem, sig_to_string};
 
-macro_rules! deref_impl {
-	($st:ty, $t:ty) => {
-		impl Deref for $st
-		{
-			type Target = $t;
-
-			fn deref(&self) -> &Self::Target
-			{
-				&self.key
-			}
-		}
-	};
-}
-
-pub(crate) use deref_impl;
-
 //__________________________________________________________________________________________________
 
 pub struct SymmetricKey
@@ -64,7 +48,6 @@ pub struct SymmetricKey
 }
 
 wrapper_impl!(SymKeyWrapper, SymmetricKey, CoreSymmetricKey);
-deref_impl!(SymmetricKey, CoreSymmetricKey);
 to_string_impl!(SymmetricKey, SymKeyFormatExport);
 from_string_impl!(SymmetricKey, SymKeyFormatExport);
 sym_key_gen_self!(SymmetricKey, CoreSymmetricKey);
@@ -83,7 +66,7 @@ impl From<SymmetricKey> for SymKeyFormatExport
 {
 	fn from(value: SymmetricKey) -> Self
 	{
-		let key = Base64::encode_string(value.as_ref());
+		let key = Base64::encode_string(value.key.as_ref());
 
 		match value.key {
 			CoreSymmetricKey::Aes(_) => {
@@ -159,7 +142,6 @@ static_key_composer_self!(
 	import_public_key_from_pem_with_alg
 );
 wrapper_impl!(SkWrapper, SecretKey, CoreSecretKey);
-deref_impl!(SecretKey, CoreSecretKey);
 to_string_impl!(SecretKey, SecretKeyFormatExport);
 from_string_impl!(SecretKey, SecretKeyFormatExport);
 
@@ -295,9 +277,9 @@ impl PublicKey
 }
 
 wrapper_impl!(PkWrapper, PublicKey, CorePublicKey);
-deref_impl!(PublicKey, CorePublicKey);
 to_string_impl!(PublicKey, PublicKeyFormatExport);
 from_string_impl!(PublicKey, PublicKeyFormatExport);
+pk_user_pk!(PublicKey, import_public_key_from_pem_with_alg);
 
 #[derive(Serialize, Deserialize)]
 pub enum PublicKeyFormatExport
@@ -440,32 +422,6 @@ impl TryInto<PublicKey> for PublicKeyFormatExport
 	}
 }
 
-impl TryFrom<UserPublicKeyData> for PublicKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: UserPublicKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.public_key_id,
-			key: import_public_key_from_pem_with_alg(&value.public_key_pem, &value.public_key_alg)?,
-		})
-	}
-}
-
-impl<'a> TryFrom<&'a UserPublicKeyData> for PublicKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: &'a UserPublicKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.public_key_id.clone(),
-			key: import_public_key_from_pem_with_alg(&value.public_key_pem, &value.public_key_alg)?,
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
 pub struct SignKey
@@ -475,7 +431,6 @@ pub struct SignKey
 }
 
 wrapper_impl!(SignKWrapper, SignKey, CoreSignKey);
-deref_impl!(SignKey, CoreSignKey);
 to_string_impl!(SignKey, SignKeyFormatExport);
 from_string_impl!(SignKey, SignKeyFormatExport);
 sign_key_pair_self!(SignKey, CoreSignKey, export_raw_verify_key_to_pem, sig_to_string);
@@ -599,9 +554,9 @@ pub struct VerifyKey
 }
 
 wrapper_impl!(VerifyKWrapper, VerifyKey, CoreVerifyKey);
-deref_impl!(VerifyKey, CoreVerifyKey);
 to_string_impl!(VerifyKey, VerifyKeyFormatExport);
 from_string_impl!(VerifyKey, VerifyKeyFormatExport);
+vk_user_vk!(VerifyKey, import_verify_key_from_pem_with_alg);
 
 #[derive(Serialize, Deserialize)]
 pub enum VerifyKeyFormatExport
@@ -702,32 +657,6 @@ impl TryInto<VerifyKey> for VerifyKeyFormatExport
 				})
 			},
 		}
-	}
-}
-
-impl TryFrom<UserVerifyKeyData> for VerifyKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: UserVerifyKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.verify_key_id,
-			key: import_verify_key_from_pem_with_alg(&value.verify_key_pem, &value.verify_key_alg)?,
-		})
-	}
-}
-
-impl<'a> TryFrom<&'a UserVerifyKeyData> for VerifyKey
-{
-	type Error = SdkUtilError;
-
-	fn try_from(value: &'a UserVerifyKeyData) -> Result<Self, Self::Error>
-	{
-		Ok(Self {
-			key_id: value.verify_key_id.clone(),
-			key: import_verify_key_from_pem_with_alg(&value.verify_key_pem, &value.verify_key_alg)?,
-		})
 	}
 }
 

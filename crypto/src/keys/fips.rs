@@ -49,7 +49,7 @@ pub type FipsUserKeyDataInt = UserKeyDataInt<SymmetricKey, SecretKey, PublicKey,
 
 pub type FipsKeyGenerator = KeyGenerator<SymmetricKey, SymmetricKey, PublicKey>;
 
-pub type FipsFileEncryptor = FileEncryptor<Aes256GcmKey, Aes256GcmKey, VerifyKey>;
+pub type FipsFileEncryptor = FileEncryptor<Aes256GcmKey, Aes256GcmKey, SignKey, VerifyKey>;
 
 #[cfg(any(feature = "full_rustls", feature = "full_wasm"))]
 pub type FipsPreLoginOut = crate::util_req_full::user::PreLoginOut<
