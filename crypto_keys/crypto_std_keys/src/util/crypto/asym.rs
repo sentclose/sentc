@@ -5,25 +5,31 @@ use base64ct::{Base64, Encoding};
 use sentc_crypto_common::crypto::EncryptedHead;
 use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
 use sentc_crypto_core::cryptomat::Sk;
-use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SkCryptoWrapper, VerifyKFromUserKeyWrapper};
+use sentc_crypto_utils::cryptomat::{PkFromUserKeyWrapper, SignKWrapper, SkCryptoWrapper, VerifyKFromUserKeyWrapper};
 use sentc_crypto_utils::error::SdkUtilError;
 
 use crate::core::{PublicKey as CorePk, Signature};
 use crate::util::export::import_public_key_from_pem_with_alg;
-use crate::util::{PublicKey, SecretKey, SignKey, VerifyKey};
+use crate::util::{PublicKey, SecretKey, VerifyKey};
 
 impl PkFromUserKeyWrapper for PublicKey
 {
 	type CorePk = CorePk;
-	type SignKey = SignKey;
 
-	fn encrypt_string_with_user_key(
+	fn encrypt_string_with_user_key(reply_public_key: &UserPublicKeyData, data: &str) -> Result<String, SdkUtilError>
+	{
+		let encrypted = Self::encrypt_with_user_key(reply_public_key, data.as_bytes())?;
+
+		Ok(Base64::encode_string(&encrypted))
+	}
+
+	fn encrypt_string_with_user_key_with_sign(
 		reply_public_key: &UserPublicKeyData,
 		data: &str,
-		sign_key: Option<&Self::SignKey>,
+		sign_key: &impl SignKWrapper,
 	) -> Result<String, SdkUtilError>
 	{
-		let encrypted = Self::encrypt_with_user_key(reply_public_key, data.as_bytes(), sign_key)?;
+		let encrypted = Self::encrypt_with_user_key_with_sign(reply_public_key, data.as_bytes(), sign_key)?;
 
 		Ok(Base64::encode_string(&encrypted))
 	}

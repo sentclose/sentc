@@ -42,7 +42,7 @@ pub fn prepare_register_file(
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None)?)
+			Some(key.encrypt_string(&f)?)
 		},
 	};
 
@@ -73,7 +73,7 @@ pub fn prepare_file_name_update(key: &impl SymKeyWrapper, file_name: Option<Stri
 		None => None,
 		Some(f) => {
 			//encrypt the filename with the sym key
-			Some(key.encrypt_string(&f, None)?)
+			Some(key.encrypt_string(&f)?)
 		},
 	};
 

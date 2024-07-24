@@ -8,25 +8,67 @@ use sentc_crypto_core::cryptomat::SymKey;
 use sentc_crypto_utils::cryptomat::{SignKWrapper, SymKeyCrypto};
 use sentc_crypto_utils::error::SdkUtilError;
 
-use crate::util::{SignKey, SymmetricKey, VerifyKey};
+use crate::util::{SymmetricKey, VerifyKey};
 
 impl SymKeyCrypto for SymmetricKey
 {
-	type SignKey = SignKey;
 	type VerifyKey = VerifyKey;
 
-	fn encrypt_raw(&self, data: &[u8], sign_key: Option<&Self::SignKey>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
+	fn encrypt_raw(&self, data: &[u8]) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
 	{
 		let encrypted = self.key.encrypt(data)?;
 
-		self.finish_raw_encrypt(encrypted, sign_key)
+		Ok((
+			EncryptedHead {
+				id: self.key_id.to_string(),
+				sign: None,
+			},
+			encrypted,
+		))
 	}
 
-	fn encrypt_raw_with_aad(&self, data: &[u8], aad: &[u8], sign_key: Option<&Self::SignKey>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
+	fn encrypt_raw_with_sign(&self, data: &[u8], sign_key: &impl SignKWrapper) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
+	{
+		let encrypted = self.key.encrypt(data)?;
+
+		let (sign_head, data_with_sign) = sign_key.sign_with_head(&encrypted)?;
+
+		Ok((
+			EncryptedHead {
+				id: self.key_id.to_string(),
+				sign: Some(sign_head),
+			},
+			data_with_sign,
+		))
+	}
+
+	fn encrypt_raw_with_aad(&self, data: &[u8], aad: &[u8]) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
 	{
 		let encrypted = self.key.encrypt_with_aad(data, aad)?;
 
-		self.finish_raw_encrypt(encrypted, sign_key)
+		Ok((
+			EncryptedHead {
+				id: self.key_id.to_string(),
+				sign: None,
+			},
+			encrypted,
+		))
+	}
+
+	fn encrypt_raw_with_aad_with_sign(&self, data: &[u8], aad: &[u8], sign_key: &impl SignKWrapper)
+		-> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
+	{
+		let encrypted = self.key.encrypt_with_aad(data, aad)?;
+
+		let (sign_head, data_with_sign) = sign_key.sign_with_head(&encrypted)?;
+
+		Ok((
+			EncryptedHead {
+				id: self.key_id.to_string(),
+				sign: Some(sign_head),
+			},
+			data_with_sign,
+		))
 	}
 
 	fn decrypt_raw(&self, encrypted_data: &[u8], head: &EncryptedHead, verify_key: Option<&UserVerifyKeyData>) -> Result<Vec<u8>, SdkUtilError>
@@ -49,16 +91,30 @@ impl SymKeyCrypto for SymmetricKey
 		Ok(self.key.decrypt_with_aad(data_to_decrypt, aad)?)
 	}
 
-	fn encrypt_string(&self, data: &str, sign_key: Option<&Self::SignKey>) -> Result<String, SdkUtilError>
+	fn encrypt_string(&self, data: &str) -> Result<String, SdkUtilError>
 	{
-		let encrypted = self.encrypt(data.as_bytes(), sign_key)?;
+		let encrypted = self.encrypt(data.as_bytes())?;
 
 		Ok(Base64::encode_string(&encrypted))
 	}
 
-	fn encrypt_string_with_aad(&self, data: &str, aad: &str, sign_key: Option<&Self::SignKey>) -> Result<String, SdkUtilError>
+	fn encrypt_string_with_sign(&self, data: &str, sign_key: &impl SignKWrapper) -> Result<String, SdkUtilError>
 	{
-		let encrypted = self.encrypt_with_aad(data.as_bytes(), aad.as_bytes(), sign_key)?;
+		let encrypted = self.encrypt_with_sign(data.as_bytes(), sign_key)?;
+
+		Ok(Base64::encode_string(&encrypted))
+	}
+
+	fn encrypt_string_with_aad(&self, data: &str, aad: &str) -> Result<String, SdkUtilError>
+	{
+		let encrypted = self.encrypt_with_aad(data.as_bytes(), aad.as_bytes())?;
+
+		Ok(Base64::encode_string(&encrypted))
+	}
+
+	fn encrypt_string_with_aad_with_sign(&self, data: &str, aad: &str, sign_key: &impl SignKWrapper) -> Result<String, SdkUtilError>
+	{
+		let encrypted = self.encrypt_with_aad_with_sign(data.as_bytes(), aad.as_bytes(), sign_key)?;
 
 		Ok(Base64::encode_string(&encrypted))
 	}
@@ -84,34 +140,5 @@ impl SymKeyCrypto for SymmetricKey
 		let decrypted = self.decrypt_with_aad(&encrypted, aad.as_bytes(), verify_key)?;
 
 		String::from_utf8(decrypted).map_err(|_| SdkUtilError::DecodeEncryptedDataFailed)
-	}
-}
-
-impl SymmetricKey
-{
-	fn finish_raw_encrypt(&self, encrypted: Vec<u8>, sign_key: Option<&impl SignKWrapper>) -> Result<(EncryptedHead, Vec<u8>), SdkUtilError>
-	{
-		match sign_key {
-			None => {
-				Ok((
-					EncryptedHead {
-						id: self.key_id.to_string(),
-						sign: None,
-					},
-					encrypted,
-				))
-			},
-			Some(sk) => {
-				let (sign_head, data_with_sign) = sk.sign_with_head(&encrypted)?;
-
-				Ok((
-					EncryptedHead {
-						id: self.key_id.to_string(),
-						sign: Some(sign_head),
-					},
-					data_with_sign,
-				))
-			},
-		}
 	}
 }
