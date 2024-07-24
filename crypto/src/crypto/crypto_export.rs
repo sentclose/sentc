@@ -48,7 +48,10 @@ pub fn encrypt_raw_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> 
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let (head, encrypted) = key.encrypt_raw(data, sign_key.as_ref())?;
+	let (head, encrypted) = match sign_key {
+		None => key.encrypt_raw(data)?,
+		Some(sk) => key.encrypt_raw_with_sign(data, &sk)?,
+	};
 
 	let head = head
 		.to_string()
@@ -63,7 +66,10 @@ pub fn encrypt_raw_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_k
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let (head, encrypted) = key.encrypt_raw_with_aad(data, aad, sign_key.as_ref())?;
+	let (head, encrypted) = match sign_key {
+		None => key.encrypt_raw_with_aad(data, aad)?,
+		Some(sk) => key.encrypt_raw_with_aad_with_sign(data, aad, &sk)?,
+	};
 
 	let head = head
 		.to_string()
@@ -106,7 +112,10 @@ pub fn encrypt_raw_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	let (head, encrypted) = PublicKey::encrypt_raw_with_user_key(&reply_public_key_data, data, sign_key.as_ref())?;
+	let (head, encrypted) = match sign_key {
+		None => PublicKey::encrypt_raw_with_user_key(&reply_public_key_data, data)?,
+		Some(sk) => PublicKey::encrypt_raw_with_user_key_with_sign(&reply_public_key_data, data, &sk)?,
+	};
 
 	let head = head
 		.to_string()
@@ -132,7 +141,10 @@ pub fn encrypt_symmetric(key: &str, data: &[u8], sign_key: Option<&str>) -> Resu
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	Ok(key.encrypt(data, sign_key.as_ref())?)
+	match sign_key {
+		None => Ok(key.encrypt(data)?),
+		Some(sk) => Ok(key.encrypt_with_sign(data, &sk)?),
+	}
 }
 
 pub fn encrypt_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_key: Option<&str>) -> Result<Vec<u8>, String>
@@ -141,7 +153,10 @@ pub fn encrypt_symmetric_with_aad(key: &str, data: &[u8], aad: &[u8], sign_key: 
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	Ok(key.encrypt_with_aad(data, aad, sign_key.as_ref())?)
+	match sign_key {
+		None => Ok(key.encrypt_with_aad(data, aad)?),
+		Some(sk) => Ok(key.encrypt_with_aad_with_sign(data, aad, &sk)?),
+	}
 }
 
 pub fn decrypt_symmetric(key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
@@ -168,11 +183,16 @@ pub fn encrypt_asymmetric(reply_public_key_data: &str, data: &[u8], sign_key: Op
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	Ok(PublicKey::encrypt_with_user_key(
-		&reply_public_key_data,
-		data,
-		sign_key.as_ref(),
-	)?)
+	match sign_key {
+		None => Ok(PublicKey::encrypt_with_user_key(&reply_public_key_data, data)?),
+		Some(sk) => {
+			Ok(PublicKey::encrypt_with_user_key_with_sign(
+				&reply_public_key_data,
+				data,
+				&sk,
+			)?)
+		},
+	}
 }
 
 pub fn decrypt_asymmetric(private_key: &str, encrypted_data: &[u8], verify_key_data: Option<&str>) -> Result<Vec<u8>, String>
@@ -190,7 +210,10 @@ pub fn encrypt_string_symmetric(key: &str, data: &str, sign_key: Option<&str>) -
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	Ok(key.encrypt_string(data, sign_key.as_ref())?)
+	match sign_key {
+		None => Ok(key.encrypt_string(data)?),
+		Some(sk) => Ok(key.encrypt_string_with_sign(data, &sk)?),
+	}
 }
 
 pub fn encrypt_string_symmetric_with_aad(key: &str, data: &str, aad: &str, sign_key: Option<&str>) -> Result<String, String>
@@ -199,7 +222,10 @@ pub fn encrypt_string_symmetric_with_aad(key: &str, data: &str, aad: &str, sign_
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	Ok(key.encrypt_string_with_aad(data, aad, sign_key.as_ref())?)
+	match sign_key {
+		None => Ok(key.encrypt_string_with_aad(data, aad)?),
+		Some(sk) => Ok(key.encrypt_string_with_aad_with_sign(data, aad, &sk)?),
+	}
 }
 
 pub fn decrypt_string_symmetric(key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>
@@ -226,11 +252,16 @@ pub fn encrypt_string_asymmetric(reply_public_key_data: &str, data: &str, sign_k
 
 	let sign_key = prepare_sign_key(sign_key)?;
 
-	Ok(PublicKey::encrypt_string_with_user_key(
-		&reply_public_key_data,
-		data,
-		sign_key.as_ref(),
-	)?)
+	match sign_key {
+		None => Ok(PublicKey::encrypt_string_with_user_key(&reply_public_key_data, data)?),
+		Some(sk) => {
+			Ok(PublicKey::encrypt_string_with_user_key_with_sign(
+				&reply_public_key_data,
+				data,
+				&sk,
+			)?)
+		},
+	}
 }
 
 pub fn decrypt_string_asymmetric(private_key: &str, encrypted_data: &str, verify_key_data: Option<&str>) -> Result<String, String>

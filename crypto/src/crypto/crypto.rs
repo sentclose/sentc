@@ -237,7 +237,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let (head, encrypted) = group_key.encrypt_raw(text.as_bytes(), None).unwrap();
+		let (head, encrypted) = group_key.encrypt_raw(text.as_bytes()).unwrap();
 
 		let decrypted = group_key.decrypt_raw(&encrypted, &head, None).unwrap();
 
@@ -257,7 +257,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let (head, encrypted) = group_key
-			.encrypt_raw(text.as_bytes(), Some(&user.user_keys[0].sign_key))
+			.encrypt_raw_with_sign(text.as_bytes(), &user.user_keys[0].sign_key)
 			.unwrap();
 
 		let decrypted = group_key
@@ -280,7 +280,7 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 
 		let (head, encrypted) = group_key
-			.encrypt_raw_with_aad(text.as_bytes(), payload, None)
+			.encrypt_raw_with_aad(text.as_bytes(), payload)
 			.unwrap();
 
 		let decrypted = group_key
@@ -304,7 +304,7 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 
 		let (head, encrypted) = group_key
-			.encrypt_raw_with_aad(text.as_bytes(), payload, Some(&user.user_keys[0].sign_key))
+			.encrypt_raw_with_aad_with_sign(text.as_bytes(), payload, &user.user_keys[0].sign_key)
 			.unwrap();
 
 		let decrypted = group_key
@@ -325,7 +325,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes(), None).unwrap();
+		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes()).unwrap();
 
 		let decrypted = user.user_keys[0]
 			.private_key
@@ -341,10 +341,10 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 		let user = create_user();
 
-		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key(
+		let (head, encrypted) = TestPublicKey::encrypt_raw_with_user_key_with_sign(
 			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
-			Some(&user.user_keys[0].sign_key),
+			&user.user_keys[0].sign_key,
 		)
 		.unwrap();
 
@@ -367,7 +367,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = group_key.encrypt(text.as_bytes(), None).unwrap();
+		let encrypted = group_key.encrypt(text.as_bytes()).unwrap();
 
 		let decrypted = group_key.decrypt(&encrypted, None).unwrap();
 
@@ -386,7 +386,7 @@ mod test
 		let payload = b"payload1234567891011121314151617";
 
 		let encrypted = group_key
-			.encrypt_with_aad(text.as_bytes(), payload, None)
+			.encrypt_with_aad(text.as_bytes(), payload)
 			.unwrap();
 
 		let decrypted = group_key
@@ -409,7 +409,7 @@ mod test
 		let payload2 = b"payload1234567891011121314151618";
 
 		let encrypted = group_key
-			.encrypt_with_aad(text.as_bytes(), payload, None)
+			.encrypt_with_aad(text.as_bytes(), payload)
 			.unwrap();
 
 		let decrypted = group_key.decrypt_with_aad(&encrypted, payload2, None);
@@ -432,7 +432,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = group_key
-			.encrypt(text.as_bytes(), Some(&user.user_keys[0].sign_key))
+			.encrypt_with_sign(text.as_bytes(), &user.user_keys[0].sign_key)
 			.unwrap();
 
 		let decrypted = group_key
@@ -450,7 +450,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = TestPublicKey::encrypt_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes(), None).unwrap();
+		let encrypted = TestPublicKey::encrypt_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes()).unwrap();
 
 		let decrypted = user.user_keys[0]
 			.private_key
@@ -468,10 +468,10 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = TestPublicKey::encrypt_with_user_key(
+		let encrypted = TestPublicKey::encrypt_with_user_key_with_sign(
 			&user.user_keys[0].exported_public_key,
 			text.as_bytes(),
-			Some(&user.user_keys[0].sign_key),
+			&user.user_keys[0].sign_key,
 		)
 		.unwrap();
 
@@ -494,7 +494,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = group_key.encrypt_string(text, None).unwrap();
+		let encrypted = group_key.encrypt_string(text).unwrap();
 
 		let decrypted = group_key.decrypt_string(&encrypted, None).unwrap();
 
@@ -511,9 +511,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$ 👍 🚀";
 		let payload = "payload1234567891011121314151617";
 
-		let encrypted = group_key
-			.encrypt_string_with_aad(text, payload, None)
-			.unwrap();
+		let encrypted = group_key.encrypt_string_with_aad(text, payload).unwrap();
 
 		let decrypted = group_key
 			.decrypt_string_with_aad(&encrypted, payload, None)
@@ -534,7 +532,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = group_key
-			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.encrypt_string_with_sign(text, &user.user_keys[0].sign_key)
 			.unwrap();
 
 		let decrypted = group_key
@@ -552,7 +550,7 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = TestPublicKey::encrypt_string_with_user_key(&user.user_keys[0].exported_public_key, text, None).unwrap();
+		let encrypted = TestPublicKey::encrypt_string_with_user_key(&user.user_keys[0].exported_public_key, text).unwrap();
 
 		let decrypted = user.user_keys[0]
 			.private_key
@@ -570,10 +568,10 @@ mod test
 		//now start encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
-		let encrypted = TestPublicKey::encrypt_string_with_user_key(
+		let encrypted = TestPublicKey::encrypt_string_with_user_key_with_sign(
 			&user.user_keys[0].exported_public_key,
 			text,
-			Some(&user.user_keys[0].sign_key),
+			&user.user_keys[0].sign_key,
 		)
 		.unwrap();
 
@@ -598,7 +596,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = key
-			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.encrypt_string_with_sign(text, &user.user_keys[0].sign_key)
 			.unwrap();
 
 		let decrypted = key
@@ -625,7 +623,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = key
-			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.encrypt_string_with_sign(text, &user.user_keys[0].sign_key)
 			.unwrap();
 
 		let decrypted = key
@@ -641,7 +639,7 @@ mod test
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = decrypted_key
-			.encrypt_string(text, Some(&user.user_keys[0].sign_key))
+			.encrypt_string_with_sign(text, &user.user_keys[0].sign_key)
 			.unwrap();
 
 		let decrypted = decrypted_key
