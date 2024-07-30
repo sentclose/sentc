@@ -15,7 +15,7 @@ pub use sentc_crypto_common as sdk_common;
 use sentc_crypto_common::{DeviceId, UserId};
 use sentc_crypto_utils::cryptomat::KeyToString;
 use serde::{Deserialize, Serialize};
-pub use {sentc_crypto_core as sdk_core, sentc_crypto_utils as sdk_utils};
+pub use {sentc_crypto_core as sdk_core, sentc_crypto_utils as sdk_utils, sentc_crypto_std_keys as sdk_keys};
 
 use crate::error::SdkLightError;
 
