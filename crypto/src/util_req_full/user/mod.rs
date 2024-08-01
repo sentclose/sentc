@@ -60,6 +60,9 @@ where
 	VC: VerifyKFromUserKeyWrapper,
 	PwH: PwHash,
 {
+	/// Register a new user at the api. This will only use the username and password as input, no other inputs are used.
+	///
+	/// If you need more information about the user, then use register fn and call the api from your backend with the string from the register fn.
 	pub async fn register_req(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> Result<String, SdkError>
 	{
 		let register_input = Self::register(user_identifier, password)?;
@@ -73,6 +76,9 @@ where
 		Ok(out)
 	}
 
+	/// Create the new device keys and register it at the server.
+	///
+	/// An already registered device need the string that this fn returns
 	pub async fn register_device_start(base_url: String, auth_token: &str, device_identifier: &str, password: &str) -> Result<String, SdkError>
 	{
 		let url = base_url + "/api/v1/user/prepare_register_device";
@@ -87,6 +93,7 @@ where
 		Ok(res)
 	}
 
+	/// This fn registered the device at the server. This fn need to be called from an already registered device.
 	pub async fn register_device(
 		base_url: String,
 		auth_token: &str,
@@ -109,6 +116,7 @@ where
 		Ok((out.session_id, exported_device_public_key))
 	}
 
+	/// If there are more than 50 keys in the user group, register here the next 50 keys and so on.
 	pub async fn device_key_session(
 		base_url: String,
 		auth_token: &str,
@@ -154,6 +162,9 @@ where
 		Ok(keys)
 	}
 
+	/// Try to log the user in.
+	///
+	/// If the user activated mfa the enum variant will contain the data for the mfa login. Otherwise, the user group data.
 	pub async fn login(
 		base_url: String,
 		auth_token: &str,
@@ -185,6 +196,7 @@ where
 		}
 	}
 
+	/// Login the user here after validating the mfa
 	pub async fn mfa_login(
 		base_url: String,
 		auth_token: &str,
@@ -209,6 +221,7 @@ where
 		Self::verify_login_int(base_url, auth_token, keys).await
 	}
 
+	/// If there are more than 50 user keys, fetch the next 50 keys here and so on.
 	pub async fn fetch_user_key(
 		base_url: String,
 		auth_token: &str,
@@ -226,6 +239,9 @@ where
 		Ok(keys)
 	}
 
+	/// A fresh jwt means a jwt that was created by a login with password.
+	///
+	/// Non-fresh jwt are jwt that are just refreshed and can't be used for certain actions like delete account.
 	pub async fn get_fresh_jwt(
 		base_url: String,
 		auth_token: &str,
@@ -306,6 +322,8 @@ where
 
 	//______________________________________________________________________________________________
 
+	/// Create a new user key for all devices and register it.
+	/// Other devices need to call done_key_rotation for each new key to register it for the device
 	pub async fn key_rotation(
 		base_url: String,
 		auth_token: &str,
@@ -329,6 +347,7 @@ where
 		.await
 	}
 
+	/// Register a new user group key for the current device.
 	pub async fn done_key_rotation(
 		base_url: String,
 		auth_token: &str,
