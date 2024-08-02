@@ -9,6 +9,8 @@ documentation.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+description = "The recommended keys. It uses a combination of openssl and oqs."
+
 include = [
     "Cargo.toml",
     "../LICENSE",

@@ -9,6 +9,8 @@ documentation.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+description = "Key impl of the classic algorithms that were used pre 0.14.0 of sentc."
+
 include = [
     "Cargo.toml",
     "../LICENSE",

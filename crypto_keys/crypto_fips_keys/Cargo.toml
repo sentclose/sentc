@@ -9,6 +9,8 @@ documentation.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+description = "Fips compliant key impl with openssl"
+
 include = [
     "Cargo.toml",
     "../LICENSE",
