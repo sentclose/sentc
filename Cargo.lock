@@ -1551,7 +1551,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "rand_core",
  "sentc-crypto-std-keys",

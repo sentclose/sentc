@@ -28,7 +28,7 @@ rust-version = "1.75.0"
 sentc-crypto-common = { version = "0.10.0", git = "https://github.com/sentclose/sentc-common.git", rev = "de513a82b0200b476d9592ba1de38c73c6a32354" }
 #sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" }    # for local dev
 
-sentc-crypto-core = { version = "0.13.0", path = "crypto_core" }
+sentc-crypto-core = { version = "0.14.0", path = "crypto_core" }
 sentc-crypto-utils = { version = "0.14.0", path = "crypto_utils" }
 sentc-crypto = { version = "0.14.0", path = "crypto", default-features = false }
 sentc-crypto-light = { version = "0.14.0", path = "crypto_light", default-features = false }
