@@ -1,6 +1,20 @@
-//use here key ids from the api, the core sdk don't care about the ids because we have to call every function with the right keys
-//but in the higher level mod we must care
-//handle the key id for get group, and the rotation + accept / invite user
+//! All functions to manage the group.
+//!
+//! The group struct bundles all generics as phantom data.
+//! It can be used with any implementation of the corresponding traits.
+//!
+//! A group contains user accounts or other groups (parent group or group as member)
+//! * a user can join a group as normal member
+//! * a group can have child groups. All members of the parent group got automatically access to the child groups. If the parent gets deleted, all children are deleted as well.
+//! * a group as member. A groups joined as normal member without the parent/child relationship. Users of this group needs to fetch their group first before fetching the connted group.
+//!
+//! # Overview
+//!
+//! * create a group
+//! * invite other users
+//! * accept join requests from other users
+//! * update member ranks from users and groups (except parent group, it will always be the creater)
+//! * Creating new group keys
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;

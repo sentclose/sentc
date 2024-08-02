@@ -1,3 +1,23 @@
+//! All functions to manage the user.
+//!
+//! The user struct bundles all generics as phantom data.
+//! It can be used with any implementation of the corresponding traits.
+//!
+//! A user can have multiple devices. Each device got an id and a password.
+//! The first username and password combination is technically a device too.
+//!
+//! The user itself is a group of devices. The user public, private and verify, sign key pairs are from the user group.
+//! Each device got its own keys to verify between devices.
+//!
+//! # Overview
+//!
+//! * Register
+//! * Login
+//! * Multi-factor login
+//! * Creating more devices for the user
+//! * change or reset password
+//!
+
 use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use core::marker::PhantomData;
@@ -81,6 +101,9 @@ where
 	VC: VerifyKFromUserKeyWrapper,
 	PwH: PwHash,
 {
+	/// Create the first user device and the user group.
+	///
+	/// Returns the json encoded data as string for the server. If you need to add more data use fn register_typed instead
 	pub fn register(user_identifier: &str, password: &str) -> Result<String, SdkError>
 	{
 		let register_out = Self::register_typed(user_identifier, password)?;
@@ -91,9 +114,8 @@ where
 			.map_err(|_| SdkError::JsonToStringFailed)
 	}
 
-	/**
-	# Prepare the register input incl. keys
-	 */
+	/// As the same as register but returns the data as struct for the server and not as json encoded string.
+	/// It can be used to add more data to the server, like the first and lastname of the user, etc.
 	pub fn register_typed(user_identifier: &str, password: &str) -> Result<RegisterData, SdkError>
 	{
 		let (device, raw_public_key) = Self::prepare_register_device_private_internally(user_identifier, password)?;
@@ -177,11 +199,9 @@ where
 		))
 	}
 
-	/**
-	Call this fn before the register device request in the new device.
-
-	Transfer the output from this request to the active device to accept this device
-	 */
+	/// Create the new device.
+	///
+	/// The output needs to sent to the server. This should be executed at the new device and not at an existing one.
 	pub fn prepare_register_device_start(device_identifier: &str, password: &str) -> Result<String, SdkError>
 	{
 		let (device, _) = Self::prepare_register_device_private_internally(device_identifier, password)?;
@@ -189,13 +209,10 @@ where
 		serde_json::to_string(&device).map_err(|_| SdkError::JsonToStringFailed)
 	}
 
-	/**
-	Prepare the user group keys for the new device.
-
-	Call this fn from the active device with the server output from register device
-
-	Return the public key of the device, for the key session
-	 */
+	/// Prepare the user group keys for the new device.
+	///
+	/// Call this fn from the active device with the server output from register device.
+	/// Return the public key of the device, for the key session
 	pub fn prepare_register_device(
 		server_output: &str,
 		group_keys: &[&impl SymKeyWrapper],
@@ -249,11 +266,12 @@ where
 	}
 
 	/**
-	# finalize the login process
+	finalize the login process. These are only the device data to fulfill the login challenge, not the actual user group keys
 
 	1. extract the DoneLoginInput from the server. It includes the encrypted master key, encrypted private and sign keys, in pem exported public and verify keys
 	2. decrypt the master key with the encryption key from @see prepare_login
 	3. import the public and verify keys to the internal format
+	4, fulfill the login challenge and return the data for the verify login
 	 */
 	pub fn done_login(
 		master_key_encryption: &impl DeriveMasterKeyForAuth,
@@ -270,6 +288,7 @@ where
 		)?)
 	}
 
+	/// If the user enabled multi-factor-auth use this fn instead of done_login  
 	pub fn done_validate_mfa(
 		master_key_encryption: &impl DeriveMasterKeyForAuth,
 		auth_key: String,
@@ -285,6 +304,8 @@ where
 		)?)
 	}
 
+	/// Get the user data from server when the login challenge was successfully solved.
+	/// It will return the user group keys
 	pub fn verify_login(
 		server_output: &str,
 		user_id: UserId,
@@ -310,6 +331,7 @@ where
 		})
 	}
 
+	/// When there are more than 50 keys in the user group, fetch the rest with this fn.
 	pub fn done_key_fetch(
 		private_key: &impl SkWrapper,
 		server_output: &str,
@@ -323,7 +345,7 @@ where
 	}
 
 	/**
-	# Get the user keys from the user group
+	Get the user keys from the user group
 
 	Decrypt it like group decrypt keys (which is used here)
 	But decrypt the sign key too
@@ -495,7 +517,7 @@ where
 }
 
 /**
-# Prepare the server input for the check
+Prepare the server input for the check
  */
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SdkError>
 {
@@ -513,6 +535,10 @@ pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool,
 	Ok(server_output.available)
 }
 
+/// Generate a username with 20 random chars and a password with 40 random chars.
+///
+/// It is very useful for registering devices that stores the account information on the device
+/// and don't need to manually up in by the user
 pub fn generate_user_register_data() -> Result<(String, String), SdkError>
 {
 	let (identifier, password) = sentc_crypto_core::generate_user_register_data()?;
@@ -523,6 +549,7 @@ pub fn generate_user_register_data() -> Result<(String, String), SdkError>
 	Ok((encoded_identifier, encoded_password))
 }
 
+/// Call this function after the register request to the api is done to verify the api response and get the user id back
 pub fn done_register(server_output: &str) -> Result<UserId, SdkError>
 {
 	let out: RegisterServerOutput = handle_server_response(server_output)?;

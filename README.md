@@ -1,11 +1,14 @@
-# Sentc 
+# Sentc
+
 from Sentclose
 
 An end-to-end encryption sdk for developer with user management.
 
 Available in:
-- Javascript 
+
+- Javascript for the web
 - Dart with flutter
+- Rust
 
 ## Contains
 
@@ -13,19 +16,19 @@ Available in:
 - Group management: Invite or add member, role management, group encryption
 - Handling large files in browser and native
 
-
 ## Build from source
 
 #### Requirements:
-- Rust MRV 1.69.0
+
+- Rust MRV 1.75.0
 - For flutter:
-  - flutter_rust_bridge_codegen (`cargo install flutter_rust_bridge_codegen`)
-  - cargo-ndk
-  - llvm
-  - flutter ffi (`dart pub global activate ffigen`)
+    - flutter_rust_bridge_codegen (`cargo install flutter_rust_bridge_codegen`)
+    - cargo-ndk
+    - llvm
+    - flutter ffi (`dart pub global activate ffigen`)
 - For Javascript:
-  - wasm-pack
-  - node js min. version 14 lts
+    - wasm-pack
+    - node js min. version 14 lts
 
 ### Build for rust
 
