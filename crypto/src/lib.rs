@@ -9,7 +9,9 @@
 	clippy::type_complexity
 )]
 
-//! The base sdk for all sentc libraries. Containing user- and group management as well as encryption, file-handling and search- and sortable encryption
+//! The base lib for all sentc libraries. Containing user- and group management as well as encryption, file-handling and search- and sortable encryption
+//!
+//! These are very low-level functionalities. It is recommended to use it with a sdks.
 //!
 //! This lib is defined as a "template" to use it with different crypto implementations thanks to rusts generic.
 //! As long as the implementation follows the traits defined in sentc-crypto-core and sentc-crypto-utils crate it can be used with this lib.
