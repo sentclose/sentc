@@ -19,9 +19,6 @@ include = [
 rand_core = { version = "0.6.3", default-features = false, features = ["getrandom"] }
 sha2 = { version = "0.10.2", default-features = false }
 
-[dev-dependencies]
-sentc-crypto-std-keys.workspace = true
-
 [features]
 default = ["default_env"]
 

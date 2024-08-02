@@ -1554,7 +1554,6 @@ name = "sentc-crypto-core"
 version = "0.14.0"
 dependencies = [
  "rand_core",
- "sentc-crypto-std-keys",
  "sha2",
 ]
 
