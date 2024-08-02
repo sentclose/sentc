@@ -1,7 +1,6 @@
 [package]
 name = "sentc-crypto-core"
-#version.workspace = true
-version = "0.13.0"
+version.workspace = true
 edition.workspace = true
 description = "The core of sentc encryption sdk with all alg."
 license-file.workspace = true
