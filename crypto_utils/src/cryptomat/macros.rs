@@ -27,6 +27,11 @@ macro_rules! to_string_impl {
 			{
 				serde_json::to_string(&Into::<$t>::into(self)).map_err(|_e| $crate::error::SdkUtilError::JsonToStringFailed)
 			}
+
+			fn to_string_ref(&self) -> Result<String, $crate::error::SdkUtilError>
+			{
+				serde_json::to_string(&Into::<$t>::into(self)).map_err(|_e| $crate::error::SdkUtilError::JsonToStringFailed)
+			}
 		}
 	};
 }
@@ -37,6 +42,11 @@ macro_rules! to_string_try_impl {
 		impl $crate::cryptomat::KeyToString for $st
 		{
 			fn to_string(self) -> Result<String, $crate::error::SdkUtilError>
+			{
+				serde_json::to_string(&TryInto::<$t>::try_into(self)?).map_err(|_e| $crate::error::SdkUtilError::JsonToStringFailed)
+			}
+
+			fn to_string_ref(&self) -> Result<String, $crate::error::SdkUtilError>
 			{
 				serde_json::to_string(&TryInto::<$t>::try_into(self)?).map_err(|_e| $crate::error::SdkUtilError::JsonToStringFailed)
 			}

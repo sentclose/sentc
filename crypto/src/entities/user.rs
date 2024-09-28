@@ -10,7 +10,7 @@ use sentc_crypto_utils::user::DeviceKeyDataInt;
 use serde::{Deserialize, Serialize};
 
 use crate::entities::group::GroupOutDataHmacKeyExport;
-use crate::SdkError;
+use crate::{sdk_utils, SdkError};
 
 pub struct UserKeyDataInt<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper>
 {
@@ -80,6 +80,73 @@ impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: Veri
 				.exported_verify_key
 				.to_string()
 				.map_err(|_e| SdkError::JsonToStringFailed)?,
+		})
+	}
+}
+
+impl<'a, S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper> TryFrom<&'a UserKeyDataInt<S, Sk, Pk, SiK, Vk>>
+	for UserKeyDataExport
+{
+	type Error = SdkError;
+
+	fn try_from(value: &'a UserKeyDataInt<S, Sk, Pk, SiK, Vk>) -> Result<Self, Self::Error>
+	{
+		let group_key_id = value.group_key.get_id().to_string();
+
+		Ok(Self {
+			private_key: value.private_key.to_string_ref()?,
+			public_key: value.public_key.to_string_ref()?,
+			group_key_id,
+			group_key: value.group_key.to_string_ref()?,
+			time: value.time,
+			sign_key: value.sign_key.to_string_ref()?,
+			verify_key: value.verify_key.to_string_ref()?,
+			exported_public_key: value
+				.exported_public_key
+				.to_string()
+				.map_err(|_e| SdkError::JsonToStringFailed)?,
+			exported_public_key_sig_key_id: value.exported_public_key.public_key_sig_key_id.clone(),
+			exported_verify_key: value
+				.exported_verify_key
+				.to_string()
+				.map_err(|_e| SdkError::JsonToStringFailed)?,
+		})
+	}
+}
+
+impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper, SiK: SignKWrapper, Vk: VerifyKWrapper> TryInto<UserKeyDataInt<S, Sk, Pk, SiK, Vk>>
+	for UserKeyDataExport
+{
+	type Error = SdkError;
+
+	fn try_into(self) -> Result<UserKeyDataInt<S, Sk, Pk, SiK, Vk>, Self::Error>
+	{
+		Ok(UserKeyDataInt {
+			group_key: self
+				.group_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::ImportSymmetricKeyFailed))?,
+			private_key: self
+				.private_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::JsonToStringFailed))?,
+			public_key: self
+				.public_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::JsonToStringFailed))?,
+			time: self.time,
+			sign_key: self
+				.sign_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::ImportingSignKeyFailed))?,
+			verify_key: self
+				.verify_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::ImportVerifyKeyFailed))?,
+			exported_public_key: UserPublicKeyData::from_string(&self.exported_public_key)
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::ImportingKeyFromPemFailed))?,
+			exported_verify_key: UserVerifyKeyData::from_string(&self.exported_verify_key)
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::ImportingKeyFromPemFailed))?,
 		})
 	}
 }

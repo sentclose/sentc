@@ -48,6 +48,21 @@ impl TryFrom<HmacKey> for HmacFormatExport
 	}
 }
 
+impl<'a> TryFrom<&'a HmacKey> for HmacFormatExport
+{
+	type Error = SdkUtilError;
+
+	fn try_from(value: &'a HmacKey) -> Result<Self, Self::Error>
+	{
+		let key = encode_block(&value.key.export()?);
+
+		Ok(Self {
+			key,
+			key_id: value.key_id.clone(),
+		})
+	}
+}
+
 impl TryInto<HmacKey> for HmacFormatExport
 {
 	type Error = SdkUtilError;
@@ -78,6 +93,11 @@ impl KeyToString for SortableKey
 	fn to_string(self) -> Result<String, SdkUtilError>
 	{
 		Ok(self.key_id)
+	}
+
+	fn to_string_ref(&self) -> Result<String, SdkUtilError>
+	{
+		Ok(self.key_id.clone())
 	}
 }
 

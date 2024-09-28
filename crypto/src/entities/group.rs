@@ -8,7 +8,7 @@ use sentc_crypto_utils::cryptomat::{PkWrapper, SkWrapper, SymKeyWrapper};
 pub use sentc_crypto_utils::group::*;
 use serde::{Deserialize, Serialize};
 
-use crate::SdkError;
+use crate::{sdk_utils, SdkError};
 
 pub struct GroupOutData
 {
@@ -185,6 +185,54 @@ impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper> TryFrom<GroupKeyData<S, Sk,
 			group_key: value.group_key.to_string()?,
 			time: value.time,
 			group_key_id,
+		})
+	}
+}
+
+impl<'a, S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper> TryFrom<&'a GroupKeyData<S, Sk, Pk>> for GroupKeyDataExport
+{
+	type Error = SdkError;
+
+	fn try_from(value: &'a GroupKeyData<S, Sk, Pk>) -> Result<Self, Self::Error>
+	{
+		let group_key_id = value.group_key.get_id().to_string();
+
+		Ok(Self {
+			private_group_key: value.private_group_key.to_string_ref()?,
+			public_group_key: value.public_group_key.to_string_ref()?,
+			exported_public_key: value
+				.exported_public_key
+				.to_string()
+				.map_err(|_e| SdkError::JsonToStringFailed)?,
+			group_key: value.group_key.to_string_ref()?,
+			time: value.time,
+			group_key_id,
+		})
+	}
+}
+
+impl<S: SymKeyWrapper, Sk: SkWrapper, Pk: PkWrapper> TryInto<GroupKeyData<S, Sk, Pk>> for GroupKeyDataExport
+{
+	type Error = SdkError;
+
+	fn try_into(self) -> Result<GroupKeyData<S, Sk, Pk>, Self::Error>
+	{
+		Ok(GroupKeyData {
+			group_key: self
+				.group_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::ImportSymmetricKeyFailed))?,
+			private_group_key: self
+				.private_group_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::JsonToStringFailed))?,
+			public_group_key: self
+				.public_group_key
+				.parse()
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::JsonToStringFailed))?,
+			exported_public_key: UserPublicKeyData::from_string(&self.exported_public_key)
+				.map_err(|_| SdkError::Util(sdk_utils::error::SdkUtilError::ImportingKeyFromPemFailed))?,
+			time: self.time,
 		})
 	}
 }

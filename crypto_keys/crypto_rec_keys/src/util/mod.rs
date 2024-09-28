@@ -73,6 +73,19 @@ impl From<SymmetricKey> for SymKeyFormatExport
 	}
 }
 
+impl<'a> From<&'a SymmetricKey> for SymKeyFormatExport
+{
+	fn from(value: &'a SymmetricKey) -> Self
+	{
+		let key = encode_block(value.key.as_ref());
+
+		Self {
+			key,
+			key_id: value.key_id.clone(),
+		}
+	}
+}
+
 impl TryInto<SymmetricKey> for SymKeyFormatExport
 {
 	type Error = SdkUtilError;
@@ -161,6 +174,45 @@ impl TryFrom<SecretKey> for SecretKeyFormatExport
 				Ok(Self::MlKem {
 					key,
 					key_id: value.key_id,
+				})
+			},
+			CoreSk::EciesMlKemHybrid(k) => {
+				let (x, k) = k.prepare_export()?;
+
+				let x = encode_block(&x);
+				let k = encode_block(k);
+
+				Ok(Self::EciesMlKemHybrid {
+					k,
+					x,
+					key_id: value.key_id.clone(),
+				})
+			},
+		}
+	}
+}
+
+impl<'a> TryFrom<&'a SecretKey> for SecretKeyFormatExport
+{
+	type Error = SdkUtilError;
+
+	fn try_from(value: &'a SecretKey) -> Result<Self, Self::Error>
+	{
+		match &value.key {
+			CoreSk::Ecies(k) => {
+				let key = encode_block(&k.export()?);
+
+				Ok(Self::Ecies {
+					key,
+					key_id: value.key_id.clone(),
+				})
+			},
+			CoreSk::MlKem(k) => {
+				let key = encode_block(k.as_ref());
+
+				Ok(Self::MlKem {
+					key,
+					key_id: value.key_id.clone(),
 				})
 			},
 			CoreSk::EciesMlKemHybrid(k) => {
@@ -467,6 +519,45 @@ impl TryFrom<SignKey> for SignKeyFormatExport
 	}
 }
 
+impl<'a> TryFrom<&'a SignKey> for SignKeyFormatExport
+{
+	type Error = SdkUtilError;
+
+	fn try_from(value: &'a SignKey) -> Result<Self, Self::Error>
+	{
+		match &value.key {
+			CoreSign::Ed25519(k) => {
+				let key = encode_block(&k.export()?);
+
+				Ok(Self::Ed25519 {
+					key,
+					key_id: value.key_id.clone(),
+				})
+			},
+			CoreSign::MlDsa(k) => {
+				let key = encode_block(k.as_ref());
+
+				Ok(Self::MlDsa {
+					key,
+					key_id: value.key_id.clone(),
+				})
+			},
+			CoreSign::Ed25519MlDsaHybrid(k) => {
+				let (x, k) = k.prepare_export()?;
+
+				let x = encode_block(&x);
+				let k = encode_block(k);
+
+				Ok(Self::Ed25519MlDsaHybrid {
+					x,
+					k,
+					key_id: value.key_id.clone(),
+				})
+			},
+		}
+	}
+}
+
 impl TryInto<SignKey> for SignKeyFormatExport
 {
 	type Error = SdkUtilError;
@@ -552,6 +643,45 @@ impl TryFrom<VerifyKey> for VerifyKeyFormatExport
 	fn try_from(value: VerifyKey) -> Result<Self, Self::Error>
 	{
 		match value.key {
+			CoreVk::Ed25519(k) => {
+				let key = encode_block(&k.export()?);
+
+				Ok(Self::Ed25519 {
+					key,
+					key_id: value.key_id.clone(),
+				})
+			},
+			CoreVk::MlDsa(k) => {
+				let key = encode_block(k.as_ref());
+
+				Ok(Self::MlDsa {
+					key,
+					key_id: value.key_id.clone(),
+				})
+			},
+			CoreVk::Ed25519MlDsaHybrid(k) => {
+				let (x, k) = k.prepare_export()?;
+
+				let x = encode_block(&x);
+				let k = encode_block(k);
+
+				Ok(Self::Ed25519MlDsaHybrid {
+					x,
+					k,
+					key_id: value.key_id.clone(),
+				})
+			},
+		}
+	}
+}
+
+impl<'a> TryFrom<&'a VerifyKey> for VerifyKeyFormatExport
+{
+	type Error = SdkUtilError;
+
+	fn try_from(value: &'a VerifyKey) -> Result<Self, Self::Error>
+	{
+		match &value.key {
 			CoreVk::Ed25519(k) => {
 				let key = encode_block(&k.export()?);
 

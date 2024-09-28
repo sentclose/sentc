@@ -79,6 +79,23 @@ impl From<SymmetricKey> for SymKeyFormatExport
 	}
 }
 
+impl<'a> From<&'a SymmetricKey> for SymKeyFormatExport
+{
+	fn from(value: &'a SymmetricKey) -> Self
+	{
+		let key = Base64::encode_string(value.key.as_ref());
+
+		match value.key {
+			CoreSymmetricKey::Aes(_) => {
+				Self::Aes {
+					key_id: value.key_id.clone(),
+					key,
+				}
+			},
+		}
+	}
+}
+
 impl TryInto<SymmetricKey> for SymKeyFormatExport
 {
 	type Error = SdkUtilError;
@@ -195,6 +212,43 @@ impl From<SecretKey> for SecretKeyFormatExport
 					k,
 					x,
 					key_id: value.key_id,
+				}
+			},
+		}
+	}
+}
+
+impl<'a> From<&'a SecretKey> for SecretKeyFormatExport
+{
+	fn from(value: &'a SecretKey) -> Self
+	{
+		match &value.key {
+			CoreSecretKey::Ecies(k) => {
+				let key = Base64::encode_string(k.as_ref());
+
+				Self::Ecies {
+					key,
+					key_id: value.key_id.clone(),
+				}
+			},
+			CoreSecretKey::Kyber(k) => {
+				let key = Base64::encode_string(k.as_ref());
+
+				Self::Kyber {
+					key,
+					key_id: value.key_id.clone(),
+				}
+			},
+			CoreSecretKey::EciesKyberHybrid(key) => {
+				let (x, k) = key.get_raw_keys();
+
+				let x = Base64::encode_string(x);
+				let k = Base64::encode_string(k);
+
+				Self::EciesKyberHybrid {
+					k,
+					x,
+					key_id: value.key_id.clone(),
 				}
 			},
 		}
@@ -499,6 +553,43 @@ impl From<SignKey> for SignKeyFormatExport
 	}
 }
 
+impl<'a> From<&'a SignKey> for SignKeyFormatExport
+{
+	fn from(value: &'a SignKey) -> Self
+	{
+		match &value.key {
+			CoreSignKey::Ed25519(k) => {
+				let key = Base64::encode_string(k.as_ref());
+
+				Self::Ed25519 {
+					key,
+					key_id: value.key_id.clone(),
+				}
+			},
+			CoreSignKey::Dilithium(k) => {
+				let key = Base64::encode_string(k.as_ref());
+
+				Self::Dilithium {
+					key,
+					key_id: value.key_id.clone(),
+				}
+			},
+			CoreSignKey::Ed25519DilithiumHybrid(key) => {
+				let (x, k) = key.get_raw_keys();
+
+				let x = Base64::encode_string(x);
+				let k = Base64::encode_string(k);
+
+				Self::Ed25519DilithiumHybrid {
+					x,
+					k,
+					key_id: value.key_id.clone(),
+				}
+			},
+		}
+	}
+}
+
 impl TryInto<SignKey> for SignKeyFormatExport
 {
 	type Error = SdkUtilError;
@@ -608,6 +699,43 @@ impl From<VerifyKey> for VerifyKeyFormatExport
 					x,
 					k,
 					key_id: value.key_id,
+				}
+			},
+		}
+	}
+}
+
+impl<'a> From<&'a VerifyKey> for VerifyKeyFormatExport
+{
+	fn from(value: &'a VerifyKey) -> Self
+	{
+		match &value.key {
+			CoreVerifyKey::Ed25519(k) => {
+				let key = Base64::encode_string(k.as_ref());
+
+				Self::Ed25519 {
+					key_id: value.key_id.clone(),
+					key,
+				}
+			},
+			CoreVerifyKey::Dilithium(k) => {
+				let key = Base64::encode_string(k.as_ref());
+
+				Self::Dilithium {
+					key_id: value.key_id.clone(),
+					key,
+				}
+			},
+			CoreVerifyKey::Ed25519DilithiumHybrid(key) => {
+				let (x, k) = key.get_raw_keys();
+
+				let x = Base64::encode_string(x);
+				let k = Base64::encode_string(k);
+
+				Self::Ed25519DilithiumHybrid {
+					x,
+					k,
+					key_id: value.key_id.clone(),
 				}
 			},
 		}
