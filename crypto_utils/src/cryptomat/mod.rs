@@ -49,6 +49,8 @@ macro_rules! wrapper_trait {
 pub trait KeyToString
 {
 	fn to_string(self) -> Result<String, SdkUtilError>;
+
+	fn to_string_ref(&self) -> Result<String, SdkUtilError>;
 }
 
 //__________________________________________________________________________________________________
