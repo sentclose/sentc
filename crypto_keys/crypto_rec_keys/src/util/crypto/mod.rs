@@ -44,6 +44,19 @@ impl From<SortableKey> for SortableFormatExport
 	}
 }
 
+impl<'a> From<&'a SortableKey> for SortableFormatExport
+{
+	fn from(value: &'a SortableKey) -> Self
+	{
+		let key = encode_block(value.key.as_ref());
+
+		Self::Ope16 {
+			key,
+			key_id: value.key_id.clone(),
+		}
+	}
+}
+
 impl TryInto<SortableKey> for SortableFormatExport
 {
 	type Error = SdkUtilError;

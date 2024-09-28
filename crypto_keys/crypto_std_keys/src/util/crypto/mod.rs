@@ -53,6 +53,23 @@ impl From<HmacKey> for HmacFormatExport
 	}
 }
 
+impl<'a> From<&'a HmacKey> for HmacFormatExport
+{
+	fn from(value: &'a HmacKey) -> Self
+	{
+		let key = Base64::encode_string(value.key.as_ref());
+
+		match value.key {
+			CoreHmacKey::HmacSha256(_) => {
+				Self::HmacSha256 {
+					key,
+					key_id: value.key_id.clone(),
+				}
+			},
+		}
+	}
+}
+
 impl TryInto<HmacKey> for HmacFormatExport
 {
 	type Error = SdkUtilError;
@@ -106,6 +123,23 @@ impl From<SortableKey> for SortableFormatExport
 				Self::Ope16 {
 					key,
 					key_id: value.key_id,
+				}
+			},
+		}
+	}
+}
+
+impl<'a> From<&'a SortableKey> for SortableFormatExport
+{
+	fn from(value: &'a SortableKey) -> Self
+	{
+		let key = Base64::encode_string(value.key.as_ref());
+
+		match value.key {
+			CoreSortableKey::Ope(_) => {
+				Self::Ope16 {
+					key,
+					key_id: value.key_id.clone(),
 				}
 			},
 		}

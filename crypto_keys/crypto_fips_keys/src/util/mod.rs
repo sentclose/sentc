@@ -71,6 +71,19 @@ impl From<SymmetricKey> for SymKeyFormatExport
 	}
 }
 
+impl<'a> From<&'a SymmetricKey> for SymKeyFormatExport
+{
+	fn from(value: &'a SymmetricKey) -> Self
+	{
+		let key = encode_block(value.key.as_ref());
+
+		Self {
+			key,
+			key_id: value.key_id.clone(),
+		}
+	}
+}
+
 impl TryInto<SymmetricKey> for SymKeyFormatExport
 {
 	type Error = SdkUtilError;
@@ -139,6 +152,21 @@ impl TryFrom<SecretKey> for SecretKeyFormatExport
 		Ok(Self {
 			key,
 			key_id: value.key_id,
+		})
+	}
+}
+
+impl<'a> TryFrom<&'a SecretKey> for SecretKeyFormatExport
+{
+	type Error = SdkUtilError;
+
+	fn try_from(value: &'a SecretKey) -> Result<Self, Self::Error>
+	{
+		let key = encode_block(&value.key.export()?);
+
+		Ok(Self {
+			key,
+			key_id: value.key_id.clone(),
 		})
 	}
 }
@@ -275,6 +303,21 @@ impl TryFrom<SignKey> for SignKeyFormatExport
 	}
 }
 
+impl<'a> TryFrom<&'a SignKey> for SignKeyFormatExport
+{
+	type Error = SdkUtilError;
+
+	fn try_from(value: &'a SignKey) -> Result<Self, Self::Error>
+	{
+		let key = encode_block(&value.key.export()?);
+
+		Ok(Self {
+			key,
+			key_id: value.key_id.clone(),
+		})
+	}
+}
+
 impl TryInto<SignKey> for SignKeyFormatExport
 {
 	type Error = SdkUtilError;
@@ -321,6 +364,21 @@ impl TryFrom<VerifyKey> for VerifyKeyFormatExport
 		Ok(Self {
 			key,
 			key_id: value.key_id,
+		})
+	}
+}
+
+impl<'a> TryFrom<&'a VerifyKey> for VerifyKeyFormatExport
+{
+	type Error = SdkUtilError;
+
+	fn try_from(value: &'a VerifyKey) -> Result<Self, Self::Error>
+	{
+		let key = encode_block(&value.key.export()?);
+
+		Ok(Self {
+			key,
+			key_id: value.key_id.clone(),
 		})
 	}
 }
