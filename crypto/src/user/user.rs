@@ -130,6 +130,8 @@ where
 			Group::<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC>::prepare_create_private_internally(
 				&group_public_key,
 				true,
+				None,
+				Default::default(),
 			)?;
 
 		Ok(RegisterData {
@@ -377,6 +379,7 @@ where
 				let keys = Group::<SGen, StGen, SignGen, SearchGen, SortGen, SC, StC, SignC, SearchC, SortC, PC, VC>::decrypt_group_keys(
 					private_key,
 					user_group_key,
+					None,
 				)?;
 
 				let sign_key = SignC::Composer::decrypt_by_master_key(keys.group_key.get_key(), &encrypted_sign_key, &keypair_sign_alg)?;
@@ -792,6 +795,9 @@ mod test
 				encrypted_hmac_alg: out_new_device.group.encrypted_hmac_alg,
 				encrypted_sortable_key: out_new_device.group.encrypted_sortable_key,
 				encrypted_sortable_alg: out_new_device.group.encrypted_sortable_alg,
+				signed_by_user_id: None,
+				signed_by_user_sign_key_id: None,
+				group_key_sig: None,
 				encrypted_sign_key: out_new_device.group.encrypted_sign_key,
 				verify_key: out_new_device.group.verify_key,
 				keypair_sign_alg: out_new_device.group.keypair_sign_alg,
