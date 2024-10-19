@@ -266,7 +266,6 @@ pub async fn done_key_rotation(
 		device_public_key,
 		device_private_key,
 		true,
-		Default::default(),
 		None,
 	)
 	.await
