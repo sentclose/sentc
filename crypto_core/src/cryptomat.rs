@@ -14,9 +14,25 @@ pub trait CryptoAlg
 
 pub trait SymKey: CryptoAlg + AsRef<[u8]>
 {
-	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>;
+	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(self.as_ref())
+	}
 
-	fn encrypt_with_sym_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>;
+	fn encrypt_with_sym_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
+	{
+		master_key.encrypt(self.as_ref())
+	}
+
+	fn sign_key<S: SignK>(&self, sign_key: &S) -> Result<S::Signature, Error>
+	{
+		sign_key.sign_only(self.as_ref())
+	}
+
+	fn verify_key<V: VerifyK>(&self, verify_key: &V, sig: &V::Signature) -> Result<bool, Error>
+	{
+		verify_key.verify_only(sig, self.as_ref())
+	}
 
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
 
