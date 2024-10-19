@@ -1,6 +1,6 @@
 use openssl::rand::rand_bytes;
 use openssl::symm::{decrypt_aead, encrypt_aead, Cipher};
-use sentc_crypto_core::cryptomat::{Pk, SymKey, SymKeyComposer, SymKeyGen};
+use sentc_crypto_core::cryptomat::{SymKey, SymKeyComposer, SymKeyGen};
 use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, try_from_bytes_single_value, Error};
 
 pub const FIPS_OPENSSL_AES_GCM: &str = "FIPS_OPENSSL_AES_GCM-256";
@@ -27,16 +27,6 @@ crypto_alg_str_impl!(Aes256GcmKey, FIPS_OPENSSL_AES_GCM);
 
 impl SymKey for Aes256GcmKey
 {
-	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>
-	{
-		master_key.encrypt(&self.0)
-	}
-
-	fn encrypt_with_sym_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
-	{
-		master_key.encrypt(&self.0)
-	}
-
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
 	{
 		encrypt_internally(&self.0, data, None)
