@@ -494,7 +494,8 @@ sign_key_composer_self!(
 	VerifyKey,
 	CoreVerifyKey,
 	import_verify_key_from_pem_with_alg,
-	import_sig_from_string
+	import_sig_from_string,
+	sig_to_string
 );
 
 #[derive(Serialize, Deserialize)]
