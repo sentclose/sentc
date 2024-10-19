@@ -81,7 +81,7 @@ pub(crate) mod test_fn
 		Vec<TestSortableKey>,
 	)
 	{
-		let group = TestGroup::prepare_create(&user.public_key).unwrap();
+		let group = TestGroup::prepare_create(&user.public_key, Some(&user.sign_key), "".to_string()).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
@@ -94,6 +94,9 @@ pub(crate) mod test_fn
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			signed_by_user_id: group.signed_by_user_id,
+			signed_by_user_sign_key_id: group.signed_by_user_sign_key_id,
+			group_key_sig: group.group_key_sig,
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -143,7 +146,7 @@ pub(crate) mod test_fn
 		let group_keys: Vec<_> = out
 			.keys
 			.into_iter()
-			.map(|k| TestGroup::decrypt_group_keys(&user.private_key, k).unwrap())
+			.map(|k| TestGroup::decrypt_group_keys(&user.private_key, k, Some(&user.exported_verify_key)).unwrap())
 			.collect();
 
 		let hmac_keys = out
@@ -191,7 +194,7 @@ pub(crate) mod test_fn
 		Vec<String>,
 	)
 	{
-		let group = group_export::prepare_create(user.public_key.as_str()).unwrap();
+		let group = group_export::prepare_create(user.public_key.as_str(), Some(&user.sign_key), "".to_string()).unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let group_server_output = GroupKeyServerOutput {
@@ -204,6 +207,9 @@ pub(crate) mod test_fn
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			signed_by_user_id: group.signed_by_user_id,
+			signed_by_user_sign_key_id: group.signed_by_user_sign_key_id,
+			group_key_sig: group.group_key_sig,
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -253,7 +259,14 @@ pub(crate) mod test_fn
 		let group_keys: Vec<_> = group_data
 			.keys
 			.iter()
-			.map(|k| group_export::decrypt_group_keys(user.private_key.as_str(), &k.key_data).unwrap())
+			.map(|k| {
+				group_export::decrypt_group_keys(
+					user.private_key.as_str(),
+					&k.key_data,
+					Some(&user.exported_verify_key),
+				)
+				.unwrap()
+			})
 			.collect();
 
 		let hmac_keys = group_data
