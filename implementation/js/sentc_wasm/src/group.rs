@@ -284,9 +284,9 @@ Create input for the server api.
 Use this for group and child group. For child group use the public key of the parent group!
 */
 #[wasm_bindgen]
-pub fn group_prepare_create_group(creators_public_key: &str) -> Result<String, String>
+pub fn group_prepare_create_group(creators_public_key: &str, sign_key: Option<String>, starter: String) -> Result<String, String>
 {
-	group::prepare_create(creators_public_key)
+	group::prepare_create(creators_public_key, sign_key.as_deref(), starter)
 }
 
 /**
@@ -301,6 +301,8 @@ pub async fn group_create_group(
 	jwt: String,
 	creators_public_key: String,
 	group_as_member: Option<String>,
+	sign_key: Option<String>,
+	starter: String,
 ) -> Result<String, JsValue>
 {
 	Ok(util_req_full::group::create(
@@ -309,6 +311,8 @@ pub async fn group_create_group(
 		jwt.as_str(),
 		creators_public_key.as_str(),
 		group_as_member.as_deref(),
+		sign_key.as_deref(),
+		starter,
 	)
 	.await?)
 }
@@ -322,6 +326,8 @@ pub async fn group_create_child_group(
 	parent_id: String,
 	admin_rank: i32,
 	group_as_member: Option<String>,
+	sign_key: Option<String>,
+	starter: String,
 ) -> Result<String, JsValue>
 {
 	Ok(util_req_full::group::create_child_group(
@@ -332,6 +338,8 @@ pub async fn group_create_child_group(
 		admin_rank,
 		parent_public_key.as_str(),
 		group_as_member.as_deref(),
+		sign_key.as_deref(),
+		starter,
 	)
 	.await?)
 }
@@ -345,6 +353,8 @@ pub async fn group_create_connected_group(
 	admin_rank: i32,
 	parent_public_key: String,
 	group_as_member: Option<String>,
+	sign_key: Option<String>,
+	starter: String,
 ) -> Result<String, JsValue>
 {
 	Ok(util_req_full::group::create_connected_group(
@@ -355,6 +365,8 @@ pub async fn group_create_connected_group(
 		admin_rank,
 		&parent_public_key,
 		group_as_member.as_deref(),
+		sign_key.as_deref(),
+		starter,
 	)
 	.await?)
 }
@@ -396,9 +408,9 @@ pub fn group_extract_group_key(server_output: &str) -> Result<GroupOutDataKeys, 
 }
 
 #[wasm_bindgen]
-pub fn group_decrypt_key(private_key: &str, server_key_data: &str) -> Result<GroupKeyData, JsValue>
+pub fn group_decrypt_key(private_key: &str, server_key_data: &str, verify_key: Option<String>) -> Result<GroupKeyData, JsValue>
 {
-	let out = group::decrypt_group_keys(private_key, server_key_data)?;
+	let out = group::decrypt_group_keys(private_key, server_key_data, verify_key.as_deref())?;
 
 	Ok(out.into())
 }
@@ -631,7 +643,6 @@ pub async fn group_finish_key_rotation(
 	pre_group_key: String,
 	public_key: String,
 	private_key: String,
-	verify_key: Option<String>,
 	group_as_member: Option<String>,
 ) -> Result<(), JsValue>
 {
@@ -645,7 +656,6 @@ pub async fn group_finish_key_rotation(
 		public_key.as_str(),
 		private_key.as_str(),
 		false,
-		verify_key.as_deref(),
 		group_as_member.as_deref(),
 	)
 	.await?)
