@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 
 use sentc_crypto_common::group::{GroupHmacData, GroupKeyServerOutput, GroupSortableData};
 use sentc_crypto_common::user::UserPublicKeyData;
-use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SymKeyId};
+use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 use sentc_crypto_utils::cryptomat::{PkWrapper, SkWrapper, SymKeyWrapper};
 pub use sentc_crypto_utils::group::*;
 use serde::{Deserialize, Serialize};
@@ -43,6 +43,11 @@ pub struct GroupOutDataKeyExport
 {
 	pub private_key_id: EncryptionKeyPairId,
 	pub key_data: String, //serde string
+
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub signed_by_user_id: Option<UserId>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub signed_by_user_sign_key_id: Option<SignKeyPairId>,
 }
 
 impl TryFrom<GroupKeyServerOutput> for GroupOutDataKeyExport
@@ -53,6 +58,8 @@ impl TryFrom<GroupKeyServerOutput> for GroupOutDataKeyExport
 	{
 		Ok(Self {
 			key_data: serde_json::to_string(&value)?,
+			signed_by_user_id: value.signed_by_user_id,
+			signed_by_user_sign_key_id: value.signed_by_user_sign_key_id,
 			private_key_id: value.user_public_key_id,
 		})
 	}
