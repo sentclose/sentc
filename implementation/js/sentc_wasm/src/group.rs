@@ -111,6 +111,8 @@ pub struct GroupOutDataKeys
 {
 	private_key_id: String,
 	key_data: String, //serde string
+	signed_by_user_id: Option<String>,
+	signed_by_user_sign_key_id: Option<String>,
 }
 
 impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutDataKeys
@@ -120,6 +122,8 @@ impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutData
 		Self {
 			private_key_id: key.private_key_id,
 			key_data: key.key_data,
+			signed_by_user_sign_key_id: key.signed_by_user_sign_key_id,
+			signed_by_user_id: key.signed_by_user_id,
 		}
 	}
 }
@@ -135,6 +139,16 @@ impl GroupOutDataKeys
 	pub fn get_key_data(&self) -> String
 	{
 		self.key_data.clone()
+	}
+
+	pub fn get_signed_by_user_id(&self) -> Option<String>
+	{
+		self.signed_by_user_id.clone()
+	}
+
+	pub fn get_signed_by_user_sign_key_id(&self) -> Option<String>
+	{
+		self.signed_by_user_sign_key_id.clone()
 	}
 }
 

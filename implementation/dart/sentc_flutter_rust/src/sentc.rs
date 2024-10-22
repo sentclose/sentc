@@ -890,6 +890,8 @@ pub struct GroupOutDataKeys
 {
 	pub private_key_id: String,
 	pub key_data: String, //serde string
+	pub signed_by_user_id: Option<String>,
+	pub signed_by_user_sign_key_id: Option<String>,
 }
 
 impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutDataKeys
@@ -899,6 +901,8 @@ impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutData
 		Self {
 			private_key_id: key.private_key_id,
 			key_data: key.key_data,
+			signed_by_user_sign_key_id: key.signed_by_user_sign_key_id,
+			signed_by_user_id: key.signed_by_user_id,
 		}
 	}
 }

@@ -3629,6 +3629,8 @@ impl support::IntoDart for GroupOutDataKeys {
 		vec![
 			self.private_key_id.into_into_dart().into_dart(),
 			self.key_data.into_into_dart().into_dart(),
+			self.signed_by_user_id.into_dart(),
+			self.signed_by_user_sign_key_id.into_dart(),
 		]
 		.into_dart()
 	}
