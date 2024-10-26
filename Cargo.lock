@@ -1542,7 +1542,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.10.0"
+version = "0.11.0"
+source = "git+https://github.com/sentclose/sentc-common.git?rev=06cd7002a19d406807f9443ddfcd993bf9a46651#06cd7002a19d406807f9443ddfcd993bf9a46651"
 dependencies = [
  "serde",
  "serde_json",
