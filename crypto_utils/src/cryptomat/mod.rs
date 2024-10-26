@@ -149,5 +149,7 @@ pub trait SignComposerWrapper
 
 	fn vk_inner_from_pem(public_key: &str, alg: &str) -> Result<Self::InnerVk, SdkUtilError>;
 
+	fn sig_to_string(sig: <<<Self as SignComposerWrapper>::SignKWrapper as SignKWrapper>::Inner as SignK>::Signature) -> String;
+
 	fn sig_from_string(sig: &str, alg: &str) -> Result<<<Self as SignComposerWrapper>::InnerVk as VerifyK>::Signature, SdkUtilError>;
 }

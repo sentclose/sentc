@@ -1527,7 +1527,7 @@ checksum = "61697e0a1c7e512e84a621326239844a24d8207b4669b41bc18b32ea5cbf988b"
 
 [[package]]
 name = "sentc-crypto"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "base64ct",
  "sentc-crypto-common",
@@ -1542,8 +1542,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.10.0"
-source = "git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354#de513a82b0200b476d9592ba1de38c73c6a32354"
+version = "0.11.0"
+source = "git+https://github.com/sentclose/sentc-common.git?rev=06cd7002a19d406807f9443ddfcd993bf9a46651#06cd7002a19d406807f9443ddfcd993bf9a46651"
 dependencies = [
  "serde",
  "serde_json",
@@ -1551,7 +1551,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "rand_core",
  "sha2",
@@ -1559,7 +1559,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-fips-keys"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "base64ct",
  "digest",
@@ -1573,7 +1573,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "base64ct",
  "sentc-crypto-common",
@@ -1586,7 +1586,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-rec-keys"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "argon2",
  "digest",
@@ -1603,7 +1603,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-std-keys"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1626,7 +1626,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "base64ct",
  "js-sys",
@@ -1643,7 +1643,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "flutter_rust_bridge",
  "once_cell",
@@ -1654,7 +1654,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter_rust_light"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "flutter_rust_bridge",
  "once_cell",
@@ -1665,7 +1665,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_wasm"
-version = "0.13.0"
+version = "0.15.0"
 dependencies = [
  "getrandom",
  "js-sys",

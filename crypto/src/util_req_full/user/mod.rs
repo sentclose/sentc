@@ -368,7 +368,6 @@ where
 			device_public_key,
 			device_private_key,
 			true,
-			Default::default(),
 			None,
 		)
 		.await

@@ -8,12 +8,29 @@ use sentc_crypto_std_keys::util::{PublicKey, SignKey, SymmetricKey};
 use crate::group::{get_done_key_rotation_server_input, prepare_prepare_group_keys_for_new_member};
 use crate::keys::std::StdGroup;
 
-pub async fn create(base_url: String, auth_token: &str, jwt: &str, creators_public_key: &str, group_as_member: Option<&str>)
-	-> Result<String, String>
+pub async fn create(
+	base_url: String,
+	auth_token: &str,
+	jwt: &str,
+	creators_public_key: &str,
+	group_as_member: Option<&str>,
+	sign_key: Option<&str>,
+	starter: UserId,
+) -> Result<String, String>
 {
 	let key: PublicKey = creators_public_key.parse()?;
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
 
-	Ok(StdGroup::create(base_url, auth_token, jwt, &key, group_as_member).await?)
+	Ok(StdGroup::create(
+		base_url,
+		auth_token,
+		jwt,
+		&key,
+		group_as_member,
+		sign_key.as_ref(),
+		starter,
+	)
+	.await?)
 }
 
 pub async fn create_child_group(
@@ -24,9 +41,12 @@ pub async fn create_child_group(
 	admin_rank: i32,
 	parent_public_key: &str,
 	group_as_member: Option<&str>,
+	sign_key: Option<&str>,
+	starter: UserId,
 ) -> Result<String, String>
 {
 	let key: PublicKey = parent_public_key.parse()?;
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
 
 	Ok(StdGroup::create_child_group(
 		base_url,
@@ -36,6 +56,8 @@ pub async fn create_child_group(
 		admin_rank,
 		&key,
 		group_as_member,
+		sign_key.as_ref(),
+		starter,
 	)
 	.await?)
 }
@@ -48,9 +70,12 @@ pub async fn create_connected_group(
 	admin_rank: i32,
 	parent_public_key: &str,
 	group_as_member: Option<&str>,
+	sign_key: Option<&str>,
+	starter: UserId,
 ) -> Result<String, String>
 {
 	let key: PublicKey = parent_public_key.parse()?;
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
 
 	Ok(StdGroup::create_connected_group(
 		base_url,
@@ -60,6 +85,8 @@ pub async fn create_connected_group(
 		admin_rank,
 		&key,
 		group_as_member,
+		sign_key.as_ref(),
+		starter,
 	)
 	.await?)
 }
@@ -108,14 +135,12 @@ pub async fn done_key_rotation(
 	public_key: &str,
 	private_key: &str,
 	user_group: bool,
-	verify_key: Option<&str>,
 	group_as_member: Option<&str>,
 ) -> Result<(), String>
 {
 	let server_output = get_done_key_rotation_server_input(server_output)?;
 
-	let (verify_key, private_key, public_key, previous_group_key) =
-		crate::group::prepare_done_key_rotation(private_key, public_key, pre_group_key, verify_key)?;
+	let (private_key, public_key, previous_group_key) = crate::group::prepare_done_key_rotation(private_key, public_key, pre_group_key)?;
 
 	Ok(StdGroup::done_key_rotation_req(
 		base_url,
@@ -127,7 +152,6 @@ pub async fn done_key_rotation(
 		&public_key,
 		&private_key,
 		user_group,
-		verify_key.as_ref(),
 		group_as_member,
 	)
 	.await?)

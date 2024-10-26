@@ -40,23 +40,29 @@ macro_rules! prepare_prepare_group_keys_for_new_member {
 
 pub(crate) use prepare_prepare_group_keys_for_new_member;
 
-pub fn prepare_create_typed(creators_public_key: &str) -> Result<CreateData, String>
+pub fn prepare_create_typed(creators_public_key: &str, sign_key: Option<&str>, starter: UserId) -> Result<CreateData, String>
 {
 	let key: PublicKey = creators_public_key.parse()?;
-	Ok(StdGroup::prepare_create_typed(&key)?)
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
+
+	Ok(StdGroup::prepare_create_typed(&key, sign_key.as_ref(), starter)?)
 }
 
-pub fn prepare_create(creators_public_key: &str) -> Result<String, String>
+pub fn prepare_create(creators_public_key: &str, sign_key: Option<&str>, starter: UserId) -> Result<String, String>
 {
 	let key: PublicKey = creators_public_key.parse()?;
-	Ok(StdGroup::prepare_create(&key)?)
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
+
+	Ok(StdGroup::prepare_create(&key, sign_key.as_ref(), starter)?)
 }
 
-pub fn prepare_create_batch_typed(creators_public_key: &str) -> Result<(CreateData, String, String), String>
+pub fn prepare_create_batch_typed(creators_public_key: &str, sign_key: Option<&str>, starter: UserId)
+	-> Result<(CreateData, String, String), String>
 {
 	let key: PublicKey = creators_public_key.parse()?;
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
 
-	let out = StdGroup::prepare_create_batch_typed(&key)?;
+	let out = StdGroup::prepare_create_batch_typed(&key, sign_key.as_ref(), starter)?;
 
 	let public_key = out.1.to_string()?;
 	let group_key = out.2.to_string()?;
@@ -64,11 +70,12 @@ pub fn prepare_create_batch_typed(creators_public_key: &str) -> Result<(CreateDa
 	Ok((out.0, public_key, group_key))
 }
 
-pub fn prepare_create_batch(creators_public_key: &str) -> Result<(String, String, String), String>
+pub fn prepare_create_batch(creators_public_key: &str, sign_key: Option<&str>, starter: UserId) -> Result<(String, String, String), String>
 {
 	let key: PublicKey = creators_public_key.parse()?;
+	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
 
-	let out = StdGroup::prepare_create_batch(&key)?;
+	let out = StdGroup::prepare_create_batch(&key, sign_key.as_ref(), starter)?;
 
 	let public_key = out.1.to_string()?;
 	let group_key = out.2.to_string()?;
@@ -109,41 +116,26 @@ pub(crate) fn prepare_done_key_rotation(
 	private_key: &str,
 	public_key: &str,
 	previous_group_key: &str,
-	verify_key: Option<&str>,
-) -> Result<(Option<UserVerifyKeyData>, SecretKey, PublicKey, SymmetricKey), String>
+) -> Result<(SecretKey, PublicKey, SymmetricKey), String>
 {
-	let verify_key = if let Some(k) = verify_key {
-		Some(UserVerifyKeyData::from_string(k).map_err(SdkError::JsonParseFailed)?)
-	} else {
-		None
-	};
-
 	let private_key: SecretKey = private_key.parse()?;
 	let public_key: PublicKey = public_key.parse()?;
 	let previous_group_key: SymmetricKey = previous_group_key.parse()?;
 
-	Ok((verify_key, private_key, public_key, previous_group_key))
+	Ok((private_key, public_key, previous_group_key))
 }
 
-pub fn done_key_rotation(
-	private_key: &str,
-	public_key: &str,
-	previous_group_key: &str,
-	server_output: &str,
-	verify_key: Option<&str>,
-) -> Result<String, String>
+pub fn done_key_rotation(private_key: &str, public_key: &str, previous_group_key: &str, server_output: &str) -> Result<String, String>
 {
 	let server_output = get_done_key_rotation_server_input(server_output)?;
 
-	let (verify_key, private_key, public_key, previous_group_key) =
-		prepare_done_key_rotation(private_key, public_key, previous_group_key, verify_key)?;
+	let (private_key, public_key, previous_group_key) = prepare_done_key_rotation(private_key, public_key, previous_group_key)?;
 
 	Ok(StdGroup::done_key_rotation(
 		&private_key,
 		&public_key,
 		&previous_group_key,
 		server_output,
-		verify_key.as_ref(),
 	)?)
 }
 
@@ -169,13 +161,19 @@ pub fn decrypt_group_sortable_key(group_key: &str, server_key_output: &str) -> R
 	Ok(key.to_string()?)
 }
 
-pub fn decrypt_group_keys(private_key: &str, server_key_output: &str) -> Result<GroupKeyDataExport, String>
+pub fn decrypt_group_keys(private_key: &str, server_key_output: &str, verify_key: Option<&str>) -> Result<GroupKeyDataExport, String>
 {
+	let verify_key = if let Some(k) = verify_key {
+		Some(UserVerifyKeyData::from_string(k).map_err(SdkError::JsonParseFailed)?)
+	} else {
+		None
+	};
+
 	let server_key_output = GroupKeyServerOutput::from_string(server_key_output).map_err(SdkError::JsonParseFailed)?;
 
 	let private_key: SecretKey = private_key.parse()?;
 
-	let result = StdGroup::decrypt_group_keys(&private_key, server_key_output)?;
+	let result = StdGroup::decrypt_group_keys(&private_key, server_key_output, verify_key.as_ref())?;
 
 	Ok(result.try_into()?)
 }
@@ -356,7 +354,12 @@ mod test
 		//create a rust dummy user
 		let user = create_user_export();
 
-		let group = prepare_create(&user.user_keys[0].public_key).unwrap();
+		let group = prepare_create(
+			&user.user_keys[0].public_key,
+			Some(&user.user_keys.first().unwrap().sign_key),
+			user.user_id,
+		)
+		.unwrap();
 		let group = CreateData::from_string(group.as_str()).unwrap();
 
 		let pk = PublicKey::from_str(&user.user_keys[0].public_key).unwrap();
@@ -408,6 +411,7 @@ mod test
 		let group_keys_from_server_out = decrypt_group_keys(
 			user.user_keys[0].private_key.as_str(),
 			&group_keys_from_server_out[0].key_data,
+			None,
 		)
 		.unwrap();
 
@@ -420,7 +424,7 @@ mod test
 		//fetch the key single
 		let key = get_group_key_from_server_output(single_fetch.as_str()).unwrap();
 
-		let group_keys_from_single_server_out = decrypt_group_keys(user.user_keys[0].private_key.as_str(), &key.key_data).unwrap();
+		let group_keys_from_single_server_out = decrypt_group_keys(user.user_keys[0].private_key.as_str(), &key.key_data, None).unwrap();
 
 		assert_eq!(
 			key_data[0].group_key.to_string(),
@@ -435,7 +439,12 @@ mod test
 
 		let user1 = create_user_export();
 
-		let group_create = prepare_create(user.user_keys[0].public_key.as_str()).unwrap();
+		let group_create = prepare_create(
+			user.user_keys[0].public_key.as_str(),
+			Some(&user.user_keys[0].sign_key),
+			"".to_string(),
+		)
+		.unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -448,6 +457,9 @@ mod test
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			signed_by_user_id: group_create.signed_by_user_id.clone(),
+			signed_by_user_sign_key_id: group_create.signed_by_user_sign_key_id.clone(),
+			group_key_sig: group_create.group_key_sig.clone(),
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -494,6 +506,7 @@ mod test
 		let group_key_user_0 = decrypt_group_keys(
 			user.user_keys[0].private_key.as_str(),
 			group_data_user_0.keys[0].key_data.as_str(),
+			None,
 		)
 		.unwrap();
 
@@ -521,6 +534,9 @@ mod test
 			keypair_encrypt_alg: group_create.keypair_encrypt_alg,
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
+			signed_by_user_id: group_create.signed_by_user_id.clone(),
+			signed_by_user_sign_key_id: group_create.signed_by_user_sign_key_id.clone(),
+			group_key_sig: group_create.group_key_sig.clone(),
 			time: 0,
 			encrypted_sign_key: None,
 			verify_key: None,
@@ -567,6 +583,7 @@ mod test
 		let group_key_user_1 = decrypt_group_keys(
 			user1.user_keys[0].private_key.as_str(),
 			group_data_user_1.keys[0].key_data.as_str(),
+			Some(&user.user_keys[0].exported_verify_key),
 		)
 		.unwrap();
 
@@ -587,7 +604,7 @@ mod test
 		let user1 = create_user_export();
 		let user_keys1 = &user1.user_keys[0];
 
-		let group_create = prepare_create(user_keys.public_key.as_str()).unwrap();
+		let group_create = prepare_create(user_keys.public_key.as_str(), None, "".to_string()).unwrap();
 		let group_create = CreateData::from_string(group_create.as_str()).unwrap();
 
 		let group_server_output_user_0 = GroupKeyServerOutput {
@@ -600,6 +617,9 @@ mod test
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			signed_by_user_id: None,
+			signed_by_user_sign_key_id: None,
+			group_key_sig: None,
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -646,6 +666,7 @@ mod test
 		let group_key_user_0 = decrypt_group_keys(
 			user.user_keys[0].private_key.as_str(),
 			group_data_user_0.keys[0].key_data.as_str(),
+			None,
 		)
 		.unwrap();
 
@@ -668,6 +689,9 @@ mod test
 			key_pair_id: "123".to_string(),
 			user_public_key_id: "123".to_string(),
 			time: 0,
+			signed_by_user_id: None,
+			signed_by_user_sign_key_id: None,
+			group_key_sig: None,
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -713,6 +737,7 @@ mod test
 		let group_key_user_1 = decrypt_group_keys(
 			user_keys1.private_key.as_str(),
 			group_data_user_1.keys[0].key_data.as_str(),
+			None,
 		)
 		.unwrap();
 
@@ -753,6 +778,9 @@ mod test
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: "abc".to_string(),
 			time: 0,
+			signed_by_user_id: None,
+			signed_by_user_sign_key_id: None,
+			group_key_sig: None,
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -764,6 +792,7 @@ mod test
 		let new_group_key_direct = decrypt_group_keys(
 			user_keys.private_key.as_str(),
 			&server_key_output_direct.to_string().unwrap(),
+			None,
 		)
 		.unwrap();
 
@@ -782,10 +811,6 @@ mod test
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 			time: 0,
 			new_group_key_id: "abc".to_string(),
-
-			signed_by_user_id: None,
-			signed_by_user_sign_key_id: None,
-			signed_by_user_sign_key_alg: None,
 		};
 
 		let done_key_rotation = done_key_rotation(
@@ -793,7 +818,6 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			None,
 		)
 		.unwrap();
 		let done_key_rotation = DoneKeyRotationData::from_string(done_key_rotation.as_str()).unwrap();
@@ -809,6 +833,9 @@ mod test
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: done_key_rotation.public_key_id,
 			time: 0,
+			signed_by_user_id: None,
+			signed_by_user_sign_key_id: None,
+			group_key_sig: None,
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -820,6 +847,7 @@ mod test
 		let out = decrypt_group_keys(
 			user_keys.private_key.as_str(),
 			&server_key_output.to_string().unwrap(),
+			None,
 		)
 		.unwrap();
 
@@ -870,6 +898,9 @@ mod test
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg.to_string(),
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: "abc".to_string(),
+			signed_by_user_id: rotation_out.signed_by_user_id.clone(),
+			signed_by_user_sign_key_id: rotation_out.signed_by_user_sign_key_id.clone(),
+			group_key_sig: rotation_out.group_key_sig.clone(),
 			time: 0,
 			encrypted_sign_key: None,
 			verify_key: None,
@@ -882,6 +913,7 @@ mod test
 		let new_group_key_direct = decrypt_group_keys(
 			user_keys.private_key.as_str(),
 			&server_key_output_direct.to_string().unwrap(),
+			Some(&user.user_keys[0].exported_verify_key),
 		)
 		.unwrap();
 
@@ -901,10 +933,6 @@ mod test
 			previous_group_key_id: rotation_out.previous_group_key_id.to_string(),
 			time: 0,
 			new_group_key_id: "abc".to_string(),
-
-			signed_by_user_id: rotation_out.signed_by_user_id,
-			signed_by_user_sign_key_id: rotation_out.signed_by_user_sign_key_id,
-			signed_by_user_sign_key_alg: rotation_out.signed_by_user_sign_key_alg,
 		};
 
 		//__________________________________________________________________________________________
@@ -915,7 +943,6 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			None,
 		)
 		.unwrap();
 		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
@@ -931,6 +958,9 @@ mod test
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: done_key_rotation_out.public_key_id,
 			time: 0,
+			signed_by_user_id: None,
+			signed_by_user_sign_key_id: None,
+			group_key_sig: None,
 			encrypted_sign_key: None,
 			verify_key: None,
 			keypair_sign_alg: None,
@@ -942,6 +972,7 @@ mod test
 		let out = decrypt_group_keys(
 			user_keys.private_key.as_str(),
 			&server_key_output.to_string().unwrap(),
+			None,
 		)
 		.unwrap();
 
@@ -964,7 +995,6 @@ mod test
 			user.user_keys[0].public_key.as_str(),
 			key_data[0].group_key.as_str(),
 			server_output.to_string().unwrap().as_str(),
-			Some(&user_keys.exported_verify_key),
 		)
 		.unwrap();
 		let done_key_rotation_out = DoneKeyRotationData::from_string(done_key_rotation_out.as_str()).unwrap();
@@ -979,6 +1009,9 @@ mod test
 			keypair_encrypt_alg: rotation_out.keypair_encrypt_alg,
 			key_pair_id: "new_key_id_from_server".to_string(),
 			user_public_key_id: done_key_rotation_out.public_key_id,
+			signed_by_user_id: rotation_out.signed_by_user_id.clone(),
+			signed_by_user_sign_key_id: rotation_out.signed_by_user_sign_key_id.clone(),
+			group_key_sig: rotation_out.group_key_sig.clone(),
 			time: 0,
 			encrypted_sign_key: None,
 			verify_key: None,
@@ -991,6 +1024,7 @@ mod test
 		let out = decrypt_group_keys(
 			user_keys.private_key.as_str(),
 			&server_key_output.to_string().unwrap(),
+			Some(&user_keys.exported_verify_key),
 		)
 		.unwrap();
 

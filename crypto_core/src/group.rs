@@ -20,7 +20,7 @@ use crate::cryptomat::{
 };
 use crate::Error;
 
-pub struct CreateGroupOutput<P: Pk, V: VerifyK, S: Sig>
+pub struct CreateGroupOutput<P: Pk, V: VerifyK, S: Sig, GS: Sig>
 {
 	pub encrypted_group_key: Vec<u8>,          //encrypted by creators public key
 	pub group_key_alg: &'static str,           //info about the raw master key (not the encrypted by the pk!)
@@ -32,6 +32,7 @@ pub struct CreateGroupOutput<P: Pk, V: VerifyK, S: Sig>
 	pub encrypted_hmac_alg: &'static str,
 	pub encrypted_sortable_key: Vec<u8>,
 	pub encrypted_sortable_key_alg: &'static str,
+	pub group_key_sig: Option<GS>,
 
 	//for user group
 	pub verify_key: Option<V>,
@@ -40,7 +41,7 @@ pub struct CreateGroupOutput<P: Pk, V: VerifyK, S: Sig>
 	pub public_key_sig: Option<S>,
 }
 
-pub struct KeyRotationOutput<P: Pk, V: VerifyK, S: Sig>
+pub struct KeyRotationOutput<P: Pk, V: VerifyK, S: Sig, GS: Sig>
 {
 	pub encrypted_group_key_by_user: Vec<u8>, //encrypted by invoker public key
 	pub group_key_alg: &'static str,
@@ -51,6 +52,7 @@ pub struct KeyRotationOutput<P: Pk, V: VerifyK, S: Sig>
 	pub encrypted_group_key_by_ephemeral: Vec<u8>,
 	pub ephemeral_alg: &'static str,
 	pub encrypted_ephemeral_key: Vec<u8>, //encrypted by the previous_group_key group key. encrypt this key with every other member public key on the server
+	pub group_key_sig: Option<GS>,
 
 	//for user group
 	pub verify_key: Option<V>,
@@ -67,12 +69,13 @@ pub struct PrepareGroupKeysForNewMemberOutput
 }
 
 #[allow(clippy::type_complexity)]
-fn prepare_keys<Sign: SignKeyPair>(
+fn prepare_keys<Sign: SignKeyPair, GSign: SignK>(
 	creators_public_key: &impl Pk,
 	user_group: bool,
 	group_key: &impl SymKey,
 	group_sk: &impl Sk,
 	group_pk: &impl Pk,
+	sign_key: Option<&GSign>,
 ) -> Result<
 	(
 		Vec<u8>,
@@ -82,6 +85,7 @@ fn prepare_keys<Sign: SignKeyPair>(
 		Option<Vec<u8>>,
 		Option<<<Sign>::SignKey as SignK>::Signature>,
 		Option<&'static str>,
+		Option<GSign::Signature>,
 	),
 	Error,
 >
@@ -89,6 +93,8 @@ fn prepare_keys<Sign: SignKeyPair>(
 	let encrypted_private_group_key = group_sk.encrypt_by_master_key(group_key)?;
 
 	let encrypted_group_key = group_key.encrypt_key_with_master_key(creators_public_key)?;
+
+	let group_key_sig = if let Some(s) = sign_key { Some(group_key.sign_key(s)?) } else { None };
 
 	let (verify_key, encrypted_sign_key, public_key_sig, keypair_sign_alg) = if !user_group {
 		(None, None, None, None)
@@ -115,16 +121,18 @@ fn prepare_keys<Sign: SignKeyPair>(
 		encrypted_sign_key,
 		public_key_sig,
 		keypair_sign_alg,
+		group_key_sig,
 	))
 }
 
 #[allow(clippy::type_complexity)]
-pub fn prepare_create<S, St, Sign, Search, Sort>(
+pub fn prepare_create<S, St, Sign, Search, Sort, GSign: SignK>(
 	creators_public_key: &impl Pk,
 	user_group: bool,
+	sign_key: Option<&GSign>,
 ) -> Result<
 	(
-		CreateGroupOutput<St::PublicKey, Sign::VerifyKey, <<Sign>::SignKey as SignK>::Signature>,
+		CreateGroupOutput<St::PublicKey, Sign::VerifyKey, <<Sign>::SignKey as SignK>::Signature, GSign::Signature>,
 		S::SymmetricKey,
 	),
 	Error,
@@ -144,8 +152,23 @@ where
 
 	let (sk, public_group_key) = St::generate_static_keypair()?;
 
-	let (encrypted_private_group_key, encrypted_group_key, encrypted_group_key_alg, verify_key, encrypted_sign_key, public_key_sig, keypair_sign_alg) =
-		prepare_keys::<Sign>(creators_public_key, user_group, &group_key, &sk, &public_group_key)?;
+	let (
+		encrypted_private_group_key,
+		encrypted_group_key,
+		encrypted_group_key_alg,
+		verify_key,
+		encrypted_sign_key,
+		public_key_sig,
+		keypair_sign_alg,
+		group_key_sig,
+	) = prepare_keys::<Sign, GSign>(
+		creators_public_key,
+		user_group,
+		&group_key,
+		&sk,
+		&public_group_key,
+		sign_key,
+	)?;
 
 	/*
 	create the searchable encryption hmac key and encrypt it with the group key
@@ -177,17 +200,19 @@ where
 			encrypted_sign_key,
 			keypair_sign_alg,
 			public_key_sig,
+			group_key_sig,
 		},
 		group_key, //return the group key extra because it is not encrypted and should not leave the device
 	))
 }
 
 #[allow(clippy::type_complexity)]
-pub fn key_rotation<S: SymKeyGen, St: StaticKeyPair, Sign: SignKeyPair>(
+pub fn key_rotation<S: SymKeyGen, St: StaticKeyPair, Sign: SignKeyPair, GSign: SignK>(
 	previous_group_key: &impl SymKey,
 	invoker_public_key: &impl Pk,
 	user_group: bool,
-) -> Result<KeyRotationOutput<St::PublicKey, Sign::VerifyKey, <<Sign as SignKeyPair>::SignKey as SignK>::Signature>, Error>
+	sign_key: Option<&GSign>,
+) -> Result<KeyRotationOutput<St::PublicKey, Sign::VerifyKey, <<Sign as SignKeyPair>::SignKey as SignK>::Signature, GSign::Signature>, Error>
 {
 	//1. create new group keys
 	let group_key = S::generate()?;
@@ -203,7 +228,15 @@ pub fn key_rotation<S: SymKeyGen, St: StaticKeyPair, Sign: SignKeyPair>(
 		encrypted_sign_key,
 		public_key_sig,
 		keypair_sign_alg,
-	) = prepare_keys::<Sign>(invoker_public_key, user_group, &group_key, &sk, &public_group_key)?;
+		group_key_sig,
+	) = prepare_keys::<Sign, GSign>(
+		invoker_public_key,
+		user_group,
+		&group_key,
+		&sk,
+		&public_group_key,
+		sign_key,
+	)?;
 
 	//3. create an ephemeral key to encrypt the new group key
 	let ephemeral_key = S::generate()?;
@@ -225,6 +258,7 @@ pub fn key_rotation<S: SymKeyGen, St: StaticKeyPair, Sign: SignKeyPair>(
 		encrypted_group_key_by_ephemeral,
 		public_group_key,
 		encrypted_ephemeral_key,
+		group_key_sig,
 		verify_key,
 		encrypted_sign_key,
 		keypair_sign_alg,
@@ -258,18 +292,26 @@ pub fn done_key_rotation<SymC: SymKeyComposer>(
 	Ok(encrypted_new_group_key)
 }
 
-pub fn get_group<SymC: SymKeyComposer, SkC: SkComposer>(
+pub fn get_group<SymC: SymKeyComposer, SkC: SkComposer, VK: VerifyK>(
 	private_key: &impl Sk,
 	encrypted_group_key: &[u8],
 	encrypted_private_group_key: &[u8],
 	group_key_alg: &str,
 	key_pair_alg: &str,
+	verify_key: Option<&VK>,
+	group_key_sig: Option<&VK::Signature>,
 ) -> Result<(SymC::SymmetricKey, SkC::SecretKey), Error>
 {
 	//call this for every group key with the private key, because every group key can be created and encrypted by different alg.
 
 	//1. decrypt the group key
 	let decrypted_group_key = SymC::decrypt_key_by_master_key(private_key, encrypted_group_key, group_key_alg)?;
+
+	if let (Some(vk), Some(sig)) = (verify_key, group_key_sig) {
+		if !decrypted_group_key.verify_key(vk, sig)? {
+			return Err(Error::KeyDecryptionVerifyFailed);
+		}
+	}
 
 	let decrypted_private_group_key = SkC::decrypt_by_master_key(&decrypted_group_key, encrypted_private_group_key, key_pair_alg)?;
 

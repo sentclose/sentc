@@ -246,7 +246,7 @@ macro_rules! sign_key_pair_self {
 
 #[macro_export]
 macro_rules! sign_key_composer_self {
-	($st:ty,$core_sk:ty,$vk:ident,$core_vk:ty,$core_vk_from_str:ident,$sig_from_str:ident) => {
+	($st:ty,$core_sk:ty,$vk:ident,$core_vk:ty,$core_vk_from_str:ident,$sig_from_str:ident,$export_sig:ident) => {
 		impl $crate::cryptomat::SignComposerWrapper for $st
 		{
 			type SignKWrapper = Self;
@@ -278,6 +278,13 @@ macro_rules! sign_key_composer_self {
 			fn vk_inner_from_pem(public_key: &str, alg: &str) -> Result<Self::InnerVk, $crate::error::SdkUtilError>
 			{
 				$core_vk_from_str(public_key, alg)
+			}
+
+			fn sig_to_string(
+				sig: <<<Self as $crate::cryptomat::SignComposerWrapper>::SignKWrapper as $crate::cryptomat::SignKWrapper>::Inner as sentc_crypto_core::cryptomat::SignK>::Signature,
+			) -> String
+			{
+				$export_sig(&sig)
 			}
 
 			fn sig_from_string(

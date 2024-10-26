@@ -20,7 +20,7 @@ use sentc_crypto_common::group::{
 	KeyRotationStartServerOutput,
 	ListGroups,
 };
-use sentc_crypto_common::user::{UserPublicKeyData, UserVerifyKeyData};
+use sentc_crypto_common::user::UserPublicKeyData;
 use sentc_crypto_common::UserId;
 use sentc_crypto_core::cryptomat::{SearchableKeyGen, SortableKeyGen};
 use sentc_crypto_utils::cryptomat::{
@@ -77,6 +77,8 @@ where
 		connected_group_id: Option<&str>,
 		public_key: &impl PkWrapper,
 		group_as_member: Option<&str>,
+		sign_key: Option<&SignC::SignKWrapper>,
+		starter: UserId,
 	) -> Result<String, SdkError>
 	{
 		let url = match (parent_group_id, connected_group_id) {
@@ -85,7 +87,7 @@ where
 			_ => base_url + "/api/v1/group", //(None, None) or both set
 		};
 
-		let input = Self::prepare_create(public_key)?;
+		let input = Self::prepare_create(public_key, sign_key, starter)?;
 
 		let res = make_req(
 			HttpMethod::POST,
@@ -108,6 +110,8 @@ where
 		jwt: &str,
 		creators_public_key: &impl PkWrapper,
 		group_as_member: Option<&str>,
+		sign_key: Option<&SignC::SignKWrapper>,
+		starter: UserId,
 	) -> Result<String, SdkError>
 	{
 		Self::create_group(
@@ -118,6 +122,8 @@ where
 			None,
 			creators_public_key,
 			group_as_member,
+			sign_key,
+			starter,
 		)
 		.await
 	}
@@ -130,6 +136,8 @@ where
 		admin_rank: i32,
 		parent_public_key: &impl PkWrapper,
 		group_as_member: Option<&str>,
+		sign_key: Option<&SignC::SignKWrapper>,
+		starter: UserId,
 	) -> Result<String, SdkError>
 	{
 		check_create_sub_group(admin_rank)?;
@@ -142,6 +150,8 @@ where
 			None,
 			parent_public_key,
 			group_as_member,
+			sign_key,
+			starter,
 		)
 		.await
 	}
@@ -154,6 +164,8 @@ where
 		admin_rank: i32,
 		parent_public_key: &impl PkWrapper,
 		group_as_member: Option<&str>,
+		sign_key: Option<&SignC::SignKWrapper>,
+		starter: UserId,
 	) -> Result<String, SdkError>
 	{
 		check_create_sub_group(admin_rank)?;
@@ -166,6 +178,8 @@ where
 			Some(connected_group_id),
 			parent_public_key,
 			group_as_member,
+			sign_key,
+			starter,
 		)
 		.await
 	}
@@ -412,7 +426,6 @@ where
 		public_key: &impl PkWrapper,
 		private_key: &impl SkWrapper,
 		user_group: bool,
-		verify_key: Option<&UserVerifyKeyData>,
 		group_as_member: Option<&str>,
 	) -> Result<(), SdkError>
 	{
@@ -423,7 +436,7 @@ where
 			true => base_url + "/api/v1/user/user_keys/rotation/" + key_id,
 		};
 
-		let input = Self::done_key_rotation(private_key, public_key, pre_group_key, server_output, verify_key)?;
+		let input = Self::done_key_rotation(private_key, public_key, pre_group_key, server_output)?;
 
 		let res = make_req(
 			HttpMethod::PUT,
@@ -747,10 +760,6 @@ pub struct KeyRotationGetOut
 	pub new_group_key_id: String,
 	pub encrypted_eph_key_key_id: sentc_crypto_common::EncryptionKeyPairId,
 	pub server_output: String,
-
-	pub signed_by_user_id: Option<String>,
-	pub signed_by_user_sign_key_id: Option<String>,
-	pub signed_by_user_sign_key_alg: Option<String>,
 }
 
 #[cfg(not(feature = "export"))]
@@ -791,10 +800,6 @@ pub async fn prepare_done_key_rotation(
 				pre_group_key_id: key.previous_group_key_id,
 				new_group_key_id: key.new_group_key_id,
 				encrypted_eph_key_key_id: key.encrypted_eph_key_key_id,
-
-				signed_by_user_id: key.signed_by_user_id,
-				signed_by_user_sign_key_id: key.signed_by_user_sign_key_id,
-				signed_by_user_sign_key_alg: key.signed_by_user_sign_key_alg,
 			});
 		}
 

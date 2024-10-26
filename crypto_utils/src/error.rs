@@ -124,6 +124,12 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 						"Can't decrypt the key. Maybe a wrong master key was used.",
 					)
 				},
+				Error::KeyDecryptionVerifyFailed => {
+					out_error(
+						"client_31",
+						"Can't verify the key. Maybe the signature or the key a corrupted.",
+					)
+				},
 				Error::SignKeyCreateFailed => out_error("client_40", "Can't create a sign key from given bytes"),
 				Error::InitSignFailed => out_error("client_41", "Can't create a sign"),
 				Error::DataToSignTooShort => out_error("client_42", "This data doesn't contains a sign"),

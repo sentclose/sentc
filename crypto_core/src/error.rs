@@ -15,6 +15,7 @@ pub enum Error
 	HashAuthKeyFailed,
 
 	KeyDecryptFailed,
+	KeyDecryptionVerifyFailed,
 
 	SignKeyCreateFailed,
 	InitSignFailed,

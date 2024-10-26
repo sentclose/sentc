@@ -426,8 +426,13 @@ pub extern "C" fn wire_disable_otp(port_: i64, base_url: *mut wire_uint_8_list, 
 }
 
 #[no_mangle]
-pub extern "C" fn wire_group_prepare_create_group(port_: i64, creators_public_key: *mut wire_uint_8_list) {
-	wire_group_prepare_create_group_impl(port_, creators_public_key)
+pub extern "C" fn wire_group_prepare_create_group(
+	port_: i64,
+	creators_public_key: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	starter: *mut wire_uint_8_list,
+) {
+	wire_group_prepare_create_group_impl(port_, creators_public_key, sign_key, starter)
 }
 
 #[no_mangle]
@@ -438,8 +443,19 @@ pub extern "C" fn wire_group_create_group(
 	jwt: *mut wire_uint_8_list,
 	creators_public_key: *mut wire_uint_8_list,
 	group_as_member: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	starter: *mut wire_uint_8_list,
 ) {
-	wire_group_create_group_impl(port_, base_url, auth_token, jwt, creators_public_key, group_as_member)
+	wire_group_create_group_impl(
+		port_,
+		base_url,
+		auth_token,
+		jwt,
+		creators_public_key,
+		group_as_member,
+		sign_key,
+		starter,
+	)
 }
 
 #[no_mangle]
@@ -452,6 +468,8 @@ pub extern "C" fn wire_group_create_child_group(
 	parent_id: *mut wire_uint_8_list,
 	admin_rank: i32,
 	group_as_member: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	starter: *mut wire_uint_8_list,
 ) {
 	wire_group_create_child_group_impl(
 		port_,
@@ -462,6 +480,8 @@ pub extern "C" fn wire_group_create_child_group(
 		parent_id,
 		admin_rank,
 		group_as_member,
+		sign_key,
+		starter,
 	)
 }
 
@@ -475,6 +495,8 @@ pub extern "C" fn wire_group_create_connected_group(
 	admin_rank: i32,
 	parent_public_key: *mut wire_uint_8_list,
 	group_as_member: *mut wire_uint_8_list,
+	sign_key: *mut wire_uint_8_list,
+	starter: *mut wire_uint_8_list,
 ) {
 	wire_group_create_connected_group_impl(
 		port_,
@@ -485,6 +507,8 @@ pub extern "C" fn wire_group_create_connected_group(
 		admin_rank,
 		parent_public_key,
 		group_as_member,
+		sign_key,
+		starter,
 	)
 }
 
@@ -547,8 +571,13 @@ pub extern "C" fn wire_group_get_group_key(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_group_decrypt_key(port_: i64, private_key: *mut wire_uint_8_list, server_key_data: *mut wire_uint_8_list) {
-	wire_group_decrypt_key_impl(port_, private_key, server_key_data)
+pub extern "C" fn wire_group_decrypt_key(
+	port_: i64,
+	private_key: *mut wire_uint_8_list,
+	server_key_data: *mut wire_uint_8_list,
+	verify_key: *mut wire_uint_8_list,
+) {
+	wire_group_decrypt_key_impl(port_, private_key, server_key_data, verify_key)
 }
 
 #[no_mangle]
@@ -1006,16 +1035,8 @@ pub extern "C" fn wire_group_done_key_rotation(
 	public_key: *mut wire_uint_8_list,
 	pre_group_key: *mut wire_uint_8_list,
 	server_output: *mut wire_uint_8_list,
-	verify_key: *mut wire_uint_8_list,
 ) {
-	wire_group_done_key_rotation_impl(
-		port_,
-		private_key,
-		public_key,
-		pre_group_key,
-		server_output,
-		verify_key,
-	)
+	wire_group_done_key_rotation_impl(port_, private_key, public_key, pre_group_key, server_output)
 }
 
 #[no_mangle]
@@ -1073,7 +1094,6 @@ pub extern "C" fn wire_group_finish_key_rotation(
 	pre_group_key: *mut wire_uint_8_list,
 	public_key: *mut wire_uint_8_list,
 	private_key: *mut wire_uint_8_list,
-	verify_key: *mut wire_uint_8_list,
 	group_as_member: *mut wire_uint_8_list,
 ) {
 	wire_group_finish_key_rotation_impl(
@@ -1086,7 +1106,6 @@ pub extern "C" fn wire_group_finish_key_rotation(
 		pre_group_key,
 		public_key,
 		private_key,
-		verify_key,
 		group_as_member,
 	)
 }

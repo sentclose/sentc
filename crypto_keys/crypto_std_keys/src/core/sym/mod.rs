@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use sentc_crypto_core::cryptomat::{CryptoAlg, Pk, SymKey, SymKeyComposer, SymKeyGen};
+use sentc_crypto_core::cryptomat::{CryptoAlg, SymKey, SymKeyComposer, SymKeyGen};
 use sentc_crypto_core::Error;
 
 use crate::core::sym::aes_gcm::Aes256GcmKey;
@@ -70,16 +70,6 @@ impl AsRef<[u8]> for SymmetricKey
 
 impl SymKey for SymmetricKey
 {
-	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>
-	{
-		deref_macro!(self, encrypt_key_with_master_key, master_key)
-	}
-
-	fn encrypt_with_sym_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
-	{
-		deref_macro!(self, encrypt_with_sym_key, master_key)
-	}
-
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
 	{
 		deref_macro!(self, encrypt, data)

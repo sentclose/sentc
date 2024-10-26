@@ -4,7 +4,7 @@ use aes_gcm::aead::generic_array::GenericArray;
 use aes_gcm::aead::{Aead, NewAead, Payload};
 use aes_gcm::{Aes256Gcm, Key};
 use rand_core::{CryptoRng, RngCore};
-use sentc_crypto_core::cryptomat::{Pk, SymKey, SymKeyGen};
+use sentc_crypto_core::cryptomat::{SymKey, SymKeyGen};
 use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, Error};
 
 use crate::core::sym::SymmetricKey;
@@ -40,16 +40,6 @@ impl Into<SymmetricKey> for Aes256GcmKey
 
 impl SymKey for Aes256GcmKey
 {
-	fn encrypt_key_with_master_key<M: Pk>(&self, master_key: &M) -> Result<Vec<u8>, Error>
-	{
-		master_key.encrypt(&self.0)
-	}
-
-	fn encrypt_with_sym_key<M: SymKey>(&self, master_key: &M) -> Result<Vec<u8>, Error>
-	{
-		master_key.encrypt(&self.0)
-	}
-
 	fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>
 	{
 		encrypt_internally(&self.0, data, None, &mut get_rand())

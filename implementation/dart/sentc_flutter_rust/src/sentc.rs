@@ -689,10 +689,6 @@ pub struct KeyRotationGetOut
 	pub new_group_key_id: String,
 	pub encrypted_eph_key_key_id: String,
 	pub server_output: String,
-
-	pub signed_by_user_id: Option<String>,
-	pub signed_by_user_sign_key_id: Option<String>,
-	pub signed_by_user_sign_key_alg: Option<String>,
 }
 
 pub fn user_key_rotation(base_url: String, auth_token: String, jwt: String, public_device_key: String, pre_user_key: String) -> Result<String>
@@ -722,10 +718,6 @@ pub fn user_pre_done_key_rotation(base_url: String, auth_token: String, jwt: Str
 			new_group_key_id: item.new_group_key_id,
 			encrypted_eph_key_key_id: item.encrypted_eph_key_key_id,
 			server_output: item.server_output,
-
-			signed_by_user_id: None,
-			signed_by_user_sign_key_id: None,
-			signed_by_user_sign_key_alg: None,
 		});
 	}
 
@@ -898,6 +890,8 @@ pub struct GroupOutDataKeys
 {
 	pub private_key_id: String,
 	pub key_data: String, //serde string
+	pub signed_by_user_id: Option<String>,
+	pub signed_by_user_sign_key_id: Option<String>,
 }
 
 impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutDataKeys
@@ -907,6 +901,8 @@ impl From<sentc_crypto::entities::group::GroupOutDataKeyExport> for GroupOutData
 		Self {
 			private_key_id: key.private_key_id,
 			key_data: key.key_data,
+			signed_by_user_sign_key_id: key.signed_by_user_sign_key_id,
+			signed_by_user_id: key.signed_by_user_id,
 		}
 	}
 }
@@ -1048,9 +1044,9 @@ Create input for the server api.
 
 Use this for group and child group. For child group use the public key of the parent group!
  */
-pub fn group_prepare_create_group(creators_public_key: String) -> Result<String>
+pub fn group_prepare_create_group(creators_public_key: String, sign_key: Option<String>, starter: String) -> Result<String>
 {
-	sentc_crypto::group::prepare_create(creators_public_key.as_str())
+	sentc_crypto::group::prepare_create(creators_public_key.as_str(), sign_key.as_deref(), starter)
 }
 
 /**
@@ -1064,6 +1060,8 @@ pub fn group_create_group(
 	jwt: String,
 	creators_public_key: String,
 	group_as_member: Option<String>,
+	sign_key: Option<String>,
+	starter: String,
 ) -> Result<String>
 {
 	rt(util_req_full::group::create(
@@ -1072,6 +1070,8 @@ pub fn group_create_group(
 		jwt.as_str(),
 		creators_public_key.as_str(),
 		group_as_member.as_deref(),
+		sign_key.as_deref(),
+		starter,
 	))
 }
 
@@ -1083,6 +1083,8 @@ pub fn group_create_child_group(
 	parent_id: String,
 	admin_rank: i32,
 	group_as_member: Option<String>,
+	sign_key: Option<String>,
+	starter: String,
 ) -> Result<String>
 {
 	rt(util_req_full::group::create_child_group(
@@ -1093,6 +1095,8 @@ pub fn group_create_child_group(
 		admin_rank,
 		parent_public_key.as_str(),
 		group_as_member.as_deref(),
+		sign_key.as_deref(),
+		starter,
 	))
 }
 
@@ -1104,6 +1108,8 @@ pub fn group_create_connected_group(
 	admin_rank: i32,
 	parent_public_key: String,
 	group_as_member: Option<String>,
+	sign_key: Option<String>,
+	starter: String,
 ) -> Result<String>
 {
 	rt(util_req_full::group::create_connected_group(
@@ -1114,6 +1120,8 @@ pub fn group_create_connected_group(
 		admin_rank,
 		&parent_public_key,
 		group_as_member.as_deref(),
+		sign_key.as_deref(),
+		starter,
 	))
 }
 
@@ -1200,9 +1208,9 @@ pub fn group_get_group_key(
 	Ok(out.into())
 }
 
-pub fn group_decrypt_key(private_key: String, server_key_data: String) -> Result<GroupKeyData>
+pub fn group_decrypt_key(private_key: String, server_key_data: String, verify_key: Option<String>) -> Result<GroupKeyData>
 {
-	let out = sentc_crypto::group::decrypt_group_keys(&private_key, &server_key_data)?;
+	let out = sentc_crypto::group::decrypt_group_keys(&private_key, &server_key_data, verify_key.as_deref())?;
 
 	Ok(out.into())
 }
@@ -1802,20 +1810,13 @@ pub fn group_prepare_key_rotation(pre_group_key: String, public_key: String, sig
 	)
 }
 
-pub fn group_done_key_rotation(
-	private_key: String,
-	public_key: String,
-	pre_group_key: String,
-	server_output: String,
-	verify_key: Option<String>,
-) -> Result<String>
+pub fn group_done_key_rotation(private_key: String, public_key: String, pre_group_key: String, server_output: String) -> Result<String>
 {
 	sentc_crypto::group::done_key_rotation(
 		private_key.as_str(),
 		public_key.as_str(),
 		pre_group_key.as_str(),
 		server_output.as_str(),
-		verify_key.as_deref(),
 	)
 }
 
@@ -1870,10 +1871,6 @@ pub fn group_pre_done_key_rotation(
 			new_group_key_id: item.new_group_key_id,
 			encrypted_eph_key_key_id: item.encrypted_eph_key_key_id,
 			server_output: item.server_output,
-
-			signed_by_user_id: item.signed_by_user_id,
-			signed_by_user_sign_key_id: item.signed_by_user_sign_key_id,
-			signed_by_user_sign_key_alg: item.signed_by_user_sign_key_alg,
 		});
 	}
 
@@ -1896,7 +1893,6 @@ pub fn group_finish_key_rotation(
 	pre_group_key: String,
 	public_key: String,
 	private_key: String,
-	verify_key: Option<String>,
 	group_as_member: Option<String>,
 ) -> Result<()>
 {
@@ -1910,7 +1906,6 @@ pub fn group_finish_key_rotation(
 		public_key.as_str(),
 		private_key.as_str(),
 		false,
-		verify_key.as_deref(),
 		group_as_member.as_deref(),
 	))
 }
