@@ -17,7 +17,7 @@ Get the head and the data.
 
 This can not only be used internally, to get the used key_id
  */
-pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &[u8]), SdkError>
+pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &'a [u8]), SdkError>
 {
 	Ok(sentc_crypto_utils::split_head_and_encrypted_data(data_with_head)?)
 }
@@ -25,7 +25,7 @@ pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a
 /**
 Get head from string.
 
-Just the head because of lifetime issues and we need the full data for encrypt and decrypt
+Just the head because of lifetime issues and we need the full data to encrypt and decrypt
  */
 pub fn split_head_and_encrypted_string(encrypted_data_with_head: &str) -> Result<EncryptedHead, SdkError>
 {
@@ -52,7 +52,7 @@ pub fn put_head_and_encrypted_data<T: Serialize>(head: &T, encrypted: &[u8]) -> 
 /**
 Get the head from string
 
-This can be used to get the head struct when getting the head as string, like raw decrypt in the non rust sdk.
+This can be used to get the head struct when getting the head as string, like raw decrypt in the non-rust sdk.
  */
 pub fn deserialize_head_from_string(head: &str) -> Result<EncryptedHead, SdkError>
 {
@@ -109,10 +109,10 @@ impl<SGen: SymKeyGenWrapper, SC: SymKeyComposerWrapper, P: PkFromUserKeyWrapper>
 	/**
 	# Get a symmetric key which was encrypted by a master key
 
-	Backwards the process in prepare_register_sym_key.
+	backwards the process in prepare_register_sym_key.
 
 	1. get the bytes of the encrypted symmetric key
-	2. get the sym internal format by decrypting it with the master key
+	2. get the sym internal format by decrypting it with master key
 	4. return the key incl. key id in the right format
 	 */
 	pub fn decrypt_sym_key(
@@ -234,7 +234,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let (head, encrypted) = group_key.encrypt_raw(text.as_bytes()).unwrap();
@@ -253,7 +253,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let (head, encrypted) = group_key
@@ -275,7 +275,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 		let payload = b"payload1234567891011121314151617";
 
@@ -299,7 +299,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 		let payload = b"payload1234567891011121314151617";
 
@@ -364,7 +364,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = group_key.encrypt(text.as_bytes()).unwrap();
@@ -428,7 +428,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = group_key
@@ -447,7 +447,7 @@ mod test
 	{
 		let user = create_user();
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = TestPublicKey::encrypt_with_user_key(&user.user_keys[0].exported_public_key, text.as_bytes()).unwrap();
@@ -465,7 +465,7 @@ mod test
 	{
 		let user = create_user();
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = TestPublicKey::encrypt_with_user_key_with_sign(
@@ -491,7 +491,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = group_key.encrypt_string(text).unwrap();
@@ -528,7 +528,7 @@ mod test
 		let (_, key_data, _, _, _) = create_group(&user.user_keys[0]);
 		let group_key = &key_data[0].group_key;
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = group_key
@@ -547,7 +547,7 @@ mod test
 	{
 		let user = create_user();
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = TestPublicKey::encrypt_string_with_user_key(&user.user_keys[0].exported_public_key, text).unwrap();
@@ -565,7 +565,7 @@ mod test
 	{
 		let user = create_user();
 
-		//now start encrypt and decrypt with the group master key
+		//now start to encrypt and decrypt with the group master key
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = TestPublicKey::encrypt_string_with_user_key_with_sign(
@@ -592,7 +592,7 @@ mod test
 
 		let (key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(master_key).unwrap();
 
-		//test the encrypt / decrypt
+		//test the encrypted / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = key
@@ -619,7 +619,7 @@ mod test
 
 		let (key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key_by_public_key(&user.user_keys[0].exported_public_key).unwrap();
 
-		//test the encrypt / decrypt
+		//test the encrypted / decrypt
 		let text = "123*+^êéèüöß@€&$";
 
 		let encrypted = key

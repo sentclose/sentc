@@ -83,7 +83,7 @@ pub fn derive_auth_key_for_auth_to_string(derive_auth_key_for_auth: &impl Derive
 pub fn client_random_value_from_string<C: ClientRandomValueComposer>(client_random_value: &str, alg: &str) -> Result<C::Value, SdkUtilError>
 {
 	let v = Base64::decode_vec(client_random_value).map_err(|_| SdkUtilError::DecodeRandomValueFailed)?;
-	//normally not needed only when the client needs to create the rand value, e.g- for key update.
+	//normally not needed only when the client needs to create the rand value, e.g.- for key update.
 	Ok(C::from_bytes(v, alg)?)
 }
 
@@ -93,7 +93,7 @@ Get the head and the data.
 This can not only be used internally, to get the used key_id
  */
 #[cfg(feature = "encryption")]
-pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &[u8]), SdkUtilError>
+pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a [u8]) -> Result<(T, &'a [u8]), SdkUtilError>
 {
 	let mut i = 0usize;
 	for data_itr in data_with_head {
@@ -108,7 +108,7 @@ pub fn split_head_and_encrypted_data<'a, T: Deserialize<'a>>(data_with_head: &'a
 
 	let head = serde_json::from_slice(&data_with_head[..i])?;
 
-	//ignore the zero byte
+	//ignore the zero bytes
 	Ok((head, &data_with_head[i + 1..]))
 }
 
