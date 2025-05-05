@@ -1823,7 +1823,7 @@ dependencies = [
 
 [[package]]
 name = "sentc_flutter"
-version = "0.16.0"
+version = "0.15.0"
 dependencies = [
  "flutter_rust_bridge 2.9.0",
  "sentc-crypto",

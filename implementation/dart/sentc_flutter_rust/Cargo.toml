@@ -1,15 +1,12 @@
 [package]
 name = "sentc_flutter"
-# version.workspace = true
-# edition.workspace = true
-# license-file.workspace = true
-# homepage.workspace = true
-# authors.workspace = true
-# documentation.workspace = true
-# repository.workspace = true
-
-version = "0.16.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+homepage.workspace = true
+authors.workspace = true
+documentation.workspace = true
+repository.workspace = true
 
 description = "The flutter implementation for sentc."
 
