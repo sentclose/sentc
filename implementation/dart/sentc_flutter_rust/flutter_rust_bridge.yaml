@@ -1,0 +1,7 @@
+rust_input: crate::api
+rust_root: .
+dart_output: ../sentc_flutter/sentc/lib/src/rust
+full_dep: true
+c_output: ../sentc_flutter/sentc/ios/Classes/frb.h
+duplicated_c_output:
+  - ../sentc_flutter/sentc/macos/Classes/frb.h
