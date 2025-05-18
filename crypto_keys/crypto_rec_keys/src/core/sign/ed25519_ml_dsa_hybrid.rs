@@ -94,7 +94,7 @@ impl VerifyK for Ed25519MlDsaHybridVerifyKey
 
 	fn create_hash<D: Digest>(&self, hasher: &mut D)
 	{
-		hasher.update(&export_pk(&self.x).unwrap());
+		hasher.update(export_pk(&self.x).unwrap());
 		hasher.update(self.k.as_slice());
 	}
 }

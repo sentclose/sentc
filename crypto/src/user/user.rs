@@ -255,8 +255,8 @@ where
 	/**
 	# Starts the login process
 
-	1. Get the auth key and the master key encryption key from the password.
-	2. Send the auth key to the server to get the DoneLoginInput back
+		1. Get the auth key and the master key encryption key from the password.
+		2. Send the auth key to the server to get the DoneLoginInput back
 	 */
 	pub fn prepare_login(user_identifier: &str, password: &str, server_output: &str) -> Result<(String, String, PwH::DMK), SdkError>
 	{
@@ -268,12 +268,12 @@ where
 	}
 
 	/**
-	finalize the login process. These are only the device data to fulfill the login challenge, not the actual user group keys
+	Finalize the login process. These are only the device data to fulfill the login challenge, not the actual user group keys
 
-	1. extract the DoneLoginInput from the server. It includes the encrypted master key, encrypted private and sign keys, in pem exported public and verify keys
-	2. decrypt the master key with the encryption key from @see prepare_login
-	3. import the public and verify keys to the internal format
-	4, fulfill the login challenge and return the data for the verify login
+		1. extract the DoneLoginInput from the server. It includes the encrypted master key, encrypted private and sign keys, in pem exported public and verify keys
+		2. Decrypt the master key with the encryption key from @see prepare_login
+		3. Import the public and verify keys to the internal format
+		4, fulfill the login challenge and return the data for the verified login
 	 */
 	pub fn done_login(
 		master_key_encryption: &impl DeriveMasterKeyForAuth,

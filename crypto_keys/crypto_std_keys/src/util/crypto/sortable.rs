@@ -56,7 +56,7 @@ impl SortableKey
 			number = number * 256 + ascii_value;
 		}
 
-		number / (u16::max_value() as u64 - 1)
+		number / (u16::MAX as u64 - 1)
 	}
 
 	fn prepare_string(data: &str, max_len: usize) -> u64
