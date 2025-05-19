@@ -1,0 +1,28 @@
+[package]
+name = "sentclose_sentc_node_js"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "The node js implementation for sentc."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# own crypto lib
+sentc-crypto = { workspace = true, features = ["export", "full_rustls"] }
+
+sentc-crypto-common = { workspace = true }
+
+# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
+napi = { version = "2.12.2", default-features = false, features = ["napi4", "tokio_rt"] }
+napi-derive = "2.12.2"
+
+[build-dependencies]
+napi-build = "2.0.1"

@@ -1,0 +1,18 @@
+{
+  "name": "@sentclose/sentc_node_js-darwin-x64",
+  "version": "0.15.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "sentc_node_js.darwin-x64.node",
+  "files": [
+    "sentc_node_js.darwin-x64.node"
+  ],
+  "license": "AGPL-3.0",
+  "engines": {
+    "node": ">= 10"
+  }
+}
