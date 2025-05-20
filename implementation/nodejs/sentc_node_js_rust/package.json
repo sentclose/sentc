@@ -33,6 +33,11 @@
     "universal": "napi universal",
     "version": "napi version"
   },
+  "files": [
+    "index.d.ts",
+    "index.js",
+    "LICENSE"
+  ],
   "packageManager": "yarn@4.9.1",
   "optionalDependencies": {
     "@sentclose/sentc_node_js-win32-x64-msvc": "0.15.0",
