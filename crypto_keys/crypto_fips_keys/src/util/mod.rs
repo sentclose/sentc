@@ -99,7 +99,7 @@ impl TryInto<SymmetricKey> for SymKeyFormatExport
 	}
 }
 
-impl<'a> TryInto<SymmetricKey> for &'a SymKeyFormatExport
+impl TryInto<SymmetricKey> for &SymKeyFormatExport
 {
 	type Error = SdkUtilError;
 

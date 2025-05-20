@@ -1,0 +1,21 @@
+{
+  "name": "@sentclose/sentc_node_js-linux-x64-gnu",
+  "version": "0.15.0",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "sentc_node_js.linux-x64-gnu.node",
+  "files": [
+    "sentc_node_js.linux-x64-gnu.node"
+  ],
+  "license": "AGPL-3.0",
+  "engines": {
+    "node": ">= 10"
+  },
+  "libc": [
+    "glibc"
+  ]
+}

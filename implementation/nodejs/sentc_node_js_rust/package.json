@@ -1,0 +1,45 @@
+{
+  "name": "@sentclose/sentc_node_js",
+  "version": "0.15.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "sentc_node_js",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl"
+      ]
+    }
+  },
+  "license": "AGPL-3",
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.4",
+    "ava": "^6.0.1"
+  },
+  "ava": {
+    "timeout": "3m"
+  },
+  "engines": {
+    "node": ">= 10"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "ava",
+    "universal": "napi universal",
+    "version": "napi version"
+  },
+  "packageManager": "yarn@4.9.1",
+  "optionalDependencies": {
+    "@sentclose/sentc_node_js-win32-x64-msvc": "0.15.0",
+    "@sentclose/sentc_node_js-darwin-x64": "0.15.0",
+    "@sentclose/sentc_node_js-linux-x64-gnu": "0.15.0",
+    "@sentclose/sentc_node_js-darwin-arm64": "0.15.0",
+    "@sentclose/sentc_node_js-linux-arm64-gnu": "0.15.0",
+    "@sentclose/sentc_node_js-linux-arm64-musl": "0.15.0"
+  }
+}

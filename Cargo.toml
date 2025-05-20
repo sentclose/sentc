@@ -1,17 +1,18 @@
 [workspace]
 resolver = "2"
 members = [
-    "crypto",
-    "crypto_core",
-    "crypto_utils",
-    "crypto_light",
-    "implementation/js/sentc_wasm",
-    "implementation/js/sentc_wasm_light",
-    "implementation/dart/sentc_flutter_rust",
-    "implementation/dart/sentc_flutter_rust_light",
-    "crypto_keys/crypto_std_keys",
-    "crypto_keys/crypto_fips_keys",
-    "crypto_keys/crypto_rec_keys",
+	"crypto",
+	"crypto_core",
+	"crypto_utils",
+	"crypto_light",
+	"implementation/js/sentc_wasm",
+	"implementation/js/sentc_wasm_light",
+	"implementation/dart/sentc_flutter_rust",
+	"implementation/dart/sentc_flutter_rust_light",
+	"implementation/nodejs/sentc_node_js_rust",
+	"crypto_keys/crypto_std_keys",
+	"crypto_keys/crypto_fips_keys",
+	"crypto_keys/crypto_rec_keys",
 ]
 
 [workspace.package]
@@ -26,7 +27,7 @@ rust-version = "1.75.0"
 
 [workspace.dependencies]
 sentc-crypto-common = { version = "0.11.0", git = "https://github.com/sentclose/sentc-common.git", rev = "06cd7002a19d406807f9443ddfcd993bf9a46651" }
-#sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" }    # for local dev
+#sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" } # for local dev
 
 sentc-crypto-core = { version = "0.15.0", path = "crypto_core" }
 sentc-crypto-utils = { version = "0.15.0", path = "crypto_utils" }

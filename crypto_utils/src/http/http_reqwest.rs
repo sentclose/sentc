@@ -9,7 +9,7 @@ use crate::error::SdkUtilError;
 use crate::handle_server_response;
 use crate::http::{auth_header, HttpMethod};
 
-pub(super) async fn make_req(
+pub async fn make_req(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
@@ -23,7 +23,7 @@ pub(super) async fn make_req(
 	res.text().await.map_err(|_e| SdkUtilError::ResponseErrText)
 }
 
-pub(super) async fn make_req_buffer(
+pub async fn make_req_buffer(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
@@ -52,7 +52,7 @@ pub(super) async fn make_req_buffer(
 	Ok(buffer)
 }
 
-pub(super) async fn make_req_buffer_body(
+pub async fn make_req_buffer_body(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,

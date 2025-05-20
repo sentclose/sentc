@@ -11,7 +11,7 @@ use crate::error::SdkUtilError;
 use crate::handle_server_response;
 use crate::http::{auth_header, HttpMethod};
 
-pub(super) async fn make_req(
+pub async fn make_req(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
@@ -32,7 +32,7 @@ pub(super) async fn make_req(
 	}
 }
 
-pub(super) async fn make_req_buffer(
+pub async fn make_req_buffer(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
@@ -56,7 +56,7 @@ pub(super) async fn make_req_buffer(
 			None => return Err(SdkUtilError::ResponseErrText),
 		};
 
-		//when status is 400 then there is an error and handle server response will return the error
+		//when status is 400, then there is an error and handle server response will return the error
 
 		handle_server_response::<ServerSuccessOutput>(text.as_str())?;
 		return Ok(Vec::new());
@@ -75,7 +75,7 @@ pub(super) async fn make_req_buffer(
 	Ok(bytes)
 }
 
-pub(super) async fn make_req_buffer_body(
+pub async fn make_req_buffer_body(
 	method: HttpMethod,
 	url: &str,
 	auth_token: &str,
