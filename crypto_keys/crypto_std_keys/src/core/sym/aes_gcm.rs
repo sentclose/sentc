@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
 use aes_gcm::aead::generic_array::GenericArray;
-use aes_gcm::aead::{Aead, NewAead, Payload};
-use aes_gcm::{Aes256Gcm, Key};
+use aes_gcm::aead::{Aead, Payload};
+use aes_gcm::{Aes256Gcm, KeyInit};
 use rand_core::{CryptoRng, RngCore};
 use sentc_crypto_core::cryptomat::{SymKey, SymKeyGen};
 use sentc_crypto_core::{as_ref_bytes_single_value, crypto_alg_str_impl, try_from_bytes_owned_single_value, Error};
@@ -103,8 +103,7 @@ fn generate_key_internally<R: CryptoRng + RngCore>(rng: &mut R) -> Result<[u8; 3
 
 fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], aad: Option<&[u8]>, rng: &mut R) -> Result<Vec<u8>, Error>
 {
-	let key = Key::from_slice(key);
-	let aead = Aes256Gcm::new(key);
+	let aead = Aes256Gcm::new(key.into());
 
 	//IV
 	let mut nonce = [0u8; AES_IV_LENGTH];
@@ -135,8 +134,7 @@ fn encrypt_internally<R: CryptoRng + RngCore>(key: &AesKey, data: &[u8], aad: Op
 
 fn decrypt_internally(key: &AesKey, ciphertext: &[u8], aad: Option<&[u8]>) -> Result<Vec<u8>, Error>
 {
-	let key = Key::from_slice(key);
-	let aead = Aes256Gcm::new(key);
+	let aead = Aes256Gcm::new(key.into());
 
 	let nonce = GenericArray::from_slice(&ciphertext[..AES_IV_LENGTH]);
 	let encrypted = &ciphertext[AES_IV_LENGTH..];

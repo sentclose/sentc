@@ -12,9 +12,9 @@ rust-version.workspace = true
 description = "Key impl of the classic algorithms that were used pre 0.14.0 of sentc."
 
 include = [
-    "Cargo.toml",
-    "../LICENSE",
-    "src/**/*",
+	"Cargo.toml",
+	"../LICENSE",
+	"src/**/*",
 ]
 
 [dependencies]
@@ -22,14 +22,14 @@ sentc-crypto-core.workspace = true
 sentc-crypto-utils = { workspace = true, optional = true }
 sentc-crypto-common = { workspace = true, optional = true }
 
-aes-gcm = "0.9.4"
+aes-gcm = "0.10.3"
 x25519-dalek = { version = "2.0.1", default-features = false, features = ["static_secrets"] }
 ed25519-dalek = { version = "2.1.1", default-features = false, features = ["fast", "rand_core"] }
 rand_core = { version = "0.6.3", default-features = false, features = ["getrandom"] }
 sha2 = { version = "0.10.2", default-features = false }
 hkdf = { version = "0.12.3", default-features = false }
 hmac = "0.12.1"
-argon2 = "0.3"
+argon2 = "0.5"
 ope = "0.1.1"
 pqc_kyber_edit = { version = "0.7.2", features = ["90s-fixslice"] }
 pqc_dilithium_edit = { version = "0.2.0", features = ["mode3", "aes", "random_signing"] }
