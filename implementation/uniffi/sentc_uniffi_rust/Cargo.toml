@@ -1,0 +1,25 @@
+[package]
+name = "sentc_uniffi_rust"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "sentc_uniffi_rust"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+uniffi = { version = "0.30.0", features = ["build"] }
+
+[dependencies]
+uniffi = { version = "0.30.0", features = ["tokio"] }
+
+# own crypto lib
+sentc-crypto = { workspace = true, features = ["export", "full_rustls"] }
+
+sentc-crypto-common = { workspace = true }

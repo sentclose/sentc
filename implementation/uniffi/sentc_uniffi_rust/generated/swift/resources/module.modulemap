@@ -1,0 +1,7 @@
+module sentc_uniffi_rustFFI {
+    header "sentc_uniffi_rustFFI.h"
+    export *
+    use "Darwin"
+    use "_Builtin_stdbool"
+    use "_Builtin_stdint"
+}
