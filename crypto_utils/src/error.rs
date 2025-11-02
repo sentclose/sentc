@@ -186,7 +186,7 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 		SdkUtilError::DecryptingLoginChallengeFailed => out_error("client_1102", "Can't verify login."),
 
 		#[cfg(any(feature = "rustls", feature = "wasm"))]
-		SdkUtilError::RequestErr(e) => out_error("client_1000", format!("Can't send the request: {}", e).as_str()),
+		SdkUtilError::RequestErr(e) => out_error("client_1000", format!("Can't send the request: {e}").as_str()),
 		#[cfg(any(feature = "rustls", feature = "wasm"))]
 		SdkUtilError::ResponseErrText => out_error("client_1002", "Can't decode the response to text"),
 		#[cfg(any(feature = "rustls", feature = "wasm"))]
@@ -217,7 +217,7 @@ pub fn err_to_msg(error: SdkUtilError) -> String
 
 pub fn out_error(code: &str, message: &str) -> String
 {
-	//create the error in json to communicate with the other implementations, so they can use their own error handling
+	//create the error in JSON to communicate with the other implementations, so they can use their own error handling
 
-	format!("{{\"status\": \"{}\", \"error_message\": \"{}\"}}", code, message)
+	format!("{{\"status\": \"{code}\", \"error_message\": \"{message}\"}}")
 }
