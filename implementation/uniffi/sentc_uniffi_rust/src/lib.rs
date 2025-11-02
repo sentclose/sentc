@@ -1,4 +1,11 @@
+#![allow(clippy::too_many_arguments)]
+
+use sentc_crypto::SdkError;
+
 mod crypto;
+mod file;
+mod group;
+mod user;
 
 #[derive(uniffi::Error, Debug)]
 pub enum SentcError
@@ -21,6 +28,14 @@ impl From<String> for SentcError
 	fn from(value: String) -> Self
 	{
 		Self::JSONError(value)
+	}
+}
+
+impl From<SdkError> for SentcError
+{
+	fn from(value: SdkError) -> Self
+	{
+		Self::JSONError(value.into())
 	}
 }
 

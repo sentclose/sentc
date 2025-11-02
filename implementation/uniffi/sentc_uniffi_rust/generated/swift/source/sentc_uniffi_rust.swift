@@ -435,6 +435,22 @@ fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
+    typealias FfiType = Int32
+    typealias SwiftType = Int32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Int32, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
@@ -532,6 +548,70 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 }
 
 
+public struct Claims: Equatable, Hashable {
+    public var aud: String
+    public var sub: String
+    public var exp: UInt64
+    public var iat: UInt64
+    public var fresh: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(aud: String, sub: String, exp: UInt64, iat: UInt64, fresh: Bool) {
+        self.aud = aud
+        self.sub = sub
+        self.exp = exp
+        self.iat = iat
+        self.fresh = fresh
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension Claims: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeClaims: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Claims {
+        return
+            try Claims(
+                aud: FfiConverterString.read(from: &buf), 
+                sub: FfiConverterString.read(from: &buf), 
+                exp: FfiConverterUInt64.read(from: &buf), 
+                iat: FfiConverterUInt64.read(from: &buf), 
+                fresh: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: Claims, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.aud, into: &buf)
+        FfiConverterString.write(value.sub, into: &buf)
+        FfiConverterUInt64.write(value.exp, into: &buf)
+        FfiConverterUInt64.write(value.iat, into: &buf)
+        FfiConverterBool.write(value.fresh, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeClaims_lift(_ buf: RustBuffer) throws -> Claims {
+    return try FfiConverterTypeClaims.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeClaims_lower(_ value: Claims) -> RustBuffer {
+    return FfiConverterTypeClaims.lower(value)
+}
+
+
 public struct CryptoRawOutput: Equatable, Hashable {
     public var head: String
     public var data: Data
@@ -581,6 +661,74 @@ public func FfiConverterTypeCryptoRawOutput_lift(_ buf: RustBuffer) throws -> Cr
 #endif
 public func FfiConverterTypeCryptoRawOutput_lower(_ value: CryptoRawOutput) -> RustBuffer {
     return FfiConverterTypeCryptoRawOutput.lower(value)
+}
+
+
+public struct DeviceKeyData: Equatable, Hashable {
+    public var privateKey: String
+    public var publicKey: String
+    public var signKey: String
+    public var verifyKey: String
+    public var exportedPublicKey: String
+    public var exportedVerifyKey: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(privateKey: String, publicKey: String, signKey: String, verifyKey: String, exportedPublicKey: String, exportedVerifyKey: String) {
+        self.privateKey = privateKey
+        self.publicKey = publicKey
+        self.signKey = signKey
+        self.verifyKey = verifyKey
+        self.exportedPublicKey = exportedPublicKey
+        self.exportedVerifyKey = exportedVerifyKey
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension DeviceKeyData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDeviceKeyData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DeviceKeyData {
+        return
+            try DeviceKeyData(
+                privateKey: FfiConverterString.read(from: &buf), 
+                publicKey: FfiConverterString.read(from: &buf), 
+                signKey: FfiConverterString.read(from: &buf), 
+                verifyKey: FfiConverterString.read(from: &buf), 
+                exportedPublicKey: FfiConverterString.read(from: &buf), 
+                exportedVerifyKey: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DeviceKeyData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.privateKey, into: &buf)
+        FfiConverterString.write(value.publicKey, into: &buf)
+        FfiConverterString.write(value.signKey, into: &buf)
+        FfiConverterString.write(value.verifyKey, into: &buf)
+        FfiConverterString.write(value.exportedPublicKey, into: &buf)
+        FfiConverterString.write(value.exportedVerifyKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDeviceKeyData_lift(_ buf: RustBuffer) throws -> DeviceKeyData {
+    return try FfiConverterTypeDeviceKeyData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDeviceKeyData_lower(_ value: DeviceKeyData) -> RustBuffer {
+    return FfiConverterTypeDeviceKeyData.lower(value)
 }
 
 
@@ -640,6 +788,1258 @@ public func FfiConverterTypeEncryptedHead_lower(_ value: EncryptedHead) -> RustB
 }
 
 
+public struct FileData: Equatable, Hashable {
+    public var fileId: String
+    public var masterKeyId: String
+    public var owner: String
+    public var belongsTo: String?
+    public var belongsToType: BelongsToType
+    public var encryptedKey: String
+    public var encryptedKeyAlg: String
+    public var encryptedFileName: String?
+    public var partList: [FilePartListItem]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(fileId: String, masterKeyId: String, owner: String, belongsTo: String?, belongsToType: BelongsToType, encryptedKey: String, encryptedKeyAlg: String, encryptedFileName: String?, partList: [FilePartListItem]) {
+        self.fileId = fileId
+        self.masterKeyId = masterKeyId
+        self.owner = owner
+        self.belongsTo = belongsTo
+        self.belongsToType = belongsToType
+        self.encryptedKey = encryptedKey
+        self.encryptedKeyAlg = encryptedKeyAlg
+        self.encryptedFileName = encryptedFileName
+        self.partList = partList
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension FileData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFileData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileData {
+        return
+            try FileData(
+                fileId: FfiConverterString.read(from: &buf), 
+                masterKeyId: FfiConverterString.read(from: &buf), 
+                owner: FfiConverterString.read(from: &buf), 
+                belongsTo: FfiConverterOptionString.read(from: &buf), 
+                belongsToType: FfiConverterTypeBelongsToType.read(from: &buf), 
+                encryptedKey: FfiConverterString.read(from: &buf), 
+                encryptedKeyAlg: FfiConverterString.read(from: &buf), 
+                encryptedFileName: FfiConverterOptionString.read(from: &buf), 
+                partList: FfiConverterSequenceTypeFilePartListItem.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FileData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.fileId, into: &buf)
+        FfiConverterString.write(value.masterKeyId, into: &buf)
+        FfiConverterString.write(value.owner, into: &buf)
+        FfiConverterOptionString.write(value.belongsTo, into: &buf)
+        FfiConverterTypeBelongsToType.write(value.belongsToType, into: &buf)
+        FfiConverterString.write(value.encryptedKey, into: &buf)
+        FfiConverterString.write(value.encryptedKeyAlg, into: &buf)
+        FfiConverterOptionString.write(value.encryptedFileName, into: &buf)
+        FfiConverterSequenceTypeFilePartListItem.write(value.partList, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileData_lift(_ buf: RustBuffer) throws -> FileData {
+    return try FfiConverterTypeFileData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileData_lower(_ value: FileData) -> RustBuffer {
+    return FfiConverterTypeFileData.lower(value)
+}
+
+
+public struct FileDoneRegister: Equatable, Hashable {
+    public var fileId: String
+    public var sessionId: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(fileId: String, sessionId: String) {
+        self.fileId = fileId
+        self.sessionId = sessionId
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension FileDoneRegister: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFileDoneRegister: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileDoneRegister {
+        return
+            try FileDoneRegister(
+                fileId: FfiConverterString.read(from: &buf), 
+                sessionId: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FileDoneRegister, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.fileId, into: &buf)
+        FfiConverterString.write(value.sessionId, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileDoneRegister_lift(_ buf: RustBuffer) throws -> FileDoneRegister {
+    return try FfiConverterTypeFileDoneRegister.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileDoneRegister_lower(_ value: FileDoneRegister) -> RustBuffer {
+    return FfiConverterTypeFileDoneRegister.lower(value)
+}
+
+
+public struct FileDownloadResult: Equatable, Hashable {
+    public var nextFileKey: String
+    public var file: Data
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(nextFileKey: String, file: Data) {
+        self.nextFileKey = nextFileKey
+        self.file = file
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension FileDownloadResult: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFileDownloadResult: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileDownloadResult {
+        return
+            try FileDownloadResult(
+                nextFileKey: FfiConverterString.read(from: &buf), 
+                file: FfiConverterData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FileDownloadResult, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.nextFileKey, into: &buf)
+        FfiConverterData.write(value.file, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileDownloadResult_lift(_ buf: RustBuffer) throws -> FileDownloadResult {
+    return try FfiConverterTypeFileDownloadResult.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileDownloadResult_lower(_ value: FileDownloadResult) -> RustBuffer {
+    return FfiConverterTypeFileDownloadResult.lower(value)
+}
+
+
+public struct FilePartListItem: Equatable, Hashable {
+    public var partId: String
+    public var sequence: Int32
+    public var externStorage: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(partId: String, sequence: Int32, externStorage: Bool) {
+        self.partId = partId
+        self.sequence = sequence
+        self.externStorage = externStorage
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension FilePartListItem: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFilePartListItem: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FilePartListItem {
+        return
+            try FilePartListItem(
+                partId: FfiConverterString.read(from: &buf), 
+                sequence: FfiConverterInt32.read(from: &buf), 
+                externStorage: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FilePartListItem, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.partId, into: &buf)
+        FfiConverterInt32.write(value.sequence, into: &buf)
+        FfiConverterBool.write(value.externStorage, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFilePartListItem_lift(_ buf: RustBuffer) throws -> FilePartListItem {
+    return try FfiConverterTypeFilePartListItem.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFilePartListItem_lower(_ value: FilePartListItem) -> RustBuffer {
+    return FfiConverterTypeFilePartListItem.lower(value)
+}
+
+
+public struct FilePrepareRegister: Equatable, Hashable {
+    public var encryptedFileName: String?
+    public var serverInput: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(encryptedFileName: String?, serverInput: String) {
+        self.encryptedFileName = encryptedFileName
+        self.serverInput = serverInput
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension FilePrepareRegister: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFilePrepareRegister: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FilePrepareRegister {
+        return
+            try FilePrepareRegister(
+                encryptedFileName: FfiConverterOptionString.read(from: &buf), 
+                serverInput: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FilePrepareRegister, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.encryptedFileName, into: &buf)
+        FfiConverterString.write(value.serverInput, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFilePrepareRegister_lift(_ buf: RustBuffer) throws -> FilePrepareRegister {
+    return try FfiConverterTypeFilePrepareRegister.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFilePrepareRegister_lower(_ value: FilePrepareRegister) -> RustBuffer {
+    return FfiConverterTypeFilePrepareRegister.lower(value)
+}
+
+
+public struct FileRegisterOutput: Equatable, Hashable {
+    public var fileId: String
+    public var sessionId: String
+    public var encryptedFileName: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(fileId: String, sessionId: String, encryptedFileName: String?) {
+        self.fileId = fileId
+        self.sessionId = sessionId
+        self.encryptedFileName = encryptedFileName
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension FileRegisterOutput: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFileRegisterOutput: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileRegisterOutput {
+        return
+            try FileRegisterOutput(
+                fileId: FfiConverterString.read(from: &buf), 
+                sessionId: FfiConverterString.read(from: &buf), 
+                encryptedFileName: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FileRegisterOutput, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.fileId, into: &buf)
+        FfiConverterString.write(value.sessionId, into: &buf)
+        FfiConverterOptionString.write(value.encryptedFileName, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileRegisterOutput_lift(_ buf: RustBuffer) throws -> FileRegisterOutput {
+    return try FfiConverterTypeFileRegisterOutput.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFileRegisterOutput_lower(_ value: FileRegisterOutput) -> RustBuffer {
+    return FfiConverterTypeFileRegisterOutput.lower(value)
+}
+
+
+public struct GeneratedRegisterData: Equatable, Hashable {
+    public var identifier: String
+    public var password: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(identifier: String, password: String) {
+        self.identifier = identifier
+        self.password = password
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GeneratedRegisterData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGeneratedRegisterData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GeneratedRegisterData {
+        return
+            try GeneratedRegisterData(
+                identifier: FfiConverterString.read(from: &buf), 
+                password: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GeneratedRegisterData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.identifier, into: &buf)
+        FfiConverterString.write(value.password, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeneratedRegisterData_lift(_ buf: RustBuffer) throws -> GeneratedRegisterData {
+    return try FfiConverterTypeGeneratedRegisterData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeneratedRegisterData_lower(_ value: GeneratedRegisterData) -> RustBuffer {
+    return FfiConverterTypeGeneratedRegisterData.lower(value)
+}
+
+
+public struct GroupChildrenList: Equatable, Hashable {
+    public var groupId: String
+    public var time: String
+    public var parent: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(groupId: String, time: String, parent: String?) {
+        self.groupId = groupId
+        self.time = time
+        self.parent = parent
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupChildrenList: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupChildrenList: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupChildrenList {
+        return
+            try GroupChildrenList(
+                groupId: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf), 
+                parent: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupChildrenList, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.groupId, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+        FfiConverterOptionString.write(value.parent, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupChildrenList_lift(_ buf: RustBuffer) throws -> GroupChildrenList {
+    return try FfiConverterTypeGroupChildrenList.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupChildrenList_lower(_ value: GroupChildrenList) -> RustBuffer {
+    return FfiConverterTypeGroupChildrenList.lower(value)
+}
+
+
+public struct GroupDataCheckUpdateServerOutput: Equatable, Hashable {
+    public var keyUpdate: Bool
+    public var rank: Int32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(keyUpdate: Bool, rank: Int32) {
+        self.keyUpdate = keyUpdate
+        self.rank = rank
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupDataCheckUpdateServerOutput: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupDataCheckUpdateServerOutput: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupDataCheckUpdateServerOutput {
+        return
+            try GroupDataCheckUpdateServerOutput(
+                keyUpdate: FfiConverterBool.read(from: &buf), 
+                rank: FfiConverterInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupDataCheckUpdateServerOutput, into buf: inout [UInt8]) {
+        FfiConverterBool.write(value.keyUpdate, into: &buf)
+        FfiConverterInt32.write(value.rank, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupDataCheckUpdateServerOutput_lift(_ buf: RustBuffer) throws -> GroupDataCheckUpdateServerOutput {
+    return try FfiConverterTypeGroupDataCheckUpdateServerOutput.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupDataCheckUpdateServerOutput_lower(_ value: GroupDataCheckUpdateServerOutput) -> RustBuffer {
+    return FfiConverterTypeGroupDataCheckUpdateServerOutput.lower(value)
+}
+
+
+public struct GroupInviteReqList: Equatable, Hashable {
+    public var groupId: String
+    public var time: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(groupId: String, time: String) {
+        self.groupId = groupId
+        self.time = time
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupInviteReqList: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupInviteReqList: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupInviteReqList {
+        return
+            try GroupInviteReqList(
+                groupId: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupInviteReqList, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.groupId, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupInviteReqList_lift(_ buf: RustBuffer) throws -> GroupInviteReqList {
+    return try FfiConverterTypeGroupInviteReqList.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupInviteReqList_lower(_ value: GroupInviteReqList) -> RustBuffer {
+    return FfiConverterTypeGroupInviteReqList.lower(value)
+}
+
+
+public struct GroupJoinReqList: Equatable, Hashable {
+    public var userId: String
+    public var time: String
+    public var userType: Int32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(userId: String, time: String, userType: Int32) {
+        self.userId = userId
+        self.time = time
+        self.userType = userType
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupJoinReqList: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupJoinReqList: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupJoinReqList {
+        return
+            try GroupJoinReqList(
+                userId: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf), 
+                userType: FfiConverterInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupJoinReqList, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.userId, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+        FfiConverterInt32.write(value.userType, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupJoinReqList_lift(_ buf: RustBuffer) throws -> GroupJoinReqList {
+    return try FfiConverterTypeGroupJoinReqList.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupJoinReqList_lower(_ value: GroupJoinReqList) -> RustBuffer {
+    return FfiConverterTypeGroupJoinReqList.lower(value)
+}
+
+
+public struct GroupKeyData: Equatable, Hashable {
+    public var privateGroupKey: String
+    public var publicGroupKey: String
+    public var exportedPublicKey: String
+    public var groupKey: String
+    public var time: String
+    public var groupKeyId: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(privateGroupKey: String, publicGroupKey: String, exportedPublicKey: String, groupKey: String, time: String, groupKeyId: String) {
+        self.privateGroupKey = privateGroupKey
+        self.publicGroupKey = publicGroupKey
+        self.exportedPublicKey = exportedPublicKey
+        self.groupKey = groupKey
+        self.time = time
+        self.groupKeyId = groupKeyId
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupKeyData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupKeyData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupKeyData {
+        return
+            try GroupKeyData(
+                privateGroupKey: FfiConverterString.read(from: &buf), 
+                publicGroupKey: FfiConverterString.read(from: &buf), 
+                exportedPublicKey: FfiConverterString.read(from: &buf), 
+                groupKey: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf), 
+                groupKeyId: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupKeyData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.privateGroupKey, into: &buf)
+        FfiConverterString.write(value.publicGroupKey, into: &buf)
+        FfiConverterString.write(value.exportedPublicKey, into: &buf)
+        FfiConverterString.write(value.groupKey, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+        FfiConverterString.write(value.groupKeyId, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupKeyData_lift(_ buf: RustBuffer) throws -> GroupKeyData {
+    return try FfiConverterTypeGroupKeyData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupKeyData_lower(_ value: GroupKeyData) -> RustBuffer {
+    return FfiConverterTypeGroupKeyData.lower(value)
+}
+
+
+public struct GroupOutData: Equatable, Hashable {
+    public var groupId: String
+    public var parentGroupId: String?
+    public var rank: Int32
+    public var keyUpdate: Bool
+    public var createdTime: String
+    public var joinedTime: String
+    public var keys: [GroupOutDataKeys]
+    public var hmacKeys: [GroupOutDataHmacKeys]
+    public var sortableKeys: [GroupOutDataSortableKeys]
+    public var accessByGroupAsMember: String?
+    public var accessByParentGroup: String?
+    public var isConnectedGroup: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(groupId: String, parentGroupId: String?, rank: Int32, keyUpdate: Bool, createdTime: String, joinedTime: String, keys: [GroupOutDataKeys], hmacKeys: [GroupOutDataHmacKeys], sortableKeys: [GroupOutDataSortableKeys], accessByGroupAsMember: String?, accessByParentGroup: String?, isConnectedGroup: Bool) {
+        self.groupId = groupId
+        self.parentGroupId = parentGroupId
+        self.rank = rank
+        self.keyUpdate = keyUpdate
+        self.createdTime = createdTime
+        self.joinedTime = joinedTime
+        self.keys = keys
+        self.hmacKeys = hmacKeys
+        self.sortableKeys = sortableKeys
+        self.accessByGroupAsMember = accessByGroupAsMember
+        self.accessByParentGroup = accessByParentGroup
+        self.isConnectedGroup = isConnectedGroup
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupOutData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupOutData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupOutData {
+        return
+            try GroupOutData(
+                groupId: FfiConverterString.read(from: &buf), 
+                parentGroupId: FfiConverterOptionString.read(from: &buf), 
+                rank: FfiConverterInt32.read(from: &buf), 
+                keyUpdate: FfiConverterBool.read(from: &buf), 
+                createdTime: FfiConverterString.read(from: &buf), 
+                joinedTime: FfiConverterString.read(from: &buf), 
+                keys: FfiConverterSequenceTypeGroupOutDataKeys.read(from: &buf), 
+                hmacKeys: FfiConverterSequenceTypeGroupOutDataHmacKeys.read(from: &buf), 
+                sortableKeys: FfiConverterSequenceTypeGroupOutDataSortableKeys.read(from: &buf), 
+                accessByGroupAsMember: FfiConverterOptionString.read(from: &buf), 
+                accessByParentGroup: FfiConverterOptionString.read(from: &buf), 
+                isConnectedGroup: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupOutData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.groupId, into: &buf)
+        FfiConverterOptionString.write(value.parentGroupId, into: &buf)
+        FfiConverterInt32.write(value.rank, into: &buf)
+        FfiConverterBool.write(value.keyUpdate, into: &buf)
+        FfiConverterString.write(value.createdTime, into: &buf)
+        FfiConverterString.write(value.joinedTime, into: &buf)
+        FfiConverterSequenceTypeGroupOutDataKeys.write(value.keys, into: &buf)
+        FfiConverterSequenceTypeGroupOutDataHmacKeys.write(value.hmacKeys, into: &buf)
+        FfiConverterSequenceTypeGroupOutDataSortableKeys.write(value.sortableKeys, into: &buf)
+        FfiConverterOptionString.write(value.accessByGroupAsMember, into: &buf)
+        FfiConverterOptionString.write(value.accessByParentGroup, into: &buf)
+        FfiConverterBool.write(value.isConnectedGroup, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutData_lift(_ buf: RustBuffer) throws -> GroupOutData {
+    return try FfiConverterTypeGroupOutData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutData_lower(_ value: GroupOutData) -> RustBuffer {
+    return FfiConverterTypeGroupOutData.lower(value)
+}
+
+
+public struct GroupOutDataHmacKeys: Equatable, Hashable {
+    public var groupKeyId: String
+    public var keyData: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(groupKeyId: String, keyData: String) {
+        self.groupKeyId = groupKeyId
+        self.keyData = keyData
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupOutDataHmacKeys: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupOutDataHmacKeys: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupOutDataHmacKeys {
+        return
+            try GroupOutDataHmacKeys(
+                groupKeyId: FfiConverterString.read(from: &buf), 
+                keyData: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupOutDataHmacKeys, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.groupKeyId, into: &buf)
+        FfiConverterString.write(value.keyData, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutDataHmacKeys_lift(_ buf: RustBuffer) throws -> GroupOutDataHmacKeys {
+    return try FfiConverterTypeGroupOutDataHmacKeys.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutDataHmacKeys_lower(_ value: GroupOutDataHmacKeys) -> RustBuffer {
+    return FfiConverterTypeGroupOutDataHmacKeys.lower(value)
+}
+
+
+public struct GroupOutDataKeys: Equatable, Hashable {
+    public var privateKeyId: String
+    public var keyData: String
+    public var signedByUserId: String?
+    public var signedByUserSignKeyId: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(privateKeyId: String, keyData: String, signedByUserId: String?, signedByUserSignKeyId: String?) {
+        self.privateKeyId = privateKeyId
+        self.keyData = keyData
+        self.signedByUserId = signedByUserId
+        self.signedByUserSignKeyId = signedByUserSignKeyId
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupOutDataKeys: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupOutDataKeys: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupOutDataKeys {
+        return
+            try GroupOutDataKeys(
+                privateKeyId: FfiConverterString.read(from: &buf), 
+                keyData: FfiConverterString.read(from: &buf), 
+                signedByUserId: FfiConverterOptionString.read(from: &buf), 
+                signedByUserSignKeyId: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupOutDataKeys, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.privateKeyId, into: &buf)
+        FfiConverterString.write(value.keyData, into: &buf)
+        FfiConverterOptionString.write(value.signedByUserId, into: &buf)
+        FfiConverterOptionString.write(value.signedByUserSignKeyId, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutDataKeys_lift(_ buf: RustBuffer) throws -> GroupOutDataKeys {
+    return try FfiConverterTypeGroupOutDataKeys.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutDataKeys_lower(_ value: GroupOutDataKeys) -> RustBuffer {
+    return FfiConverterTypeGroupOutDataKeys.lower(value)
+}
+
+
+public struct GroupOutDataSortableKeys: Equatable, Hashable {
+    public var groupKeyId: String
+    public var keyData: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(groupKeyId: String, keyData: String) {
+        self.groupKeyId = groupKeyId
+        self.keyData = keyData
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupOutDataSortableKeys: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupOutDataSortableKeys: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupOutDataSortableKeys {
+        return
+            try GroupOutDataSortableKeys(
+                groupKeyId: FfiConverterString.read(from: &buf), 
+                keyData: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupOutDataSortableKeys, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.groupKeyId, into: &buf)
+        FfiConverterString.write(value.keyData, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutDataSortableKeys_lift(_ buf: RustBuffer) throws -> GroupOutDataSortableKeys {
+    return try FfiConverterTypeGroupOutDataSortableKeys.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupOutDataSortableKeys_lower(_ value: GroupOutDataSortableKeys) -> RustBuffer {
+    return FfiConverterTypeGroupOutDataSortableKeys.lower(value)
+}
+
+
+public struct GroupPublicKeyData: Equatable, Hashable {
+    public var publicKey: String
+    public var publicKeyId: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(publicKey: String, publicKeyId: String) {
+        self.publicKey = publicKey
+        self.publicKeyId = publicKeyId
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupPublicKeyData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupPublicKeyData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupPublicKeyData {
+        return
+            try GroupPublicKeyData(
+                publicKey: FfiConverterString.read(from: &buf), 
+                publicKeyId: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupPublicKeyData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.publicKey, into: &buf)
+        FfiConverterString.write(value.publicKeyId, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupPublicKeyData_lift(_ buf: RustBuffer) throws -> GroupPublicKeyData {
+    return try FfiConverterTypeGroupPublicKeyData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupPublicKeyData_lower(_ value: GroupPublicKeyData) -> RustBuffer {
+    return FfiConverterTypeGroupPublicKeyData.lower(value)
+}
+
+
+public struct GroupUserListItem: Equatable, Hashable {
+    public var userId: String
+    public var rank: Int32
+    public var joinedTime: String
+    public var userType: Int32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(userId: String, rank: Int32, joinedTime: String, userType: Int32) {
+        self.userId = userId
+        self.rank = rank
+        self.joinedTime = joinedTime
+        self.userType = userType
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension GroupUserListItem: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGroupUserListItem: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GroupUserListItem {
+        return
+            try GroupUserListItem(
+                userId: FfiConverterString.read(from: &buf), 
+                rank: FfiConverterInt32.read(from: &buf), 
+                joinedTime: FfiConverterString.read(from: &buf), 
+                userType: FfiConverterInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GroupUserListItem, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.userId, into: &buf)
+        FfiConverterInt32.write(value.rank, into: &buf)
+        FfiConverterString.write(value.joinedTime, into: &buf)
+        FfiConverterInt32.write(value.userType, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupUserListItem_lift(_ buf: RustBuffer) throws -> GroupUserListItem {
+    return try FfiConverterTypeGroupUserListItem.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGroupUserListItem_lower(_ value: GroupUserListItem) -> RustBuffer {
+    return FfiConverterTypeGroupUserListItem.lower(value)
+}
+
+
+public struct KeyRotationGetOut: Equatable, Hashable {
+    public var preGroupKeyId: String
+    public var newGroupKeyId: String
+    public var encryptedEphKeyKeyId: String
+    public var serverOutput: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(preGroupKeyId: String, newGroupKeyId: String, encryptedEphKeyKeyId: String, serverOutput: String) {
+        self.preGroupKeyId = preGroupKeyId
+        self.newGroupKeyId = newGroupKeyId
+        self.encryptedEphKeyKeyId = encryptedEphKeyKeyId
+        self.serverOutput = serverOutput
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension KeyRotationGetOut: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeKeyRotationGetOut: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> KeyRotationGetOut {
+        return
+            try KeyRotationGetOut(
+                preGroupKeyId: FfiConverterString.read(from: &buf), 
+                newGroupKeyId: FfiConverterString.read(from: &buf), 
+                encryptedEphKeyKeyId: FfiConverterString.read(from: &buf), 
+                serverOutput: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: KeyRotationGetOut, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.preGroupKeyId, into: &buf)
+        FfiConverterString.write(value.newGroupKeyId, into: &buf)
+        FfiConverterString.write(value.encryptedEphKeyKeyId, into: &buf)
+        FfiConverterString.write(value.serverOutput, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeKeyRotationGetOut_lift(_ buf: RustBuffer) throws -> KeyRotationGetOut {
+    return try FfiConverterTypeKeyRotationGetOut.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeKeyRotationGetOut_lower(_ value: KeyRotationGetOut) -> RustBuffer {
+    return FfiConverterTypeKeyRotationGetOut.lower(value)
+}
+
+
+public struct KeyRotationInput: Equatable, Hashable {
+    public var error: String?
+    public var encryptedEphemeralKeyByGroupKeyAndPublicKey: String
+    public var encryptedGroupKeyByEphemeral: String
+    public var ephemeralAlg: String
+    public var encryptedEphKeyKeyId: String
+    public var previousGroupKeyId: String
+    public var time: String
+    public var newGroupKeyId: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(error: String?, encryptedEphemeralKeyByGroupKeyAndPublicKey: String, encryptedGroupKeyByEphemeral: String, ephemeralAlg: String, encryptedEphKeyKeyId: String, previousGroupKeyId: String, time: String, newGroupKeyId: String) {
+        self.error = error
+        self.encryptedEphemeralKeyByGroupKeyAndPublicKey = encryptedEphemeralKeyByGroupKeyAndPublicKey
+        self.encryptedGroupKeyByEphemeral = encryptedGroupKeyByEphemeral
+        self.ephemeralAlg = ephemeralAlg
+        self.encryptedEphKeyKeyId = encryptedEphKeyKeyId
+        self.previousGroupKeyId = previousGroupKeyId
+        self.time = time
+        self.newGroupKeyId = newGroupKeyId
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension KeyRotationInput: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeKeyRotationInput: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> KeyRotationInput {
+        return
+            try KeyRotationInput(
+                error: FfiConverterOptionString.read(from: &buf), 
+                encryptedEphemeralKeyByGroupKeyAndPublicKey: FfiConverterString.read(from: &buf), 
+                encryptedGroupKeyByEphemeral: FfiConverterString.read(from: &buf), 
+                ephemeralAlg: FfiConverterString.read(from: &buf), 
+                encryptedEphKeyKeyId: FfiConverterString.read(from: &buf), 
+                previousGroupKeyId: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf), 
+                newGroupKeyId: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: KeyRotationInput, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.error, into: &buf)
+        FfiConverterString.write(value.encryptedEphemeralKeyByGroupKeyAndPublicKey, into: &buf)
+        FfiConverterString.write(value.encryptedGroupKeyByEphemeral, into: &buf)
+        FfiConverterString.write(value.ephemeralAlg, into: &buf)
+        FfiConverterString.write(value.encryptedEphKeyKeyId, into: &buf)
+        FfiConverterString.write(value.previousGroupKeyId, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+        FfiConverterString.write(value.newGroupKeyId, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeKeyRotationInput_lift(_ buf: RustBuffer) throws -> KeyRotationInput {
+    return try FfiConverterTypeKeyRotationInput.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeKeyRotationInput_lower(_ value: KeyRotationInput) -> RustBuffer {
+    return FfiConverterTypeKeyRotationInput.lower(value)
+}
+
+
+public struct ListGroups: Equatable, Hashable {
+    public var groupId: String
+    public var time: String
+    public var joinedTime: String
+    public var rank: Int32
+    public var parent: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(groupId: String, time: String, joinedTime: String, rank: Int32, parent: String?) {
+        self.groupId = groupId
+        self.time = time
+        self.joinedTime = joinedTime
+        self.rank = rank
+        self.parent = parent
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension ListGroups: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeListGroups: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListGroups {
+        return
+            try ListGroups(
+                groupId: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf), 
+                joinedTime: FfiConverterString.read(from: &buf), 
+                rank: FfiConverterInt32.read(from: &buf), 
+                parent: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ListGroups, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.groupId, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+        FfiConverterString.write(value.joinedTime, into: &buf)
+        FfiConverterInt32.write(value.rank, into: &buf)
+        FfiConverterOptionString.write(value.parent, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeListGroups_lift(_ buf: RustBuffer) throws -> ListGroups {
+    return try FfiConverterTypeListGroups.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeListGroups_lower(_ value: ListGroups) -> RustBuffer {
+    return FfiConverterTypeListGroups.lower(value)
+}
+
+
 public struct NonRegisteredKeyOutput: Equatable, Hashable {
     public var key: String
     public var encryptedKey: String
@@ -689,6 +2089,318 @@ public func FfiConverterTypeNonRegisteredKeyOutput_lift(_ buf: RustBuffer) throw
 #endif
 public func FfiConverterTypeNonRegisteredKeyOutput_lower(_ value: NonRegisteredKeyOutput) -> RustBuffer {
     return FfiConverterTypeNonRegisteredKeyOutput.lower(value)
+}
+
+
+public struct OtpRecoveryKeysOutput: Equatable, Hashable {
+    public var keys: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(keys: [String]) {
+        self.keys = keys
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension OtpRecoveryKeysOutput: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeOtpRecoveryKeysOutput: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OtpRecoveryKeysOutput {
+        return
+            try OtpRecoveryKeysOutput(
+                keys: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: OtpRecoveryKeysOutput, into buf: inout [UInt8]) {
+        FfiConverterSequenceString.write(value.keys, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOtpRecoveryKeysOutput_lift(_ buf: RustBuffer) throws -> OtpRecoveryKeysOutput {
+    return try FfiConverterTypeOtpRecoveryKeysOutput.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOtpRecoveryKeysOutput_lower(_ value: OtpRecoveryKeysOutput) -> RustBuffer {
+    return FfiConverterTypeOtpRecoveryKeysOutput.lower(value)
+}
+
+
+public struct OtpRegister: Equatable, Hashable {
+    public var secret: String
+    public var alg: String
+    public var recover: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(secret: String, alg: String, recover: [String]) {
+        self.secret = secret
+        self.alg = alg
+        self.recover = recover
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension OtpRegister: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeOtpRegister: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OtpRegister {
+        return
+            try OtpRegister(
+                secret: FfiConverterString.read(from: &buf), 
+                alg: FfiConverterString.read(from: &buf), 
+                recover: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: OtpRegister, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.secret, into: &buf)
+        FfiConverterString.write(value.alg, into: &buf)
+        FfiConverterSequenceString.write(value.recover, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOtpRegister_lift(_ buf: RustBuffer) throws -> OtpRegister {
+    return try FfiConverterTypeOtpRegister.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOtpRegister_lower(_ value: OtpRegister) -> RustBuffer {
+    return FfiConverterTypeOtpRegister.lower(value)
+}
+
+
+public struct OtpRegisterUrl: Equatable, Hashable {
+    public var url: String
+    public var recover: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(url: String, recover: [String]) {
+        self.url = url
+        self.recover = recover
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension OtpRegisterUrl: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeOtpRegisterUrl: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OtpRegisterUrl {
+        return
+            try OtpRegisterUrl(
+                url: FfiConverterString.read(from: &buf), 
+                recover: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: OtpRegisterUrl, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.url, into: &buf)
+        FfiConverterSequenceString.write(value.recover, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOtpRegisterUrl_lift(_ buf: RustBuffer) throws -> OtpRegisterUrl {
+    return try FfiConverterTypeOtpRegisterUrl.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOtpRegisterUrl_lower(_ value: OtpRegisterUrl) -> RustBuffer {
+    return FfiConverterTypeOtpRegisterUrl.lower(value)
+}
+
+
+public struct PreRegisterDeviceData: Equatable, Hashable {
+    public var input: String
+    public var exportedPublicKey: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(input: String, exportedPublicKey: String) {
+        self.input = input
+        self.exportedPublicKey = exportedPublicKey
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension PreRegisterDeviceData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePreRegisterDeviceData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PreRegisterDeviceData {
+        return
+            try PreRegisterDeviceData(
+                input: FfiConverterString.read(from: &buf), 
+                exportedPublicKey: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PreRegisterDeviceData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.input, into: &buf)
+        FfiConverterString.write(value.exportedPublicKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePreRegisterDeviceData_lift(_ buf: RustBuffer) throws -> PreRegisterDeviceData {
+    return try FfiConverterTypePreRegisterDeviceData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePreRegisterDeviceData_lower(_ value: PreRegisterDeviceData) -> RustBuffer {
+    return FfiConverterTypePreRegisterDeviceData.lower(value)
+}
+
+
+public struct PrepareLoginOtpOutput: Equatable, Hashable {
+    public var masterKey: String
+    public var authKey: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(masterKey: String, authKey: String) {
+        self.masterKey = masterKey
+        self.authKey = authKey
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension PrepareLoginOtpOutput: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePrepareLoginOtpOutput: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PrepareLoginOtpOutput {
+        return
+            try PrepareLoginOtpOutput(
+                masterKey: FfiConverterString.read(from: &buf), 
+                authKey: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PrepareLoginOtpOutput, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.masterKey, into: &buf)
+        FfiConverterString.write(value.authKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePrepareLoginOtpOutput_lift(_ buf: RustBuffer) throws -> PrepareLoginOtpOutput {
+    return try FfiConverterTypePrepareLoginOtpOutput.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePrepareLoginOtpOutput_lower(_ value: PrepareLoginOtpOutput) -> RustBuffer {
+    return FfiConverterTypePrepareLoginOtpOutput.lower(value)
+}
+
+
+public struct RegisterDeviceData: Equatable, Hashable {
+    public var sessionId: String
+    public var exportedPublicKey: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(sessionId: String, exportedPublicKey: String) {
+        self.sessionId = sessionId
+        self.exportedPublicKey = exportedPublicKey
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension RegisterDeviceData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRegisterDeviceData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RegisterDeviceData {
+        return
+            try RegisterDeviceData(
+                sessionId: FfiConverterString.read(from: &buf), 
+                exportedPublicKey: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: RegisterDeviceData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.sessionId, into: &buf)
+        FfiConverterString.write(value.exportedPublicKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRegisterDeviceData_lift(_ buf: RustBuffer) throws -> RegisterDeviceData {
+    return try FfiConverterTypeRegisterDeviceData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRegisterDeviceData_lower(_ value: RegisterDeviceData) -> RustBuffer {
+    return FfiConverterTypeRegisterDeviceData.lower(value)
 }
 
 
@@ -804,6 +2516,454 @@ public func FfiConverterTypeSortableEncryptOutput_lower(_ value: SortableEncrypt
 }
 
 
+public struct UserData: Equatable, Hashable {
+    public var jwt: String
+    public var userId: String
+    public var deviceId: String
+    public var refreshToken: String
+    public var keys: DeviceKeyData
+    public var userKeys: [UserKeyData]
+    public var hmacKeys: [GroupOutDataHmacKeys]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(jwt: String, userId: String, deviceId: String, refreshToken: String, keys: DeviceKeyData, userKeys: [UserKeyData], hmacKeys: [GroupOutDataHmacKeys]) {
+        self.jwt = jwt
+        self.userId = userId
+        self.deviceId = deviceId
+        self.refreshToken = refreshToken
+        self.keys = keys
+        self.userKeys = userKeys
+        self.hmacKeys = hmacKeys
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension UserData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeUserData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserData {
+        return
+            try UserData(
+                jwt: FfiConverterString.read(from: &buf), 
+                userId: FfiConverterString.read(from: &buf), 
+                deviceId: FfiConverterString.read(from: &buf), 
+                refreshToken: FfiConverterString.read(from: &buf), 
+                keys: FfiConverterTypeDeviceKeyData.read(from: &buf), 
+                userKeys: FfiConverterSequenceTypeUserKeyData.read(from: &buf), 
+                hmacKeys: FfiConverterSequenceTypeGroupOutDataHmacKeys.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.jwt, into: &buf)
+        FfiConverterString.write(value.userId, into: &buf)
+        FfiConverterString.write(value.deviceId, into: &buf)
+        FfiConverterString.write(value.refreshToken, into: &buf)
+        FfiConverterTypeDeviceKeyData.write(value.keys, into: &buf)
+        FfiConverterSequenceTypeUserKeyData.write(value.userKeys, into: &buf)
+        FfiConverterSequenceTypeGroupOutDataHmacKeys.write(value.hmacKeys, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserData_lift(_ buf: RustBuffer) throws -> UserData {
+    return try FfiConverterTypeUserData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserData_lower(_ value: UserData) -> RustBuffer {
+    return FfiConverterTypeUserData.lower(value)
+}
+
+
+public struct UserDeviceList: Equatable, Hashable {
+    public var deviceId: String
+    public var time: String
+    public var deviceIdentifier: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(deviceId: String, time: String, deviceIdentifier: String) {
+        self.deviceId = deviceId
+        self.time = time
+        self.deviceIdentifier = deviceIdentifier
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension UserDeviceList: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeUserDeviceList: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserDeviceList {
+        return
+            try UserDeviceList(
+                deviceId: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf), 
+                deviceIdentifier: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserDeviceList, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.deviceId, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+        FfiConverterString.write(value.deviceIdentifier, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserDeviceList_lift(_ buf: RustBuffer) throws -> UserDeviceList {
+    return try FfiConverterTypeUserDeviceList.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserDeviceList_lower(_ value: UserDeviceList) -> RustBuffer {
+    return FfiConverterTypeUserDeviceList.lower(value)
+}
+
+
+public struct UserInitServerOutput: Equatable, Hashable {
+    public var jwt: String
+    public var invites: [GroupInviteReqList]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(jwt: String, invites: [GroupInviteReqList]) {
+        self.jwt = jwt
+        self.invites = invites
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension UserInitServerOutput: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeUserInitServerOutput: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserInitServerOutput {
+        return
+            try UserInitServerOutput(
+                jwt: FfiConverterString.read(from: &buf), 
+                invites: FfiConverterSequenceTypeGroupInviteReqList.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserInitServerOutput, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.jwt, into: &buf)
+        FfiConverterSequenceTypeGroupInviteReqList.write(value.invites, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserInitServerOutput_lift(_ buf: RustBuffer) throws -> UserInitServerOutput {
+    return try FfiConverterTypeUserInitServerOutput.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserInitServerOutput_lower(_ value: UserInitServerOutput) -> RustBuffer {
+    return FfiConverterTypeUserInitServerOutput.lower(value)
+}
+
+
+public struct UserKeyData: Equatable, Hashable {
+    public var privateKey: String
+    public var publicKey: String
+    public var groupKey: String
+    public var time: String
+    public var groupKeyId: String
+    public var signKey: String
+    public var verifyKey: String
+    public var exportedPublicKey: String
+    public var exportedPublicKeySigKeyId: String?
+    public var exportedVerifyKey: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(privateKey: String, publicKey: String, groupKey: String, time: String, groupKeyId: String, signKey: String, verifyKey: String, exportedPublicKey: String, exportedPublicKeySigKeyId: String?, exportedVerifyKey: String) {
+        self.privateKey = privateKey
+        self.publicKey = publicKey
+        self.groupKey = groupKey
+        self.time = time
+        self.groupKeyId = groupKeyId
+        self.signKey = signKey
+        self.verifyKey = verifyKey
+        self.exportedPublicKey = exportedPublicKey
+        self.exportedPublicKeySigKeyId = exportedPublicKeySigKeyId
+        self.exportedVerifyKey = exportedVerifyKey
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension UserKeyData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeUserKeyData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserKeyData {
+        return
+            try UserKeyData(
+                privateKey: FfiConverterString.read(from: &buf), 
+                publicKey: FfiConverterString.read(from: &buf), 
+                groupKey: FfiConverterString.read(from: &buf), 
+                time: FfiConverterString.read(from: &buf), 
+                groupKeyId: FfiConverterString.read(from: &buf), 
+                signKey: FfiConverterString.read(from: &buf), 
+                verifyKey: FfiConverterString.read(from: &buf), 
+                exportedPublicKey: FfiConverterString.read(from: &buf), 
+                exportedPublicKeySigKeyId: FfiConverterOptionString.read(from: &buf), 
+                exportedVerifyKey: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserKeyData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.privateKey, into: &buf)
+        FfiConverterString.write(value.publicKey, into: &buf)
+        FfiConverterString.write(value.groupKey, into: &buf)
+        FfiConverterString.write(value.time, into: &buf)
+        FfiConverterString.write(value.groupKeyId, into: &buf)
+        FfiConverterString.write(value.signKey, into: &buf)
+        FfiConverterString.write(value.verifyKey, into: &buf)
+        FfiConverterString.write(value.exportedPublicKey, into: &buf)
+        FfiConverterOptionString.write(value.exportedPublicKeySigKeyId, into: &buf)
+        FfiConverterString.write(value.exportedVerifyKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserKeyData_lift(_ buf: RustBuffer) throws -> UserKeyData {
+    return try FfiConverterTypeUserKeyData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserKeyData_lower(_ value: UserKeyData) -> RustBuffer {
+    return FfiConverterTypeUserKeyData.lower(value)
+}
+
+
+public struct UserLoginOut: Equatable, Hashable {
+    public var direct: String?
+    public var masterKey: String?
+    public var authKey: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(direct: String?, masterKey: String?, authKey: String?) {
+        self.direct = direct
+        self.masterKey = masterKey
+        self.authKey = authKey
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension UserLoginOut: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeUserLoginOut: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserLoginOut {
+        return
+            try UserLoginOut(
+                direct: FfiConverterOptionString.read(from: &buf), 
+                masterKey: FfiConverterOptionString.read(from: &buf), 
+                authKey: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserLoginOut, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.direct, into: &buf)
+        FfiConverterOptionString.write(value.masterKey, into: &buf)
+        FfiConverterOptionString.write(value.authKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserLoginOut_lift(_ buf: RustBuffer) throws -> UserLoginOut {
+    return try FfiConverterTypeUserLoginOut.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserLoginOut_lower(_ value: UserLoginOut) -> RustBuffer {
+    return FfiConverterTypeUserLoginOut.lower(value)
+}
+
+
+public struct UserPublicKeyData: Equatable, Hashable {
+    public var publicKey: String
+    public var publicKeyId: String
+    public var publicKeySigKeyId: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(publicKey: String, publicKeyId: String, publicKeySigKeyId: String?) {
+        self.publicKey = publicKey
+        self.publicKeyId = publicKeyId
+        self.publicKeySigKeyId = publicKeySigKeyId
+    }
+
+    
+}
+
+#if compiler(>=6)
+extension UserPublicKeyData: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeUserPublicKeyData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserPublicKeyData {
+        return
+            try UserPublicKeyData(
+                publicKey: FfiConverterString.read(from: &buf), 
+                publicKeyId: FfiConverterString.read(from: &buf), 
+                publicKeySigKeyId: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserPublicKeyData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.publicKey, into: &buf)
+        FfiConverterString.write(value.publicKeyId, into: &buf)
+        FfiConverterOptionString.write(value.publicKeySigKeyId, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserPublicKeyData_lift(_ buf: RustBuffer) throws -> UserPublicKeyData {
+    return try FfiConverterTypeUserPublicKeyData.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserPublicKeyData_lower(_ value: UserPublicKeyData) -> RustBuffer {
+    return FfiConverterTypeUserPublicKeyData.lower(value)
+}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum BelongsToType: Equatable, Hashable {
+    
+    case group
+    case user
+    case none
+
+
+
+}
+
+#if compiler(>=6)
+extension BelongsToType: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBelongsToType: FfiConverterRustBuffer {
+    typealias SwiftType = BelongsToType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BelongsToType {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .group
+        
+        case 2: return .user
+        
+        case 3: return .none
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: BelongsToType, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .group:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .user:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .none:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBelongsToType_lift(_ buf: RustBuffer) throws -> BelongsToType {
+    return try FfiConverterTypeBelongsToType.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBelongsToType_lower(_ value: BelongsToType) -> RustBuffer {
+    return FfiConverterTypeBelongsToType.lower(value)
+}
+
+
+
 public enum SentcError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
 
     
@@ -902,6 +3062,54 @@ fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
+    typealias SwiftType = Int32?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionBool: FfiConverterRustBuffer {
+    typealias SwiftType = Bool?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterBool.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterBool.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
@@ -947,6 +3155,385 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         return seq
     }
 }
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeFilePartListItem: FfiConverterRustBuffer {
+    typealias SwiftType = [FilePartListItem]
+
+    public static func write(_ value: [FilePartListItem], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeFilePartListItem.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [FilePartListItem] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [FilePartListItem]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeFilePartListItem.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGroupChildrenList: FfiConverterRustBuffer {
+    typealias SwiftType = [GroupChildrenList]
+
+    public static func write(_ value: [GroupChildrenList], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGroupChildrenList.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GroupChildrenList] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GroupChildrenList]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGroupChildrenList.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGroupInviteReqList: FfiConverterRustBuffer {
+    typealias SwiftType = [GroupInviteReqList]
+
+    public static func write(_ value: [GroupInviteReqList], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGroupInviteReqList.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GroupInviteReqList] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GroupInviteReqList]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGroupInviteReqList.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGroupJoinReqList: FfiConverterRustBuffer {
+    typealias SwiftType = [GroupJoinReqList]
+
+    public static func write(_ value: [GroupJoinReqList], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGroupJoinReqList.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GroupJoinReqList] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GroupJoinReqList]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGroupJoinReqList.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGroupOutDataHmacKeys: FfiConverterRustBuffer {
+    typealias SwiftType = [GroupOutDataHmacKeys]
+
+    public static func write(_ value: [GroupOutDataHmacKeys], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGroupOutDataHmacKeys.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GroupOutDataHmacKeys] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GroupOutDataHmacKeys]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGroupOutDataHmacKeys.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGroupOutDataKeys: FfiConverterRustBuffer {
+    typealias SwiftType = [GroupOutDataKeys]
+
+    public static func write(_ value: [GroupOutDataKeys], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGroupOutDataKeys.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GroupOutDataKeys] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GroupOutDataKeys]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGroupOutDataKeys.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGroupOutDataSortableKeys: FfiConverterRustBuffer {
+    typealias SwiftType = [GroupOutDataSortableKeys]
+
+    public static func write(_ value: [GroupOutDataSortableKeys], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGroupOutDataSortableKeys.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GroupOutDataSortableKeys] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GroupOutDataSortableKeys]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGroupOutDataSortableKeys.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGroupUserListItem: FfiConverterRustBuffer {
+    typealias SwiftType = [GroupUserListItem]
+
+    public static func write(_ value: [GroupUserListItem], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGroupUserListItem.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GroupUserListItem] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GroupUserListItem]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGroupUserListItem.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeKeyRotationGetOut: FfiConverterRustBuffer {
+    typealias SwiftType = [KeyRotationGetOut]
+
+    public static func write(_ value: [KeyRotationGetOut], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeKeyRotationGetOut.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [KeyRotationGetOut] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [KeyRotationGetOut]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeKeyRotationGetOut.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeListGroups: FfiConverterRustBuffer {
+    typealias SwiftType = [ListGroups]
+
+    public static func write(_ value: [ListGroups], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeListGroups.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ListGroups] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ListGroups]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeListGroups.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeUserDeviceList: FfiConverterRustBuffer {
+    typealias SwiftType = [UserDeviceList]
+
+    public static func write(_ value: [UserDeviceList], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeUserDeviceList.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UserDeviceList] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [UserDeviceList]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeUserDeviceList.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeUserKeyData: FfiConverterRustBuffer {
+    typealias SwiftType = [UserKeyData]
+
+    public static func write(_ value: [UserKeyData], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeUserKeyData.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UserKeyData] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [UserKeyData]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeUserKeyData.read(from: &buf))
+        }
+        return seq
+    }
+}
+private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
+private let UNIFFI_RUST_FUTURE_POLL_WAKE: Int8 = 1
+
+fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
+
+fileprivate func uniffiRustCallAsync<F, T>(
+    rustFutureFunc: () -> UInt64,
+    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> (),
+    completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
+    freeFunc: (UInt64) -> (),
+    liftFunc: (F) throws -> T,
+    errorHandler: ((RustBuffer) throws -> Swift.Error)?
+) async throws -> T {
+    // Make sure to call the ensure init function since future creation doesn't have a
+    // RustCallStatus param, so doesn't use makeRustCall()
+    uniffiEnsureSentcUniffiRustInitialized()
+    let rustFuture = rustFutureFunc()
+    defer {
+        freeFunc(rustFuture)
+    }
+    var pollResult: Int8;
+    repeat {
+        pollResult = await withUnsafeContinuation {
+            pollFunc(
+                rustFuture,
+                { handle, pollResult in
+                    uniffiFutureContinuationCallback(handle: handle, pollResult: pollResult)
+                },
+                uniffiContinuationHandleMap.insert(obj: $0)
+            )
+        }
+    } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
+
+    return try liftFunc(makeRustCall(
+        { completeFunc(rustFuture, $0) },
+        errorHandler: errorHandler
+    ))
+}
+
+// Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
+// lift the return value or error and resume the suspended function.
+fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
+    if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
+        continuation.resume(returning: pollResult)
+    } else {
+        print("uniffiFutureContinuationCallback invalid handle")
+    }
+}
+public func changePassword(baseUrl: String, authToken: String, userIdentifier: String, oldPassword: String, newPassword: String, mfaToken: String?, mfaRecovery: Bool?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_change_password(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(userIdentifier),FfiConverterString.lower(oldPassword),FfiConverterString.lower(newPassword),FfiConverterOptionString.lower(mfaToken),FfiConverterOptionBool.lower(mfaRecovery)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+/**
+ * # Check if the identifier is available for this app
+ */
+public func checkUserIdentifierAvailable(baseUrl: String, authToken: String, userIdentifier: String)async throws  -> Bool  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_check_user_identifier_available(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(userIdentifier)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_i8,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_i8,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_i8,
+            liftFunc: FfiConverterBool.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
 public func createSearchable(key: String, data: String, full: Bool, limit: UInt32?)throws  -> SearchableCreateOutput  {
     return try  FfiConverterTypeSearchableCreateOutput_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_create_searchable(
@@ -964,6 +3551,13 @@ public func createSearchableRaw(key: String, data: String, full: Bool, limit: UI
         FfiConverterString.lower(data),
         FfiConverterBool.lower(full),
         FfiConverterOptionUInt32.lower(limit),$0
+    )
+})
+}
+public func decodeJwt(jwt: String)throws  -> Claims  {
+    return try  FfiConverterTypeClaims_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_decode_jwt(
+        FfiConverterString.lower(jwt),$0
     )
 })
 }
@@ -1039,12 +3633,92 @@ public func decryptSymmetric(key: String, encryptedData: Data, verifyKeyData: St
     )
 })
 }
+public func deleteDevice(baseUrl: String, authToken: String, freshJwt: String, deviceId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_delete_device(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(freshJwt),FfiConverterString.lower(deviceId)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func deleteUser(baseUrl: String, authToken: String, freshJwt: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_delete_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(freshJwt)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
 public func deserializeHeadFromString(head: String)throws  -> EncryptedHead  {
     return try  FfiConverterTypeEncryptedHead_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_deserialize_head_from_string(
         FfiConverterString.lower(head),$0
     )
 })
+}
+public func disableOtp(baseUrl: String, authToken: String, jwt: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_disable_otp(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+/**
+ * # Validates the response if the identifier is available
+ *
+ * but without making a request
+ */
+public func doneCheckUserIdentifierAvailable(serverOutput: String)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_done_check_user_identifier_available(
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+public func doneFetchUserKey(privateKey: String, serverOutput: String)throws  -> UserKeyData  {
+    return try  FfiConverterTypeUserKeyData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_done_fetch_user_key(
+        FfiConverterString.lower(privateKey),
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+/**
+ * # Validates the response of register
+ *
+ * Returns the new user id
+ */
+public func doneRegister(serverOutput: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_done_register(
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+public func doneRegisterDeviceStart(serverOutput: String)throws   {try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_done_register_device_start(
+        FfiConverterString.lower(serverOutput),$0
+    )
+}
 }
 public func encryptAsymmetric(replyPublicKeyData: String, data: Data, signKey: String?)throws  -> Data  {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
@@ -1100,6 +3774,172 @@ public func encryptSymmetric(key: String, data: Data, signKey: String?)throws  -
     )
 })
 }
+public func extractUserData(data: String)throws  -> UserData  {
+    return try  FfiConverterTypeUserData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_extract_user_data(
+        FfiConverterString.lower(data),$0
+    )
+})
+}
+public func fetchUserKey(baseUrl: String, authToken: String, jwt: String, keyId: String, privateKey: String)async throws  -> UserKeyData  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_fetch_user_key(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(keyId),FfiConverterString.lower(privateKey)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeUserKeyData_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileDeleteFile(baseUrl: String, authToken: String, jwt: String, fileId: String, groupId: String?, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_delete_file(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(fileId),FfiConverterOptionString.lower(groupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileDoneRegisterFile(serverOutput: String)throws  -> FileDoneRegister  {
+    return try  FfiConverterTypeFileDoneRegister_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_file_done_register_file(
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+public func fileDownloadAndDecryptFilePart(baseUrl: String, urlPrefix: String?, authToken: String, partId: String, contentKey: String, verifyKeyData: String?)async throws  -> FileDownloadResult  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_download_and_decrypt_file_part(FfiConverterString.lower(baseUrl),FfiConverterOptionString.lower(urlPrefix),FfiConverterString.lower(authToken),FfiConverterString.lower(partId),FfiConverterString.lower(contentKey),FfiConverterOptionString.lower(verifyKeyData)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeFileDownloadResult_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileDownloadAndDecryptFilePartStart(baseUrl: String, urlPrefix: String?, authToken: String, partId: String, contentKey: String, verifyKeyData: String?)async throws  -> FileDownloadResult  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_download_and_decrypt_file_part_start(FfiConverterString.lower(baseUrl),FfiConverterOptionString.lower(urlPrefix),FfiConverterString.lower(authToken),FfiConverterString.lower(partId),FfiConverterString.lower(contentKey),FfiConverterOptionString.lower(verifyKeyData)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeFileDownloadResult_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileDownloadFileMeta(baseUrl: String, authToken: String, jwt: String?, id: String, groupId: String?, groupAsMember: String?)async throws  -> FileData  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_download_file_meta(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterOptionString.lower(jwt),FfiConverterString.lower(id),FfiConverterOptionString.lower(groupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeFileData_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileDownloadPartList(baseUrl: String, authToken: String, fileId: String, lastSequence: String)async throws  -> [FilePartListItem]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_download_part_list(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(fileId),FfiConverterString.lower(lastSequence)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeFilePartListItem.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileFileNameUpdate(baseUrl: String, authToken: String, jwt: String, fileId: String, contentKey: String, fileName: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_file_name_update(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(fileId),FfiConverterString.lower(contentKey),FfiConverterOptionString.lower(fileName)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func filePrepareRegisterFile(masterKeyId: String, contentKey: String, encryptedContentKey: String, belongsToId: String?, belongsToType: String, fileName: String?)throws  -> FilePrepareRegister  {
+    return try  FfiConverterTypeFilePrepareRegister_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_file_prepare_register_file(
+        FfiConverterString.lower(masterKeyId),
+        FfiConverterString.lower(contentKey),
+        FfiConverterString.lower(encryptedContentKey),
+        FfiConverterOptionString.lower(belongsToId),
+        FfiConverterString.lower(belongsToType),
+        FfiConverterOptionString.lower(fileName),$0
+    )
+})
+}
+public func fileRegisterFile(baseUrl: String, authToken: String, jwt: String, masterKeyId: String, contentKey: String, encryptedContentKey: String, belongsToId: String?, belongsToType: String, fileName: String?, groupId: String?, groupAsMember: String?)async throws  -> FileRegisterOutput  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_register_file(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(masterKeyId),FfiConverterString.lower(contentKey),FfiConverterString.lower(encryptedContentKey),FfiConverterOptionString.lower(belongsToId),FfiConverterString.lower(belongsToType),FfiConverterOptionString.lower(fileName),FfiConverterOptionString.lower(groupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeFileRegisterOutput_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileUploadPart(baseUrl: String, urlPrefix: String?, authToken: String, jwt: String, sessionId: String, end: Bool, sequence: Int32, contentKey: String, signKey: String?, part: Data)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_upload_part(FfiConverterString.lower(baseUrl),FfiConverterOptionString.lower(urlPrefix),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(sessionId),FfiConverterBool.lower(end),FfiConverterInt32.lower(sequence),FfiConverterString.lower(contentKey),FfiConverterOptionString.lower(signKey),FfiConverterData.lower(part)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func fileUploadPartStart(baseUrl: String, urlPrefix: String?, authToken: String, jwt: String, sessionId: String, end: Bool, sequence: Int32, contentKey: String, signKey: String?, part: Data)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_file_upload_part_start(FfiConverterString.lower(baseUrl),FfiConverterOptionString.lower(urlPrefix),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(sessionId),FfiConverterBool.lower(end),FfiConverterInt32.lower(sequence),FfiConverterString.lower(contentKey),FfiConverterOptionString.lower(signKey),FfiConverterData.lower(part)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
 public func generateNonRegisterSymKey(masterKey: String)throws  -> NonRegisteredKeyOutput  {
     return try  FfiConverterTypeNonRegisteredKeyOutput_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_generate_non_register_sym_key(
@@ -1113,6 +3953,866 @@ public func generateNonRegisterSymKeyByPublicKey(replyPublicKey: String)throws  
         FfiConverterString.lower(replyPublicKey),$0
     )
 })
+}
+/**
+ * Generates identifier and password for a user or device
+ */
+public func generateUserRegisterData()throws  -> GeneratedRegisterData  {
+    return try  FfiConverterTypeGeneratedRegisterData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_generate_user_register_data($0
+    )
+})
+}
+public func getFreshJwt(baseUrl: String, authToken: String, userIdentifier: String, password: String, mfaToken: String?, mfaRecovery: Bool?)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_get_fresh_jwt(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(userIdentifier),FfiConverterString.lower(password),FfiConverterOptionString.lower(mfaToken),FfiConverterOptionBool.lower(mfaRecovery)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func getOtpRecoverKeys(baseUrl: String, authToken: String, jwt: String)async throws  -> OtpRecoveryKeysOutput  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_get_otp_recover_keys(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeOtpRecoveryKeysOutput_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func getUserDevices(baseUrl: String, authToken: String, jwt: String, lastFetchedTime: String, lastFetchedId: String)async throws  -> [UserDeviceList]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_get_user_devices(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedId)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeUserDeviceList.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupAcceptInvite(baseUrl: String, authToken: String, jwt: String, id: String, groupId: String?, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_accept_invite(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterOptionString.lower(groupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupAcceptJoinReq(baseUrl: String, authToken: String, jwt: String, id: String, userId: String, keyCount: Int32, rank: Int32?, adminRank: Int32, userPublicKey: String, groupKeys: String, groupAsMember: String?)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_accept_join_req(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(userId),FfiConverterInt32.lower(keyCount),FfiConverterOptionInt32.lower(rank),FfiConverterInt32.lower(adminRank),FfiConverterString.lower(userPublicKey),FfiConverterString.lower(groupKeys),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupCreateChildGroup(baseUrl: String, authToken: String, jwt: String, parentPublicKey: String, parentId: String, adminRank: Int32, groupAsMember: String?, signKey: String?, starter: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_create_child_group(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(parentPublicKey),FfiConverterString.lower(parentId),FfiConverterInt32.lower(adminRank),FfiConverterOptionString.lower(groupAsMember),FfiConverterOptionString.lower(signKey),FfiConverterString.lower(starter)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupCreateConnectedGroup(baseUrl: String, authToken: String, jwt: String, connectedGroupId: String, adminRank: Int32, parentPublicKey: String, groupAsMember: String?, signKey: String?, starter: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_create_connected_group(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(connectedGroupId),FfiConverterInt32.lower(adminRank),FfiConverterString.lower(parentPublicKey),FfiConverterOptionString.lower(groupAsMember),FfiConverterOptionString.lower(signKey),FfiConverterString.lower(starter)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+/**
+ * Create a group with a request.
+ *
+ * Only the default values are sent to the server, no extra data. If extra data is required, use prepare_create
+ */
+public func groupCreateGroup(baseUrl: String, authToken: String, jwt: String, creatorsPublicKey: String, groupAsMember: String?, signKey: String?, starter: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_create_group(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(creatorsPublicKey),FfiConverterOptionString.lower(groupAsMember),FfiConverterOptionString.lower(signKey),FfiConverterString.lower(starter)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupDecryptHmacKey(groupKey: String, serverKeyData: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_decrypt_hmac_key(
+        FfiConverterString.lower(groupKey),
+        FfiConverterString.lower(serverKeyData),$0
+    )
+})
+}
+public func groupDecryptKey(privateKey: String, serverKeyData: String, verifyKey: String?)throws  -> GroupKeyData  {
+    return try  FfiConverterTypeGroupKeyData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_decrypt_key(
+        FfiConverterString.lower(privateKey),
+        FfiConverterString.lower(serverKeyData),
+        FfiConverterOptionString.lower(verifyKey),$0
+    )
+})
+}
+public func groupDecryptSortableKey(groupKey: String, serverKeyData: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_decrypt_sortable_key(
+        FfiConverterString.lower(groupKey),
+        FfiConverterString.lower(serverKeyData),$0
+    )
+})
+}
+public func groupDeleteGroup(baseUrl: String, authToken: String, jwt: String, id: String, adminRank: Int32, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_delete_group(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterInt32.lower(adminRank),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupDeleteSentJoinReq(baseUrl: String, authToken: String, jwt: String, id: String, adminRank: Int32, joinReqGroupId: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_delete_sent_join_req(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterInt32.lower(adminRank),FfiConverterString.lower(joinReqGroupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupDeleteSentJoinReqUser(baseUrl: String, authToken: String, jwt: String, joinReqGroupId: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_delete_sent_join_req_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(joinReqGroupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupDoneKeyRotation(privateKey: String, publicKey: String, preGroupKey: String, serverOutput: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_done_key_rotation(
+        FfiConverterString.lower(privateKey),
+        FfiConverterString.lower(publicKey),
+        FfiConverterString.lower(preGroupKey),
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+/**
+ * Get the group data without a request.
+ *
+ * Use the parent group private key when fetching child group data.
+ */
+public func groupExtractGroupData(serverOutput: String)throws  -> GroupOutData  {
+    return try  FfiConverterTypeGroupOutData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_extract_group_data(
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+/**
+ * Get keys from pagination.
+ *
+ * Call the group route with the last fetched key time and the last fetched key id. Get both from the key data.
+ */
+public func groupExtractGroupKeys(serverOutput: String)throws  -> [GroupOutDataKeys]  {
+    return try  FfiConverterSequenceTypeGroupOutDataKeys.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_extract_group_keys(
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+public func groupFinishKeyRotation(baseUrl: String, authToken: String, jwt: String, id: String, serverOutput: String, preGroupKey: String, publicKey: String, privateKey: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_finish_key_rotation(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(serverOutput),FfiConverterString.lower(preGroupKey),FfiConverterString.lower(publicKey),FfiConverterString.lower(privateKey),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetAllFirstLevelChildren(baseUrl: String, authToken: String, jwt: String, id: String, lastFetchedTime: String, lastFetchedGroupId: String, groupAsMember: String?)async throws  -> [GroupChildrenList]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_all_first_level_children(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedGroupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeGroupChildrenList.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetDoneKeyRotationServerInput(serverOutput: String)throws  -> KeyRotationInput  {
+    return try  FfiConverterTypeKeyRotationInput_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_get_done_key_rotation_server_input(
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+public func groupGetGroupData(baseUrl: String, authToken: String, jwt: String, id: String, groupAsMember: String?)async throws  -> GroupOutData  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_group_data(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeGroupOutData_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetGroupKey(baseUrl: String, authToken: String, jwt: String, id: String, keyId: String, groupAsMember: String?)async throws  -> GroupOutDataKeys  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_group_key(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(keyId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeGroupOutDataKeys_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetGroupKeys(baseUrl: String, authToken: String, jwt: String, id: String, lastFetchedTime: String, lastFetchedKeyId: String, groupAsMember: String?)async throws  -> [GroupOutDataKeys]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_group_keys(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedKeyId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeGroupOutDataKeys.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetGroupUpdates(baseUrl: String, authToken: String, jwt: String, id: String, groupAsMember: String?)async throws  -> GroupDataCheckUpdateServerOutput  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_group_updates(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeGroupDataCheckUpdateServerOutput_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetGroupsForUser(baseUrl: String, authToken: String, jwt: String, lastFetchedTime: String, lastFetchedGroupId: String, groupId: String?)async throws  -> [ListGroups]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_groups_for_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedGroupId),FfiConverterOptionString.lower(groupId)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeListGroups.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetInvitesForUser(baseUrl: String, authToken: String, jwt: String, lastFetchedTime: String, lastFetchedGroupId: String, groupId: String?, groupAsMember: String?)async throws  -> [GroupInviteReqList]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_invites_for_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedGroupId),FfiConverterOptionString.lower(groupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeGroupInviteReqList.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetJoinReqs(baseUrl: String, authToken: String, jwt: String, id: String, adminRank: Int32, lastFetchedTime: String, lastFetchedId: String, groupAsMember: String?)async throws  -> [GroupJoinReqList]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_join_reqs(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterInt32.lower(adminRank),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeGroupJoinReqList.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetMember(baseUrl: String, authToken: String, jwt: String, id: String, lastFetchedTime: String, lastFetchedId: String, groupAsMember: String?)async throws  -> [GroupUserListItem]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_member(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeGroupUserListItem.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetPublicKeyData(baseUrl: String, authToken: String, id: String)async throws  -> GroupPublicKeyData  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_public_key_data(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(id)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeGroupPublicKeyData_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetSentJoinReq(baseUrl: String, authToken: String, jwt: String, id: String, adminRank: Int32, lastFetchedTime: String, lastFetchedGroupId: String, groupAsMember: String?)async throws  -> [GroupInviteReqList]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_sent_join_req(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterInt32.lower(adminRank),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedGroupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeGroupInviteReqList.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupGetSentJoinReqUser(baseUrl: String, authToken: String, jwt: String, lastFetchedTime: String, lastFetchedGroupId: String, groupAsMember: String?)async throws  -> [GroupInviteReqList]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_get_sent_join_req_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(lastFetchedTime),FfiConverterString.lower(lastFetchedGroupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeGroupInviteReqList.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupInviteUser(baseUrl: String, authToken: String, jwt: String, id: String, userId: String, keyCount: Int32, rank: Int32?, adminRank: Int32, autoInvite: Bool, groupInvite: Bool, reInvite: Bool, userPublicKey: String, groupKeys: String, groupAsMember: String?)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_invite_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(userId),FfiConverterInt32.lower(keyCount),FfiConverterOptionInt32.lower(rank),FfiConverterInt32.lower(adminRank),FfiConverterBool.lower(autoInvite),FfiConverterBool.lower(groupInvite),FfiConverterBool.lower(reInvite),FfiConverterString.lower(userPublicKey),FfiConverterString.lower(groupKeys),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupInviteUserSession(baseUrl: String, authToken: String, jwt: String, id: String, autoInvite: Bool, sessionId: String, userPublicKey: String, groupKeys: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_invite_user_session(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterBool.lower(autoInvite),FfiConverterString.lower(sessionId),FfiConverterString.lower(userPublicKey),FfiConverterString.lower(groupKeys),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupJoinReq(baseUrl: String, authToken: String, jwt: String, id: String, groupId: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_join_req(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(groupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupJoinUserSession(baseUrl: String, authToken: String, jwt: String, id: String, sessionId: String, userPublicKey: String, groupKeys: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_join_user_session(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(sessionId),FfiConverterString.lower(userPublicKey),FfiConverterString.lower(groupKeys),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupKeyRotation(baseUrl: String, authToken: String, jwt: String, id: String, publicKey: String, preGroupKey: String, signKey: String?, starter: String, groupAsMember: String?)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_key_rotation(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(publicKey),FfiConverterString.lower(preGroupKey),FfiConverterOptionString.lower(signKey),FfiConverterString.lower(starter),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupKickUser(baseUrl: String, authToken: String, jwt: String, id: String, userId: String, adminRank: Int32, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_kick_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(userId),FfiConverterInt32.lower(adminRank),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupPreDoneKeyRotation(baseUrl: String, authToken: String, jwt: String, id: String, groupAsMember: String?)async throws  -> [KeyRotationGetOut]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_pre_done_key_rotation(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeKeyRotationGetOut.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+/**
+ * Create input for the server api.
+ *
+ * Use this for a group and child group. For child group use the public key of the parent group!
+ */
+public func groupPrepareCreateGroup(creatorsPublicKey: String, signKey: String?, starter: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_prepare_create_group(
+        FfiConverterString.lower(creatorsPublicKey),
+        FfiConverterOptionString.lower(signKey),
+        FfiConverterString.lower(starter),$0
+    )
+})
+}
+public func groupPrepareKeyRotation(preGroupKey: String, publicKey: String, signKey: String?, starter: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_prepare_key_rotation(
+        FfiConverterString.lower(preGroupKey),
+        FfiConverterString.lower(publicKey),
+        FfiConverterOptionString.lower(signKey),
+        FfiConverterString.lower(starter),$0
+    )
+})
+}
+/**
+ * Prepare all group keys for a new member.
+ *
+ * Use the group keys from get group data or get group keys fn as a string array
+ */
+public func groupPrepareKeysForNewMember(userPublicKey: String, groupKeys: String, keyCount: Int32, rank: Int32?, adminRank: Int32)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_prepare_keys_for_new_member(
+        FfiConverterString.lower(userPublicKey),
+        FfiConverterString.lower(groupKeys),
+        FfiConverterInt32.lower(keyCount),
+        FfiConverterOptionInt32.lower(rank),
+        FfiConverterInt32.lower(adminRank),$0
+    )
+})
+}
+public func groupPrepareUpdateRank(userId: String, rank: Int32, adminRank: Int32)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_group_prepare_update_rank(
+        FfiConverterString.lower(userId),
+        FfiConverterInt32.lower(rank),
+        FfiConverterInt32.lower(adminRank),$0
+    )
+})
+}
+public func groupRejectInvite(baseUrl: String, authToken: String, jwt: String, id: String, groupId: String?, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_reject_invite(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterOptionString.lower(groupId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupRejectJoinReq(baseUrl: String, authToken: String, jwt: String, id: String, adminRank: Int32, rejectedUserId: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_reject_join_req(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterInt32.lower(adminRank),FfiConverterString.lower(rejectedUserId),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupStopGroupInvites(baseUrl: String, authToken: String, jwt: String, id: String, adminRank: Int32, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_stop_group_invites(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterInt32.lower(adminRank),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func groupUpdateRank(baseUrl: String, authToken: String, jwt: String, id: String, userId: String, rank: Int32, adminRank: Int32, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_group_update_rank(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterString.lower(userId),FfiConverterInt32.lower(rank),FfiConverterInt32.lower(adminRank),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func initUser(baseUrl: String, authToken: String, jwt: String, refreshToken: String)async throws  -> UserInitServerOutput  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_init_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(refreshToken)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeUserInitServerOutput_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func leaveGroup(baseUrl: String, authToken: String, jwt: String, id: String, groupAsMember: String?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_leave_group(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(id),FfiConverterOptionString.lower(groupAsMember)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+/**
+ * # Log in the user to this app
+ *
+ * Does the login requests. 1. for auth, 2nd to get the keys.
+ *
+ * If there is more data in the backend, then it is possible to call it via the jwt what is returned by the done login request.
+ *
+ * The other backend can validate the jwt
+ */
+public func login(baseUrl: String, authToken: String, userIdentifier: String, password: String)async throws  -> UserLoginOut  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_login(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(userIdentifier),FfiConverterString.lower(password)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeUserLoginOut_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func mfaLogin(baseUrl: String, authToken: String, masterKeyEncryption: String, authKey: String, userIdentifier: String, token: String, recovery: Bool)async throws  -> UserData  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_mfa_login(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(masterKeyEncryption),FfiConverterString.lower(authKey),FfiConverterString.lower(userIdentifier),FfiConverterString.lower(token),FfiConverterBool.lower(recovery)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeUserData_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+/**
+ * # Check if the identifier is available
+ *
+ * but without making a request
+ */
+public func prepareCheckUserIdentifierAvailable(userIdentifier: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_prepare_check_user_identifier_available(
+        FfiConverterString.lower(userIdentifier),$0
+    )
+})
+}
+/**
+ * # Get the user input from the user client
+ *
+ * This is used when the register endpoint should only be called from the backend and not the clients.
+ *
+ * For full-register see register()
+ */
+public func prepareRegister(userIdentifier: String, password: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_prepare_register(
+        FfiConverterString.lower(userIdentifier),
+        FfiConverterString.lower(password),$0
+    )
+})
+}
+public func prepareRegisterDevice(serverOutput: String, userKeys: String, keyCount: Int32)throws  -> PreRegisterDeviceData  {
+    return try  FfiConverterTypePreRegisterDeviceData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_prepare_register_device(
+        FfiConverterString.lower(serverOutput),
+        FfiConverterString.lower(userKeys),
+        FfiConverterInt32.lower(keyCount),$0
+    )
+})
+}
+public func prepareRegisterDeviceStart(deviceIdentifier: String, password: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_prepare_register_device_start(
+        FfiConverterString.lower(deviceIdentifier),
+        FfiConverterString.lower(password),$0
+    )
+})
+}
+public func refreshJwt(baseUrl: String, authToken: String, jwt: String, refreshToken: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_refresh_jwt(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(refreshToken)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+/**
+ * # Register a new user for the app
+ *
+ * Do the full req incl. req.
+ * No checking about spamming and just return the user id.
+ */
+public func register(baseUrl: String, authToken: String, userIdentifier: String, password: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_register(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(userIdentifier),FfiConverterString.lower(password)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func registerDevice(baseUrl: String, authToken: String, jwt: String, serverOutput: String, keyCount: Int32, userKeys: String)async throws  -> RegisterDeviceData  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_register_device(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(serverOutput),FfiConverterInt32.lower(keyCount),FfiConverterString.lower(userKeys)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeRegisterDeviceData_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func registerDeviceStart(baseUrl: String, authToken: String, deviceIdentifier: String, password: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_register_device_start(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(deviceIdentifier),FfiConverterString.lower(password)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func registerOtp(baseUrl: String, authToken: String, jwt: String, issuer: String, audience: String)async throws  -> OtpRegisterUrl  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_register_otp(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(issuer),FfiConverterString.lower(audience)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeOtpRegisterUrl_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func registerRawOtp(baseUrl: String, authToken: String, jwt: String)async throws  -> OtpRegister  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_register_raw_otp(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeOtpRegister_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func resetOtp(baseUrl: String, authToken: String, jwt: String, issuer: String, audience: String)async throws  -> OtpRegisterUrl  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_reset_otp(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(issuer),FfiConverterString.lower(audience)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeOtpRegisterUrl_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func resetPassword(baseUrl: String, authToken: String, jwt: String, newPassword: String, decryptedPrivateKey: String, decryptedSignKey: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_reset_password(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(newPassword),FfiConverterString.lower(decryptedPrivateKey),FfiConverterString.lower(decryptedSignKey)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func resetRawOtp(baseUrl: String, authToken: String, jwt: String)async throws  -> OtpRegister  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_reset_raw_otp(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeOtpRegister_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
 }
 public func search(key: String, data: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
@@ -1168,6 +4868,129 @@ public func splitHeadAndEncryptedString(data: String)throws  -> EncryptedHead  {
     )
 })
 }
+public func updateUser(baseUrl: String, authToken: String, jwt: String, userIdentifier: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_update_user(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(userIdentifier)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func userCreateSafetyNumber(verifyKey1: String, userId1: String, verifyKey2: String?, userId2: String?)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_user_create_safety_number(
+        FfiConverterString.lower(verifyKey1),
+        FfiConverterString.lower(userId1),
+        FfiConverterOptionString.lower(verifyKey2),
+        FfiConverterOptionString.lower(userId2),$0
+    )
+})
+}
+public func userDeviceKeySessionUpload(baseUrl: String, authToken: String, jwt: String, sessionId: String, userPublicKey: String, groupKeys: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_user_device_key_session_upload(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(sessionId),FfiConverterString.lower(userPublicKey),FfiConverterString.lower(groupKeys)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func userFetchPublicKey(baseUrl: String, authToken: String, userId: String)async throws  -> UserPublicKeyData  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_user_fetch_public_key(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(userId)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeUserPublicKeyData_lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func userFetchVerifyKey(baseUrl: String, authToken: String, userId: String, verifyKeyId: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_user_fetch_verify_key(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(userId),FfiConverterString.lower(verifyKeyId)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func userFinishKeyRotation(baseUrl: String, authToken: String, jwt: String, serverOutput: String, preGroupKey: String, publicKey: String, privateKey: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_user_finish_key_rotation(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(serverOutput),FfiConverterString.lower(preGroupKey),FfiConverterString.lower(publicKey),FfiConverterString.lower(privateKey)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_void,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_void,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func userGetDoneKeyRotationServerInput(serverOutput: String)throws  -> KeyRotationInput  {
+    return try  FfiConverterTypeKeyRotationInput_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_user_get_done_key_rotation_server_input(
+        FfiConverterString.lower(serverOutput),$0
+    )
+})
+}
+public func userKeyRotation(baseUrl: String, authToken: String, jwt: String, publicDeviceKey: String, preUserKey: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_user_key_rotation(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt),FfiConverterString.lower(publicDeviceKey),FfiConverterString.lower(preUserKey)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func userPreDoneKeyRotation(baseUrl: String, authToken: String, jwt: String)async throws  -> [KeyRotationGetOut]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_sentc_uniffi_rust_fn_func_user_pre_done_key_rotation(FfiConverterString.lower(baseUrl),FfiConverterString.lower(authToken),FfiConverterString.lower(jwt)
+                )
+            },
+            pollFunc: ffi_sentc_uniffi_rust_rust_future_poll_rust_buffer,
+            completeFunc: ffi_sentc_uniffi_rust_rust_future_complete_rust_buffer,
+            freeFunc: ffi_sentc_uniffi_rust_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeKeyRotationGetOut.lift,
+            errorHandler: FfiConverterTypeSentcError_lift
+        )
+}
+public func userVerifyUserPublicKey(verifyKey: String, publicKey: String)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
+    uniffi_sentc_uniffi_rust_fn_func_user_verify_user_public_key(
+        FfiConverterString.lower(verifyKey),
+        FfiConverterString.lower(publicKey),$0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -1184,10 +5007,19 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
+    if (uniffi_sentc_uniffi_rust_checksum_func_change_password() != 38940) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_check_user_identifier_available() != 18149) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_sentc_uniffi_rust_checksum_func_create_searchable() != 61763) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_create_searchable_raw() != 20047) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_decode_jwt() != 20302) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_decrypt_asymmetric() != 54601) {
@@ -1214,7 +5046,28 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_decrypt_symmetric() != 2874) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_sentc_uniffi_rust_checksum_func_delete_device() != 30757) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_delete_user() != 38865) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_sentc_uniffi_rust_checksum_func_deserialize_head_from_string() != 44515) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_disable_otp() != 13721) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_done_check_user_identifier_available() != 30943) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_done_fetch_user_key() != 45727) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_done_register() != 49588) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_done_register_device_start() != 20343) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_encrypt_asymmetric() != 30265) {
@@ -1235,10 +5088,241 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_encrypt_symmetric() != 33649) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_sentc_uniffi_rust_checksum_func_extract_user_data() != 65169) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_fetch_user_key() != 10793) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_delete_file() != 30827) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_done_register_file() != 34906) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_download_and_decrypt_file_part() != 64441) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_download_and_decrypt_file_part_start() != 38235) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_download_file_meta() != 88) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_download_part_list() != 29721) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_file_name_update() != 22138) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_prepare_register_file() != 37685) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_register_file() != 63052) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_upload_part() != 40542) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_upload_part_start() != 24876) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_sentc_uniffi_rust_checksum_func_generate_non_register_sym_key() != 28491) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_generate_non_register_sym_key_by_public_key() != 34329) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_generate_user_register_data() != 13362) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_get_fresh_jwt() != 15431) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_get_otp_recover_keys() != 58445) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_get_user_devices() != 40134) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_accept_invite() != 46591) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_accept_join_req() != 58028) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_create_child_group() != 44940) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_create_connected_group() != 7114) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_create_group() != 11338) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_decrypt_hmac_key() != 664) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_decrypt_key() != 19672) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_decrypt_sortable_key() != 9262) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_delete_group() != 40050) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_delete_sent_join_req() != 10257) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_delete_sent_join_req_user() != 53639) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_done_key_rotation() != 46070) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_extract_group_data() != 45277) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_extract_group_keys() != 22359) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_finish_key_rotation() != 38462) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_all_first_level_children() != 3965) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_done_key_rotation_server_input() != 44733) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_group_data() != 61808) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_group_key() != 14483) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_group_keys() != 19069) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_group_updates() != 30051) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_groups_for_user() != 2843) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_invites_for_user() != 11475) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_join_reqs() != 2223) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_member() != 3465) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_public_key_data() != 45300) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_sent_join_req() != 27227) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_get_sent_join_req_user() != 6046) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_invite_user() != 11549) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_invite_user_session() != 46965) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_join_req() != 11071) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_join_user_session() != 14213) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_key_rotation() != 14691) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_kick_user() != 43733) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_pre_done_key_rotation() != 30870) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_create_group() != 26220) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_key_rotation() != 8032) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_keys_for_new_member() != 1038) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_update_rank() != 53975) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_reject_invite() != 62588) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_reject_join_req() != 21366) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_stop_group_invites() != 19016) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_update_rank() != 31229) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_init_user() != 40917) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_leave_group() != 11037) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_login() != 56980) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_mfa_login() != 10177) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_check_user_identifier_available() != 14006) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_register() != 59341) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_register_device() != 57339) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_register_device_start() != 8175) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_refresh_jwt() != 15177) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_register() != 27276) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_register_device() != 41750) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_register_device_start() != 14253) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_register_otp() != 40473) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_register_raw_otp() != 11061) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_reset_otp() != 31442) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_reset_password() != 16043) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_reset_raw_otp() != 54224) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_search() != 34609) {
@@ -1260,6 +5344,36 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_split_head_and_encrypted_string() != 47053) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_update_user() != 13472) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_create_safety_number() != 2126) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_device_key_session_upload() != 7824) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_fetch_public_key() != 34039) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_fetch_verify_key() != 48820) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_finish_key_rotation() != 12430) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_get_done_key_rotation_server_input() != 40178) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_key_rotation() != 56288) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_pre_done_key_rotation() != 6009) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_sentc_uniffi_rust_checksum_func_user_verify_user_public_key() != 673) {
         return InitializationResult.apiChecksumMismatch
     }
 

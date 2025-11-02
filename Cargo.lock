@@ -1915,6 +1915,7 @@ version = "0.15.0"
 dependencies = [
  "sentc-crypto",
  "sentc-crypto-common",
+ "serde_json",
  "uniffi",
 ]
 
