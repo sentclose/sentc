@@ -10,7 +10,10 @@ mod user;
 #[derive(uniffi::Error, Debug)]
 pub enum SentcError
 {
-	JSONError(String),
+	JSONError
+	{
+		e: String
+	},
 }
 
 impl std::fmt::Display for SentcError
@@ -18,16 +21,20 @@ impl std::fmt::Display for SentcError
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
 	{
 		match self {
-			Self::JSONError(e) => write!(f, "{e}"),
+			Self::JSONError {
+				e,
+			} => write!(f, "{e}"),
 		}
 	}
 }
 
 impl From<String> for SentcError
 {
-	fn from(value: String) -> Self
+	fn from(e: String) -> Self
 	{
-		Self::JSONError(value)
+		Self::JSONError {
+			e,
+		}
 	}
 }
 
@@ -35,7 +42,9 @@ impl From<SdkError> for SentcError
 {
 	fn from(value: SdkError) -> Self
 	{
-		Self::JSONError(value.into())
+		Self::JSONError {
+			e: value.into(),
+		}
 	}
 }
 
