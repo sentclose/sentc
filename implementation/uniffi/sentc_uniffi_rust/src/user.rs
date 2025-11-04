@@ -294,7 +294,7 @@ pub fn done_register_device_start(server_output: &str) -> Result<(), SentcError>
 	Ok(sentc_crypto::user::done_register_device_start(server_output)?)
 }
 
-#[uniffi::export]
+#[uniffi::export(async_runtime = "tokio")]
 pub async fn register_device_start(base_url: String, auth_token: &str, device_identifier: &str, password: &str) -> Result<String, SentcError>
 {
 	Ok(util_req_full::user::register_device_start(base_url, auth_token, device_identifier, password).await?)
@@ -420,7 +420,7 @@ pub fn done_fetch_user_key(private_key: &str, server_output: &str) -> Result<Use
 	Ok(data.into())
 }
 
-#[uniffi::export]
+#[uniffi::export(async_runtime = "tokio")]
 pub async fn fetch_user_key(base_url: String, auth_token: &str, jwt: &str, key_id: &str, private_key: &str) -> Result<UserKeyData, SentcError>
 {
 	let data = util_req_full::user::fetch_user_key(base_url, auth_token, jwt, key_id, private_key).await?;

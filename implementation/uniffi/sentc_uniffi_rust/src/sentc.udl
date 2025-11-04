@@ -281,7 +281,7 @@ namespace sentc_uniffi_rust {
 	[Throws=SentcError]
 	void done_register_device_start(string server_output);
 
-	[Throws=SentcError]
+	[Throws=SentcError, Async]
 	string register_device_start(string base_url, string auth_token, string device_identifier, string password);
 
 	[Throws=SentcError]
@@ -305,7 +305,7 @@ namespace sentc_uniffi_rust {
 	[Throws=SentcError]
 	UserKeyData done_fetch_user_key(string private_key, string server_output);
 
-	[Throws=SentcError]
+	[Throws=SentcError, Async]
 	UserKeyData fetch_user_key(string base_url, string auth_token, string jwt, string key_id, string private_key);
 
 	[Throws=SentcError, Async]
