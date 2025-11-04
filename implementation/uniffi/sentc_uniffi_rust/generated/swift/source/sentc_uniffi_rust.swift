@@ -2968,7 +2968,7 @@ public enum SentcError: Swift.Error, Equatable, Hashable, Foundation.LocalizedEr
 
     
     
-    case JsonError(String
+    case JsonError(e: String
     )
 
     
@@ -2998,7 +2998,7 @@ public struct FfiConverterTypeSentcError: FfiConverterRustBuffer {
 
         
         case 1: return .JsonError(
-            try FfiConverterString.read(from: &buf)
+            e: try FfiConverterString.read(from: &buf)
             )
 
          default: throw UniffiInternalError.unexpectedEnumCase
@@ -3012,9 +3012,9 @@ public struct FfiConverterTypeSentcError: FfiConverterRustBuffer {
 
         
         
-        case let .JsonError(v1):
+        case let .JsonError(e):
             writeInt(&buf, Int32(1))
-            FfiConverterString.write(v1, into: &buf)
+            FfiConverterString.write(e, into: &buf)
             
         }
     }
@@ -3517,9 +3517,6 @@ public func changePassword(baseUrl: String, authToken: String, userIdentifier: S
             errorHandler: FfiConverterTypeSentcError_lift
         )
 }
-/**
- * # Check if the identifier is available for this app
- */
 public func checkUserIdentifierAvailable(baseUrl: String, authToken: String, userIdentifier: String)async throws  -> Bool  {
     return
         try  await uniffiRustCallAsync(
@@ -3682,11 +3679,6 @@ public func disableOtp(baseUrl: String, authToken: String, jwt: String)async thr
             errorHandler: FfiConverterTypeSentcError_lift
         )
 }
-/**
- * # Validates the response if the identifier is available
- *
- * but without making a request
- */
 public func doneCheckUserIdentifierAvailable(serverOutput: String)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_done_check_user_identifier_available(
@@ -3702,11 +3694,6 @@ public func doneFetchUserKey(privateKey: String, serverOutput: String)throws  ->
     )
 })
 }
-/**
- * # Validates the response of register
- *
- * Returns the new user id
- */
 public func doneRegister(serverOutput: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_done_register(
@@ -3954,9 +3941,6 @@ public func generateNonRegisterSymKeyByPublicKey(replyPublicKey: String)throws  
     )
 })
 }
-/**
- * Generates identifier and password for a user or device
- */
 public func generateUserRegisterData()throws  -> GeneratedRegisterData  {
     return try  FfiConverterTypeGeneratedRegisterData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_generate_user_register_data($0
@@ -4061,11 +4045,6 @@ public func groupCreateConnectedGroup(baseUrl: String, authToken: String, jwt: S
             errorHandler: FfiConverterTypeSentcError_lift
         )
 }
-/**
- * Create a group with a request.
- *
- * Only the default values are sent to the server, no extra data. If extra data is required, use prepare_create
- */
 public func groupCreateGroup(baseUrl: String, authToken: String, jwt: String, creatorsPublicKey: String, groupAsMember: String?, signKey: String?, starter: String)async throws  -> String  {
     return
         try  await uniffiRustCallAsync(
@@ -4157,11 +4136,6 @@ public func groupDoneKeyRotation(privateKey: String, publicKey: String, preGroup
     )
 })
 }
-/**
- * Get the group data without a request.
- *
- * Use the parent group private key when fetching child group data.
- */
 public func groupExtractGroupData(serverOutput: String)throws  -> GroupOutData  {
     return try  FfiConverterTypeGroupOutData_lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_group_extract_group_data(
@@ -4169,11 +4143,6 @@ public func groupExtractGroupData(serverOutput: String)throws  -> GroupOutData  
     )
 })
 }
-/**
- * Get keys from pagination.
- *
- * Call the group route with the last fetched key time and the last fetched key id. Get both from the key data.
- */
 public func groupExtractGroupKeys(serverOutput: String)throws  -> [GroupOutDataKeys]  {
     return try  FfiConverterSequenceTypeGroupOutDataKeys.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_group_extract_group_keys(
@@ -4468,11 +4437,6 @@ public func groupPreDoneKeyRotation(baseUrl: String, authToken: String, jwt: Str
             errorHandler: FfiConverterTypeSentcError_lift
         )
 }
-/**
- * Create input for the server api.
- *
- * Use this for a group and child group. For child group use the public key of the parent group!
- */
 public func groupPrepareCreateGroup(creatorsPublicKey: String, signKey: String?, starter: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_group_prepare_create_group(
@@ -4492,11 +4456,6 @@ public func groupPrepareKeyRotation(preGroupKey: String, publicKey: String, sign
     )
 })
 }
-/**
- * Prepare all group keys for a new member.
- *
- * Use the group keys from get group data or get group keys fn as a string array
- */
 public func groupPrepareKeysForNewMember(userPublicKey: String, groupKeys: String, keyCount: Int32, rank: Int32?, adminRank: Int32)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_group_prepare_keys_for_new_member(
@@ -4601,15 +4560,6 @@ public func leaveGroup(baseUrl: String, authToken: String, jwt: String, id: Stri
             errorHandler: FfiConverterTypeSentcError_lift
         )
 }
-/**
- * # Log in the user to this app
- *
- * Does the login requests. 1. for auth, 2nd to get the keys.
- *
- * If there is more data in the backend, then it is possible to call it via the jwt what is returned by the done login request.
- *
- * The other backend can validate the jwt
- */
 public func login(baseUrl: String, authToken: String, userIdentifier: String, password: String)async throws  -> UserLoginOut  {
     return
         try  await uniffiRustCallAsync(
@@ -4638,11 +4588,6 @@ public func mfaLogin(baseUrl: String, authToken: String, masterKeyEncryption: St
             errorHandler: FfiConverterTypeSentcError_lift
         )
 }
-/**
- * # Check if the identifier is available
- *
- * but without making a request
- */
 public func prepareCheckUserIdentifierAvailable(userIdentifier: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_prepare_check_user_identifier_available(
@@ -4650,13 +4595,6 @@ public func prepareCheckUserIdentifierAvailable(userIdentifier: String)throws  -
     )
 })
 }
-/**
- * # Get the user input from the user client
- *
- * This is used when the register endpoint should only be called from the backend and not the clients.
- *
- * For full-register see register()
- */
 public func prepareRegister(userIdentifier: String, password: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeSentcError_lift) {
     uniffi_sentc_uniffi_rust_fn_func_prepare_register(
@@ -4696,12 +4634,6 @@ public func refreshJwt(baseUrl: String, authToken: String, jwt: String, refreshT
             errorHandler: FfiConverterTypeSentcError_lift
         )
 }
-/**
- * # Register a new user for the app
- *
- * Do the full req incl. req.
- * No checking about spamming and just return the user id.
- */
 public func register(baseUrl: String, authToken: String, userIdentifier: String, password: String)async throws  -> String  {
     return
         try  await uniffiRustCallAsync(
@@ -5010,7 +4942,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_change_password() != 38940) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_check_user_identifier_available() != 18149) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_check_user_identifier_available() != 23720) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_create_searchable() != 61763) {
@@ -5058,13 +4990,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_disable_otp() != 13721) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_done_check_user_identifier_available() != 30943) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_done_check_user_identifier_available() != 10208) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_done_fetch_user_key() != 45727) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_done_register() != 49588) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_done_register() != 35209) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_done_register_device_start() != 20343) {
@@ -5121,10 +5053,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_file_register_file() != 63052) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_file_upload_part() != 40542) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_upload_part() != 33218) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_file_upload_part_start() != 24876) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_file_upload_part_start() != 13759) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_generate_non_register_sym_key() != 28491) {
@@ -5133,7 +5065,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_generate_non_register_sym_key_by_public_key() != 34329) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_generate_user_register_data() != 13362) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_generate_user_register_data() != 42025) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_get_fresh_jwt() != 15431) {
@@ -5157,7 +5089,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_group_create_connected_group() != 7114) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_group_create_group() != 11338) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_create_group() != 41674) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_group_decrypt_hmac_key() != 664) {
@@ -5181,10 +5113,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_group_done_key_rotation() != 46070) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_group_extract_group_data() != 45277) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_extract_group_data() != 40471) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_group_extract_group_keys() != 22359) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_extract_group_keys() != 58647) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_group_finish_key_rotation() != 38462) {
@@ -5250,13 +5182,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_group_pre_done_key_rotation() != 30870) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_create_group() != 26220) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_create_group() != 16797) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_key_rotation() != 8032) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_keys_for_new_member() != 1038) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_keys_for_new_member() != 30656) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_group_prepare_update_rank() != 53975) {
@@ -5280,16 +5212,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_leave_group() != 11037) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_login() != 56980) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_login() != 13215) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_mfa_login() != 10177) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_check_user_identifier_available() != 14006) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_check_user_identifier_available() != 58606) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_register() != 59341) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_prepare_register() != 6510) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_prepare_register_device() != 57339) {
@@ -5301,7 +5233,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_sentc_uniffi_rust_checksum_func_refresh_jwt() != 15177) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sentc_uniffi_rust_checksum_func_register() != 27276) {
+    if (uniffi_sentc_uniffi_rust_checksum_func_register() != 3667) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_sentc_uniffi_rust_checksum_func_register_device() != 41750) {

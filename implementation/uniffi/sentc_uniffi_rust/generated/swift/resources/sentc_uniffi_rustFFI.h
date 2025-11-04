@@ -435,12 +435,12 @@ uint64_t uniffi_sentc_uniffi_rust_fn_func_file_register_file(RustBuffer base_url
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SENTC_UNIFFI_RUST_FN_FUNC_FILE_UPLOAD_PART
 #define UNIFFI_FFIDEF_UNIFFI_SENTC_UNIFFI_RUST_FN_FUNC_FILE_UPLOAD_PART
-uint64_t uniffi_sentc_uniffi_rust_fn_func_file_upload_part(RustBuffer base_url, RustBuffer url_prefix, RustBuffer auth_token, RustBuffer jwt, RustBuffer session_id, int8_t end, int32_t sequence, RustBuffer content_key, RustBuffer sign_key, RustBuffer part
+uint64_t uniffi_sentc_uniffi_rust_fn_func_file_upload_part(RustBuffer base_url, RustBuffer url_prefix, RustBuffer auth_token, RustBuffer jwt, RustBuffer session_id, int8_t end, int32_t sequence_, RustBuffer content_key, RustBuffer sign_key, RustBuffer part
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SENTC_UNIFFI_RUST_FN_FUNC_FILE_UPLOAD_PART_START
 #define UNIFFI_FFIDEF_UNIFFI_SENTC_UNIFFI_RUST_FN_FUNC_FILE_UPLOAD_PART_START
-uint64_t uniffi_sentc_uniffi_rust_fn_func_file_upload_part_start(RustBuffer base_url, RustBuffer url_prefix, RustBuffer auth_token, RustBuffer jwt, RustBuffer session_id, int8_t end, int32_t sequence, RustBuffer content_key, RustBuffer sign_key, RustBuffer part
+uint64_t uniffi_sentc_uniffi_rust_fn_func_file_upload_part_start(RustBuffer base_url, RustBuffer url_prefix, RustBuffer auth_token, RustBuffer jwt, RustBuffer session_id, int8_t end, int32_t sequence_, RustBuffer content_key, RustBuffer sign_key, RustBuffer part
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SENTC_UNIFFI_RUST_FN_FUNC_GENERATE_NON_REGISTER_SYM_KEY
