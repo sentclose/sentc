@@ -183,11 +183,6 @@ impl From<sentc_crypto_common::group::KeyRotationInput> for KeyRotationInput
 
 //__________________________________________________________________________________________________
 
-/**
-Create input for the server api.
-
-Use this for a group and child group. For child group use the public key of the parent group!
- */
 #[uniffi::export]
 pub fn group_prepare_create_group(creators_public_key: &str, sign_key: Option<String>, starter: String) -> Result<String, SentcError>
 {
@@ -198,11 +193,6 @@ pub fn group_prepare_create_group(creators_public_key: &str, sign_key: Option<St
 	)?)
 }
 
-/**
-Create a group with a request.
-
-Only the default values are sent to the server, no extra data. If extra data is required, use prepare_create
- */
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn group_create_group(
 	base_url: String,
@@ -282,11 +272,6 @@ pub async fn group_create_connected_group(
 
 //__________________________________________________________________________________________________
 
-/**
-Get the group data without a request.
-
-Use the parent group private key when fetching child group data.
- */
 #[uniffi::export]
 pub fn group_extract_group_data(server_output: &str) -> Result<GroupOutData, SentcError>
 {
@@ -295,11 +280,6 @@ pub fn group_extract_group_data(server_output: &str) -> Result<GroupOutData, Sen
 	Ok(out.into())
 }
 
-/**
-Get keys from pagination.
-
-Call the group route with the last fetched key time and the last fetched key id. Get both from the key data.
- */
 #[uniffi::export]
 pub fn group_extract_group_keys(server_output: &str) -> Result<Vec<GroupOutDataKeys>, SentcError>
 {
@@ -556,11 +536,6 @@ pub async fn group_get_groups_for_user(
 //__________________________________________________________________________________________________
 //invite
 
-/**
-Prepare all group keys for a new member.
-
-Use the group keys from get group data or get group keys fn as a string array
- */
 #[uniffi::export]
 pub fn group_prepare_keys_for_new_member(
 	user_public_key: &str,
@@ -717,6 +692,7 @@ pub async fn group_reject_invite(
 
 //__________________________________________________________________________________________________
 //join req
+
 #[derive(uniffi::Record)]
 pub struct GroupJoinReqList
 {

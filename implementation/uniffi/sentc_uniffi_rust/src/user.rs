@@ -194,20 +194,12 @@ impl From<sentc_crypto::entities::user::UserDataExport> for UserData
 
 //__________________________________________________________________________________________________
 
-/**
-# Check if the identifier is available for this app
- */
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn check_user_identifier_available(base_url: String, auth_token: &str, user_identifier: &str) -> Result<bool, SentcError>
 {
 	Ok(util_req_full::user::check_user_identifier_available(base_url, auth_token, user_identifier).await?)
 }
 
-/**
-# Check if the identifier is available
-
-but without making a request
- */
 #[uniffi::export]
 pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<String, SentcError>
 {
@@ -216,11 +208,6 @@ pub fn prepare_check_user_identifier_available(user_identifier: &str) -> Result<
 	)?)
 }
 
-/**
-# Validates the response if the identifier is available
-
-but without making a request
- */
 #[uniffi::export]
 pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool, SentcError>
 {
@@ -229,9 +216,6 @@ pub fn done_check_user_identifier_available(server_output: &str) -> Result<bool,
 	)?)
 }
 
-/**
-Generates identifier and password for a user or device
-*/
 #[uniffi::export]
 pub fn generate_user_register_data() -> Result<GeneratedRegisterData, SentcError>
 {
@@ -243,36 +227,18 @@ pub fn generate_user_register_data() -> Result<GeneratedRegisterData, SentcError
 	})
 }
 
-/**
-# Get the user input from the user client
-
-This is used when the register endpoint should only be called from the backend and not the clients.
-
-For full-register see register()
- */
 #[uniffi::export]
 pub fn prepare_register(user_identifier: &str, password: &str) -> Result<String, SentcError>
 {
 	Ok(sentc_crypto::user::register(user_identifier, password)?)
 }
 
-/**
-# Validates the response of register
-
-Returns the new user id
- */
 #[uniffi::export]
 pub fn done_register(server_output: &str) -> Result<String, SentcError>
 {
 	Ok(sentc_crypto::user::done_register(server_output)?)
 }
 
-/**
-# Register a new user for the app
-
-Do the full req incl. req.
-No checking about spamming and just return the user id.
- */
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn register(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> Result<String, SentcError>
 {
@@ -362,15 +328,6 @@ pub async fn user_device_key_session_upload(
 
 //__________________________________________________________________________________________________
 
-/**
-# Log in the user to this app
-
-Does the login requests. 1. for auth, 2nd to get the keys.
-
-If there is more data in the backend, then it is possible to call it via the jwt what is returned by the done login request.
-
-The other backend can validate the jwt
- */
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn login(base_url: String, auth_token: &str, user_identifier: &str, password: &str) -> Result<UserLoginOut, SentcError>
 {
