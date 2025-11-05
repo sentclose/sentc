@@ -9,373 +9,373 @@ namespace sentc_uniffi_rust {
 	EncryptedHead split_head_and_encrypted_data(bytes data);
 
 	[Throws=SentcError]
-	EncryptedHead split_head_and_encrypted_string(string data);
+	EncryptedHead split_head_and_encrypted_string([ByRef] string data);
 
 	[Throws=SentcError]
-	EncryptedHead deserialize_head_from_string(string head);
+	EncryptedHead deserialize_head_from_string([ByRef] string head);
 
 	[Throws=SentcError]
 	CryptoRawOutput encrypt_raw_symmetric(string key, bytes data, string? sign_key);
 
 	[Throws=SentcError]
-	bytes decrypt_raw_symmetric(string key, bytes encrypted_data, string head, string? verify_key_data);
+	bytes decrypt_raw_symmetric([ByRef] string key, bytes encrypted_data, [ByRef] string head, string? verify_key_data);
 
 	[Throws=SentcError]
-	bytes encrypt_symmetric(string key, bytes data, string? sign_key);
+	bytes encrypt_symmetric([ByRef] string key, bytes data, string? sign_key);
 
 	[Throws=SentcError]
-	bytes decrypt_symmetric(string key, bytes encrypted_data, string? verify_key_data);
+	bytes decrypt_symmetric([ByRef] string key, bytes encrypted_data, string? verify_key_data);
 
 	[Throws=SentcError]
-	string encrypt_string_symmetric(string key, string data, string? sign_key);
+	string encrypt_string_symmetric([ByRef] string key, [ByRef] string data, string? sign_key);
 
 	[Throws=SentcError]
-	string decrypt_string_symmetric(string key, string encrypted_data, string? verify_key_data);
+	string decrypt_string_symmetric([ByRef] string key,[ByRef]  string encrypted_data, string? verify_key_data);
 
 	[Throws=SentcError]
-	CryptoRawOutput encrypt_raw_asymmetric(string reply_public_key_data, bytes data, string? sign_key);
+	CryptoRawOutput encrypt_raw_asymmetric([ByRef] string reply_public_key_data, bytes data, string? sign_key);
 
 	[Throws=SentcError]
-	bytes decrypt_raw_asymmetric(string private_key, bytes encrypted_data, string head, string? verify_key_data);
+	bytes decrypt_raw_asymmetric([ByRef] string private_key, bytes encrypted_data, [ByRef] string head, string? verify_key_data);
 
 	[Throws=SentcError]
-	bytes encrypt_asymmetric(string reply_public_key_data, bytes data, string? sign_key);
+	bytes encrypt_asymmetric([ByRef] string reply_public_key_data, bytes data, string? sign_key);
 
 	[Throws=SentcError]
-	bytes decrypt_asymmetric(string private_key, bytes encrypted_data, string? verify_key_data);
+	bytes decrypt_asymmetric([ByRef] string private_key, bytes encrypted_data, string? verify_key_data);
 
 	[Throws=SentcError]
-	string encrypt_string_asymmetric(string reply_public_key_data, string data, string? sign_key);
+	string encrypt_string_asymmetric([ByRef] string reply_public_key_data, [ByRef] string data, string? sign_key);
 
 	[Throws=SentcError]
-	string decrypt_string_asymmetric(string private_key, string encrypted_data, string? verify_key_data);
+	string decrypt_string_asymmetric([ByRef] string private_key, [ByRef] string encrypted_data, string? verify_key_data);
 
 	[Throws=SentcError]
-	NonRegisteredKeyOutput generate_non_register_sym_key(string master_key);
+	NonRegisteredKeyOutput generate_non_register_sym_key([ByRef] string master_key);
 
 	[Throws=SentcError]
-	NonRegisteredKeyOutput generate_non_register_sym_key_by_public_key(string reply_public_key);
+	NonRegisteredKeyOutput generate_non_register_sym_key_by_public_key([ByRef] string reply_public_key);
 
 	[Throws=SentcError]
-	string decrypt_sym_key(string master_key, string encrypted_symmetric_key_info);
+	string decrypt_sym_key([ByRef] string master_key, [ByRef] string encrypted_symmetric_key_info);
 
 	[Throws=SentcError]
-	string decrypt_sym_key_by_private_key(string private_key, string encrypted_symmetric_key_info);
+	string decrypt_sym_key_by_private_key([ByRef] string private_key, [ByRef] string encrypted_symmetric_key_info);
 
 	[Throws=SentcError]
-	sequence<string> create_searchable_raw(string key, string data, boolean full, u32? limit);
+	sequence<string> create_searchable_raw([ByRef] string key, [ByRef] string data, boolean full, u32? limit);
 
 	[Throws=SentcError]
-	SearchableCreateOutput create_searchable(string key, string data, boolean full, u32? limit);
+	SearchableCreateOutput create_searchable([ByRef] string key, [ByRef] string data, boolean full, u32? limit);
 
 	[Throws=SentcError]
-	string search(string key, string data);
+	string search([ByRef] string key, [ByRef] string data);
 
 	[Throws=SentcError]
-	u64 sortable_encrypt_raw_number(string key, u64 data);
+	u64 sortable_encrypt_raw_number([ByRef] string key, u64 data);
 
 	[Throws=SentcError]
-	SortableEncryptOutput sortable_encrypt_number(string key, u64 data);
+	SortableEncryptOutput sortable_encrypt_number([ByRef] string key, u64 data);
 
 	[Throws=SentcError]
-	u64 sortable_encrypt_raw_string(string key, string data);
+	u64 sortable_encrypt_raw_string([ByRef] string key, [ByRef] string data);
 
 	[Throws=SentcError]
-	SortableEncryptOutput sortable_encrypt_string(string key, string data);
+	SortableEncryptOutput sortable_encrypt_string([ByRef] string key, [ByRef] string data);
 
 	// ============ file.rs functions ============
 	[Throws=SentcError, Async]
-	FileData file_download_file_meta(string base_url, string auth_token, string? jwt, string id, string? group_id, string? group_as_member);
+	FileData file_download_file_meta(string base_url, [ByRef] string auth_token, string? jwt, [ByRef] string id, string? group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	FileDownloadResult file_download_and_decrypt_file_part_start(string base_url, string? url_prefix, string auth_token, string part_id, string content_key, string? verify_key_data);
+	FileDownloadResult file_download_and_decrypt_file_part_start(string base_url, string? url_prefix,[ByRef]  string auth_token, [ByRef] string part_id, [ByRef] string content_key, string? verify_key_data);
 
 	[Throws=SentcError, Async]
-	FileDownloadResult file_download_and_decrypt_file_part(string base_url, string? url_prefix, string auth_token, string part_id, string content_key, string? verify_key_data);
+	FileDownloadResult file_download_and_decrypt_file_part(string base_url, string? url_prefix, [ByRef] string auth_token, [ByRef] string part_id,[ByRef]  string content_key, string? verify_key_data);
 
 	[Throws=SentcError, Async]
-	sequence<FilePartListItem> file_download_part_list(string base_url, string auth_token, string file_id, string last_sequence);
+	sequence<FilePartListItem> file_download_part_list(string base_url, [ByRef] string auth_token, [ByRef] string file_id, [ByRef] string last_sequence);
 
 	[Throws=SentcError, Async]
-	FileRegisterOutput file_register_file(string base_url, string auth_token, string jwt, string master_key_id, string content_key, string encrypted_content_key, string? belongs_to_id, string belongs_to_type, string? file_name, string? group_id, string? group_as_member);
+	FileRegisterOutput file_register_file(string base_url, [ByRef] string auth_token, [ByRef] string jwt, string master_key_id, [ByRef] string content_key, string encrypted_content_key, string? belongs_to_id, [ByRef] string belongs_to_type, string? file_name, string? group_id, string? group_as_member);
 
 	[Throws=SentcError]
-	FilePrepareRegister file_prepare_register_file(string master_key_id, string content_key, string encrypted_content_key, string? belongs_to_id, string belongs_to_type, string? file_name);
+	FilePrepareRegister file_prepare_register_file(string master_key_id, [ByRef] string content_key, string encrypted_content_key, string? belongs_to_id, [ByRef] string belongs_to_type, string? file_name);
 
 	[Throws=SentcError]
 	FileDoneRegister file_done_register_file(string server_output);
 
 	[Throws=SentcError, Async]
-	string file_upload_part_start(string base_url, string? url_prefix, string auth_token, string jwt, string session_id, boolean end, i32 sequence_, string content_key, string? sign_key, bytes part);
+	string file_upload_part_start(string base_url, string? url_prefix, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string session_id, boolean end, i32 sequence_, [ByRef] string content_key, string? sign_key, bytes part);
 
 	[Throws=SentcError, Async]
-	string file_upload_part(string base_url, string? url_prefix, string auth_token, string jwt, string session_id, boolean end, i32 sequence_, string content_key, string? sign_key, bytes part);
+	string file_upload_part(string base_url, string? url_prefix, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string session_id, boolean end, i32 sequence_, [ByRef] string content_key, string? sign_key, bytes part);
 
 	[Throws=SentcError, Async]
-	void file_file_name_update(string base_url, string auth_token, string jwt, string file_id, string content_key, string? file_name);
+	void file_file_name_update(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string file_id, [ByRef] string content_key, string? file_name);
 
 	[Throws=SentcError, Async]
-	void file_delete_file(string base_url, string auth_token, string jwt, string file_id, string? group_id, string? group_as_member);
+	void file_delete_file(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef]  string file_id, string? group_id, string? group_as_member);
 
 	// ============ group.rs functions ============
 	[Throws=SentcError]
-	string group_prepare_create_group(string creators_public_key, string? sign_key, string starter);
+	string group_prepare_create_group([ByRef] string creators_public_key, string? sign_key, string starter);
 
 	[Throws=SentcError, Async]
-	string group_create_group(string base_url, string auth_token, string jwt, string creators_public_key, string? group_as_member, string? sign_key, string starter);
+	string group_create_group(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string creators_public_key, string? group_as_member, string? sign_key, string starter);
 
 	[Throws=SentcError, Async]
-	string group_create_child_group(string base_url, string auth_token, string jwt, string parent_public_key, string parent_id, i32 admin_rank, string? group_as_member, string? sign_key, string starter);
+	string group_create_child_group(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string parent_public_key, [ByRef] string parent_id, i32 admin_rank, string? group_as_member, string? sign_key, string starter);
 
 	[Throws=SentcError, Async]
-	string group_create_connected_group(string base_url, string auth_token, string jwt, string connected_group_id, i32 admin_rank, string parent_public_key, string? group_as_member, string? sign_key, string starter);
+	string group_create_connected_group(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string connected_group_id, i32 admin_rank, [ByRef] string parent_public_key, string? group_as_member, string? sign_key, string starter);
 
 	[Throws=SentcError]
-	GroupOutData group_extract_group_data(string server_output);
+	GroupOutData group_extract_group_data([ByRef] string server_output);
 
 	[Throws=SentcError]
-	sequence<GroupOutDataKeys> group_extract_group_keys(string server_output);
+	sequence<GroupOutDataKeys> group_extract_group_keys([ByRef] string server_output);
 
 	[Throws=SentcError, Async]
-	GroupOutData group_get_group_data(string base_url, string auth_token, string jwt, string id, string? group_as_member);
+	GroupOutData group_get_group_data(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<GroupOutDataKeys> group_get_group_keys(string base_url, string auth_token, string jwt, string id, string last_fetched_time, string last_fetched_key_id, string? group_as_member);
+	sequence<GroupOutDataKeys> group_get_group_keys(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string last_fetched_time, [ByRef] string last_fetched_key_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	GroupOutDataKeys group_get_group_key(string base_url, string auth_token, string jwt, string id, string key_id, string? group_as_member);
+	GroupOutDataKeys group_get_group_key(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string key_id, string? group_as_member);
 
 	[Throws=SentcError]
-	GroupKeyData group_decrypt_key(string private_key, string server_key_data, string? verify_key);
+	GroupKeyData group_decrypt_key([ByRef] string private_key, [ByRef] string server_key_data, string? verify_key);
 
 	[Throws=SentcError]
-	string group_decrypt_hmac_key(string group_key, string server_key_data);
+	string group_decrypt_hmac_key([ByRef] string group_key, [ByRef] string server_key_data);
 
 	[Throws=SentcError]
-	string group_decrypt_sortable_key(string group_key, string server_key_data);
+	string group_decrypt_sortable_key([ByRef] string group_key, [ByRef] string server_key_data);
 
 	[Throws=SentcError, Async]
-	sequence<GroupUserListItem> group_get_member(string base_url, string auth_token, string jwt, string id, string last_fetched_time, string last_fetched_id, string? group_as_member);
+	sequence<GroupUserListItem> group_get_member(string base_url, [ByRef] string auth_token, [ByRef] string jwt,[ByRef]  string id, [ByRef] string last_fetched_time, [ByRef] string last_fetched_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	GroupDataCheckUpdateServerOutput group_get_group_updates(string base_url, string auth_token, string jwt, string id, string? group_as_member);
+	GroupDataCheckUpdateServerOutput group_get_group_updates(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<GroupChildrenList> group_get_all_first_level_children(string base_url, string auth_token, string jwt, string id, string last_fetched_time, string last_fetched_group_id, string? group_as_member);
+	sequence<GroupChildrenList> group_get_all_first_level_children(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string last_fetched_time, [ByRef] string last_fetched_group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<ListGroups> group_get_groups_for_user(string base_url, string auth_token, string jwt, string last_fetched_time, string last_fetched_group_id, string? group_id);
+	sequence<ListGroups> group_get_groups_for_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string last_fetched_time, [ByRef] string last_fetched_group_id, string? group_id);
 
 	[Throws=SentcError]
-	string group_prepare_keys_for_new_member(string user_public_key, string group_keys, i32 key_count, i32? rank, i32 admin_rank);
+	string group_prepare_keys_for_new_member([ByRef] string user_public_key, [ByRef] string group_keys, i32 key_count, i32? rank, i32 admin_rank);
 
 	[Throws=SentcError, Async]
-	string group_invite_user(string base_url, string auth_token, string jwt, string id, string user_id, i32 key_count, i32? rank, i32 admin_rank, boolean auto_invite, boolean group_invite, boolean re_invite, string user_public_key, string group_keys, string? group_as_member);
+	string group_invite_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string user_id, i32 key_count, i32? rank, i32 admin_rank, boolean auto_invite, boolean group_invite, boolean re_invite, [ByRef] string user_public_key, [ByRef] string group_keys, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_invite_user_session(string base_url, string auth_token, string jwt, string id, boolean auto_invite, string session_id, string user_public_key, string group_keys, string? group_as_member);
+	void group_invite_user_session(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, boolean auto_invite, [ByRef] string session_id, [ByRef] string user_public_key, [ByRef] string group_keys, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<GroupInviteReqList> group_get_invites_for_user(string base_url, string auth_token, string jwt, string last_fetched_time, string last_fetched_group_id, string? group_id, string? group_as_member);
+	sequence<GroupInviteReqList> group_get_invites_for_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string last_fetched_time, [ByRef] string last_fetched_group_id, string? group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_accept_invite(string base_url, string auth_token, string jwt, string id, string? group_id, string? group_as_member);
+	void group_accept_invite(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, string? group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_reject_invite(string base_url, string auth_token, string jwt, string id, string? group_id, string? group_as_member);
+	void group_reject_invite(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, string? group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<GroupInviteReqList> group_get_sent_join_req_user(string base_url, string auth_token, string jwt, string last_fetched_time, string last_fetched_group_id, string? group_as_member);
+	sequence<GroupInviteReqList> group_get_sent_join_req_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string last_fetched_time, [ByRef] string last_fetched_group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<GroupInviteReqList> group_get_sent_join_req(string base_url, string auth_token, string jwt, string id, i32 admin_rank, string last_fetched_time, string last_fetched_group_id, string? group_as_member);
+	sequence<GroupInviteReqList> group_get_sent_join_req(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, i32 admin_rank, [ByRef] string last_fetched_time, [ByRef] string last_fetched_group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_delete_sent_join_req_user(string base_url, string auth_token, string jwt, string join_req_group_id, string? group_as_member);
+	void group_delete_sent_join_req_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string join_req_group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_delete_sent_join_req(string base_url, string auth_token, string jwt, string id, i32 admin_rank, string join_req_group_id, string? group_as_member);
+	void group_delete_sent_join_req(string base_url, [ByRef] string auth_token, [ByRef] string jwt,[ByRef]  string id, i32 admin_rank, [ByRef] string join_req_group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_join_req(string base_url, string auth_token, string jwt, string id, string group_id, string? group_as_member);
+	void group_join_req(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string group_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<GroupJoinReqList> group_get_join_reqs(string base_url, string auth_token, string jwt, string id, i32 admin_rank, string last_fetched_time, string last_fetched_id, string? group_as_member);
+	sequence<GroupJoinReqList> group_get_join_reqs(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, i32 admin_rank, [ByRef] string last_fetched_time, [ByRef] string last_fetched_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_reject_join_req(string base_url, string auth_token, string jwt, string id, i32 admin_rank, string rejected_user_id, string? group_as_member);
+	void group_reject_join_req(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, i32 admin_rank, [ByRef] string rejected_user_id, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	string group_accept_join_req(string base_url, string auth_token, string jwt, string id, string user_id, i32 key_count, i32? rank, i32 admin_rank, string user_public_key, string group_keys, string? group_as_member);
+	string group_accept_join_req(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string user_id, i32 key_count, i32? rank, i32 admin_rank, [ByRef] string user_public_key, [ByRef] string group_keys, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_join_user_session(string base_url, string auth_token, string jwt, string id, string session_id, string user_public_key, string group_keys, string? group_as_member);
+	void group_join_user_session(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string session_id, [ByRef] string user_public_key, [ByRef] string group_keys, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_stop_group_invites(string base_url, string auth_token, string jwt, string id, i32 admin_rank, string? group_as_member);
+	void group_stop_group_invites(string base_url,[ByRef]  string auth_token, [ByRef] string jwt, [ByRef] string id, i32 admin_rank, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void leave_group(string base_url, string auth_token, string jwt, string id, string? group_as_member);
+	void leave_group(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, string? group_as_member);
 
 	[Throws=SentcError]
-	string group_prepare_key_rotation(string pre_group_key, string public_key, string? sign_key, string starter);
+	string group_prepare_key_rotation([ByRef] string pre_group_key, [ByRef] string public_key, string? sign_key, string starter);
 
 	[Throws=SentcError]
-	string group_done_key_rotation(string private_key, string public_key, string pre_group_key, string server_output);
+	string group_done_key_rotation([ByRef] string private_key, [ByRef] string public_key, [ByRef] string pre_group_key, [ByRef] string server_output);
 
 	[Throws=SentcError, Async]
-	string group_key_rotation(string base_url, string auth_token, string jwt, string id, string public_key, string pre_group_key, string? sign_key, string starter, string? group_as_member);
+	string group_key_rotation(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string public_key, [ByRef] string pre_group_key, string? sign_key, string starter, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	sequence<KeyRotationGetOut> group_pre_done_key_rotation(string base_url, string auth_token, string jwt, string id, string? group_as_member);
+	sequence<KeyRotationGetOut> group_pre_done_key_rotation(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, string? group_as_member);
 
 	[Throws=SentcError]
-	KeyRotationInput group_get_done_key_rotation_server_input(string server_output);
+	KeyRotationInput group_get_done_key_rotation_server_input([ByRef] string server_output);
 
 	[Throws=SentcError, Async]
-	void group_finish_key_rotation(string base_url, string auth_token, string jwt, string id, string server_output, string pre_group_key, string public_key, string private_key, string? group_as_member);
+	void group_finish_key_rotation(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string server_output, [ByRef] string pre_group_key, [ByRef] string public_key, [ByRef] string private_key, string? group_as_member);
 
 	[Throws=SentcError]
-	string group_prepare_update_rank(string user_id, i32 rank, i32 admin_rank);
+	string group_prepare_update_rank([ByRef] string user_id, i32 rank, i32 admin_rank);
 
 	[Throws=SentcError, Async]
-	void group_update_rank(string base_url, string auth_token, string jwt, string id, string user_id, i32 rank, i32 admin_rank, string? group_as_member);
+	void group_update_rank(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string user_id, i32 rank, i32 admin_rank, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_kick_user(string base_url, string auth_token, string jwt, string id, string user_id, i32 admin_rank, string? group_as_member);
+	void group_kick_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, [ByRef] string user_id, i32 admin_rank, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	void group_delete_group(string base_url, string auth_token, string jwt, string id, i32 admin_rank, string? group_as_member);
+	void group_delete_group(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string id, i32 admin_rank, string? group_as_member);
 
 	[Throws=SentcError, Async]
-	GroupPublicKeyData group_get_public_key_data(string base_url, string auth_token, string id);
+	GroupPublicKeyData group_get_public_key_data(string base_url, [ByRef] string auth_token, [ByRef] string id);
 
 	// ============ user.rs functions ============
 	[Throws=SentcError]
 	Claims decode_jwt(string jwt);
 
 	[Throws=SentcError, Async]
-	boolean check_user_identifier_available(string base_url, string auth_token, string user_identifier);
+	boolean check_user_identifier_available(string base_url, [ByRef] string auth_token, [ByRef] string user_identifier);
 
 	[Throws=SentcError]
-	string prepare_check_user_identifier_available(string user_identifier);
+	string prepare_check_user_identifier_available([ByRef] string user_identifier);
 
 	[Throws=SentcError]
-	boolean done_check_user_identifier_available(string server_output);
+	boolean done_check_user_identifier_available([ByRef] string server_output);
 
 	[Throws=SentcError]
 	GeneratedRegisterData generate_user_register_data();
 
 	[Throws=SentcError]
-	string prepare_register(string user_identifier, string password);
+	string prepare_register([ByRef] string user_identifier, [ByRef] string password);
 
 	[Throws=SentcError]
-	string done_register(string server_output);
+	string done_register([ByRef] string server_output);
 
 	[Throws=SentcError, Async]
-	string register(string base_url, string auth_token, string user_identifier, string password);
+	string register(string base_url, [ByRef] string auth_token, [ByRef] string user_identifier, [ByRef] string password);
 
 	[Throws=SentcError]
-	string prepare_register_device_start(string device_identifier, string password);
+	string prepare_register_device_start([ByRef] string device_identifier, [ByRef] string password);
 
 	[Throws=SentcError]
-	void done_register_device_start(string server_output);
+	void done_register_device_start([ByRef] string server_output);
 
 	[Throws=SentcError, Async]
-	string register_device_start(string base_url, string auth_token, string device_identifier, string password);
+	string register_device_start(string base_url, [ByRef] string auth_token, [ByRef] string device_identifier, [ByRef] string password);
 
 	[Throws=SentcError]
-	PreRegisterDeviceData prepare_register_device(string server_output, string user_keys, i32 key_count);
+	PreRegisterDeviceData prepare_register_device([ByRef] string server_output, [ByRef] string user_keys, i32 key_count);
 
 	[Throws=SentcError, Async]
-	RegisterDeviceData register_device(string base_url, string auth_token, string jwt, string server_output, i32 key_count, string user_keys);
+	RegisterDeviceData register_device(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string server_output, i32 key_count, [ByRef] string user_keys);
 
 	[Throws=SentcError, Async]
-	void user_device_key_session_upload(string base_url, string auth_token, string jwt, string session_id, string user_public_key, string group_keys);
+	void user_device_key_session_upload(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string session_id, [ByRef] string user_public_key, [ByRef] string group_keys);
 
 	[Throws=SentcError, Async]
-	UserLoginOut login(string base_url, string auth_token, string user_identifier, string password);
+	UserLoginOut login(string base_url, [ByRef] string auth_token, [ByRef] string user_identifier, [ByRef] string password);
 
 	[Throws=SentcError]
-	UserData extract_user_data(string data);
+	UserData extract_user_data([ByRef] string data);
 
 	[Throws=SentcError, Async]
-	UserData mfa_login(string base_url, string auth_token, string master_key_encryption, string auth_key, string user_identifier, string token, boolean recovery);
+	UserData mfa_login(string base_url, [ByRef] string auth_token, [ByRef] string master_key_encryption, string auth_key, string user_identifier,string token, boolean recovery);
 
 	[Throws=SentcError]
-	UserKeyData done_fetch_user_key(string private_key, string server_output);
+	UserKeyData done_fetch_user_key([ByRef] string private_key, [ByRef] string server_output);
 
 	[Throws=SentcError, Async]
-	UserKeyData fetch_user_key(string base_url, string auth_token, string jwt, string key_id, string private_key);
+	UserKeyData fetch_user_key(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string key_id, [ByRef] string private_key);
 
 	[Throws=SentcError, Async]
-	string get_fresh_jwt(string base_url, string auth_token, string user_identifier, string password, string? mfa_token, boolean? mfa_recovery);
+	string get_fresh_jwt(string base_url, [ByRef] string auth_token, [ByRef] string user_identifier, [ByRef] string password, string? mfa_token, boolean? mfa_recovery);
 
 	[Throws=SentcError, Async]
-	string refresh_jwt(string base_url, string auth_token, string jwt, string refresh_token);
+	string refresh_jwt(string base_url, [ByRef] string auth_token, [ByRef] string jwt, string refresh_token);
 
 	[Throws=SentcError, Async]
-	UserInitServerOutput init_user(string base_url, string auth_token, string jwt, string refresh_token);
+	UserInitServerOutput init_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, string refresh_token);
 
 	[Throws=SentcError]
-	string user_create_safety_number(string verify_key_1, string user_id_1, string? verify_key_2, string? user_id_2);
+	string user_create_safety_number([ByRef] string verify_key_1, [ByRef] string user_id_1, string? verify_key_2, string? user_id_2);
 
 	[Throws=SentcError]
-	boolean user_verify_user_public_key(string verify_key, string public_key);
+	boolean user_verify_user_public_key([ByRef] string verify_key, [ByRef] string public_key);
 
 	[Throws=SentcError, Async]
-	sequence<UserDeviceList> get_user_devices(string base_url, string auth_token, string jwt, string last_fetched_time, string last_fetched_id);
+	sequence<UserDeviceList> get_user_devices(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string last_fetched_time, [ByRef] string last_fetched_id);
 
 	[Throws=SentcError, Async]
-	void reset_password(string base_url, string auth_token, string jwt, string new_password, string decrypted_private_key, string decrypted_sign_key);
+	void reset_password(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string new_password, [ByRef] string decrypted_private_key, [ByRef] string decrypted_sign_key);
 
 	[Throws=SentcError, Async]
-	void change_password(string base_url, string auth_token, string user_identifier, string old_password, string new_password, string? mfa_token, boolean? mfa_recovery);
+	void change_password(string base_url, [ByRef] string auth_token, [ByRef] string user_identifier, [ByRef] string old_password, [ByRef] string new_password, string? mfa_token, boolean? mfa_recovery);
 
 	[Throws=SentcError, Async]
-	void delete_user(string base_url, string auth_token, string fresh_jwt);
+	void delete_user(string base_url, [ByRef] string auth_token, [ByRef] string fresh_jwt);
 
 	[Throws=SentcError, Async]
-	void delete_device(string base_url, string auth_token, string fresh_jwt, string device_id);
+	void delete_device(string base_url, [ByRef] string auth_token, [ByRef] string fresh_jwt, [ByRef] string device_id);
 
 	[Throws=SentcError, Async]
-	void update_user(string base_url, string auth_token, string jwt, string user_identifier);
+	void update_user(string base_url, [ByRef] string auth_token, [ByRef] string jwt, string user_identifier);
 
 	[Throws=SentcError, Async]
-	UserPublicKeyData user_fetch_public_key(string base_url, string auth_token, string user_id);
+	UserPublicKeyData user_fetch_public_key(string base_url, [ByRef] string auth_token, [ByRef] string user_id);
 
 	[Throws=SentcError, Async]
-	string user_fetch_verify_key(string base_url, string auth_token, string user_id, string verify_key_id);
+	string user_fetch_verify_key(string base_url, [ByRef] string auth_token, [ByRef] string user_id, [ByRef] string verify_key_id);
 
 	[Throws=SentcError, Async]
-	string user_key_rotation(string base_url, string auth_token, string jwt, string public_device_key, string pre_user_key);
+	string user_key_rotation(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string public_device_key, [ByRef] string pre_user_key);
 
 	[Throws=SentcError, Async]
-	sequence<KeyRotationGetOut> user_pre_done_key_rotation(string base_url, string auth_token, string jwt);
+	sequence<KeyRotationGetOut> user_pre_done_key_rotation(string base_url, [ByRef] string auth_token, [ByRef] string jwt);
 
 	[Throws=SentcError]
-	KeyRotationInput user_get_done_key_rotation_server_input(string server_output);
+	KeyRotationInput user_get_done_key_rotation_server_input([ByRef] string server_output);
 
 	[Throws=SentcError, Async]
-	void user_finish_key_rotation(string base_url, string auth_token, string jwt, string server_output, string pre_group_key, string public_key, string private_key);
+	void user_finish_key_rotation(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string server_output, [ByRef] string pre_group_key, [ByRef] string public_key, [ByRef] string private_key);
 
 	[Throws=SentcError, Async]
-	OtpRegister register_raw_otp(string base_url, string auth_token, string jwt);
+	OtpRegister register_raw_otp(string base_url, [ByRef] string auth_token, [ByRef] string jwt);
 
 	[Throws=SentcError, Async]
-	OtpRegisterUrl register_otp(string base_url, string auth_token, string jwt, string issuer, string audience);
+	OtpRegisterUrl register_otp(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string issuer, [ByRef] string audience);
 
 	[Throws=SentcError, Async]
-	OtpRecoveryKeysOutput get_otp_recover_keys(string base_url, string auth_token, string jwt);
+	OtpRecoveryKeysOutput get_otp_recover_keys(string base_url, [ByRef] string auth_token, [ByRef] string jwt);
 
 	[Throws=SentcError, Async]
-	OtpRegister reset_raw_otp(string base_url, string auth_token, string jwt);
+	OtpRegister reset_raw_otp(string base_url, [ByRef] string auth_token, [ByRef] string jwt);
 
 	[Throws=SentcError, Async]
-	OtpRegisterUrl reset_otp(string base_url, string auth_token, string jwt, string issuer, string audience);
+	OtpRegisterUrl reset_otp(string base_url, [ByRef] string auth_token, [ByRef] string jwt, [ByRef] string issuer, [ByRef] string audience);
 
 	[Throws=SentcError, Async]
-	void disable_otp(string base_url, string auth_token, string jwt);
+	void disable_otp(string base_url, [ByRef] string auth_token, [ByRef] string jwt);
 };
 
 // ============ crypto.rs types ============
