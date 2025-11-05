@@ -26,7 +26,7 @@ impl From<sentc_crypto_common::file::BelongsToType> for BelongsToType
 pub struct FilePartListItem
 {
 	pub part_id: String,
-	pub sequence: i32,
+	pub sequence_: i32,
 	pub extern_storage: bool,
 }
 
@@ -36,7 +36,7 @@ impl From<sentc_crypto_common::file::FilePartListItem> for FilePartListItem
 	{
 		Self {
 			part_id: item.part_id,
-			sequence: item.sequence,
+			sequence_: item.sequence,
 			extern_storage: item.extern_storage,
 		}
 	}
