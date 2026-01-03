@@ -245,16 +245,10 @@ pub trait PwHash
 		Error,
 	>;
 
-	/**
-	# Prepare the login
-
-	1. Takes the salt from the api (after sending the username)
-	2. derived the encryption key (for the master key) and the auth key from the password and the salt
-	3. return the encryption key and
-		return the auth key to send it to the server so the server can check the hashed auth key
-
-	@return: first is the master key, 2nd the auth key
-	 */
+	/// # Prepare the login
+	/// 1. Takes the salt from the api (after sending the username)
+	/// 2. derived the encryption key (for the master key) and the auth key from the password and the salt
+	/// 3. return the encryption key and return the auth key to send it to the server so the server can check the hashed auth key
 	fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8], alg: &str) -> Result<(Self::DMK, Self::DAK), Error>;
 
 	fn password_to_encrypt(password: &[u8]) -> Result<(Self::PWS, impl SymKey), Error>;

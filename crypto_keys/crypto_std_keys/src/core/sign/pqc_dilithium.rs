@@ -103,6 +103,7 @@ impl VerifyK for DilithiumVerifyKey
 	}
 }
 
+#[allow(dead_code)]
 pub struct DilithiumKeyPair;
 
 impl SignKeyPair for DilithiumKeyPair
