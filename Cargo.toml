@@ -28,8 +28,8 @@ repository = "https://github.com/sentclose/sentc"
 rust-version = "1.75.0"
 
 [workspace.dependencies]
-#sentc-crypto-common = { version = "0.12.0", git = "https://github.com/sentclose/sentc-common.git", rev = "06cd7002a19d406807f9443ddfcd993bf9a46651" }
-sentc-crypto-common = { path = "../../backend/sentc-api/sdk-common" } # for local dev
+sentc-crypto-common = "0.12.0"
+#sentc-crypto-common = { path = "../../backend/sentc-api/sdk-common" } # for local dev
 
 sentc-crypto-core = { version = "0.15.0", path = "crypto_core" }
 sentc-crypto-utils = { version = "0.16.0", path = "crypto_utils" }
