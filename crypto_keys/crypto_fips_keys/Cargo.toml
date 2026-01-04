@@ -22,7 +22,7 @@ sentc-crypto-core.workspace = true
 sentc-crypto-utils = { workspace = true, optional = true }
 sentc-crypto-common = { workspace = true, optional = true }
 
-openssl = { version = "0.10.64", default-features = false }
+openssl = { version = "0.10.75", default-features = false }
 
 digest = "0.10.7"
 

@@ -1,24 +1,24 @@
 [workspace]
 resolver = "2"
 members = [
-	"crypto",
-	"crypto_core",
-	"crypto_utils",
-	"crypto_light",
-	"implementation/js/sentc_wasm",
-	"implementation/js/sentc_wasm_light",
-	"implementation/dart/sentc_flutter_rust",
-	"implementation/dart/sentc_flutter_rust_light",
-	"implementation/nodejs/sentc_node_js_rust",
-	"crypto_keys/crypto_std_keys",
-	"crypto_keys/crypto_fips_keys",
-	"crypto_keys/crypto_rec_keys",
-	"implementation/uniffi/sentc_uniffi_rust",
-	"implementation/uniffi/sentc_uniffi_bindgen",
+    "crypto",
+    "crypto_core",
+    "crypto_utils",
+    "crypto_light",
+    "implementation/js/sentc_wasm",
+    "implementation/js/sentc_wasm_light",
+    "implementation/dart/sentc_flutter_rust",
+    "implementation/dart/sentc_flutter_rust_light",
+    "implementation/nodejs/sentc_node_js_rust",
+    "crypto_keys/crypto_std_keys",
+    "crypto_keys/crypto_fips_keys",
+    "crypto_keys/crypto_rec_keys",
+    "implementation/uniffi/sentc_uniffi_rust",
+    "implementation/uniffi/sentc_uniffi_bindgen",
 ]
 
 [workspace.package]
-version = "0.15.0"
+version = "0.16.0"
 edition = "2021"
 license-file = "LICENSE"
 authors = ["Sentclose <contact@sentclose.com>", "Jörn Heinemann <j.heinemann@sentclose.com>"]
@@ -28,16 +28,16 @@ repository = "https://github.com/sentclose/sentc"
 rust-version = "1.75.0"
 
 [workspace.dependencies]
-sentc-crypto-common = { version = "0.11.0", git = "https://github.com/sentclose/sentc-common.git", rev = "06cd7002a19d406807f9443ddfcd993bf9a46651" }
-#sentc-crypto-common = { path = "../backend/sentc-api/sdk-common" } # for local dev
+#sentc-crypto-common = { version = "0.12.0", git = "https://github.com/sentclose/sentc-common.git", rev = "06cd7002a19d406807f9443ddfcd993bf9a46651" }
+sentc-crypto-common = { path = "../../backend/sentc-api/sdk-common" } # for local dev
 
 sentc-crypto-core = { version = "0.15.0", path = "crypto_core" }
-sentc-crypto-utils = { version = "0.15.0", path = "crypto_utils" }
-sentc-crypto = { version = "0.15.0", path = "crypto", default-features = false }
-sentc-crypto-light = { version = "0.15.0", path = "crypto_light", default-features = false }
-sentc-crypto-std-keys = { version = "0.15.0", path = "crypto_keys/crypto_std_keys" }
-sentc-crypto-fips-keys = { version = "0.15.0", path = "crypto_keys/crypto_fips_keys" }
-sentc-crypto-rec-keys = { version = "0.15.0", path = "crypto_keys/crypto_rec_keys" }
+sentc-crypto-utils = { version = "0.16.0", path = "crypto_utils" }
+sentc-crypto = { version = "0.16.0", path = "crypto", default-features = false }
+sentc-crypto-light = { version = "0.16.0", path = "crypto_light", default-features = false }
+sentc-crypto-std-keys = { version = "0.16.0", path = "crypto_keys/crypto_std_keys" }
+sentc-crypto-fips-keys = { version = "0.16.0", path = "crypto_keys/crypto_fips_keys" }
+sentc-crypto-rec-keys = { version = "0.16.0", path = "crypto_keys/crypto_rec_keys" }
 
 #key export
 # must use this version because it is not comp. with password_hash from argon2
