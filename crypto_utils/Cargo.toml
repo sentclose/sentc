@@ -49,6 +49,7 @@ js-sys = { version = "0.3.58", optional = true }
 [features]
 # req handling
 rustls = ["reqwest/rustls-no-provider", "dep:rustls"]
+rusttls_request_default = ["reqwest/rustls"]
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys"]
 
 crypto_full = []
