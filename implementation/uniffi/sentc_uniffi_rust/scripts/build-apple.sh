@@ -3,7 +3,6 @@ cd ..
 BASENAME=sentc_uniffi_rust
 
  # Build static libs
-export IPHONEOS_DEPLOYMENT_TARGET=13.0
  for TARGET in \
          aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim \
          x86_64-apple-darwin aarch64-apple-darwin
