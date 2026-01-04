@@ -38,6 +38,7 @@ macro_rules! prepare_prepare_group_keys_for_new_member {
 	}};
 }
 
+#[allow(unused_imports)]
 pub(crate) use prepare_prepare_group_keys_for_new_member;
 
 pub fn prepare_create_typed(creators_public_key: &str, sign_key: Option<&str>, starter: UserId) -> Result<CreateData, String>
@@ -91,7 +92,7 @@ pub fn key_rotation(
 	starter: UserId,
 ) -> Result<String, String>
 {
-	//the ids come from the storage of the current impl from the sdk, the group key id comes from get group
+	//the ids come from the storage of the current impl from the sdk, the group key id comes from the get-group function
 
 	let sign_key: Option<SignKey> = if let Some(k) = sign_key { Some(k.parse()?) } else { None };
 
@@ -302,8 +303,8 @@ pub fn prepare_group_keys_for_new_member_via_session(requester_public_key_data: 
 
 pub(crate) fn prepare_group_keys_for_new_member_with_ref(saved_keys: &Vec<SymmetricKey>) -> Vec<&SymmetricKey>
 {
-	//this is needed because we need only ref of the group key not the group key itself.
-	//but for the non rust version the key is just a string which gets
+	//this is needed because we need only ref of the group key, not the group key itself.
+	//but for the non-rust version the key is just a string that gets
 
 	let mut split_group_keys = Vec::with_capacity(saved_keys.len());
 
@@ -988,7 +989,7 @@ mod test
 		assert_eq!(new_group_key_direct.key.as_ref(), new_group_key.key.as_ref());
 
 		//__________________________________________________________________________________________
-		//now test rotation with verify
+		//now test rotation with verifying
 
 		let done_key_rotation_out = done_key_rotation(
 			user.user_keys[0].private_key.as_str(),

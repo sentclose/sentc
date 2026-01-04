@@ -1,7 +1,7 @@
 //! # Sentclose crypto crate
-//! This create is non_std with alloc
+//! This crate is non_std with alloc
 //!    
-//! used alg:
+//! Used alg:
 //! - Password hashing
 //! 	- argon2
 //! - symmetric encryption:
@@ -13,7 +13,7 @@
 //! - hmac
 //! 	- hmac sha256
 //!
-//! This create can be used as stand-alone version without the sentclose api
+//! This crate can be used as a stand-alone version without the sentclose api
 
 #![no_std]
 #![allow(clippy::infallible_destructuring_match, clippy::tabs_in_doc_comments, clippy::from_over_into)]
