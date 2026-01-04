@@ -1,5 +1,5 @@
 //#![deny(clippy::all)]
-#![allow(clippy::too_many_arguments)]
+#![allow(clippy::too_many_arguments, dead_code)]
 
 mod crypto;
 mod file;
