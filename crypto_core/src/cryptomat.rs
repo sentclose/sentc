@@ -234,7 +234,7 @@ pub trait PwHash
 	fn derived_keys_from_password<M: SymKey>(
 		password: &[u8],
 		master_key: &M,
-		alg: Option<&str>, //when None then use default hasher. when set try to get the hasher that created the alg
+		alg: Option<&str>, //when None then use default hasher. when set, try to get the hasher that created the alg
 	) -> Result<
 		(
 			Self::CRV,
@@ -247,8 +247,8 @@ pub trait PwHash
 
 	/// # Prepare the login
 	/// 1. Takes the salt from the api (after sending the username)
-	/// 2. derived the encryption key (for the master key) and the auth key from the password and the salt
-	/// 3. return the encryption key and return the auth key to send it to the server so the server can check the hashed auth key
+	/// 2. Derived the encryption key (for the master key) and the auth key from the password and the salt
+	/// 3. Return the encryption key and return the auth key to send it to the server so the server can check the hashed auth key
 	fn derive_keys_for_auth(password: &[u8], salt_bytes: &[u8], alg: &str) -> Result<(Self::DMK, Self::DAK), Error>;
 
 	fn password_to_encrypt(password: &[u8]) -> Result<(Self::PWS, impl SymKey), Error>;

@@ -23,7 +23,7 @@ use crate::Error;
 pub struct CreateGroupOutput<P: Pk, V: VerifyK, S: Sig, GS: Sig>
 {
 	pub encrypted_group_key: Vec<u8>,          //encrypted by creators public key
-	pub group_key_alg: &'static str,           //info about the raw master key (not the encrypted by the pk!)
+	pub group_key_alg: &'static str,           //info about the raw master key (not encrypted by the pk!)
 	pub encrypted_group_key_alg: &'static str, //info about how the encrypted group key was encrypted by the pk (important for the server)
 	pub encrypted_private_group_key: Vec<u8>,
 	pub public_group_key: P,
@@ -43,7 +43,7 @@ pub struct CreateGroupOutput<P: Pk, V: VerifyK, S: Sig, GS: Sig>
 
 pub struct KeyRotationOutput<P: Pk, V: VerifyK, S: Sig, GS: Sig>
 {
-	pub encrypted_group_key_by_user: Vec<u8>, //encrypted by invoker public key
+	pub encrypted_group_key_by_user: Vec<u8>, //encrypted by an invoker public key
 	pub group_key_alg: &'static str,
 	pub encrypted_group_key_alg: &'static str, //info about how the encrypted group key was encrypted by the pk from the invoker (important for the server)
 	pub encrypted_private_group_key: Vec<u8>,
@@ -173,8 +173,7 @@ where
 	/*
 	create the searchable encryption hmac key and encrypt it with the group key
 
-	create it only for create group not key rotation
-	 because when searching an item we don't know what key was used for the item
+	create it only to create a group, not key rotation because, when searching an item, we don't know what key was used for the item
 	 */
 
 	//3. get the hmac key
@@ -245,8 +244,8 @@ pub fn key_rotation<S: SymKeyGen, St: StaticKeyPair, Sign: SignKeyPair, GSign: S
 	let encrypted_group_key_by_ephemeral = group_key.encrypt_with_sym_key(&ephemeral_key)?;
 
 	//5. encrypt the ephemeral key with the previous_group_key group key,
-	// so all group member can get the new key.
-	// this encrypted ephemeral key will get encrypted by every group uses public key
+	// so all group members can get the new key.
+	// this encrypted ephemeral key will get encrypted by every group that uses a public key
 	let encrypted_ephemeral_key = ephemeral_key.encrypt_with_sym_key(previous_group_key)?;
 
 	Ok(KeyRotationOutput {
@@ -345,8 +344,8 @@ pub fn prepare_group_keys_for_new_member<P: Pk>(
 {
 	//encrypt all group keys with the requester public key, so he / she can access the data
 	/*
-		can't use the method from key rotation, where only the first key needs to pass to the other user and the rest gets encrypted by the server,
-		because after all member got their new room key the rotation keys gets deleted
+		can't use the method from key rotation, where only the first key needs to pass to the other user and the rest gets encrypted by the server
+		because after all member got their new room key, the rotation keys gets deleted
 		 so every group key needs to encrypt for the new user
 	*/
 
