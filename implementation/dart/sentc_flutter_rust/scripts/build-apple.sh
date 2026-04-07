@@ -2,6 +2,9 @@
 
 cd ..
 
+# Set minimum iOS version to match your Flutter app (usually 11.0 or 12.0)
+export IPHONEOS_DEPLOYMENT_TARGET=12.0
+
 # Build static libs
 for TARGET in \
         aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim \
