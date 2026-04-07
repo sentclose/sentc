@@ -14,9 +14,9 @@ rust-version.workspace = true
 description = "Common types and functions for sentc sdk and sdk light"
 
 include = [
-    "Cargo.toml",
-    "../LICENSE",
-    "src/**/*",
+	"Cargo.toml",
+	"../LICENSE",
+	"src/**/*",
 ]
 
 [dependencies]
@@ -34,8 +34,7 @@ pem-rfc7468 = { version = "0.3.1", features = ["alloc"] }
 
 #_______________________________________________________________________________________________________________________
 # req handling
-reqwest = { version = "0.13", optional = true, default-features = false }
-rustls = { version = "0.23", optional = true, default-features = false, features = ["ring"] }
+reqwest = { version = "0.13.2", optional = true, default-features = false, features = ["rustls"] }
 
 wasm-bindgen = { version = "0.2.74", optional = true }
 
@@ -48,8 +47,7 @@ js-sys = { version = "0.3.58", optional = true }
 
 [features]
 # req handling
-rustls = ["reqwest/rustls-no-provider", "dep:rustls"]
-rusttls_request_default = ["reqwest/rustls"]
+rustls = ["reqwest"]
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys"]
 
 crypto_full = []
