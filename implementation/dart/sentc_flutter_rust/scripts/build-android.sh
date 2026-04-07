@@ -11,6 +11,10 @@
 cd ..
 
 # Build the android libraries in the jniLibs directory
+# Added linker flags for 16kb page size compatibility
+export RUSTFLAGS="-C link-arg=-z -C link-arg=max-page-size=16384"
+
+# Build the android libraries in the jniLibs directory
 cargo ndk --manifest-path Cargo.toml \
         -t armeabi-v7a \
         -t arm64-v8a \
