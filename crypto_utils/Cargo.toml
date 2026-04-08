@@ -34,7 +34,8 @@ pem-rfc7468 = { version = "0.3.1", features = ["alloc"] }
 
 #_______________________________________________________________________________________________________________________
 # req handling
-reqwest = { version = "0.13.2", optional = true, default-features = false, features = ["rustls"] }
+reqwest = { version = "0.13", optional = true, default-features = false }
+rustls = { version = "0.23", optional = true, default-features = false, features = ["ring"] }
 
 wasm-bindgen = { version = "0.2.74", optional = true }
 
@@ -44,10 +45,12 @@ web-sys = { version = "0.3.4", optional = true, features = ['Headers', 'Request'
 
 js-sys = { version = "0.3.58", optional = true }
 
+once_cell = { version = "1.21.4", optional = true }
 
 [features]
 # req handling
-rustls = ["reqwest"]
+rustls = ["reqwest/rustls-no-provider", "dep:rustls", "once_cell"]
+rusttls_request_default = ["reqwest/rustls"]
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys"]
 
 crypto_full = []

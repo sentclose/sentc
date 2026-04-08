@@ -93,6 +93,18 @@ pub async fn make_req_buffer_body(
 	res.text().await.map_err(|_e| SdkUtilError::ResponseErrText)
 }
 
+#[cfg(feature = "rustls")]
+fn init_crypto_provider()
+{
+	use once_cell::sync::Lazy;
+	static DONE: Lazy<()> = Lazy::new(|| {
+		rustls::crypto::ring::default_provider()
+			.install_default()
+			.expect("Failed to install rustls crypto provider");
+	});
+	let _ = *DONE;
+}
+
 async fn make_req_raw(
 	method: HttpMethod,
 	url: &str,
@@ -102,6 +114,9 @@ async fn make_req_raw(
 	group_as_member: Option<&str>,
 ) -> Result<Response, SdkUtilError>
 {
+	#[cfg(feature = "rustls")]
+	init_crypto_provider();
+
 	let client = reqwest::Client::new();
 
 	let builder = match method {
